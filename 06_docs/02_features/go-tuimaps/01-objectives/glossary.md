@@ -11,7 +11,7 @@ One plain sentence per term. Added after the DISCOVER red-team found that the do
 | **Host** | The application that embeds the map. The first host is Watchpost, a terminal weather station. |
 | **Cell** | One character position in a terminal. A cell holds one character, one foreground colour and one background colour. |
 | **Braille renderer** | Draws with Unicode braille characters: each cell is a 2×4 grid of dots, so an 80×24 terminal becomes a 160×96-dot picture. |
-| **Block renderer** | Draws with quarter-block characters (▘▝▖▗ and their combinations): 2×2 per cell. Coarser, but present in more fonts. |
+| **Block renderer** | Draws with quarter-block characters (▘▝▖▗ and their combinations): 2×2 per cell. Coarser. Opt-in, and built after the first release (D-42, D-44). *Whether it is present in more fonts than braille is assumed, not shown; the glyph matrix at PLAN entry tests it.* |
 | **Tile** | One square piece of the world map at one zoom level. The map is assembled from the few tiles a view needs. |
 | **Vector tile** | A tile that carries shapes and names (roads as lines, lakes as outlines) rather than a picture, so it can be drawn at any size and style. |
 | **Zoom level** | How far in the map is: 0 is the whole world in one tile; each level doubles the detail; 14 is the most detailed the tile source provides. |
@@ -85,4 +85,21 @@ One plain sentence per term. Added after the DISCOVER red-team found that the do
 | **Red-team** | A deliberate adversarial review at the end of each phase, by reviewers told to find what is wrong. |
 | **Specimen** | A real rendering produced to judge a visual idea. Nothing visual is approved from a description. |
 | **Defect ledger (L-n)** | The closed list of known bugs in the original program, each marked *fix* or *replicate*. |
+| **Upstream** | The project being ported: TerminalMap, and behind it MAPSCII. |
+| **Palette · theme** | A palette is the set of colours a host hands the map; a theme is the host's name for one such set. |
+| **Fixture** | A fixed, committed set of test data, so a measurement can be repeated. |
+| **Seam** | A place where one part can be swapped for another without touching the rest. |
+| **Zoom bucket** | A band of zoom levels that share one simplified copy of a shape. |
+| **Diverging ramp** | A colour ramp with a meaningful middle — pale at the midpoint, one hue below it and another above. |
+| **Protanopia · deuteranopia · tritanopia** | The three common kinds of colour blindness: weak red, weak green, weak blue. |
+| **Reduce-motion** | A setting for people whom animation harms or distracts: nothing blinks, nothing glides. |
+| **Hatch** | Diagonal strokes filling an area, used where colour is not available. |
+| **Borrowed geometry** | Shapes the host hands in and keeps owning. The library reads them and does not copy them; the host must not change them while they are on the map. |
+| **Settle** | A call that waits until background work for the current view is finished, so a one-shot render is complete. |
+| **Back-off** | Waiting longer after each failure before trying again. |
+| **Grapheme cluster** | What a reader sees as one character, even when it is stored as several — a letter with its accent, a flag. |
+| **Answer key** | For each M1 scenario, the correct answers — inside or outside, bearing, distance — computed by a separate script. |
+| **Planet file** | One very large file holding every tile for the whole world. |
+| **Race detector** | A Go tool that finds two parts of a program touching the same data at once. |
+| **Discovery Report** | The document that closes this phase, for HUM LEAD's approval. |
 | **ID prefixes** | R- brief requirement · FR- / NFR- functional / non-functional requirement · CD- constraint or dependency · A- assumption (A-1..A-6, at the foot of the requirements) · RS- risk · OQ- open question · AI- research report · S*n*-*n* specimen finding · P-01..P-72 parity row · E- extension row · L- ledger entry · X- contradiction between research reports · M- metric · D- ruling · Q- question for the human lead (round 1) · R2-Q- the same (round 2). **Red-team finding codes** reuse some letters: in a requirement's "From" column and in the red-team record, bare A-, P-, S-, CQ-, PM-, BQ-, N-, DQ-, PH- and C- codes are round-1 findings (accessibility, performance, security, code quality, phase lens, business, newcomer, docs, hygiene, convergence); R2- codes are round 2's. The requirements file says which is which at its head. |
