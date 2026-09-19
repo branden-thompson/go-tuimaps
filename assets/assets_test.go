@@ -66,6 +66,34 @@ func TestAssetsDecodeThroughGate(t *testing.T) {
 	t.Logf("85 tiles: %d bytes embedded; %d bytes kept once decoded, the largest %d", total, kept, largest)
 }
 
+// TestEmbeddedTilesCarryWhatTheRolesNeed: the world tile keeps each border's
+// administrative level and each place's rank. The first set generated had
+// neither: the decoder read upstream's keys, which these tiles do not carry.
+func TestEmbeddedTilesCarryWhatTheRolesNeed(t *testing.T) {
+	body, _ := Tile(0, 0, 0)
+	tile, err := mvt.Decode(body, mvt.Want{Layers: []string{"boundary", "place"}, Language: "en"}, mvt.DefaultLimits())
+	if err != nil {
+		t.Fatal(err)
+	}
+	countries, ranked, places := 0, 0, 0
+	for _, l := range tile.Layers {
+		for _, f := range l.Features {
+			if l.Name == "boundary" && f.AdminLevel == 2 {
+				countries++
+			}
+			if l.Name == "place" {
+				places++
+				if f.Rank > 0 {
+					ranked++
+				}
+			}
+		}
+	}
+	if countries == 0 || places == 0 || ranked != places {
+		t.Errorf("%d country borders; %d of %d places ranked", countries, ranked, places)
+	}
+}
+
 // TestOnlyTheEmbeddedZooms: what is not embedded is simply absent.
 func TestOnlyTheEmbeddedZooms(t *testing.T) {
 	for _, id := range []scene.TileID{{Z: 4, X: 0, Y: 0}, {Z: 1, X: 2, Y: 0}, {Z: 3, X: 0, Y: 8}, {Z: 200, X: 0, Y: 0}} {

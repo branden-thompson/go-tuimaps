@@ -38,6 +38,7 @@ The exemptions file is part of the local harness and is not tracked; this table 
 | `internal/work` | Two invariant checks a function | A queue under one lock: short state changes with the lock held, or reads of one counter. Its invariants are relations between structures, not preconditions on arguments. Every argument that can be wrong is checked; the two structural invariants that can be stated as a check are stated. Correctness is held by 25 tests under the race detector | 2026-09-19, D-98 |
 | `assets` | Two invariant checks a function | Three of its five functions return an embedded text and take no argument, so there is nothing for them to check. Every argument that exists is checked: a zoom past 3, a column or row off the grid, an absent file. Content is held by tests that re-hash every tile against the hash list and hold the pin and the notice to what they must say | 2026-09-19, D-99 |
 | `internal/tiles` | Two invariant checks a function | The entry points that take arguments meet the bar. The shortfall is seven error constructors, which can hold no check; helpers called only with a lock held and arguments already checked; and one-line formatters. The checks that matter most here sit after a call, where the meter does not count: what was opened is what was looked at, a link is not followed, the TileJSON's depth and size, the address rules. 40 tests and a fuzz target hold them | 2026-09-19, D-100 |
+| `internal/colour` | Two invariant checks a function | Arithmetic on any colour, for which every 8-bit colour is valid input; lookups that answer "no such token" with false, each checking the token's range; and functions that take no argument that can be wrong. Held by six published contrast pairs, the foreground rule over every default line on every default background on both grounds, and the token list compared with the constants document | 2026-09-19, D-101 |
 
 ## WP-02 — textsafe and fault
 
@@ -115,5 +116,12 @@ The exemptions file is part of the local harness and is not tracked; this table 
 | 06.21 Parity | this commit | The four tests the mapping names for this package: P-48, P-49, P-50, P-51 | All four pass |
 
 **WP-06 is complete: 21 of 21 tasks.**
+
+## A defect found in BUILD: what the decoder keeps (WP-03, WP-04)
+
+| What | Found | Fixed | Learned |
+|---|---|---|---|
+| The decoder kept `class`, the name, and upstream's `localrank` and `scalerank`. Real OpenMapTiles data carries neither rank key - a place's importance is `rank` - and a boundary has no `class`: it has `admin_level`, and `maritime` for a line drawn across the sea. **Every real place had rank 0, and a country border could not be told from a region's** | While starting the style work (08.21), by listing the attributes of a real tile's layers before writing roles against them | `TestKeepsWhatTheRolesNeed` and `TestRealBoundariesAndPlaces`, written first and failing. A feature now keeps its administrative level and its maritime flag in two bytes that were padding, so the kept size is unchanged (3,535,546 bytes for the embedded set, as before); rank falls back to `rank` after upstream's two keys. The generator's encoder writes both; the embedded tiles were regenerated from the same pin (1,023,118 bytes; pin, hash list and tiles changed together); `TestEmbeddedTilesCarryWhatTheRolesNeed` holds the embedded world tile to it | **The comparison with the proven decoder never compared ranks**, so two decoders reading the same wrong keys agreed. It now compares rank, level and the maritime flag over all 11,252 features, and the fuzz target holds the same. Parity tests written from upstream's code inherit upstream's schema; the data has the last word |
+
 
 **Next:** WP-08 (style and colour), the basemap half; then WP-09 (render).

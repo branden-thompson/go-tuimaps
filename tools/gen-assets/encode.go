@@ -103,6 +103,8 @@ const (
 	keyClass = iota
 	keyName
 	keyRank
+	keyLevel
+	keyMaritime
 )
 
 func encodeLayer(l *scene.Layer) ([]byte, error) {
@@ -122,7 +124,7 @@ func encodeLayer(l *scene.Layer) ([]byte, error) {
 		}
 		b = putBytes(b, 2, feature)
 	}
-	for _, k := range []string{"class", "name", "localrank"} {
+	for _, k := range []string{"class", "name", "localrank", "admin_level", "maritime"} {
 		b = putBytes(b, 3, []byte(k))
 	}
 	for _, v := range vals.encoded {
@@ -150,6 +152,12 @@ func encodeFeature(l *scene.Layer, f scene.Feature, vals *values) ([]byte, error
 	}
 	if f.Rank != 0 {
 		tags = putVarint(putVarint(tags, keyRank), vals.rank(f.Rank))
+	}
+	if f.AdminLevel != 0 {
+		tags = putVarint(putVarint(tags, keyLevel), vals.rank(int32(f.AdminLevel)))
+	}
+	if f.Maritime {
+		tags = putVarint(putVarint(tags, keyMaritime), vals.rank(1))
 	}
 	geometry, err := encodeGeometry(l, f)
 	if err != nil {

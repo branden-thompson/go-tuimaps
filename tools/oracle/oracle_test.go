@@ -97,6 +97,40 @@ func label(f *geojson.Feature, lang string) string {
 	return ""
 }
 
+// whole reads a property as a whole number, whatever type the proven
+// decoder gave it.
+func whole(v any) (int64, bool) {
+	switch n := v.(type) {
+	case float64:
+		return int64(n), n == float64(int64(n))
+	case int64:
+		return n, true
+	case uint64:
+		return int64(n), true
+	case int:
+		return int64(n), true
+	}
+	return 0, false
+}
+
+// importance is a feature's rank by upstream's order, then OpenMapTiles'
+// own key; a boundary's administrative level; and whether it is at sea.
+func importance(f *geojson.Feature) (rank int32, level uint8, maritime bool) {
+	for _, key := range []string{"localrank", "scalerank", "rank"} {
+		if v, present := f.Properties[key]; present {
+			if n, ok := whole(v); ok && n >= 0 && n < 1<<31 {
+				rank = int32(n)
+			}
+			break
+		}
+	}
+	if n, ok := whole(f.Properties["admin_level"]); ok && n >= 1 && n <= 11 {
+		level = uint8(n)
+	}
+	n, ok := whole(f.Properties["maritime"])
+	return rank, level, ok && n == 1
+}
+
 // compare holds our kept layers equal to the proven decoder's, feature by
 // feature: geometry part by part, class and label by value.
 func compare(theirs orbmvt.Layers, ours *scene.Tile) (compared int, err error) {
@@ -126,6 +160,9 @@ func compare(theirs orbmvt.Layers, ours *scene.Tile) (compared int, err error) {
 				class, _ := f.Properties["class"].(string)
 				if got.Class != class || got.Name != label(f, "en") {
 					return compared, fmt.Errorf("layer %s feature %d: class %q name %q; they have class %q name %q", their.Name, n, got.Class, got.Name, class, label(f, "en"))
+				}
+				if rank, level, sea := importance(f); got.Rank != rank || got.AdminLevel != level || got.Maritime != sea {
+					return compared, fmt.Errorf("layer %s feature %d: rank %d level %d maritime %v; they have %d, %d, %v", their.Name, n, got.Rank, got.AdminLevel, got.Maritime, rank, level, sea)
 				}
 				for p := got.FirstPart; p < got.EndPart; p++ {
 					coords, err := our.Part(int(p))

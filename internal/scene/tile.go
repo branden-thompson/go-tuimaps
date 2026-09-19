@@ -45,12 +45,14 @@ type Layer struct {
 // holes: a tile feature holding several polygons becomes several of these,
 // each carrying the same attributes.
 type Feature struct {
-	Kind      GeomKind
-	Rank      int32  // the tile's local rank, else its scale rank, else 0
-	Class     string // shared between the features of a tile that have the same class
-	Name      string // in the one configured language, else the local name, else the house number
-	FirstPart uint32 // the feature's parts are its layer's Parts[FirstPart:EndPart]
-	EndPart   uint32
+	Kind       GeomKind
+	AdminLevel uint8  // a boundary's administrative level: 2 a country's, 4 a region's; 0 if it has none
+	Maritime   bool   // a boundary drawn across the sea
+	Rank       int32  // importance, lower first: the tile's local rank, else its scale rank, else its rank, else 0
+	Class      string // shared between the features of a tile that have the same class
+	Name       string // in the one configured language, else the local name, else the house number
+	FirstPart  uint32 // the feature's parts are its layer's Parts[FirstPart:EndPart]
+	EndPart    uint32
 }
 
 // Bytes is what the tile's kept form costs in memory, for the caches' byte

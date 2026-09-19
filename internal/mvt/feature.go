@@ -12,6 +12,9 @@ type attrs struct {
 	houseNum  string
 	localRank []byte // the Value message, read only if no better rank is found
 	scaleRank []byte
+	rankValue []byte
+	level     uint8
+	maritime  bool
 }
 
 // readFeature decodes one feature: its kind, the attributes the map reads,
@@ -50,7 +53,7 @@ func (d *layerDecoder) readFeature(body []byte) error {
 	if err != nil {
 		return err
 	}
-	feature := scene.Feature{Kind: scene.GeomKind(kind), Class: a.class, Name: a.label(), Rank: a.rank()}
+	feature := scene.Feature{Kind: scene.GeomKind(kind), Class: a.class, Name: a.label(), Rank: a.rank(), AdminLevel: a.level, Maritime: a.maritime}
 	return d.readGeometry(geometry, feature)
 }
 
@@ -99,6 +102,10 @@ func (d *layerDecoder) keep(a *attrs, role uint8, value []byte) error {
 		a.scaleRank = value
 		return nil
 	}
+	if role >= roleRank {
+		a.keepSchema(role, value)
+		return nil
+	}
 	text, err := stringOf(value)
 	if err != nil {
 		return err
@@ -114,6 +121,25 @@ func (d *layerDecoder) keep(a *attrs, role uint8, value []byte) error {
 		a.houseNum = string(text)
 	}
 	return nil
+}
+
+// keepSchema stores the attributes OpenMapTiles carries where upstream's
+// schema had a class or a local rank. A level outside 1 to 11, which is
+// every level there is, is kept as none.
+func (a *attrs) keepSchema(role uint8, value []byte) {
+	if a == nil {
+		return
+	}
+	switch role {
+	case roleRank:
+		a.rankValue = value
+	case roleAdminLevel:
+		if n := intOf(value); n >= 1 && n <= 11 {
+			a.level = uint8(n)
+		}
+	case roleMaritime:
+		a.maritime = intOf(value) == 1
+	}
 }
 
 // intern returns one shared string for each distinct class in a tile.
@@ -140,13 +166,16 @@ func (a attrs) label() string {
 	return a.houseNum
 }
 
-// rank is upstream's sort key: the local rank, else the scale rank, else 0;
-// integers only. As upstream, a local rank that is present and not an
+// rank is upstream's sort key: the local rank, else the scale rank, else -
+// what OpenMapTiles really carries - the rank, else 0; integers only. As upstream, a local rank that is present and not an
 // integer gives 0: the scale rank is not read in its place.
 func (a attrs) rank() int32 {
 	value := a.localRank
 	if value == nil {
 		value = a.scaleRank
+	}
+	if value == nil {
+		value = a.rankValue
 	}
 	if value == nil {
 		return 0

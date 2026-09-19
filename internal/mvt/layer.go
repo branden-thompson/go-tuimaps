@@ -17,6 +17,9 @@ const (
 	roleHouseNum
 	roleLocalRank
 	roleScaleRank
+	roleRank       // OpenMapTiles' importance of a place
+	roleAdminLevel // a boundary's administrative level
+	roleMaritime   // a boundary drawn across the sea
 )
 
 // layerDecoder decodes a tile's layers, one after another, into the tile.
@@ -199,6 +202,12 @@ func roleOf(key []byte, language string) uint8 {
 		return roleLocalRank
 	case "scalerank":
 		return roleScaleRank
+	case "rank":
+		return roleRank
+	case "admin_level":
+		return roleAdminLevel
+	case "maritime":
+		return roleMaritime
 	}
 	if len(key) == len("name_")+len(language) && string(key[:4]) == "name" && (key[4] == '_' || key[4] == ':') && string(key[5:]) == language {
 		return roleNameLang

@@ -8,7 +8,7 @@ Up: [architecture](architecture.md) · Carries: FR-19, FR-34, FR-35, FR-36, NFR-
 flowchart LR
     SRC["Tile source declares its layers<br/>(TileJSON, or the embedded set's manifest)"] --> MAP{"Schema mapping (FR-35)<br/>does a known mapping cover these layers?"}
     MAP -- no --> UNS["Error: unsupported-schema (D-46)"]
-    MAP -- "yes: OpenMapTiles" --> ROLES["Layer + class → a ROLE<br/>coast · water · river · border.country · border.region · road.major · road.minor · rail · park · runway · place"]
+    MAP -- "yes: OpenMapTiles" --> ROLES["Layer + class — for a boundary, its administrative level and whether it is at sea — → a ROLE<br/>coast · water · river · border.country · border.region · road.major · road.minor · rail · park · runway · place"]
     ROLES --> DEC["The decoder keeps only layers and attributes some role needs —<br/>everything else is dropped while decoding (D-75, D-82)"]
     ROLES --> STYLE{"Style"}
     STYLE -- "built in" --> BI["dark or bright, chosen by the ground's luminance (D-64)"]
