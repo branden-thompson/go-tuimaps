@@ -27,4 +27,18 @@ Up: [implementation plan](implementation-plan.md)
 
 **WP-00 is complete: 13 of 13 tasks.** The full gate is green.
 
-**Next:** WP-02 (textsafe and `fault`) before WP-01, because WP-01 reports problems through `fault` — the edge red-team round 3 added. Then WP-01, WP-03, WP-05, WP-07 in any order; WP-04 and WP-06 after them.
+## Code-quality exemptions (D-96: one package at a time, each ratified by HUM LEAD)
+
+The exemptions file is part of the local harness and is not tracked; this table is the tracked record.
+
+| Package | Rule | Reason | Ratified |
+|---|---|---|---|
+| `internal/textsafe` | Two invariant checks a function | The cleaning functions are total: every input has a defined output, so there is no error to return. Reshaping predicates into guard clauses would satisfy the counter and assert nothing. Correctness is held by the tests and by the fuzz target (02.9). Real bounds are added where they exist | 2026-09-19, with D-96 |
+
+## WP-02 — textsafe and fault
+
+| Task | Commit | The failing test, first | Learned |
+|---|---|---|---|
+| 02.1 to 02.4 The cleaning pass | this commit | `TestInvalidUTF8BecomesReplacement`, `TestControlsDropped`, `TestBidiDropped`, `TestZeroWidthOutsideClusterDropped`, `TestZeroWidthInsideClusterKept`, `TestTagCharactersStayOnlyInAFlag`, `TestCleanIsIdempotent` — failed to compile | **The tests found a hole in the rule as first written.** "A cluster that occupies no cell is dropped" keeps a tag character that follows a letter, because it joins the letter's cluster — and invisible tag characters can carry text nobody sees. Tag characters now stay only after the black flag, the one base they belong to; a real flag sequence is kept whole. The zero-width table is by category (nonspacing and enclosing marks, format characters, variation selectors), documented in the code. The two allowed modules were added from the local module cache with the network off, at the first host's exact versions. **A tool wrote literal invisible characters into the test file where escapes were meant;** converted back, and a static rule against invisible characters in source is next |
+
+**Next:** a static rule — no invisible or bidirectional character in any source file; then 02.5 to 02.11.

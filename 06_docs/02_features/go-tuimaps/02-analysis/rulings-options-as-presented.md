@@ -85,6 +85,7 @@ Each question was presented one at a time with: what was being decided, the evid
 | D-93 | Verdict on specimen group T: the corrected light-ground radar ramp (22f) and the light-ground temperature variant (21d) | *Not put as options.* HUM LEAD's words. The question also described, without recommending it, using 21d's colours on both grounds; HUM LEAD did not take it up. | — |
 | D-94 | The two MAPSCII additions carried since DISCOVER | **A. The app gains `--style PATH` (the library still takes bytes); per-layer label margin and clustering not taken up for v1, reopenable by the integration review** · B. Both into v0.1.0: per-layer margin and cluster honoured, and the flag · C. Close both as not taken up; a user's style stays reachable only from a host's code | A |
 | D-95 | Approval of the Plan of Record, and the opening of BUILD | *Not put as options.* HUM LEAD's words. The report offered: approve, send back, strike any of six listed matters, or order a fourth red-team round. | — |
+| D-96 | A package of total functions fails the two-checks-a-function rule | **A. Exempt one package at a time, each entry ratified by HUM LEAD; the option set out `internal/textsafe`'s reason as the first** · B. A standing rule: the coordinator may exempt a package of total functions with a recorded reason, challenged at REVIEW · C. No exemptions; predicates reshaped into chains of guard clauses, real bounds added where they exist | A |
 
 ## Where HUM LEAD chose against the recommendation ◇
 
