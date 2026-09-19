@@ -7,7 +7,7 @@
 | Tree reviewed | `9d4cbd0`, frozen for the whole round — no tracked file changed while reviewers ran |
 | Reviewers | Five, fresh, covering the nine lenses HUM LEAD confirmed (D-38, D-80): code quality · performance and security · accessibility and newcomer · phase lens and business · docs and hygiene |
 | Subject | The architecture and its diagrams, the three approach notes, the implementation plan, the PLAN specimens (17 to 23), the memory measurement |
-| Status | Round 1 recorded. **Round verdict: NO-GO as written.** Remediation and rulings follow; a second round is required. |
+| Status | Round 1: **NO-GO as written**, 74 findings. All eight questions ruled (D-81 to D-88); remediation done and listed below. **A second round follows**, on the remediation only. |
 
 ## Verdicts
 
@@ -150,3 +150,23 @@ Put one at a time. **All eight are ruled (D-81 to D-88)**; three went against th
 | PL-Q6 | How the end of a borrow is signalled → **D-86: reported, never waited for — `Set` and `Remove` return released yes-or-no; the host's own calls report the rest; an opt-in borrow check** | PL-CQ-2, PL-NC-3 |
 | PL-Q7 | Whether radar is masked over water → **D-87: by kind — images never masked, scalar fields masked, a host can flip either** | PL-DQ-6 |
 | PL-Q8 | The colour-vision threshold → **D-88: 10, for every pair and against the ground; method pinned** | PL-PM-1, PL-DQ-7 |
+
+## Remediation after round 1
+
+Every finding marked **Fix** above, and where it was done. A finding is listed here only if the change exists in the commit named.
+
+| Commit | What | Findings |
+|---|---|---|
+| `e0aed45` to `e97e145` | The eight rulings, each carried into the requirements, diagrams and plan in its own commit: the allow-list (D-81); one label language (D-82); the cell-colour vote, from a side-by-side specimen (`094babd`, D-83); no decode limiter (D-84); lean caps covering three maps (D-85); the end of a borrow reported, never waited for, with the state machine redrawn (D-86); water masks fields and never images (D-87); the colour-vision threshold with its method (D-88) | PL-CQ-1, -2, -8, -11 · PL-PM-4 · PL-PF-1, -3 · PL-BZ-1, -5 · PL-NC-3 · PL-DQ-6 |
+| `b43e7fd`, `d32d455` | The temperature scale retuned so every pair passes; a second, darker-is-heavier radar ramp for light grounds; specimens re-rendered, the defect kept on record as 22e. Seen by HUM LEAD (D-89) | PL-AX-1, -2 |
+| `bfae89c` | **The contract document:** the groups of calls; the pump drawn, with its wake rule; the three-call path corrected; set, replace, remove; the frame, its lifetime and reuse key; which calls are safe together, with four implementation rules; closed lists of error and warning kinds; shared caches; where each deferred shape lands; places and markers; panic recovery | PL-CQ-3 · PL-PM-1, -2, -3, -6, -7 · PL-NC-1, -2, -4, -7 · PL-PF-5 · PL-IS-5 · PL-AX-4 |
+| `b17049a` | **The constants table**, with per-tile maxima measured on twelve heavy real tiles; the tile extent limit cut to 8,192 because larger does not fit 16-bit coordinates; zoom buckets; the drop rule; the fallback bound stated as work; the class cap; rounding precision; the token list; targets only the library can measure, checked by arithmetic and tied to the task that measures them | PL-CQ-12 · PL-PF-2, -6 · PL-IS-2 · PL-PM-1 · PL-DQ-7 |
+| `a7c763c` | Eight missing diagrams; six contradictions between diagrams removed; the contract diagram aligned; a shared `scene` package; "Carries" headers regenerated from each file; the tour's references corrected; the index completed. All 41 diagrams rendered and parse | PL-DQ-1 to -5, -9, -12, -13, -14 · PL-CQ-7 · PL-CQ-15 in part |
+| `6409a24`, `842fc32` | **The plan reworked:** 210 tasks to 264; the dependency diagram and first milestone corrected; tests that could not fail, or asserted throwaway figures, rewritten; a static check in place of a goroutine count; allocation tests in a leg without the race detector; the sub-process race test; a local gate over every module; TileJSON, style, image and host-struct limits and fuzz targets; the protobuf pitfalls; a confined cache root; the generator's encoder and determinism; the pump's wake rule; public-surface and call-pair tests; accessibility switches; HUM LEAD's judging and approval sessions; the host's local-override recipe, spike and integration-review template. **The parity mapping**: owner and test for each of the 62 rows, written first | PL-CQ-4, -5, -6, -9, -10, -13, -14, -15 · PL-PF-4, -7 · PL-IS-1, -3, -4, -6 · PL-AX-3, -5, -6 · PL-NC-5, -6 · PL-PM-5, -9 · PL-BZ-2, -3, -4 · PL-DQ-10 · PL-PH-1 |
+| `e2b1e49` | The pinned fixture committed: 3.3 MB of real data with sources, terms and a hash list | PL-DQ-8 · PL-PM-5 |
+| `d2c84ef` | Specimen 25: isolines by classifying the field at every braille dot; assumption A-5 held | PL-PM-1 (the contour specimen) |
+| `befd572` | Stale statements pointed at what overtook them; the specimens' header defects listed; D-71's options row; every figure in the memory diagram labelled | PL-DQ-11, -15 · PL-PH-2 · PL-PM-9 |
+| `dbd4fc4`, `1df1de0` | HUM LEAD's second look at groups I, J and L recorded (D-89) | PL-PM-8, PL-AX-7 in part |
+
+**Not fixed, and why.** PL-PH-3 (the process framework named in two older documents) is decided at SHIP, as D-70 rules. **Still owed by HUM LEAD before PLAN exit, and asked again:** a look at the colour specimens in a terminal, with the terminal's name and font (PL-PM-8, PL-AX-7). **Risk RS-7 stays High:** the peak line cannot be shown until the library's own benchmark exists.
+
