@@ -50,7 +50,7 @@ Measured on real tiles across the whole range the map uses. **Zoom 0 to 4:** all
 | Warnings kept | 64, de-duplicated | Set in DISCOVER round 3 |
 | The longest id of an overlay or a place | 256 bytes | Set in BUILD (task 02.8). Ids are validated and never cleaned (FR-34) |
 | Untrusted text quoted in an error or a warning | 64 grapheme clusters, then three dots | FR-34; the dots set in BUILD (task 02.7) |
-| Disk cache | 256 MB; prune to 90%; recency written at most hourly | Set in DISCOVER round 2 |
+| Disk cache | 256 MB; prune to 90%; recency written at most hourly; layout `<root>/v1/<hash>/<z>/<x>-<y>.pbf` | Set in DISCOVER round 2; layout set in BUILD (WP-06) |
 
 ## 3 · Shapes (FR-11)
 
