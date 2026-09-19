@@ -372,13 +372,13 @@ Dispositions as in round 1. **Fixed** means done in the commits listed below —
 
 ## Tally
 
-87 findings across nine lenses. Reviewer-labelled Critical: 5 (R2-AX-1, R2-AX-2, R2-CQ-3, R2-CQ-4, R2-PF-A1), all fixed. **Declined: 1, in part** (R2-PH-1). **Questions for HUM LEAD: 10.** None dropped. Most Important findings carry "introduced by a fix": round 1's remediation was wide and fast, and this is its cost.
+87 findings across nine lenses. Reviewer-labelled Critical: 5 (R2-AX-1, R2-AX-2, R2-CQ-3, R2-CQ-4, R2-PF-A1), all fixed. **Declined: 1, in part** (R2-PH-1). **Questions for HUM LEAD: 10, all since ruled (D-57 to D-66).** None dropped. Most Important findings carry "introduced by a fix": round 1's remediation was wide and fast, and this is its cost.
 
 **Coordinator's own errors found by this round:** S13-1 claimed a marker was readable in a specimen that had none — the round-1 over-claim pattern, repeated; legends that did not match their ramps; a miscount in a commit message, again; four dispositions labelled "Fix" that were deferrals, again; ruling commits that did not carry their consequences through the other documents; a security number left as "proposed" where tests must come first.
 
 ## Questions for HUM LEAD from round 2
 
-Put one at a time, as in round 1. Rulings are recorded in `rulings-discover.md` from D-57.
+Put one at a time, as in round 1. **All ten are ruled (D-57 to D-66)**, recorded in `rulings-discover.md`; two went against the recommendation (D-61, D-62) and one added to it (D-63).
 
 | Q | Question | From |
 |---|---|---|
@@ -391,7 +391,7 @@ Put one at a time, as in round 1. Rulings are recorded in `rulings-discover.md` 
 | R2-Q7 | A user-level "safe ramps" switch → **D-63: a switch in v0.1.0, and the palette as a documented semantic-token contract** | R2-AX-7 |
 | R2-Q8 | Who owns the ground colour on a light terminal → **D-64: painted by default from a `ground` token; a host may opt out by declaring the ground** | R2-AX-11 |
 | R2-Q9 | Whether the library reaches the network without being told to → **D-65: never; the app enables the default source, says so, and offers an offline flag** | R2-IS-B2, R2-NC-3 |
-| R2-Q10 | One commit message that narrates hygiene work | R2-PH-4 |
+| R2-Q10 | One commit message that narrates hygiene work → **D-66: it stands; history is not rewritten** | R2-PH-4 |
 
 Also asked of HUM LEAD, not as rulings: a second look at the corrected specimens (13a, 14, 16); a look at the specimen files in his own terminal before PLAN exit.
 
