@@ -386,7 +386,7 @@ Put one at a time, as in round 1. Rulings are recorded in `rulings-discover.md` 
 | R2-Q2 | How the tile generator reads the planet file when the archive reader is deferred → **D-58: a minimal internal reader in v0.1.0, hardened and fuzzed** | R2-BZ-B2, R2-IS-B9 |
 | R2-Q3 | What the first release does with a 16-colour hint → **D-59: basemap and features in 16 colours, ramps in their no-colour form; specimen owed** | R2-BZ-B3 |
 | R2-Q4 | The compatibility promise before v1, and whether integration findings return to HUM LEAD before the remaining shapes are built → **D-60: breaks only at a minor version, listed and guarded; a written integration review and his GO** | R2-BZ-A6, R2-NC-6 |
-| R2-Q5 | The first release's parity denominator, given five split rows | R2-BZ-B1 |
+| R2-Q5 | The first release's parity denominator, given five split rows → **D-61: the five rows are split; 62 of 75** | R2-BZ-B1 |
 | R2-Q6 | The closed set of scalar kinds, temperature's midpoint per unit, and default breaks | R2-CQ-10, R2-BZ-A7 |
 | R2-Q7 | A user-level "safe ramps" switch | R2-AX-7 |
 | R2-Q8 | Who owns the ground colour on a light terminal | R2-AX-11 |

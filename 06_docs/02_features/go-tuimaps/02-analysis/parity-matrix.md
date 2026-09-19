@@ -6,20 +6,20 @@
 | Surface | Behavioural parity: same features, same controls, same intentional constants. Byte-for-byte frame equality is not required (D-11). |
 | Source of rows | [`research/AI-1`](research/AI-1-upstream-module-read.md) §3. The first four columns of every P-row are copied from that file by script and verified identical by diff; nothing was retyped. |
 | Defects | [`defect-ledger.md`](defect-ledger.md), approved and closed (D-37) |
-| Frozen | 2026-09-18, on approval of the defect ledger. **Corrected 2026-09-18 under its own change control by ruling D-49** — and again by D-56, for the flash rate in P-59 — after the DISCOVER red-team found four Match rows written in the vocabulary of the superseded renaming shim, unrecorded exceptions to P-08, and an "Open for PLAN" disposition that left the denominator unfrozen. The first four columns of every P-row remain the verified copy of the source read; every correction is in the Disposition, Release and Note columns. The corrections were approved by D-49; the matrix as a whole is ratified with the Discovery Report. |
+| Frozen | 2026-09-18, on approval of the defect ledger. **Corrected 2026-09-18 under its own change control by ruling D-49** — and again by D-56, for the flash rate in P-59 — after the DISCOVER red-team found four Match rows written in the vocabulary of the superseded renaming shim, unrecorded exceptions to P-08, and an "Open for PLAN" disposition that left the denominator unfrozen. The first four columns of every P-row remain the verified copy of the source read; every correction is in the Disposition, Release and Note columns — **except the ten half-rows made by ruling D-61**, which quote parts of five rows whose unaltered text is kept at the foot of this file. The corrections were approved by D-49; the matrix as a whole is ratified with the Discovery Report. |
 | Change control | **The denominator is frozen.** A row changes disposition, or leaves the denominator, only by a recorded HUM LEAD ruling (the anti-solution guard on metric M3). |
 
 ## Dispositions
 
 | Disposition | Meaning | Rows |
 |---|---|---|
-| **Match** | go-tuiMaps behaves as upstream does. | 44 |
-| **Fix** | Upstream's behaviour is a ledgered defect — or, for P-59 alone, a behaviour HUM LEAD ruled unsafe (D-56: flash faster than three a second) — and go-tuiMaps does the intended thing. | 13 |
+| **Match** | go-tuiMaps behaves as upstream does. | 48 |
+| **Fix** | Upstream's behaviour is a ledgered defect — or, for P-59b alone, a behaviour HUM LEAD ruled unsafe (D-56: flash faster than three a second) — and go-tuiMaps does the intended thing. | 13 |
 | **Replicate** | A ledgered convention kept deliberately. | 2 |
-| **Extended** | Upstream's behaviour is kept and added to by a ruling. | 11 |
+| **Extended** | Upstream's behaviour is kept and added to by a ruling. | 12 |
 | **Superseded** | Replaced by design under a ruling; **outside the M3 denominator**. | 2 |
 
-**M3 denominator: 70 rows** (Match + Fix + Replicate + Extended). **Excluded by named ruling: P-40** (the layer-renaming shim — D-24) **and P-46** (a tile cache bounded by a count of 32 — D-29, confirmed as an exclusion by D-49). **M3 is stated per release (D-44): v0.1.0's denominator is the 62 rows marked v0.1.0** below; the rest are demonstrated when their scope is built. Each must be shown by a passing Go test or an accepted rendered specimen. `[LIB]` rows belong to the library, `[APP]` rows to the standalone app; untagged rows are rendering internals shared by both.
+**M3 denominator: 75 rows** (Match + Fix + Replicate + Extended) — *70 until ruling D-61 split five rows that v0.1.0 contains only in part (P-03, P-05, P-59, P-68, P-72) into an early and a later half each; the rows as read from the source are kept unaltered at the foot of this file.* **Excluded by named ruling: P-40** (the layer-renaming shim — D-24) **and P-46** (a tile cache bounded by a count of 32 — D-29, confirmed as an exclusion by D-49). **M3 is stated per release (D-44): v0.1.0's denominator is the 62 rows marked v0.1.0** below (62 of 75; 13 later); the rest are demonstrated when their scope is built. Each must be shown by a passing Go test or an accepted rendered specimen. `[LIB]` rows belong to the library, `[APP]` rows to the standalone app; untagged rows are rendering internals shared by both.
 
 ## Upstream behaviours (P-rows)
 
@@ -27,9 +27,11 @@
 |---|---|---|---|---|---|---|
 | P-01 | Pixel grid | braille.rs:56,209 | The cell index is `(x>>1)+(w>>1)*(y>>2)`. There are `w/2 × h/4` cells | **Match** | v0.1.0 |  |
 | P-02 | Dot bitmask | braille.rs:10-15 | Rows × cols: `[01,08],[02,10],[04,20],[40,80]`. The glyph is U+2800+mask | **Match** | v0.1.0 |  |
-| P-03 | Empty cell | braille.rs:299-302 | In braille mode it emits U+2800, not a space. In block mode it emits `' '` | **Match** | v0.1.0 |  |
+| P-03a | Empty cell | braille.rs:299-302 | In braille mode it emits U+2800, not a space | **Match** | v0.1.0 | Braille half of P-03 (split by D-61). |
+| P-03b | Empty cell | braille.rs:299-302 | In block mode it emits `' '` | **Match** | later | Block half of P-03 (split by D-61); the block renderer is built after the integration (D-42, D-44). |
 | P-04 | Block ("ASCII") mode | braille.rs:23-32,213-230 | Six glyphs: ▀ ▄ ■ ▌ ▐ █. The one with the highest `popcount(mask & bits)` wins, and the first one wins ties. The glyphs are Unicode blocks, not ASCII | **Fix** | later | L-1. Built as a first-class quadrant renderer (D-23, S2-1); upstream's six-glyph table is not ported. |
-| P-05 | Colour depth | utils.rs:76; braille.rs:240-246 | xterm-256 only, as `38;5;n` / `48;5;n`. There is no truecolor or 16-colour path. Index 0 means "unset" | **Extended** | v0.1.0 | Four colour depths, each with its own ramp (D-23, S10-1, S10-2). 256-colour output remains available. |
+| P-05a | Colour depth | utils.rs:76; braille.rs:240-246 | xterm-256 only, as `38;5;n` / `48;5;n`. There is no truecolor or 16-colour path. Index 0 means "unset" | **Extended** | v0.1.0 | Truecolor, 256 colours and no colour, each with its own ramp (D-23, S10-1, S10-2). 256-colour output remains available. Split by D-61. |
+| P-05b | Colour depth | utils.rs:76; braille.rs:240-246 | As P-05a | **Extended** | later | The 16-colour ramps. Until they are built a 16-colour hint is handled as D-59 rules. Split by D-61. |
 | P-06 | SGR forms | braille.rs:239-247 | fg+bg, `49;38;5;fg`, `39;48;5;bg`, or `39;49`. Emitted only when the colour changes | **Extended** | v0.1.0 | **Form pending (D-49).** In the denominator: whatever output form PLAN chooses — a colour-coded string, a cell grid, or both — must be demonstrated. Supersedes the earlier "Open for PLAN" disposition, which left the denominator unfrozen. |
 | P-07 | Row self-containment | braille.rs:258-266,310 | Colour is re-emitted at the start of each row. Rows are joined with `\r\n`. The frame ends with `ESC[39;49m` | **Extended** | v0.1.0 | As P-06 (D-49). |
 | P-08 | Cell colour vote | braille.rs:134-207 | The cell takes the majority colour among its lit pixels. A tie is broken by the count of that colour among lit pixels in the 8 neighbouring cells. Locked cells use the last fg | **Extended** | v0.1.0 | The cell-colour vote is matched, with three recorded exceptions (D-49): under a field or image the foreground is chosen for contrast with the cell (S10-2); water does not vote when it owns the cell background (S1-2); the vote is defined for the braille renderer, and the block renderer's equivalent is settled in PLAN. Colour is resolved at draw time (D-26). |
@@ -83,20 +85,23 @@
 | P-56 [LIB] | fit_world | widget.rs:166-192 | Latitude 84 to −56. `zoom=min(log2(h/span_px), log2(w/256))`. Longitude 0, latitude at the Mercator midpoint | **Match** | v0.1.0 |  |
 | P-57 [LIB] | Footer | widget.rs:195-202; utils.rs:52 | `center: lat, lon   zoom: z`, truncated with floor | **Match** | v0.1.0 |  |
 | P-58 [LIB] | Marker shapes | renderer.rs:395-440 | Dot is 3×3. Cross is ±3. Diamond has radius 3. Ring(r) uses a midpoint circle. FilledCircle(r). Char | **Match** | v0.1.0 |  |
-| P-59 [LIB] | Marker animation | marker.rs:97-118 | Blink: `(tick/8)%2==0`. Flash: `(tick/3)%2==0`. Pulse: radius 1,2,3,4,3,2 advancing every 4 ticks, for Ring only (renderer.rs:419) | **Fix** | v0.1.0 | **Flash: Fix (D-56)** — no more than 2.5 per second; upstream's 3.33 per second is above the three-per-second accessibility threshold. Blink and pulse keep upstream's rates. Durations converted from ticks at upstream's 50 ms loop; time is supplied by the host's clock (L-15). Blink is in v0.1.0; flash and pulse later (D-44). Reduce-motion and "never hidden by a frozen clock" apply (NFR-21). |
+| P-59a [LIB] | Marker animation | marker.rs:97-118 | Blink: `(tick/8)%2==0` | **Match** | v0.1.0 | Blink keeps upstream's rate. Durations matched, converted from ticks at upstream's 50 ms loop; time is supplied by the host's clock (L-15). Reduce-motion and "never hidden by a frozen clock" apply (NFR-21). Split by D-61; *Match* was this row's disposition before D-56. |
+| P-59b [LIB] | Marker animation | marker.rs:97-118 | Flash: `(tick/3)%2==0`. Pulse: radius 1,2,3,4,3,2 advancing every 4 ticks, for Ring only (renderer.rs:419) | **Fix** | later | **Flash: Fix (D-56)** — no more than 2.5 per second; upstream's 3.33 per second is above the three-per-second accessibility threshold. Pulse keeps upstream's rate. Durations as P-59a. Reduce-motion applies (NFR-21). Split by D-61. |
 | P-60 [LIB] | Marker cull and label | renderer.rs:389,443-450 | ±20 px cull. The label sits at `px+4` and is collision-checked after the map labels. It takes the marker colour | **Match** | v0.1.0 |  |
 | P-61 [LIB] | Marker id | marker.rs:62 | The default is `"{lat:.6},{lon:.6}"`. `remove_marker` removes every marker with that id | **Match** | v0.1.0 |  |
-| P-62 [LIB] | Camera easing | camera.rs:296-302 | Cubic ease-in-out. Defaults are 60 travel ticks and 40 hold ticks (camera.rs:31-32) | **Match** | later | As P-59. |
+| P-62 [LIB] | Camera easing | camera.rs:296-302 | Cubic ease-in-out. Defaults are 60 travel ticks and 40 hold ticks (camera.rs:31-32) | **Match** | later | As P-59a. |
 | P-63 [LIB] | Camera zoom arc | camera.rs:252-259 | The midpoint is `max(min(from,to)-0.8, 0)`, with each half eased | **Match** | later |  |
 | P-64 [LIB] | Longitude path | camera.rs:310-326 | Shortest way round, result kept within ±180 | **Match** | later |  |
-| P-65 [LIB] | Globe tour | camera.rs:98-154 | 12 cities, Paris to Berlin. Travel 60–120 ticks, hold 50, looping. The default zoom is 2.0 (widget.rs:250) | **Match** | later | As P-59. |
-| P-66 [LIB] | Marker tour | camera.rs:157-173 | Travel 70, hold 60. The label is the marker label or id | **Match** | later | As P-59. |
+| P-65 [LIB] | Globe tour | camera.rs:98-154 | 12 cities, Paris to Berlin. Travel 60–120 ticks, hold 50, looping. The default zoom is 2.0 (widget.rs:250) | **Match** | later | As P-59a. |
+| P-66 [LIB] | Marker tour | camera.rs:157-173 | Travel 70, hold 60. The label is the marker label or id | **Match** | later | As P-59a. |
 | P-67 [LIB] | Tour end | camera.rs:277-283 | A non-looping tour deactivates and returns None | **Match** | later |  |
-| P-68 [APP] | Keys | main.rs:77-143 | q/Esc quit. a/+ zoom in. z/y/- zoom out. Arrows/hjkl pan. c braille. n labels. o ocean. w fit world. g globe tour. t marker tour at zoom 5.0. m toggles the demo markers | **Extended** | v0.1.0 | All upstream keys matched; keyboard equivalents added for every pointer operation (D-17). v0.1.0: pan, zoom and toggles; tour keys and pointer equivalents later (D-44). |
+| P-68a [APP] | Keys | main.rs:77-143 | q/Esc quit. a/+ zoom in. z/y/- zoom out. Arrows/hjkl pan. n labels. o ocean. w fit world. m toggles the demo markers | **Match** | v0.1.0 | Pan, zoom and toggles, matched. Split by D-61. |
+| P-68b [APP] | Keys | main.rs:77-143 | c braille. g globe tour. t marker tour at zoom 5.0 | **Extended** | later | The renderer switch and the tour keys, with keyboard equivalents added for every pointer operation (D-17, D-44). Split by D-61. |
 | P-69 [APP] | Pan step | main.rs:87-99 | Longitude ±8/2^zoom, latitude ±6/2^zoom degrees | **Match** | v0.1.0 |  |
 | P-70 [APP] | Mouse | main.rs:147-159 | Scroll only, ±zoom_step, centred on the map centre. There is no drag | **Extended** | later | D-17: drag to pan and zoom toward the pointer (rows E-05, E-06). |
 | P-71 [APP] | Loop | main.rs:71,174-183 | 50 ms poll. tick and camera advance on every loop iteration. Animation redraws are throttled to 50 ms or more. Resize triggers a redraw | **Fix** | v0.1.0 | L-15: clock-driven animation. |
-| P-72 [APP] | Chrome | main.rs:206-226 | Help row at `rows-2`. Status row at `rows-1`, with `>> label` and `[TOUR…]` | **Match** | v0.1.0 |  |
+| P-72a [APP] | Chrome | main.rs:206-226 | Help row at `rows-2`. Status row at `rows-1`, with `>> label` | **Match** | v0.1.0 | Split by D-61. |
+| P-72b [APP] | Chrome | main.rs:206-226 | `[TOUR…]` in the status row | **Match** | later | Arrives with camera tours (D-44). Split by D-61. |
 
 ## Extensions beyond upstream (E-rows) — outside the M3 denominator
 
@@ -121,3 +126,15 @@ Tracked so they are tested and reported, never counted as parity.
 | E-15 | Placed images re-coloured through a required colour-to-intensity table; legend data exposed for every overlay | D-36, S1-6 |
 | E-16 | Legibility at four colour depths with a ramp per depth | D-23, S10 |
 | E-17 | Style profiles: the basemap thins by renderer, size and what is drawn on top; water owns its cells under a field | S1-2, S2-1, S5-1, S3-4 |
+
+## Rows as read, before the D-61 split
+
+The five rows below are the verified copy of the source read, unaltered, kept so that the copy can still be checked against research report AI-1 §3. Their halves above quote parts of the same text.
+
+| ID | Behaviour | Where | Semantics to match |
+|---|---|---|---|
+| P-03 | Empty cell | braille.rs:299-302 | In braille mode it emits U+2800, not a space. In block mode it emits `' '` |
+| P-05 | Colour depth | utils.rs:76; braille.rs:240-246 | xterm-256 only, as `38;5;n` / `48;5;n`. There is no truecolor or 16-colour path. Index 0 means "unset" |
+| P-59 [LIB] | Marker animation | marker.rs:97-118 | Blink: `(tick/8)%2==0`. Flash: `(tick/3)%2==0`. Pulse: radius 1,2,3,4,3,2 advancing every 4 ticks, for Ring only (renderer.rs:419) |
+| P-68 [APP] | Keys | main.rs:77-143 | q/Esc quit. a/+ zoom in. z/y/- zoom out. Arrows/hjkl pan. c braille. n labels. o ocean. w fit world. g globe tour. t marker tour at zoom 5.0. m toggles the demo markers |
+| P-72 [APP] | Chrome | main.rs:206-226 | Help row at `rows-2`. Status row at `rows-1`, with `>> label` and `[TOUR…]` |

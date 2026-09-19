@@ -50,10 +50,11 @@ Each question was presented one at a time with: what was being decided, the evid
 | D-58 | How the embedded tiles are generated when the archive reader is deferred | **A. A minimal reader now, internal, hardened and fuzzed; the public source stays deferred** · B. An outside command-line tool, pinned by version and hash · C. Generate from the ordinary tile server, with a written exception to the no-bulk-download rule · D. Bring the whole PMTiles source into v0.1.0 | A |
 | D-59 | What v0.1.0 does with a 16-colour hint | **A. Basemap and features in 16 colours; fields and images in their no-colour form**, with a specimen owed and B as the fall-back if it fails · B. Treat 16 as no colour · C. Refuse the hint with an error · D. Pull the 16-colour ramps into v0.1.0 | A |
 | D-60 | The compatibility promise before v1.0; a checkpoint after the integration | (a) **A. Breaks only at a minor version, listed with a migration note, guarded by an automated contract check** · B. Frozen after v0.1.0 · C. No promise. (b) **1. A written integration review, then HUM LEAD's GO, before the remaining shapes** · 2. No checkpoint | A, 1 |
+| D-61 | How a parity row counts when v0.1.0 contains only part of it | A. Count a row only when wholly shown (v0.1.0 reads 57 of 57 in scope, of 70) · **B. Split the five rows in two (62 of 75)** · C. Count partial rows, with a note (62 of 62, five asterisks) | A ◇ |
 
 ## Where HUM LEAD chose against the recommendation ◇
 
-Six times: **D-14** (all five overlay shapes, not three), **D-18** (a PMTiles reader in v1, not deferred), **D-19** (no remote until SHIP, not a private one now), **D-34** (contours with a specimen first, not the value lattice), **D-36** (re-colour images, not dim them), **D-44** (the wider first slice). In five of the six he chose the wider or more demanding option. Each was his to make; the recommendation and the argument against it were both in front of him.
+Seven times: **D-14** (all five overlay shapes, not three), **D-18** (a PMTiles reader in v1, not deferred), **D-19** (no remote until SHIP, not a private one now), **D-34** (contours with a specimen first, not the value lattice), **D-36** (re-colour images, not dim them), **D-44** (the wider first slice), **D-61** (split the partial parity rows rather than hold them back). In six of the seven he chose the wider or more demanding option. Each was his to make; the recommendation and the argument against it were both in front of him.
 
 ## Rulings not given as options
 

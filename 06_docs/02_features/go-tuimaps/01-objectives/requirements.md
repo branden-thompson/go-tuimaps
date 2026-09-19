@@ -13,7 +13,7 @@ Every requirement traces to a ruling, a finding, a brief item or a red-team find
 
 | Brief | Sharpened by rulings into |
 |---|---|
-| R-1 parity with TerminalMap | FR-1, FR-2, FR-26, FR-27 — behavioural parity on a frozen denominator of 70 rows, 62 of them in v0.1.0 (D-11, D-37, D-49) |
+| R-1 parity with TerminalMap | FR-1, FR-2, FR-26, FR-27 — behavioural parity on a frozen denominator of 75 rows, 62 of them in v0.1.0 (D-11, D-37, D-49, D-61) |
 | R-2 embeddable in Watchpost | FR-4, FR-24, FR-25, FR-27, NFR-1..NFR-6 — a framework-neutral library imported as a Go package (D-13) |
 | R-3 overlays from sources independent of the basemap | FR-6..FR-19 — five input shapes; the host fetches (D-14, D-15) |
 | R-4 high-volume host data | FR-11 — a contract and simplification problem, not throughput (S1-5, D-16) |
