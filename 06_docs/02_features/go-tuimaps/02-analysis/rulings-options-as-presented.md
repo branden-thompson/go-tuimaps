@@ -63,6 +63,7 @@ Each question was presented one at a time with: what was being decided, the evid
 | D-72 | The order of work for PLAN, and the medium for diagrams | The order as proposed; **Mermaid in the tracked documents as the source of truth (recommended)** or FigJam first — *answered "Approved"; read as covering the recommendation, and said so* | Mermaid-first |
 | D-73 | PLAN approach 1: who runs background work | A. The library owns a small pool · **B. The host runs the work; the library never starts a goroutine** · C. B as the engine, with a default runner on top that a host can switch off | C ◇ |
 | D-74 | PLAN approach 2: the style of the overlay contract | **A. Plain structs, one per shape, set by id; presets as ready-made type values with helper constructors** · B. Layer handles · C. Functional options | A |
+| D-75 | PLAN approach 3: the dependency allow-list | A. Standard library only, with own Unicode tables · **B. A short allow-list for text tables only (`uniseg`, `go-runewidth`); own tile decoder, fuzzed, with the proven decoder as a test-only oracle** · C. The proven tile decoder too | B |
 
 ## Where HUM LEAD chose against the recommendation ◇
 
