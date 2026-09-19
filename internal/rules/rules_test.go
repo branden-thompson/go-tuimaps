@@ -32,17 +32,30 @@ func writeTree(t *testing.T, files map[string]string) string {
 	return root
 }
 
+// withDocs gives every planted non-test file a package comment, so that a
+// case about some other rule plants exactly one violation.
+func withDocs(files map[string]string) map[string]string {
+	out := make(map[string]string, len(files))
+	for rel, src := range files {
+		if !strings.HasSuffix(rel, "_test.go") && strings.HasPrefix(src, "package ") {
+			src = "// Package planted is planted.\n" + src
+		}
+		out[rel] = src
+	}
+	return out
+}
+
 func TestACleanTreePasses(t *testing.T) {
-	root := writeTree(t, map[string]string{
+	root := writeTree(t, withDocs(map[string]string{
 		"doc.go":                      "// Package lib.\npackage lib\n",
 		"internal/tiles/tiles.go":     "package tiles\nimport \"example.com/lib/internal/scene\"\nvar _ scene.T\n",
 		"internal/tiles/hook_test.go": strings.Replace(hook, "package p", "package tiles", 1),
-		"internal/scene/scene.go":     "package scene\ntype T int\n",
+		"internal/scene/scene.go":     "package scene\n\n// T is planted.\ntype T int\n",
 		"internal/fetch/fetch.go":     "package fetch\nimport \"net/http\"\nvar _ http.Client\n",
 		"internal/textsafe/w.go":      "package textsafe\nimport \"github.com/mattn/go-runewidth\"\nvar _ = runewidth.StringWidth\n",
 		"cmd/app/main.go":             "package main\nimport \"fmt\"\nfunc main() { go fmt.Println(\"a separate module is not the library\") }\n",
 		"testdata/x/bad.go":           "package x\nfunc f() { go f() }\n",
-	})
+	}))
 	got, err := Check(root, mod)
 	if err != nil {
 		t.Fatal(err)
@@ -84,10 +97,10 @@ func TestEveryPlantedViolationIsFound(t *testing.T) {
 		if dir == "." {
 			pkg = "lib"
 		}
-		root := writeTree(t, map[string]string{
+		root := writeTree(t, withDocs(map[string]string{
 			c.file:                c.src,
 			dir + "/hook_test.go": strings.Replace(hook, "package p", "package "+pkg, 1),
-		})
+		}))
 		got, err := Check(root, mod)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
@@ -103,10 +116,10 @@ func TestEveryPlantedViolationIsFound(t *testing.T) {
 }
 
 func TestATestPackageWithoutTheDialHookIsFound(t *testing.T) {
-	root := writeTree(t, map[string]string{
+	root := writeTree(t, withDocs(map[string]string{
 		"internal/tiles/tiles.go":      "package tiles\n",
 		"internal/tiles/tiles_test.go": "package tiles\nimport \"testing\"\nfunc TestX(t *testing.T) {}\n",
-	})
+	}))
 	got, err := Check(root, mod)
 	if err != nil {
 		t.Fatal(err)
@@ -118,13 +131,13 @@ func TestATestPackageWithoutTheDialHookIsFound(t *testing.T) {
 
 func TestTestFilesAndTheTestKitMayStartGoroutines(t *testing.T) {
 	body := "import \"time\"\nfunc f() { go f(); time.Sleep(1) }\n"
-	root := writeTree(t, map[string]string{
+	root := writeTree(t, withDocs(map[string]string{
 		"internal/tiles/tiles.go":      "package tiles\n",
 		"internal/tiles/tiles_test.go": "package tiles\n" + body,
 		"internal/tiles/hook_test.go":  strings.Replace(hook, "package p", "package tiles", 1),
 		"internal/testkit/leak.go":     "package testkit\n" + body,
 		"internal/rules/rules.go":      "package rules\nimport \"fmt\"\nfunc g() { fmt.Println() }\n",
-	})
+	}))
 	got, err := Check(root, mod)
 	if err != nil {
 		t.Fatal(err)

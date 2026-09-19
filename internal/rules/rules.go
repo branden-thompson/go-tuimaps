@@ -43,6 +43,7 @@ type Finding struct {
 	Detail string
 }
 
+// String gives the finding as file, line, rule and what is wrong.
 func (f Finding) String() string {
 	return fmt.Sprintf("%s:%d: [%s] %s", f.File, f.Line, f.Rule, f.Detail)
 }
@@ -57,7 +58,7 @@ func Check(root, module string) ([]Finding, error) {
 	if module == "" {
 		return nil, errors.New("rules: empty module path")
 	}
-	c := &checker{root: root, module: module, fset: token.NewFileSet(), hooked: map[string]bool{}, tested: map[string]int{}}
+	c := &checker{root: root, module: module, fset: token.NewFileSet(), hooked: map[string]bool{}, tested: map[string]int{}, commented: map[string]bool{}, packages: map[string]bool{}}
 	err := filepath.WalkDir(root, c.visit)
 	if err != nil {
 		return nil, err
@@ -65,6 +66,11 @@ func Check(root, module string) ([]Finding, error) {
 	for dir := range c.tested {
 		if !c.hooked[dir] {
 			c.found = append(c.found, Finding{File: dir, Line: c.tested[dir], Rule: RuleDialHook, Detail: "this test package has no TestMain that calls testkit.Main, so its tests are not held to loopback"})
+		}
+	}
+	for dir := range c.packages {
+		if !c.commented[dir] {
+			c.found = append(c.found, Finding{File: dir, Line: 1, Rule: RuleUndocumented, Detail: "this package has no package comment"})
 		}
 	}
 	sort.Slice(c.found, func(i, j int) bool {
@@ -83,6 +89,8 @@ type checker struct {
 	files        int
 	hooked       map[string]bool // package directory → a test file calls testkit.Main
 	tested       map[string]int  // package directory → 1, when it has test files
+	commented    map[string]bool // package directory → some non-test file carries the package comment
+	packages     map[string]bool // package directory → it has non-test files
 }
 
 // visit is the walk's callback: it keeps the walk inside the library and
@@ -117,7 +125,7 @@ func (c *checker) checkFile(full, rel string) error {
 	if full == "" || rel == "" {
 		return errors.New("rules: empty file name")
 	}
-	file, err := parser.ParseFile(c.fset, full, nil, parser.SkipObjectResolution)
+	file, err := parser.ParseFile(c.fset, full, nil, parser.SkipObjectResolution|parser.ParseComments)
 	if err != nil {
 		return fmt.Errorf("rules: %s does not parse: %w", rel, err)
 	}
@@ -136,6 +144,13 @@ func (c *checker) checkFile(full, rel string) error {
 			c.hooked[dir] = true
 		}
 		return nil
+	}
+	if file.Doc != nil {
+		c.commented[dir] = true
+	}
+	c.packages[dir] = true
+	if err := c.checkDocs(file, rel); err != nil {
+		return err
 	}
 	// The test kit and these rules are test-only tooling: they may start
 	// goroutines, sleep and print.
