@@ -208,7 +208,7 @@ Every earlier radar specimen fetched radar as tiles, a shape deferred past v0.1.
 | The new ramp, worst pair under any kind of colour blindness (threshold 10) | **21.5** in truecolor · **23.8** within the 256-colour palette · ordered by brightness at both |
 | Drawn cells under 3:1 | 0% in `22a` and in `22b` |
 
-| ID | Finding (coordinator's assessment, measured from the files; not yet seen by HUM LEAD) | Consequence |
+| ID | Finding (coordinator's assessment, measured from the files; **seen by HUM LEAD — "actually like it" — and the heaviest-in-cell rule agreed, D-78**) | Consequence |
 |---|---|---|
 | S22-1 | **The first release can get radar in, and exactly.** One request, one image, the provider's own table, no guessing by hue. | Risk RS-23 is closed. The example (NFR-17) is this path. |
 | S22-2 | The ramp that failed at 256 colours (S15-3) is replaced by one that passes at both depths with a wide margin. | The radar preset's colours are settled as a candidate, for HUM LEAD's eyes. |
