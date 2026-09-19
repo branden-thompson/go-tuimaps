@@ -87,6 +87,7 @@ Each question was presented one at a time with: what was being decided, the evid
 | D-95 | Approval of the Plan of Record, and the opening of BUILD | *Not put as options.* HUM LEAD's words. The report offered: approve, send back, strike any of six listed matters, or order a fourth red-team round. | — |
 | D-96 | A package of total functions fails the two-checks-a-function rule | **A. Exempt one package at a time, each entry ratified by HUM LEAD; the option set out `internal/textsafe`'s reason as the first** · B. A standing rule: the coordinator may exempt a package of total functions with a recorded reason, challenged at REVIEW · C. No exemptions; predicates reshaped into chains of guard clauses, real bounds added where they exist | A |
 | D-97 | Ratify a code-quality exemption for `internal/fault` | **A. Ratify as written** · B. Ratify with changes · C. Refuse; reshape the code until the counter passes and report what that cost | A |
+| D-98 | Ratify a code-quality exemption for `internal/work` | **A. Ratify as written** · B. Ratify with changes · C. Refuse; reshape the code until the counter passes and report what that cost | A |
 
 ## Where HUM LEAD chose against the recommendation ◇
 

@@ -35,6 +35,7 @@ The exemptions file is part of the local harness and is not tracked; this table 
 |---|---|---|---|
 | `internal/textsafe` | Two invariant checks a function | The cleaning functions are total: every input has a defined output, so there is no error to return. Reshaping predicates into guard clauses would satisfy the counter and assert nothing. Correctness is held by the tests and by the fuzz target (02.9). Real bounds are added where they exist | 2026-09-19, with D-96 |
 | `internal/fault` | Two invariant checks a function | An error type and two closed lists: a constructor, three accessors, two name lookups. An error type cannot itself return an error. Every real check is present: a kind outside its list becomes internal or "unknown"; a nil receiver is answered; an error missing one of its three sentences becomes internal. Correctness is held by tests against the contract's own text | 2026-09-19, D-97 |
+| `internal/work` | Two invariant checks a function | A queue under one lock: short state changes with the lock held, or reads of one counter. Its invariants are relations between structures, not preconditions on arguments. Every argument that can be wrong is checked; the two structural invariants that can be stated as a check are stated. Correctness is held by 25 tests under the race detector | 2026-09-19, D-98 |
 
 ## WP-02 — textsafe and fault
 
@@ -78,4 +79,12 @@ The exemptions file is part of the local harness and is not tracked; this table 
 
 **WP-05 is complete: 12 of 12 tasks.**
 
-**Next:** WP-07 (work); then WP-04 and WP-06.
+## WP-07 (work)
+
+| Task | Commit | The failing test, first | Learned |
+|---|---|---|---|
+| 07.1 to 07.15 The queue the host drains | this commit | `TestPendingCounts`, `TestCapDropsOldest`, `TestNewestViewFirst`, `TestWorkDoesOneJob`, `TestWorkCancel`, `TestWorkNeverWaitsOnWork`, `TestLeftViewCancelsJob`, `TestChangeCounterMovesOnCompletion`, `TestNextCallIsEarliest`, `TestNothingDueWhenOffline`, `TestPendingCountsWaitingOnly`, `TestSettleEndsWhenIdle`, `TestSettleEndsOnContext`, `TestSettleSaysNoSource`, `TestSettleReportsWorkInFlightElsewhere`, `TestNoPanicEscapes`, `TestNoWorkCalledWarning`, `TestOnPendingFiresOnceInsideOwnerCall`, `TestOwnerCallFromHookRefused`, `TestTwoWidePumpBothWake`, `TestSharedJobReturnsToQueue`, `TestLeavingAQueue`: failed to compile | **One queue, several members.** A map is a member: its own wake hook, change counter, view and say in what is wanted; two maps wanting one tile is one job, pending for both; any member's `Work` may run it. **Round 3's two findings hold in code:** a shared job given up by a cancelled call returns to the queue and the other map's hook fires from inside that call; and a hook fired that way arms no re-entrancy guard, while one fired by an owner call refuses owner calls with `reentrant-call`. The pump as the contract draws it (a channel with a slot a goroutine, a wake that fills every free slot) is a test, and both goroutines work one burst. A job cancelled because its tile left the view is not its `Work` call's failure. The counter moves when a job fails as well as when it finishes: the frame's status changes either way. A panic's own text is never repeated. Retry times live here as deferred jobs; nothing makes one come due but an owner call with the host's wall clock, and waiting work is not a deadline, so an offline map reports nothing due. The queue imports none of the packages that supply its jobs; the static rules hold that. Thirty runs under the race detector, no flake. **The density counter counts only leading guard clauses,** learned here: two real invariants added in function bodies did not move it |
+
+**WP-07 is complete: 15 of 15 tasks.**
+
+**Next:** WP-04 (the archive reader, the generator, the embedded tiles), then WP-06 (tiles).
