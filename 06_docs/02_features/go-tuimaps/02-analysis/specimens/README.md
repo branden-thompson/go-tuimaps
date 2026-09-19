@@ -173,6 +173,30 @@ Owed by ruling D-64: HUM LEAD had never seen a painted ground. The same view as 
 | S20-2 | A bright style with **coloured** lines is not automatically safe: one cell in six failed, mostly where a coloured line crosses a tint or sits on water. Applying FR-16's rule — compute both, take the higher — to every line and label brought it to zero, at the price of all line work being black or white. | The bright style needs the per-cell rule everywhere, or coloured lines checked against every background they can cross. A choice for the style work in the implementation plan; how it looks is for HUM LEAD. |
 | S20-3 | At 256 and 16 colours the painted ground cannot match a host's truecolor background exactly, so the map may sit as a visible panel. Not rendered here. | Still owed with the 16-colour specimen (D-59). |
 
+### Specimen 21 — a candidate for the temperature preset: an absolute scale (PLAN, 2026-09-19)
+
+Owed by ruling D-62, which asked for a longer ramp than specimen 16's seven steps and said this had been solved many times by other weather maps. **The coordinator had doubted that a long scale could stay colour-vision-safe, and said so when D-62 was put. That doubt was wrong, and this is the evidence.** Files: `21a-*` (regional, both sizes), `21b-*` (the same, using only colours from the 256-colour palette), `21c-*` (continental), `21-temperature-scale-candidate.json` (the colours, the breaks and the checker results).
+
+**The scale:** 17 classes — below −30 °C, fifteen classes 5 °C wide from −30 to +45, and +45 and above — with the pale break at freezing: seven cold classes, ten warm. Built by starting from an established cartographic scale (ColorBrewer's red–yellow–blue, which itself passes at its full 11 classes) and searching near it for the colours that keep every adjacent pair furthest apart under all three kinds of colour blindness.
+
+| Measured (worst adjacent pair; proposed threshold 10) | Normal | Protanopia | Deuteranopia | Tritanopia | Ordered about the break | Text contrast at least |
+|---|---|---|---|---|---|---|
+| The 17-class scale, truecolor | 16.0 | 13.7 | 13.9 | 14.3 | yes | 4.6 |
+| The same, 256-colour palette only | 11.1 (the worst of all four) | | | | yes | 5.3 |
+| For comparison: ColorBrewer red–blue, 11 classes | 11.5 | **9.4** | 11.5 | 13.0 | yes | 5.6 |
+| For comparison: simply stretching that to 15 classes | 8.2 | **6.8** | 8.2 | 9.2 | yes | 4.6 |
+| For comparison: a many-hued scale in the style of broadcast maps, 15 classes (approximate colours) | 15.9 | **6.3** | 10.2 | 11.5 | **no** | 4.7 |
+
+A search for the ceiling found ordered, safe scales of up to **21 classes** in truecolor (worst pair 12.2).
+
+| ID | Finding (coordinator's assessment; the colour files were measured, not viewed; not yet seen by HUM LEAD) | Consequence |
+|---|---|---|
+| S21-1 | **HUM LEAD was right and the coordinator was too cautious:** a long, absolute, colour-vision-safe temperature scale exists. Stretching a short scale fails; choosing the colours for distinctness passes with room to spare. | D-62 and D-53 do not conflict. 5 °C bands across −30 to +45 °C are available. |
+| S21-2 | The many-hued scale common on broadcast maps fails on three counts: it is not ordered by brightness, its closest adjacent pair is 6.3 under protanopia, and two steps that are **not** neighbours (yellow-green and orange) differ by only 4.4 under deuteranopia. | "Established" is not enough; the checker decides. The preset draws on the cartographic family, not the broadcast one. |
+| S21-3 | On the evening sampled, the regional view shows three or four bands and the continental view five or six — the flat day HUM LEAD accepted in D-68, now seen. | As ruled. The description carries the gradient. |
+| S21-4 | The 256-colour version passes narrowly (11.1) and its hues zig-zag in two places, because that palette is coarse. | It needs HUM LEAD's eyes. If it reads badly, the 256-colour preset can use fewer, wider classes — a preset may differ by depth (FR-17). |
+| S21-5 | This measures whether **neighbouring** bands can be told apart on the map. Matching one band to its swatch in a 17-entry legend is a harder task that this measure does not test. | The legend states values, and the description gives the value at the place; the map is not the only way to read a number. |
+
 ### Cross-cutting
 
 1. **One rendering core carried every specimen.** A cell is a glyph, a foreground and a background; features, grids, vector grids and images all reduce to writing those three. The five input shapes of D-14 do not need five renderers.

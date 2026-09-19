@@ -1,0 +1,213 @@
+{
+ "what": "Candidate for the temperature preset (D-62, D-69). An absolute scale: 17 classes; class 0 is below -30 C, classes 1 to 15 are 5 C wide from -30 to +45, class 16 is +45 and above. The pale break is at 0 C. Breaks are defined in C and converted exactly for F.",
+ "breaks_celsius": [
+  -30,
+  -25,
+  -20,
+  -15,
+  -10,
+  -5,
+  0,
+  5,
+  10,
+  15,
+  20,
+  25,
+  30,
+  35,
+  40,
+  45
+ ],
+ "truecolor": [
+  [
+   34,
+   0,
+   68
+  ],
+  [
+   0,
+   34,
+   119
+  ],
+  [
+   34,
+   85,
+   153
+  ],
+  [
+   51,
+   136,
+   187
+  ],
+  [
+   136,
+   170,
+   204
+  ],
+  [
+   153,
+   221,
+   238
+  ],
+  [
+   221,
+   255,
+   255
+  ],
+  [
+   238,
+   255,
+   187
+  ],
+  [
+   221,
+   221,
+   136
+  ],
+  [
+   255,
+   204,
+   102
+  ],
+  [
+   255,
+   170,
+   119
+  ],
+  [
+   255,
+   136,
+   68
+  ],
+  [
+   255,
+   102,
+   85
+  ],
+  [
+   221,
+   51,
+   34
+  ],
+  [
+   170,
+   0,
+   17
+  ],
+  [
+   153,
+   34,
+   51
+  ],
+  [
+   85,
+   0,
+   17
+  ]
+ ],
+ "colours_256_palette": [
+  [
+   0,
+   0,
+   95
+  ],
+  [
+   0,
+   95,
+   175
+  ],
+  [
+   95,
+   95,
+   135
+  ],
+  [
+   0,
+   135,
+   215
+  ],
+  [
+   135,
+   135,
+   175
+  ],
+  [
+   135,
+   215,
+   255
+  ],
+  [
+   215,
+   255,
+   255
+  ],
+  [
+   255,
+   255,
+   215
+  ],
+  [
+   175,
+   215,
+   135
+  ],
+  [
+   255,
+   175,
+   95
+  ],
+  [
+   215,
+   175,
+   135
+  ],
+  [
+   255,
+   135,
+   0
+  ],
+  [
+   255,
+   95,
+   95
+  ],
+  [
+   255,
+   0,
+   0
+  ],
+  [
+   175,
+   0,
+   0
+  ],
+  [
+   135,
+   0,
+   0
+  ],
+  [
+   95,
+   0,
+   0
+  ]
+ ],
+ "checker": {
+  "method": "Machado et al. 2009 simulation at full severity; CIE76 difference in Lab; worst adjacent pair",
+  "threshold_proposed": 10,
+  "truecolor": {
+   "normal": 16.0,
+   "protanopia": 13.7,
+   "deuteranopia": 13.9,
+   "tritanopia": 14.3,
+   "ordered_about_the_break": true,
+   "text_contrast_at_least": 4.6
+  },
+  "colours_256_palette": {
+   "worst_adjacent_any_vision": 11.1,
+   "ordered_about_the_break": true,
+   "text_contrast_at_least": 5.3,
+   "note": "passes, but two steps zig-zag in hue (a mauve among the blues, a tan among the oranges); needs eyes"
+  }
+ }
+}
