@@ -4,7 +4,7 @@
 |---|---|
 | Phase | PLAN |
 | Date | 2026-09-19 |
-| Status | Draft for HUM LEAD's review. Built on rulings D-11 to D-75. |
+| Status | Draft for HUM LEAD's review. Built on rulings D-11 to D-76. HUM LEAD's first read, 2026-09-19: "These look good so far" — a basic understanding, not yet a deep one; formal approval comes with the Plan of Record. |
 | How to use this | These diagrams are **living references** (D-71). Point at one when asking a question; when a decision changes, the diagram changes in the same commit. Every diagram names the rulings and requirements it carries, so a change to one of those says which diagram to open. |
 
 ## Start here
@@ -189,7 +189,7 @@ flowchart LR
     subgraph IN["Host → Map"]
       direction TB
       A1["<b>Create and close</b><br/>New(options) · Close()"]
-      A2["<b>Where and how big</b><br/>intents: Pan · PanCells · Zoom · ZoomAround · Recentre · FitWorld (FR-24)<br/>focus: Next · Previous (FR-24a)"]
+      A2["<b>Where and how big</b><br/>intents: Pan · PanCells · Zoom · ZoomAround · Recentre · FitWorld · FitTo(places, overlays, margin) (FR-24, D-76)<br/>focus: Next · Previous (FR-24a)"]
       A3["<b>What is on it</b><br/>Set(overlay) → replaced or created, and when the old borrow ends<br/>Remove(id)<br/>overlay structs: Features · ScalarGrid · Image (· VectorGrid · TileImages later)<br/>presets: Temperature · Radar · Alerts (· Wind later) (D-69)"]
       A4["<b>How it looks</b><br/>SetPalette(tokens) (D-63) · SafeRamps(on) · Ground(paint or declared) (D-64)<br/>ColourDepth(hint) · ReduceMotion(on) (NFR-21) · Layers(on/off) (FR-36)"]
       A5["<b>Tiles</b><br/>Source(named network source) (D-65) · CacheRoot(path) · a replacement fetcher"]

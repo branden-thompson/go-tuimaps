@@ -137,6 +137,7 @@ Tracked so they are tested and reported, never counted as parity.
 | E-26 | The palette as a documented contract of semantic tokens | D-63, FR-15 |
 | E-27 | Overlay presets — temperature, radar and precipitation, alert areas, wind — fully defined and overridable; the temperature preset an absolute scale anchored at freezing | D-62, D-68, D-69, FR-16 |
 | E-28 | A painted ground by default, with an opt-out in which the host declares it | D-64, FR-20 |
+| E-29 | An intent that fits the view to named places and overlays, with a margin in cells | D-76, FR-24 |
 
 ## Rows as read, before the D-61 split
 
