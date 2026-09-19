@@ -48,6 +48,7 @@ Each question was presented one at a time with: what was being decided, the evid
 | D-56 | The flashing marker, and reduce-motion | **A. Slow the flash, add reduce-motion, never hide on a timer** · B. Match upstream; add reduce-motion only · C. Drop flash entirely | A |
 | D-57 | A braille-only first release against the first host's glyph floor | **A. Keep braille-only; the host states the requirement**, with a way for the host to decide whether the map is drawn and the text description as the fallback · B. Pull the block renderer into v0.1.0 · C. As A, plus a 7-bit renderer later | A |
 | D-58 | How the embedded tiles are generated when the archive reader is deferred | **A. A minimal reader now, internal, hardened and fuzzed; the public source stays deferred** · B. An outside command-line tool, pinned by version and hash · C. Generate from the ordinary tile server, with a written exception to the no-bulk-download rule · D. Bring the whole PMTiles source into v0.1.0 | A |
+| D-59 | What v0.1.0 does with a 16-colour hint | **A. Basemap and features in 16 colours; fields and images in their no-colour form**, with a specimen owed and B as the fall-back if it fails · B. Treat 16 as no colour · C. Refuse the hint with an error · D. Pull the 16-colour ramps into v0.1.0 | A |
 
 ## Where HUM LEAD chose against the recommendation ◇
 
