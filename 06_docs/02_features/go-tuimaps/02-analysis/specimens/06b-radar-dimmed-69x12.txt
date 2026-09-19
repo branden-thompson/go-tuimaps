@@ -1,0 +1,15 @@
+SPECIMEN 6b — radar, smallest Watchpost window
+69x12 cells · braille renderer · 24-bit colour · centre 38.50,-96.00 · zoom 1.9 · 1 basemap tile(s) at z1 © OpenMapTiles © OpenStreetMap
+radar: Iowa Environmental Mesonet NEXRAD base-reflectivity mosaic, 1 XYZ tile(s) at z1, pre-coloured PNG placed as-is x0.60 brightness (public domain; attribution appreciated) — 319 cells painted
+      ⢀⠎   ⠱⣀⣀⣴⠒⠒⠒⠒⠒⠒⠒⠒⠒⡇         ⡇    ⢇     ⠼⡟⣼⠺  ⢸⠸⣀⠧⢜⠄    ⡠⠔⠛⢲⠒⢒⣾⠁
+      ⢸       ⢸         ⡇        ⢀⣇⣀⣀⣀⠤⠤⠽⡆   ⢠⢻⢇  ⠰⠝⢇⣿  ⡠⣴⣶⣶⣝⠄  ⢸ ⡎⢸⢀
+      ⢸       ⢸         ⡏⠉⠉⠉⠉⠉⠉⠉⠒⠚⡄      ⠣⣤⠤⠤⢼⢼⡸   ⢀⡸⣁⣤⣔⡮⠃      ⢸⠚⠒⠒⡇
+⠉⠉⢹⠉⠉⠉⠉⠉⠉⠉⢹⠉⠉⠉⢹⣀⣀⣀⣀⣀⣀⣀⣀⣀⣇⣀⣀       ⢸      ⡤⠎  ⠈⡗⠓⠒⢲⠒⠚⠿⠝⠊⡇⠉⠉⠉⠉⠉⠉⡣⠤⣸⣉⣽⠧⠕
+  ⢸       ⢸      ⡇        ⢸⣀⣀⣀⣀⣀⣀⣀⣈⣖⡒⠒⠒⠒⢲⠃    ⡇  ⢸     ⡇     ⢀⡺⢔⠟⠋⠉  
+  ⠸⡀      ⢸      ⡇        ⢸        ⠐⢥    ⢱⢄  ⠠⡇ ⢀⣸⣄⡀⡀⣤⠊⠉⠹⣋⠯⢯⣩⢹⢥⠎     
+   ⠈⠢⡀    ⢸      ⡇        ⢸         ⢸     ⠣⡀ ⡶⠥⠴⠊  ⠉⠸⡁ ⢀⠎  ⠘⢺⣬⠏      
+⢆    ⠈⠒⢄  ⢸⠒⠒⠒⠒⠒⠒⡗⠒⠒⠒⠒⠒⠒⠒⣖⣚⣒⣒⡒⠒⠒⠒⠒⠒⠒⢺⣀⣀⣀⣀⣀⣀⣱⣙⡥⠤⠤⠤⠤⠤⠤⠮⢬⠭⣁⣀⣀⣀⣀⣘⣇       
+⠈⢆      ⠑⢜⡍      ⡇       ⡇   ⡇      ⢸     ⢹⠃      ⣠⠔⣚⣁⣀      ⡸       
+  ⠓⠤⣀     ⡣      ⡇       ⡇   ⠓⠦⠤⣄⣀⢀⣀⣸    ⣴⠉⠉⠉⡏⠉⠉⠹⡉⠉⠙⢢ ⠈⠉⠑⢄⣀⠖⠉        
+     ⠉⢢⣀⣀⣰⡅      ⡇       ⡇       ⠁⠁ ⠈⡧⠤⠤⠤⡇  ⢰⠁   ⡇   ⠣⡀ ⣀⠇           
+       ⡇ ⢸⣑⡒⠤⠤⣀⣀⣀⣇⣠⠤⠴⡒⠒⠒⠒⠃           ⢣  ⢠⠊  ⢸    ⡇    ⡱⠉             
