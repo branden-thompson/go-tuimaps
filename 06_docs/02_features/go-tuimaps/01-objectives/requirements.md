@@ -105,6 +105,33 @@ Every requirement traces to a ruling, a finding, a brief item or a red-team find
 | NFR-19 ✚ | A map in a rectangle takes no more than 3 calls, and a first overlay one more, with everything else defaulted — including a ramp per colour depth. The example test compiles with exactly those calls. | N-4 |
 | NFR-20 ✚ | Every value a host hands in is validated on hand-in: non-finite or out-of-range coordinates, grid sizes that do not match their data, unsorted class breaks, a missing table, a ramp that fails FR-16, an overlay over its size cap (proposed 2,000,000 vertices, host-settable). A failure returns a typed error saying what happened, why, and what to do. Non-fatal problems are retrievable as a list and through an optional callback. The library never writes to standard output or standard error. | N-5, S-3 |
 
+## Release slices (D-44)
+
+Every requirement in this file is in **v1**. This table says which are in the **first release, v0.1.0**, after which go-tuiMaps is integrated into the first host at its v0.17.0 as the first in-app use and test, and work then returns here for the rest.
+
+| In v0.1.0 | Requirements |
+|---|---|
+| Basemap, braille renderer | FR-1 (the parity rows this scope touches), FR-2 (waterways and parks; airports later), FR-3 (braille; the block renderer later), FR-19, FR-20 (own styles; a user's style with legacy filters — expressions later), FR-35, FR-36 |
+| Overlays — **three shapes** | FR-6 features, FR-7 scalar grids, FR-9 images; FR-11, FR-12, FR-13, FR-14, FR-32, FR-33, FR-34 |
+| Colour and theme | FR-15, FR-16, FR-17 (truecolor, 256 colours, no colour — 16 colours later), FR-18, FR-18a |
+| Tiles | FR-21 (network, embedded, disk cache — PMTiles later), FR-21a, FR-21b, FR-22, FR-22a, FR-22b, FR-23, FR-28, FR-28a, FR-31 |
+| Embedding and control | FR-4, FR-24 (pan, zoom, re-centre, fit world), FR-25, FR-26 (static and blinking markers), FR-27, FR-30 |
+| App | FR-5 (keys for pan, zoom and toggles; headless flag; terminal always restored) |
+| Non-functional | **All of NFR-1 to NFR-20.** No security, safety or accessibility requirement is deferred. |
+
+| Deferred past v0.1.0 — still v1 | Requirements |
+|---|---|
+| Wind | FR-8 |
+| Tile-image providers | FR-10 |
+| Local and remote single-file archives | the PMTiles part of FR-21 |
+| Block renderer | the block part of FR-3 (opt-in, D-42) |
+| 16-colour depth | that part of FR-17 |
+| Camera tours; flash and pulse | those parts of FR-26 |
+| Pointer operations and focus-zoom | those parts of FR-24 and FR-5; FR-24a |
+| Airport layers; style expressions | those parts of FR-2 and FR-20 |
+
+**Safeguard for PLAN:** the contract is designed for all five overlay shapes and built for three, so the deferred shapes constrain the design.
+
 ## Constraints and dependencies
 
 | ID | Constraint or dependency | Note |
