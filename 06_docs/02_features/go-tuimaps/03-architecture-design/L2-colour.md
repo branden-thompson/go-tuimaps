@@ -12,7 +12,7 @@ flowchart TB
 
     subgraph TYPE["1 · Which type? (D-69)"]
       direction LR
-      TP["Preset<br/>temperature: absolute scale, freezing at the middle,<br/>breaks defined once in °C and converted exactly (D-62)"]
+      TP["Preset<br/>temperature: absolute scale, 17 classes of 5 °C, pale at freezing,<br/>breaks defined once in °C and converted exactly (D-62, specimen 21)"]
       TO["Preset, overridden by the host"]
       TH["The host's own type"]
     end
@@ -68,9 +68,9 @@ A host can run the same checker in its own tests (`CheckRamp`).
 
 | Item | Why | Due |
 |---|---|---|
-| The temperature preset's actual scale — an established weather scale, longer than specimen 16's seven steps, passing the checker at truecolor and 256 colours | D-62; PQ-5 | Specimen in PLAN; if none passes, back to HUM LEAD |
+| The temperature preset's actual scale | D-62; PQ-5 | **A candidate exists (specimen 21):** 17 classes of 5 °C from −30 to +45, pale at freezing, worst adjacent pair 13.7 under colour blindness in truecolor and 11.1 within the 256-colour palette. Awaits HUM LEAD's eyes, especially at 256 colours |
 | A radar preset ramp that passes at 256 colours | S15-3: the specimen ramp failed | Specimen in PLAN |
 | A specimen of step D16 — a coloured basemap with a colourless overlay | D-59: never rendered; fall-back is all no-colour | Before PLAN exit |
-| Specimens of a painted light and a painted dark ground | D-64: HUM LEAD has never seen one | Before PLAN exit |
+| Specimens of a painted light and a painted dark ground | D-64 | **Done (specimen 20), measured:** unpainted, 85% of drawn cells fall under 3:1 on a white terminal; painted, none do once the higher-contrast rule is applied to every line. Awaits HUM LEAD's eyes |
 | The list of tokens | D-63; a named PLAN artefact | With the contract |
 | The colour-vision threshold | FR-16 | With the ramps |
