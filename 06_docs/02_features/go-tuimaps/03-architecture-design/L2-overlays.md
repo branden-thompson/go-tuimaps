@@ -1,6 +1,6 @@
 # Level 2 — The overlay pipeline, shape by shape
 
-Up: [architecture](architecture.md) · Carries: FR-6 to FR-14, FR-18, FR-18a, FR-32, FR-37, NFR-20, D-14, D-15, D-16, D-35, D-36, D-44, D-45, D-47, D-69, D-73, D-74
+Up: [architecture](architecture.md) · Carries: FR-9, FR-11, FR-13, FR-14, FR-15, FR-32, FR-37, NFR-20, D-35, D-36, D-44, D-45, D-53, D-60, D-63, D-69, D-73, D-74, D-86
 
 ## One path for every overlay
 
@@ -9,8 +9,10 @@ The host hands in a plain struct (D-74). What happens next is the same for every
 ```mermaid
 flowchart TB
     SET["Set(overlay struct)"] --> VAL{"Validate on hand-in (NFR-20)"}
-    VAL -- "refused" --> ERR["Typed error from a closed list:<br/>what happened · why · what to do"]
+    VAL -- "refused" --> ERR["Typed error from a closed list:<br/>what happened · why · what to do<br/>…and a set-refused warning, so a discarded error still shows"]
     VAL -- "accepted with warnings" --> WARN["Warnings (≤ 64, de-duplicated)<br/>e.g. a ramp that breaks the colour rules — reported, never refused (D-53)"]
+    WARN --> REPL
+    RM["Remove(id)"] --> RMR["Returns at once: found or not · old geometry released yes/no (D-86)<br/>queued jobs for it are dropped; it stops drawing at the next Render"]
     VAL -- "accepted" --> REPL{"Same id already set?"}
     REPL -- yes --> OLD["Replaced. Returns at once: replaced, and whether the old borrow is ALREADY released (D-86).<br/>The old shape keeps drawing from the library's own simplified copy until the new one is prepared"]
     REPL -- no --> NEW["Created — the result says so, so a mistyped id is visible (D-74)"]

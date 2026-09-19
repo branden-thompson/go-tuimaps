@@ -1,16 +1,16 @@
 # Level 2 — The tile pipeline
 
-Up: [architecture](architecture.md) · Carries: FR-21, FR-21a, FR-21b, FR-22, FR-22a, FR-22b, FR-23, FR-28, FR-28a, FR-31, FR-35, NFR-10, NFR-12, D-18, D-30, D-33, D-46, D-58, D-65, D-73, D-75
+Up: [architecture](architecture.md) · Carries: FR-21a, FR-21b, FR-22a, FR-22b, FR-23, FR-25, FR-28a, FR-31, FR-35, NFR-10, D-18, D-30, D-33, D-58, D-65, D-73, D-75, D-82, L-13
 
 ## Where a tile can come from
 
-Sources are asked in a fixed order. Embedded tiles never override a source the host chose (L-13); they fill in when nothing better is on hand.
+Each wanted tile is one job, and each job asks the sources in one fixed order: disk cache, the named network source, the embedded set. Embedded tiles never override a source the host chose (L-13): for zoom 0 to 3 with a network source named, the network's tile wins when it arrives, and the embedded one is what is drawn until then.
 
 ```mermaid
 flowchart LR
-    NEED["Render notes: tile z/x/y is wanted"] --> MEM{"In the memory cache?<br/>keyed by source identity + label language + z/x/y<br/>(never by style — FR-31, D-82)"}
+    NEED["Render — or Settle — notes: tile z/x/y is wanted<br/>AND its nearest ancestors the sources can supply, so there is a stand-in to draw"] --> MEM{"In the memory cache?<br/>keyed by source identity + label language + z/x/y<br/>(never by style — FR-31, D-82)"}
     MEM -- yes --> USE["On hand → drawn next frame"]
-    MEM -- no --> ANC["Meanwhile: draw the nearest ancestor on hand as a stand-in (D-30)<br/>embedded z0–3 guarantees one if the assets package is imported"]
+    MEM -- no --> ANC["Meanwhile: draw the nearest ancestor ON HAND as a stand-in (D-30).<br/>None is on hand until a Work call has decoded one — before that the frame shows<br/>ground, places, overlays and the notice (FR-23). With the assets imported, the z0–3 ancestor<br/>is wanted first and is the cheapest job, so it arrives first"]
     MEM -- no --> Q[("Pending work<br/>capped · de-duplicated · newest view wins")]
     Q -- "host calls Work (D-73)" --> ORDER
 

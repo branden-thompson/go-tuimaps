@@ -1,6 +1,6 @@
 # Constants — every number a test needs before it can be written
 
-Up: [architecture](architecture.md) · Carries: NFR-3, NFR-4, NFR-5, NFR-6, NFR-10, NFR-20, FR-9, FR-11, FR-15, FR-16, FR-18a, FR-23, D-63, D-84, D-85, D-88
+Up: [architecture](architecture.md) · Carries: FR-11, FR-15, FR-16, FR-29, NFR-3, NFR-4, NFR-5, NFR-6, NFR-10, NFR-20, D-56, D-62, D-63, D-69, D-75, D-77, D-78, D-79, D-83, D-84, D-85, D-88, P-59a
 
 | Field | Value |
 |---|---|

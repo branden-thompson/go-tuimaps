@@ -10,7 +10,7 @@ The diagram set is wide — twenty-four diagrams. This page is the other way in:
 
 | # | What happens | Where to look | Why it is this way |
 |---|---|---|---|
-| 1 | Watchpost creates a map and tells it where tiles may come from. Until it does, the library will not touch the network. | L0 Context — the line from *Map* to *Tile service* is labelled "only if the host names one" | D-65 |
+| 1 | Watchpost creates a map and tells it where tiles may come from. Until it does, the library will not touch the network. | L0 Context — the *Tile service* box says "only if the host names one" | D-65 |
 | 2 | Watchpost hands over its theme as a palette of named colour jobs — "heavy rain", "severe alert outline", "ground". | L2 Colour — step 2, *Semantic tokens* | D-63 |
 | 3 | Watchpost — not the library — fetches tonight's weather: the warning's outline, one radar picture for the area, a temperature grid. | L0 Context — *Host's weather fetchers* | D-15 |
 | 4 | It hands each one in as a plain struct: `Set(alerts)`, `Set(radar)`, `Set(temperature)`. It names a preset for each, so it supplies no colours or breaks at all. | L1 Public contract — *What is on it* · L2 Overlays — *Presets and host-defined types* | D-74, D-69 |
@@ -21,8 +21,8 @@ The diagram set is wide — twenty-four diagrams. This page is the other way in:
 
 | # | What happens | Where to look | Why |
 |---|---|---|---|
-| 7 | Watchpost's 300 ms clock ticks and it calls `Render`. Nothing has been decoded yet, so the frame shows the ground, the place marker and a one-line notice — not an empty box. | L3 Sequences — *A cold first frame*, steps 4–6 | D-30, FR-23 |
-| 8 | `Render` never waits and never fetches. It only **notes what is missing** — tiles, and the three overlays still to be prepared — as pending work. | L2 Render — *From a call to a frame*, the "Note what is missing" box | FR-23 |
+| 7 | Watchpost's 300 ms clock ticks and it calls `Render`. Nothing has been decoded yet, so the frame shows the ground, the place marker and a one-line notice — not an empty box. | L3 Sequences — *A cold first frame*, steps 4–5 | D-30, FR-23 |
+| 8 | `Render` never waits and never fetches. It only **notes which tiles are missing** as pending work; the three overlays were queued for preparing when they were set. | L2 Render — *From a call to a frame*, the "Note what is missing" box | FR-23 |
 | 9 | Nothing happens to that pending work until **Watchpost's own goroutines** call `Work`. The library has none. | L3 Sequences — the *Host's pump* lane · L0 Context — *Host's pump* | D-73 |
 
 ## Part 3 — The slow work, done on Watchpost's time
@@ -35,7 +35,7 @@ The diagram set is wide — twenty-four diagrams. This page is the other way in:
 | 13 | If the tile fails, it is given a "not before" time — 30 seconds, doubling. No timer is set; the time simply becomes part of the answer to "when should I call you next?" | L3 States — *A tile* · L3 Sequences — *An idle host* | FR-23, FR-25 |
 | 14 | Another `Work` call prepares the radar picture: each pixel's colour is looked up in the provider's table and kept as **one byte — how heavy** — and the provider's own colours are thrown away. | L2 Overlays — *Image*, steps I3–I4 | D-36, D-45 |
 | 15 | Another prepares the warning: the borrowed outline is simplified to what a braille dot can show at this zoom. | L2 Overlays — *Features*, step F2 | D-16 |
-| 16 | Each finished job bumps a counter. Watchpost's pump tells its interface "the map changed". | L3 Sequences — *A cold first frame*, steps 12–13 | FR-25 |
+| 16 | Each finished job bumps a counter. Watchpost's pump tells its interface "the map changed". | L3 Sequences — *A cold first frame*, steps 15–16 | FR-25 |
 
 ## Part 4 — Painting the cells
 
@@ -43,7 +43,7 @@ The diagram set is wide — twenty-four diagrams. This page is the other way in:
 |---|---|---|---|
 | 17 | `Render` runs again and paints in a fixed order: ground, water, the radar, the warning's tint, the map's braille lines, the warning's outline, the marker, labels, then the scale mark and credit. | L2 Render — *Paint the cell grid*, 1 to 9 | FR-12 |
 | 18 | Each radar cell's "how heavy" byte becomes a colour: preset → named job → Watchpost's theme if it set one → checked → fitted to the terminal's colour depth. With "safe ramps" on, the theme is skipped. | L2 Colour — *How a value becomes a cell colour* | D-69, D-63, D-53 |
-| 19 | For every cell the map line is drawn black or white — whichever contrasts more with what is behind it. | L2 Colour — step 7 | FR-16 |
+| 19 | For every cell the map line keeps its own colour where that still reads against what is behind it; where it would not, it is drawn black or white — whichever contrasts more. | L2 Colour — step 7 | FR-16 |
 | 20 | Roads thin out so the weather can be read. | L2 Render — *Choose the basemap profile* | FR-19 |
 | 21 | If the terminal had no colour, the radar would become ░▒▓ shades, the temperature contour lines, the warning a hatched area with the word FLOOD. | L2 Colour — step 5, *No colour* | D-35, FR-18a |
 

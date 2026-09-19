@@ -1,6 +1,6 @@
 # Level 3 — State machines
 
-Up: [architecture](architecture.md) · Carries: FR-11, FR-22a, FR-23, FR-25, FR-26, FR-32, NFR-21, D-30, D-56, D-73, D-74, D-86
+Up: [architecture](architecture.md) · Carries: FR-11, FR-23, FR-25, FR-26, FR-32, FR-37, NFR-10, NFR-21, D-30, D-56, D-73, D-74, D-86, P-59a
 
 ## 1 · A tile
 
@@ -11,10 +11,14 @@ stateDiagram-v2
     Queued --> Dropped: left the view, or the cap dropped the oldest
     Queued --> Loading: a Work call picks it up (D-73)
     Loading --> Dropped: context cancelled — it left the view
-    Loading --> OnHand: passed the gate (NFR-10)
+    Loading --> OnHand: passed the gate (NFR-10) and fits the cache
+    Loading --> HeldForView: passed the gate but is over a quarter of the cache
+    HeldForView --> Dropped: the view no longer needs it
+    Loading --> Unavailable: no source is named and none has it
     Loading --> Waiting: refused, failed, or no source had it
     Waiting --> Queued: its not-before time has passed and it is still wanted
     Waiting --> Dropped: no longer wanted
+    Unavailable --> Wanted: a source is named, or the assets are registered
     OnHand --> Evicted: memory cache over its byte cap
     Evicted --> Wanted: wanted again
     Dropped --> [*]
@@ -26,6 +30,9 @@ stateDiagram-v2
     note right of OnHand
       While not OnHand, the nearest ancestor
       on hand is drawn as a stand-in (D-30).
+      HeldForView: drawn while this view needs it,
+      never cached. Unavailable: not retried on a
+      timer, so an offline map reports nothing due.
     end note
 ```
 

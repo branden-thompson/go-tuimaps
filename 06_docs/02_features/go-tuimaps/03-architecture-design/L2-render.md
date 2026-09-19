@@ -1,6 +1,6 @@
 # Level 2 — Render and compositing
 
-Up: [architecture](architecture.md) · Carries: FR-4, FR-12, FR-19, FR-23, FR-34, FR-36, NFR-4, NFR-6, NFR-8, D-35, D-42, D-57, D-64
+Up: [architecture](architecture.md) · Carries: FR-11, FR-12, FR-14, FR-16, FR-18a, FR-19, FR-23, FR-24a, FR-32, FR-33, FR-34, FR-36, NFR-4, NFR-6, NFR-8, D-32, D-35, D-42, D-64, D-73, D-75, D-77, D-83, D-87, P-03a, P-08
 
 ## The rule this diagram protects
 
@@ -31,7 +31,7 @@ flowchart TB
       L0 --> L1 --> L2 --> L3 --> L4 --> L5 --> L6 --> L7 --> L8
     end
 
-    PAINT --> FG["Choose each cell's foreground<br/>compute both contrasts, take the higher (FR-16)"]
+    PAINT --> FG["Choose each cell's foreground (FR-16, D-77)<br/>the line's own colour where it meets 3:1 on this cell; otherwise whichever of black and white contrasts more"]
     FG --> DEPTH["Map colours to the depth in use<br/>truecolor · 256 (indices 16–255 only) · 16 · none (L2-colour)"]
     DEPTH --> EMIT["Emit lines<br/>each exactly the requested width (NFR-8)<br/>colour sequences and cleaned text, nothing else (FR-34)"]
     EMIT --> STATUS["Frame + status<br/>complete · still sharpening · no tiles"]

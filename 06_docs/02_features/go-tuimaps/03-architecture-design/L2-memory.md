@@ -1,6 +1,6 @@
 # Level 2 — The memory budget map
 
-Up: [architecture](architecture.md) · Carries: NFR-3, NFR-4, NFR-10, FR-11, FR-21a, FR-27, FR-37, D-29, D-48, D-73, D-75 · Risk RS-7 (Medium since the PLAN measurement)
+Up: [architecture](architecture.md) · Carries: FR-9, FR-11, FR-37, NFR-3, NFR-4, D-29, D-36, D-48, D-73, D-75, D-84, D-85 · Risk RS-7 (Medium since the PLAN measurement)
 
 ## The target, as ruled
 

@@ -1,6 +1,6 @@
 # Level 3 — Sequences
 
-Up: [architecture](architecture.md) · Carries: D-73, D-30, D-65, FR-4, FR-23, FR-25, FR-30, NFR-5, NFR-19
+Up: [architecture](architecture.md) · Carries: FR-4, FR-23, FR-24, FR-25, FR-30, FR-32, NFR-5, NFR-19, NFR-20, NFR-21, D-30, D-60, D-73, D-84
 
 The library starts no goroutine (D-73). In every sequence below, anything slow happens inside a `Work` call made by the host.
 
@@ -20,17 +20,17 @@ sequenceDiagram
     Note over M: Nothing decoded yet.<br/>Draws ground, markers, the notice — never an empty rectangle (FR-23)
     M-->>H: frame · status "still sharpening" · NextCall = now
     P->>M: Pending()?
-    M-->>P: embedded z0–3 tiles · 3 overlays to prepare · 4 network tiles
+    M-->>P: 4 tiles wanted, and their z3 ancestor · 3 overlays to prepare
     par as many as the pump likes — its width, and the memory that costs, are the host's (D-84)
         P->>M: Work(ctx)
-        M->>T: embedded tile
+        M->>T: the z3 ancestor: disk, then network, then embedded — embedded answers
         T-->>M: bytes → gate → cache
     and
         P->>M: Work(ctx)
         Note over M: prepare the alerts: simplify, boxes
     and
         P->>M: Work(ctx)
-        M->>T: network tile z5 (secure, limits)
+        M->>T: a z5 tile: disk misses, the network answers (secure, limits)
         T-->>M: bytes → gate → cache → disk
     end
     M-->>P: each done · change counter +1

@@ -1,6 +1,6 @@
 # Level 2 — Colour resolution
 
-Up: [architecture](architecture.md) · Carries: FR-15 to FR-18, FR-18a, FR-20, NFR-15, D-23, D-26, D-35, D-36, D-53, D-59, D-62, D-63, D-64, D-68, D-69
+Up: [architecture](architecture.md) · Carries: FR-13, FR-16, FR-17, FR-18a, FR-20, NFR-15, D-35, D-53, D-59, D-62, D-63, D-64, D-69, D-77, D-79, D-88
 
 ## How a value becomes a cell colour
 
@@ -36,7 +36,7 @@ flowchart TB
     end
 
     DEPTH --> BG["6 · The cell's background<br/>by the compositing order: ground → water → image or field → tint (L2-render)"]
-    BG --> FG["7 · The cell's foreground<br/>compute contrast for both candidates, take the higher (FR-16)<br/>line work ≥ 3:1 · labels and legend text ≥ 4.5:1"]
+    BG --> FG["7 · The cell's foreground (FR-16, D-77)<br/>the line's own colour where it meets 3:1 on this cell; otherwise whichever of black and white contrasts more<br/>line work ≥ 3:1 · labels and legend text ≥ 4.5:1"]
     FG --> CELL["The cell"]
     DEPTH --> LEGEND["The legend shows the colours actually drawn, at this depth, with text chosen the same way (FR-13, FR-16)"]
 ```

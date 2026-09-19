@@ -4,7 +4,7 @@
 |---|---|
 | Phase | PLAN (entry) |
 | Date | 2026-09-19 |
-| Why this exists | The Discovery Report named two checks that gate the rest of PLAN: a confirmed way to get radar into the first release (risk RS-23), and a terminal matrix for glyph width and braille coverage (risks RS-25 and RS-13, requirement NFR-8, ruling D-57). |
+| Why this exists | The Discovery Report named two checks that gate the rest of PLAN: a confirmed way to get radar into the first release (risk RS-23), and a terminal matrix for glyph width and braille coverage (risks RS-25 and RS-18, requirement NFR-8, ruling D-57). |
 
 ## 1. A radar image for one bounding box, from a keyless source — CONFIRMED
 
