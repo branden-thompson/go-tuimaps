@@ -129,6 +129,8 @@ The sixteen-colour depth has its own small set of values for the basemap tokens,
 | Projection: which functions | Forward: *y* = atanh(sin φ). Inverse: φ = asin(tanh *y*). Written with the standard library's sine, arcsine, hyperbolic tangent and its inverse — **none of which has an assembly version on either gated architecture**, unlike the exponential and logarithm the textbook forms use, which on one architecture also branch on a processor feature | Set here (P2-ENG-10; the processor-feature claim is the reviewer's, not re-checked) |
 | Projection results | Rounded to 1/256 of a dot before they are used to raster | Set here. Finer than anything visible; coarse enough to absorb last-bit differences between architectures in the standard library's transcendental functions. The two-architecture reference frames decide whether it is enough |
 | Tile order | By zoom, then x, then y | NFR-6 |
+| Distances | Great-circle, on a sphere of the Earth's mean radius, 6371.0088 km: within about half a percent of the ellipsoid, and finer than a cell can show | Set in BUILD (task 01.5) |
+| Compass words | Eight, each 45 degrees wide and centred on its direction: 342 degrees is "north" | Set in BUILD (task 01.6), from scenario 2's answer key |
 | Ties in the cell-colour vote after neighbours | The colour with the larger value, read as one number | D-83; any fixed rule would do |
 
 ## 7 · Targets that only the library can measure
