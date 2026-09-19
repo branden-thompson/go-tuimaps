@@ -1,0 +1,76 @@
+# Level 2 — Colour resolution
+
+Up: [architecture](architecture.md) · Carries: FR-15 to FR-18, FR-18a, FR-20, NFR-15, D-23, D-26, D-35, D-36, D-53, D-59, D-62, D-63, D-64, D-68, D-69
+
+## How a value becomes a cell colour
+
+Read top to bottom. Each step can only narrow what the step above allowed.
+
+```mermaid
+flowchart TB
+    V["A class index in a cell<br/>(from a grid, an image, or a feature's severity)"] --> TYPE
+
+    subgraph TYPE["1 · Which type? (D-69)"]
+      direction LR
+      TP["Preset<br/>temperature: absolute scale, freezing at the middle,<br/>breaks defined once in °C and converted exactly (D-62)"]
+      TO["Preset, overridden by the host"]
+      TH["The host's own type"]
+    end
+
+    TYPE --> TOK["2 · Semantic tokens (D-63)<br/>each class has a named role — 'radar.heavy', 'alert.severe.outline', 'temperature.band.−5to0' —<br/>never a position. A host's own ramp is tokenised low · middle · high and interpolated"]
+    TOK --> PAL{"3 · Does the host's palette set this token?"}
+    PAL -- no --> DEF["The library's default for that token"]
+    PAL -- yes --> THEME["The host's colour"]
+    THEME --> SAFE{"4 · Safe ramps on? (D-63)"}
+    SAFE -- yes --> DEF
+    SAFE -- no --> CHK["Checker: ordered · distinct at this depth · readable · colour-vision-safe<br/>violations → warnings; never refused (D-53)"]
+    DEF --> DEPTH
+    CHK --> DEPTH
+
+    subgraph DEPTH["5 · Colour depth — a hint from the host (FR-17); NO_COLOR selects none (NFR-15)"]
+      direction LR
+      D24["Truecolor<br/>the colour as given"]
+      D256["256 colours<br/>the library's own ramp for this depth — never an automatic downgrade (S10-1)<br/>indices 16–255 only, so contrast is exact"]
+      D16["16 colours (D-59)<br/>line work, labels, markers, outlines: 16-colour palette<br/>anything needing a ramp: its no-colour form<br/>(until the 16-colour ramps are built)"]
+      D0["No colour (D-35)<br/>smooth fields: contours with value labels<br/>patchy data: block shades ░▒▓<br/>areas: hatch ╱ ╲ plus a plain-word label (FR-18a)"]
+    end
+
+    DEPTH --> BG["6 · The cell's background<br/>by the compositing order: ground → water → image or field → tint (L2-render)"]
+    BG --> FG["7 · The cell's foreground<br/>compute contrast for both candidates, take the higher (FR-16)<br/>line work ≥ 3:1 · labels and legend text ≥ 4.5:1"]
+    FG --> CELL["The cell"]
+    DEPTH --> LEGEND["The legend shows the colours actually drawn, at this depth, with text chosen the same way (FR-13, FR-16)"]
+```
+
+## The ground
+
+```mermaid
+flowchart LR
+    G{"Ground (D-64)"} -- "default" --> PAINT["Painted: every cell's background starts as the 'ground' token<br/>→ the map reads the same on any terminal · contrast checks are exact"]
+    G -- "host opts out" --> DECL["Not painted: the host declares the ground colour<br/>→ checks use the declaration · its truth is the host's responsibility"]
+    G -- "no colour" --> NONE["Nothing painted; the terminal's own foreground on its own background"]
+    PAINT --> STYLE1["dark or bright style chosen by the ground's luminance (FR-20)"]
+    DECL --> STYLE1
+```
+
+## What the checker checks (D-53, FR-16)
+
+| Rule | Meaning | Applies to |
+|---|---|---|
+| Ordered | Relative luminance moves one way along a ramp — or one way on each side of a labelled midpoint for a diverging ramp | every ramp |
+| Distinct | Each step maps to a different palette entry **at the depth in use** | every ramp, every supported depth |
+| Readable | Line work ≥ 3:1 and text ≥ 4.5:1 against every background it crosses, the painted ground included | every ramp |
+| Colour-vision-safe | Adjacent steps stay distinguishable under simulated protanopia, deuteranopia and tritanopia (threshold fixed in PLAN) | **required** of the library's defaults and presets; **reported** for a host's colours |
+| An area tint is never the only edge | A polygon's outline is always drawn and meets 3:1 | alert areas |
+
+A host can run the same checker in its own tests (`CheckRamp`).
+
+## Owed before this diagram is final
+
+| Item | Why | Due |
+|---|---|---|
+| The temperature preset's actual scale — an established weather scale, longer than specimen 16's seven steps, passing the checker at truecolor and 256 colours | D-62; PQ-5 | Specimen in PLAN; if none passes, back to HUM LEAD |
+| A radar preset ramp that passes at 256 colours | S15-3: the specimen ramp failed | Specimen in PLAN |
+| A specimen of step D16 — a coloured basemap with a colourless overlay | D-59: never rendered; fall-back is all no-colour | Before PLAN exit |
+| Specimens of a painted light and a painted dark ground | D-64: HUM LEAD has never seen one | Before PLAN exit |
+| The list of tokens | D-63; a named PLAN artefact | With the contract |
+| The colour-vision threshold | FR-16 | With the ramps |

@@ -55,7 +55,7 @@ sequenceDiagram
     M-->>H: frame (stand-in tiles)
     H->>M: Pending()?
     M-->>H: 4 jobs
-    H->>W: run M.Work(ctx) (blocks; one job)
+    H->>W: run M.Work(ctx) — blocks · one job
     W->>M: Work(ctx)
     M->>S: fetch, decode, check limits
     S-->>M: tile
