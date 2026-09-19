@@ -128,7 +128,7 @@ flowchart TB
           direction LR
           DESC["<b>describe</b><br/>description as data (D-52)"]
           TXT["<b>textsafe</b><br/>cleaning · clusters · width (FR-34, NFR-8)"]
-          WORKQ["<b>work</b><br/>capped queue · newest view wins · decode limit (D-73)"]
+          WORKQ["<b>work</b><br/>capped queue · newest view wins · no limiter: the pump's width is the host's (D-73, D-84)"]
         end
       end
 

@@ -21,7 +21,7 @@ sequenceDiagram
     M-->>H: frame · status "still sharpening" · NextCall = now
     P->>M: Pending()?
     M-->>P: embedded z0–3 tiles · 3 overlays to prepare · 4 network tiles
-    par as many as the pump likes — the library limits decodes itself
+    par as many as the pump likes — its width, and the memory that costs, are the host's (D-84)
         P->>M: Work(ctx)
         M->>T: embedded tile
         T-->>M: bytes → gate → cache

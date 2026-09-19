@@ -46,7 +46,7 @@ internal/mvt/                  own vector-tile decoder, limits, compact geometry
 internal/archive/              minimal single-file archive reader
 internal/fetch/                transport rules
 internal/tiles/                sources, caches, stand-ins, retry times, schema mapping
-internal/work/                 pending queue, Work, Settle, decode limiter, deadlines
+internal/work/                 pending queue, Work, Settle, deadlines
 internal/style/                dark and bright styles, profiles, user styles (legacy filters)
 internal/colour/               tokens, presets' ramps per depth, checker, ground, foreground choice
 internal/render/               braille canvas, rasteriser, compositing, labels, markers, furniture, frame
@@ -261,7 +261,7 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 07.2 | `TestCapDropsOldest`, `TestNewestViewFirst` | Cap and ordering (FR-30) | same |
 | 07.3 | `TestWorkDoesOneJob`: `Work(ctx)` runs exactly one job on the caller's goroutine | `Work(ctx) (did bool, err error)` | same, with the goroutine helper |
 | 07.4 | `TestWorkCancel`: a cancelled context abandons the job and leaves state consistent | Cancellation | same |
-| 07.5 | `TestDecodeLimiter`: eight concurrent `Work` calls never run more than the limit of decodes at once | Limiter (D-73, NFR-3) | same, race detector |
+| 07.5 | `TestWorkNeverWaitsOnWork`: eight concurrent `Work` calls each proceed without waiting on another; and a documentation test that the per-`Work` memory note exists | No limiter (D-84): the pump's width and its memory are the host's | same, race detector |
 | 07.6 | `TestLeftViewCancelsJob` | Jobs tied to the view | same |
 | 07.7 | `TestChangeCounterMovesOnCompletion` | Counter (FR-25) | same |
 | 07.8 | `TestNextCallIsEarliest`: of blink phase, retry time, staleness; on the wall clock | Deadline | same |

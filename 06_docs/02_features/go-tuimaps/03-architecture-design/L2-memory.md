@@ -28,7 +28,7 @@ flowchart TB
 
     subgraph TRANS["Transient — what pushes the peak toward 8 MB"]
       direction TB
-      DEC["One tile in decode: compressed body + decompressed bytes + what is kept<br/>fixture tile ≈ 1.2 + 2.6 MB → the library limits how many decode at once,<br/>whatever the host's pump does (D-73)"]
+      DEC["One tile in decode: compressed body + decompressed bytes + what is kept<br/>fixture tile ≈ 1.2 + 2.6 MB → multiplied by the pump's width, which is the host's (D-84);<br/>the peak line is measured two wide"]
       PNGD["One image in decode: up to 4 MiB for the largest allowed PNG (FR-9)"]
       GARB["Garbage between collections: at the default collector setting,<br/>heap objects run to about twice live"]
     end
@@ -54,7 +54,7 @@ flowchart TB
 | Changed frame — the steady state, since a blinking marker changes most frames | Provisional, unverified: a marker-phase change ≤ 16 KB and ≤ 64 allocations; a one-cell pan no more than the first host's own window cost; identical at 100 and 1,000 features |
 | One hour | Live heap grows ≤ 1 KB a minute; the count of goroutines does not change — and under D-73 the library starts none |
 | Worst case, separately | The 58-zone alert at the fixture view and at zoom 12: accepted, drawn without copying, library-owned bytes within the shape cap, the draw-from-borrowed path inside its own time bound |
-| Extreme input | Not held to 8 MB: bounded by the stated formula — per tile in decode, body cap + decompressed cap + retained cap, times a decode concurrency of one |
+| Extreme input | Not held to 8 MB: bounded by the stated formula — per tile in decode, body cap + decompressed cap + retained cap, times the number of `Work` calls the host runs at once (D-84) |
 | The host's resident-memory protocol | Confirmatory only; its run-to-run spread (8.5 MB) exceeds what is being measured |
 
 ## What can change this diagram
