@@ -16,7 +16,7 @@ One plain sentence per term. Added after the DISCOVER red-team found that the do
 | **Vector tile** | A tile that carries shapes and names (roads as lines, lakes as outlines) rather than a picture, so it can be drawn at any size and style. |
 | **Zoom level** | How far in the map is: 0 is the whole world in one tile; each level doubles the detail; 14 is the most detailed the tile source provides. |
 | **OpenMapTiles** | A published naming scheme for what is inside a vector tile — which layer holds roads, what a lake is called. A *schema*. |
-| **OpenFreeMap** | The free public service the map fetches tiles from by default. It serves OpenStreetMap data in the OpenMapTiles scheme. |
+| **OpenFreeMap** | The free public service the standalone app fetches tiles from by default, and the one the examples show. The library itself connects to nothing until a host names a source (D-65). It serves OpenStreetMap data in the OpenMapTiles scheme. |
 | **TileJSON** | A small description file a tile server publishes, saying where its tiles are and what they contain. |
 | **PMTiles** | A single-file archive holding a whole region's (or the whole planet's) tiles, readable from disk or piece-by-piece over the web. |
 | **Range request / "206"** | Asking a web server for just a slice of a large file. 206 is the reply code meaning "here is the slice you asked for". A reader must insist on it, or it could be handed the whole multi-gigabyte file. |

@@ -54,6 +54,7 @@ Each question was presented one at a time with: what was being decided, the evid
 | D-62 | What "temperature is not themeable" fixes | **A. A fully absolute scale: colours, midpoint at freezing and the breaks all library-owned** (flat-looking on ordinary days; needs a longer ramp; specimen owed) · B. Anchored at freezing, the host sets the steps · C. Relative, as specimen 16. Common to all: a closed set of kinds; errors for an unknown kind or a supplied ramp; "a convention, not a control" | B ◇ |
 | D-63 | A "safe ramps" switch for the person using a themed host | **A. A switch in the library, exposed by the app, documented for hosts, in v0.1.0** · B. The host's job; no switch · C. A, plus automatic use on a host hint — *HUM LEAD added: a clear semantic-token data contract, so hosts can theme or integrate easily — A's benefit with B's flexibility* | A |
 | D-64 | Who owns the ground the map is drawn on | A. The library always paints it · B. The host declares it; nothing is painted · **C. Painted by default, with an opt-out in which the host declares the ground and owns that declaration** | C |
+| D-65 | Whether the library reaches the network without being told to | **A. The library is silent until told; the app enables the default source, says so, and offers an offline flag** · B. On by default, with an off switch · C. Silent everywhere, the app included | A |
 
 ## Where HUM LEAD chose against the recommendation ◇
 
