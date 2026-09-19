@@ -59,7 +59,7 @@ flowchart LR
 | Ordered | Relative luminance moves one way along a ramp — or one way on each side of a labelled midpoint for a diverging ramp | every ramp |
 | Distinct | Each step maps to a different palette entry **at the depth in use** | every ramp, every supported depth |
 | Readable | Line work ≥ 3:1 and text ≥ 4.5:1 against every background it crosses, the painted ground included | every ramp |
-| Colour-vision-safe | Adjacent steps stay distinguishable under simulated protanopia, deuteranopia and tritanopia (threshold fixed in PLAN) | **required** of the library's defaults and presets; **reported** for a host's colours |
+| Colour-vision-safe (D-88) | **Every pair** of classes, and **every class against the ground**, at least 10 apart under simulated protanopia, deuteranopia, tritanopia and normal vision; simulation at full severity **in linear light**, 1976 Lab difference, D65 white | **required** of the library's defaults and presets; **reported** for a host's colours |
 | An area tint is never the only edge | A polygon's outline is always drawn and meets 3:1 | alert areas |
 
 A host can run the same checker in its own tests (`CheckRamp`).
@@ -73,4 +73,4 @@ A host can run the same checker in its own tests (`CheckRamp`).
 | A specimen of step D16 — a coloured basemap with a colourless overlay | D-59 | **Done (specimen 23).** Finding: the basemap needs its own palette chosen from the sixteen; converted colours collapse to white and grey. Seen by HUM LEAD and found good (D-79) |
 | Specimens of a painted light and a painted dark ground | D-64 | **Done (specimen 20), measured:** unpainted, 85% of drawn cells fall under 3:1 on a white terminal; painted, none do once the higher-contrast rule is applied to every line. Seen by HUM LEAD and found good (D-77). The bright style keeps a line's colour where it passes 3:1 on the cell and falls back to black or white where it does not |
 | The list of tokens | D-63; a named PLAN artefact | With the contract |
-| The colour-vision threshold | FR-16 | With the ramps |
+| The colour-vision threshold | FR-16 | **Ruled: D-88** |

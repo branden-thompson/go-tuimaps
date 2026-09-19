@@ -279,10 +279,10 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 08.3 | `TestContrastFormula` against published WCAG pairs | Relative luminance and ratio | same |
 | 08.4 | `TestForegroundIsHigherContrast` for every default background | Both-candidates rule (FR-16) | same |
 | 08.5 | `TestKeepColourWherePasses`: a style colour is kept on a cell when ≥ 3:1, else black or white (specimen 20) | Bright and dark style rule | same |
-| 08.6 | `TestSimulation` against published reference values for the three deficiencies | Colour-vision simulation | same |
+| 08.6 | `TestSimulation` against published reference values for the three deficiencies; `TestSimulationIsInLinearLight`: a known pair scores 11.1, not the 2.9 a gamma-space simulation gives (D-88) | Colour-vision simulation | same |
 | 08.7 | `TestCheckerOrdered`, `…Distinct`, `…Readable`, `…VisionSafe`, each with a passing and a failing ramp (the broadcast-style ramp of specimen 21 must fail three ways) | `CheckRamp` (D-53) | same |
 | 08.8 | `TestTemperaturePresetPasses` at truecolor and 256; `TestBreaksExactInFahrenheit` | Temperature preset: 17 classes, specimen 21's colours (D-62) | same |
-| 08.9 | `TestRadarPresetPasses` at truecolor and 256 | Radar preset: six classes, specimen 22's colours | same |
+| 08.9 | `TestRadarPresetPasses` at truecolor and 256 **on a dark ground and on a light one**: lighter-is-heavier on dark, darker-is-heavier on light, chosen by the ground's luminance; every class at least 10 from its ground (D-88, PL-AX-1) | Radar preset: six classes, two ramps by ground | same |
 | 08.10 | `TestAlertPreset`: severity → outline and tint tokens; outline ≥ 3:1 on both grounds | Alert preset | same |
 | 08.11 | `TestOverrideIsWarnedNotRefused` | Overrides (D-69, D-53) | same |
 | 08.12 | `TestSafeRampsForcesPreset` | Safe ramps (D-63) | same |

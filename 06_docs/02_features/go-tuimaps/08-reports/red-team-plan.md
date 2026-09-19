@@ -138,7 +138,7 @@ As in DISCOVER. **Verified** = re-checked by the coordinator; **accepted** = the
 
 ## Questions for HUM LEAD
 
-Put one at a time. Rulings are recorded in `rulings-discover.md` from D-81.
+Put one at a time. **All eight are ruled (D-81 to D-88)**; three went against the recommendation (D-84, D-85, D-86).
 
 | Q | Question | From |
 |---|---|---|
@@ -149,4 +149,4 @@ Put one at a time. Rulings are recorded in `rulings-discover.md` from D-81.
 | PL-Q5 | Default memory caps, and the line for three maps → **D-85: lean first — tiles 0.5 MB and shapes 0.25 MB shared, images 0.25 MB a map; the lines cover three maps** | PL-PF-1, PL-BZ-5 |
 | PL-Q6 | How the end of a borrow is signalled → **D-86: reported, never waited for — `Set` and `Remove` return released yes-or-no; the host's own calls report the rest; an opt-in borrow check** | PL-CQ-2, PL-NC-3 |
 | PL-Q7 | Whether radar is masked over water → **D-87: by kind — images never masked, scalar fields masked, a host can flip either** | PL-DQ-6 |
-| PL-Q8 | The colour-vision threshold | PL-PM-1, PL-DQ-7 |
+| PL-Q8 | The colour-vision threshold → **D-88: 10, for every pair and against the ground; method pinned** | PL-PM-1, PL-DQ-7 |
