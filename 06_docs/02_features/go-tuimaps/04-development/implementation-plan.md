@@ -100,11 +100,11 @@ flowchart LR
 | M-C **The same facts as words** | WP-11 | M1b for every scenario in the slice, against the independent key |
 | M-D **Release candidate** | WP-12 to WP-14 | The app; examples; 62 parity rows; M1 to M5; the benchmark against the pinned fixture |
 
-**Re-estimate checkpoint (HUM LEAD):** after M-A. It is the first point at which real velocity is known; the estimate below is revised there and brought to HUM LEAD before M-B starts.
+**Quality checkpoint (HUM LEAD): after M-A.** The first working map is shown to HUM LEAD before M-B starts: does it hold up. *First written as a re-estimate checkpoint; HUM LEAD ruled that estimates are not what matters (D-80).*
 
-## First effort estimate
+## First effort estimate — a record, not a constraint
 
-There was none until now (Discovery Report). This one is **a first estimate, unverified**, and says how it was made so it can be corrected.
+**HUM LEAD, D-80: "estimates mean nothing - I want it done right, so I'm willing to wait / use the time that's needed."** Nothing in BUILD is to be cut, hurried or re-ordered to meet the figures below. They are kept because the Discovery Report said no estimate existed and red-team round 2 asked for one; they say how big the work looked from PLAN, unverified.
 
 - **Unit:** a *cycle* is one task below — one failing test, the code to pass it, a refactor. A *session* is one focused working sitting that lands about 8 to 12 cycles with their reviews and commits.
 - **Basis:** the task counts below, plus an allowance of 30% for what tasks always hide — refactoring across packages, fixing what a later test exposes, specimen-to-code surprises. SEV-0 phase exits, red-team rounds and HUM LEAD's reviews are **not** in the figure.

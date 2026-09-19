@@ -68,6 +68,7 @@ Each question was presented one at a time with: what was being decided, the evid
 | D-77 | Verdict on specimen groups M, N and O | *Not put as options.* HUM LEAD's words on viewing them. | — |
 | D-78 | Verdict on specimen group P, and the heaviest-in-cell rule | *Not put as options.* HUM LEAD's words. | — |
 | D-79 | Verdict on specimen group Q | *Not put as options.* HUM LEAD's words. | — |
+| D-80 | The plan's milestones and estimate; the PLAN red-team's reviewers | *Not put as lettered options.* HUM LEAD's words: milestones good; estimates mean nothing — done right over done fast; reviewers approved. | — |
 
 ## Where HUM LEAD chose against the recommendation ◇
 
