@@ -49,7 +49,7 @@ Each report's headline claims were re-checked against the primary source before 
 | RS-6 | Free third-party tile server | Medium | **Escalated within Medium** | Single maintainer, "may discontinue… without notice", planned schema change (AI-2 §3). Mitigations: local MBTiles, user-set URL, schema seam. |
 | RS-7 | Embed cost in the host | Medium | **Escalated to High** | 10.7 MB margin and a pinned per-frame allocation budget (AI-4 §5). |
 | RS-8 | Port fidelity | Medium | **Active** | Every parity row cites file:line; differential tests proposed (AI-3 §9). |
-| RS-9 | Commit hygiene | Low | **Mitigated** | Every commit and file checked. |
+| RS-9 | Commit hygiene | Low | **Mitigated** | Sole-author commits; no tool-generated trailers or watermarks. |
 | RS-10 | *new* Licence and attribution compliance | — | **Medium** | X-4, composition 6, ODbL notice for embedded tiles (AI-2 §2). |
 | RS-11 | *new* M1 depends on a Watchpost change | — | **Medium** | Composition 7. |
 | RS-12 | *new* Hand-written parsers on untrusted input | — | **Medium**, if the zero-dependency posture is chosen | X-5. |

@@ -8,7 +8,7 @@
 
 ## The metric
 
-M1 is the share of the scenarios below for which a viewer can answer the stated questions **from the frame alone**, without leaving the terminal. Target: all of them.
+M1 is the share of the scenarios below for which a viewer can answer the stated questions **from the frame alone**, without leaving the terminal. Target: all of them. *In v0.1.0, all of those whose overlay shape is in the first slice (D-44) — the wind scenario waits for the release that builds wind.*
 
 ## The scenarios
 

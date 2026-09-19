@@ -6,7 +6,7 @@
 | Surface | Behavioural parity: same features, same controls, same intentional constants. Byte-for-byte frame equality is not required (D-11). |
 | Source of rows | [`research/AI-1`](research/AI-1-upstream-module-read.md) §3. The first four columns of every P-row are copied from that file by script and verified identical by diff; nothing was retyped. |
 | Defects | [`defect-ledger.md`](defect-ledger.md), approved and closed (D-37) |
-| Frozen | 2026-09-18, on approval of the defect ledger. **Corrected 2026-09-18 under its own change control by ruling D-49**, (and again by D-56, for the flash rate in P-59) after the DISCOVER red-team found four Match rows written in the vocabulary of the superseded renaming shim, unrecorded exceptions to P-08, and an "Open for PLAN" disposition that left the denominator unfrozen. The first four columns of every P-row remain the verified copy of the source read; every correction is in the Disposition, Release and Note columns. Proposed to HUM LEAD for ratification in the Discovery Report. |
+| Frozen | 2026-09-18, on approval of the defect ledger. **Corrected 2026-09-18 under its own change control by ruling D-49** — and again by D-56, for the flash rate in P-59 — after the DISCOVER red-team found four Match rows written in the vocabulary of the superseded renaming shim, unrecorded exceptions to P-08, and an "Open for PLAN" disposition that left the denominator unfrozen. The first four columns of every P-row remain the verified copy of the source read; every correction is in the Disposition, Release and Note columns. The corrections were approved by D-49; the matrix as a whole is ratified with the Discovery Report. |
 | Change control | **The denominator is frozen.** A row changes disposition, or leaves the denominator, only by a recorded HUM LEAD ruling (the anti-solution guard on metric M3). |
 
 ## Dispositions
@@ -14,7 +14,7 @@
 | Disposition | Meaning | Rows |
 |---|---|---|
 | **Match** | go-tuiMaps behaves as upstream does. | 44 |
-| **Fix** | Upstream's behaviour is a ledgered defect; go-tuiMaps does the intended thing. | 13 |
+| **Fix** | Upstream's behaviour is a ledgered defect — or, for P-59 alone, a behaviour HUM LEAD ruled unsafe (D-56: flash faster than three a second) — and go-tuiMaps does the intended thing. | 13 |
 | **Replicate** | A ledgered convention kept deliberately. | 2 |
 | **Extended** | Upstream's behaviour is kept and added to by a ruling. | 11 |
 | **Superseded** | Replaced by design under a ruling; **outside the M3 denominator**. | 2 |

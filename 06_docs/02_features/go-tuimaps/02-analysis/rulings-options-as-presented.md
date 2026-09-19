@@ -54,3 +54,43 @@ Six times: **D-14** (all five overlay shapes, not three), **D-18** (a PMTiles re
 ## Rulings not given as options
 
 D-32, D-40, D-41, D-42 and D-54 are HUM LEAD's verdicts on specimens he viewed, in his own words. D-38 confirmed a proposed set of review personas. D-39 is his clarification of three earlier rulings.
+
+## Three rulings whose options the table above shortens too far
+
+*Added 2026-09-18 after red-team round 2, which found that the one-line forms above hide what HUM LEAD was actually shown for D-44, D-48 and D-52. The text below is the option table as presented, shortened only where marked.*
+
+### D-44 — what the first release contains
+
+Presented with a reviewer's size estimate: about 7,800 lines for the library and about 10,000 with the app, against a research estimate of 1,500 made before most scope rulings; stated to be an estimate by subsystem, unverifiable, with no effort estimate anywhere in the project.
+
+| Option | v0.1.0 contains | Deferred (still v1) | Consequence as stated |
+|---|---|---|---|
+| A. Radar-first slice | The braille basemap to parity on the rows it touches. Network, cache, embedded tiles. On-demand and headless render with the asynchronous model. Feature overlays, including simplification. Images re-coloured through a table. Legend, credits, valid time, scale, text safety, input validation. Truecolor, 256 colours and no colour. Static and blinking markers. A minimal app (pan, zoom, toggles, headless flag). | Scalar grids and contours. Wind. Tile-image providers. PMTiles. Block renderer. 16-colour. Camera tours. Pointer and focus-zoom. Airport layers. Style expressions beyond legacy filters. | Alerts and radar on a map: M1 scenarios 1, 2, 3 and 6. Roughly 5,500–6,000 lines. **"M3 would be stated per release: v0.1.0's denominator is the rows its scope touches."** |
+| **B. A plus temperature** | A, plus scalar grids, ramps and contouring | As A, minus grids | Adds M1 scenario 4 and the most design-heavy no-colour form, for roughly +650 lines. Proves the ramp and theming rules early. |
+| C. Everything in v0.1.0 | All requirements and parity rows | Nothing | Truest to the rulings as literally written; about 10,000 lines before the first tag; the contract published in one step with no usable milestone before it. |
+| D. HUM LEAD's own cut | He names the contents | | |
+
+Recommended: A, "I'd rather you chose B than have PLAN over-build". The argument against A as given: a slice can harden, and a contract designed around two shapes may not fit the other three; safeguard — PLAN designs the contract for all five shapes and BUILD implements the slice. *Not shown to him at the time, and found by round 2:* that a braille-only slice sits below the first host's stated glyph floor; that the tile generator needs the deferred archive reader; that every radar specimen used the deferred tile shape.
+
+### D-48 — what the 8 MB memory test contains
+
+**The change of measure was stated in the question, not put as an option:** "'Added resident memory' is too noisy to measure. Watchpost's own run-to-run spread is 8.5 MB, which is larger than the figure being measured. I've already fixed the method. NFR-3 now measures live heap from Go's own runtime metrics, against a pinned fixture. What goes into the fixture is your decision." D-29 had named added resident memory. He was also told: "Go's runtime typically holds about twice the live heap as resident memory. So 4 MB live is roughly 8 MB resident."
+
+| Option | The fixture | Consequence as stated |
+|---|---|---|
+| **A. A typical-day fixture, plus a separate worst-case rule** | One regional view; one alert overlay of 10 zone shapes (about 50,000 vertices, a busy but ordinary day); one single-frame radar image; one temperature grid. Pass: live heap added ≤ 4 MB and peak ≤ 8 MB. Worst case, separately: the 58-zone alert must be accepted and drawn without the library copying the source geometry; its simplified form must fit the shape cache's byte cap; tested for correctness and bounded growth, not against the 8 MB figure. | The number can be met, so it means something. The host's memory for its own data belongs to the host. |
+| B. The worst case is the fixture | All 58 zones are in the 8 MB test. | Only achievable if "held by reference" means the 12.4 MB counts as the host's; if the library ever has to copy, it fails outright. |
+| C. Raise the target | A generous fixture and, say, 16 MB. | Removes the pressure that keeps the design lean, and exceeds the first host's whole 10.7 MB margin. |
+
+*Round 2 found the worst-case wording in A could not be met as written — "its simplified form must fit the cap" is zoom-dependent, and raw bytes were counted against the same cap. FR-11 and NFR-3 are corrected; the ruling's intent is unchanged.*
+
+### D-52 — a plain-text answer to "where"
+
+| Option | Meaning | Consequence as stated |
+|---|---|---|
+| **A. A requirement, in v0.1.0** | For each place the host names, the library exposes a description as data, and the host renders the text. It covers: inside or outside each area feature, with distance and bearing to the nearest edge; the field value and band; the image intensity class here, and the nearest heavier intensity; the valid time. The app prints it with a flag. Deterministic; no braille or block characters. | The map becomes usable by people who cannot see it. M1 gets an answer that does not depend on the rendering. "A few hundred lines, most of it already needed for the answer key." |
+| B. A requirement, after v0.1.0 | The same, built after the integration. | The first release is unusable with a screen reader. |
+| C. Not the library's job | The host writes its own text from its own data. | No host can describe radar or a field without redoing the library's geometry. |
+
+*Round 2 found two things the option as put did not cover: points and lines were missing from the description, and "already needed for the answer key" made M1's key and the thing it checks the same code. FR-29 now covers every overlay kind and takes its key from an independent script.*
+
