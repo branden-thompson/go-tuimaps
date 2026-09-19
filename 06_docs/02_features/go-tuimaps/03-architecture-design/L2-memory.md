@@ -4,14 +4,14 @@ Up: [architecture](architecture.md) · Carries: NFR-3, NFR-4, NFR-10, FR-11, FR-
 
 ## The target, as ruled
 
-**8 MB** added to the host (D-29). Against a pinned typical-day fixture: **live heap ≤ 4 MB, peak ≤ 8 MB** (D-48). The first host's whole margin is 10.7 MB. *Every figure below is a reviewer's arithmetic, not a measurement; the measurement is due at PLAN exit and the ruled lines change only by ruling.*
+**8 MB** added to the host (D-29). Against a pinned typical-day fixture: **live heap ≤ 4 MB, peak ≤ 8 MB** (D-48). The first host's whole margin is 10.7 MB. *The ≈ figures in the diagram are a reviewer's arithmetic. **PLAN has since measured** a throwaway build of these structures against the pinned fixture — [memory-measurement.md](memory-measurement.md): **1.0 to 1.5 MB live, 2.8 to 4.8 MB peak** (the peak an upper bound), against lines of 4 and 8. The arithmetic was cautious by a factor of two to three. The ruled lines change only by ruling.*
 
 ## Where the bytes live
 
 ```mermaid
 flowchart TB
     subgraph HOSTMEM["The host's memory — not counted against the library"]
-      HG["Borrowed geometry (FR-11)<br/>worst real case: 58 zones · 812,058 vertices · 12.4 MiB<br/>the library reads it, never copies it"]
+      HG["Borrowed geometry (FR-11)<br/>synthetic upper bound: 58 zones · 812,058 vertices · 12.4 MiB<br/>measured: ten Gulf-coast counties · 56,827 vertices · 0.9 MB<br/>the library reads it, never copies it"]
       HP["The PNG the host fetched — may be released once the image is prepared"]
     end
 
@@ -61,6 +61,6 @@ flowchart TB
 
 | If this changes… | …this part moves |
 |---|---|
-| The PLAN-exit measurement | Every ≈ figure; possibly the ruled lines, by ruling only |
+| The library's own benchmark in BUILD against the pinned fixture | Every figure; possibly the ruled lines, by ruling only |
 | The pinned fixture's exact contents (owed in PLAN) | The tile and shape figures |
 | Image loops are built (FR-37) | The image cache's cap and what fits in it |

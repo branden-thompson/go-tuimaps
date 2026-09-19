@@ -26,6 +26,7 @@ Four levels of detail. Read down for more detail, up for context.
 | 2 | Colour resolution | [`L2-colour.md`](L2-colour.md) | D-53, D-59, D-62, D-63, D-64, D-69, FR-17, FR-18 |
 | 2 | The view described as data | [`L2-describe.md`](L2-describe.md) | D-52, D-67, D-68, FR-29 |
 | 2 | Memory budget map | [`L2-memory.md`](L2-memory.md) | D-29, D-48, NFR-3, NFR-4 |
+| 2 | The memory measurement against the pinned fixture | [`memory-measurement.md`](memory-measurement.md) | D-29, D-48, NFR-3, RS-7 |
 | 3 | Sequences: a cold first frame · a pan · an idle host · a one-shot render | [`L3-sequences.md`](L3-sequences.md) | D-73, D-30, FR-25, FR-30 |
 | 3 | State machines: a tile · borrowed geometry · a marker · an overlay's freshness | [`L3-states.md`](L3-states.md) | FR-23, FR-11, D-56, FR-32 |
 
