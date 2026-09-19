@@ -1,5 +1,5 @@
-# Specimens are byte-exact terminal output: never convert line endings or diff as text.
-*.ans -text
+# Specimens are terminal output kept byte for byte: .ans files are never line-ending converted and never diffed as text; text sources are kept at LF on every platform.
+*.ans -text -diff
 *.png binary
 *.txt text eol=lf
 *.md text eol=lf
