@@ -21,16 +21,16 @@ flowchart TB
       TC["<b>Tile cache</b> — default cap 0.5 MB, shared · one view measured 0.33 to 0.80 MB<br/>a tile over a quarter of the cap is drawn, not cached · with data dropped while decoding and coordinates as 16-bit integers (D-75)"]
       SC["<b>Shape cache</b> — byte-capped · measured 0.01 MB for 56,827 borrowed vertices<br/>simplified forms and bounding boxes · a form over ¼ of the cap is not cached"]
       IC["<b>Image cache</b> — byte-capped · measured 0.25 MB for a 600×400 image<br/>one byte per pixel (D-36) · a loop's frames must fit inside this cap (FR-37)"]
-      GC2["<b>Grids, contours, ramps, legend</b> ≈ 0.05 MB"]
+      GC2["<b>Grids, contours, ramps, legend</b> ≈ 0.05 MB (an estimate; NOT measured)"]
       ST["<b>Styles, tokens, pools</b> ≈ 0.6 MB (an estimate; NOT measured)"]
       CAPS["Default caps (D-85, lean first): tiles 0.5 MB and shapes 0.25 MB, shared by every map;<br/>images 0.25 MB a map · all host-settable · the lines cover THREE maps sharing caches<br/>Rule: default caps + fixed buffers ≤ 3 MB, leaving 1 MB for everything else (NFR-3)"]
     end
 
     subgraph TRANS["Transient — what pushes the peak toward 8 MB"]
       direction TB
-      DEC["One tile in decode: compressed body + decompressed bytes + what is kept<br/>fixture tile ≈ 1.2 + 2.6 MB → multiplied by the pump's width, which is the host's (D-84);<br/>the peak line is measured two wide"]
-      PNGD["One image in decode: up to 4 MiB for the largest allowed PNG (FR-9)"]
-      GARB["Garbage between collections: at the default collector setting,<br/>heap objects run to about twice live"]
+      DEC["One tile in decode: its bytes + what is kept<br/>measured tiles run 0.15 to 1.1 MB each (the four Midwest tiles TOGETHER are 1.2 MB) → multiplied by the pump's width, which is the host's (D-84);<br/>the peak line is measured two wide"]
+      PNGD["One image in decode: up to 4 MiB for the largest allowed PNG (FR-9) — by arithmetic"]
+      GARB["Garbage between collections: at the default collector setting,<br/>heap objects run to about twice live — by arithmetic, not measured"]
     end
 
     subgraph NOTHEAP["Not heap at all"]
