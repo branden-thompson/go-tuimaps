@@ -323,11 +323,11 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 
 | # | Test first | Then | Verify |
 |---|---|---|---|
-| 10.1 | `TestSetReportsCreatedOrReplaced` | `Set(o Overlay) (SetResult, error)`; `Remove(id)` (D-74) | `go test ./internal/overlay` |
+| 10.1 | `TestSetReportsCreatedOrReplaced`; `TestRemoveReportsFound`; `TestSetAndRemoveNeverBlock` | `Set(o Overlay) (SetResult, error)`; `Remove(id) (RemoveResult, error)`; both carry `Released bool` (D-74, D-86) | `go test ./internal/overlay` |
 | 10.2 | Table-driven `TestHandInMistakes`: each of NFR-20's listed mistakes gives its typed error kind and reviewed message | Closed list of error kinds | same |
 | 10.3 | `TestWarningsCappedAndDeduplicated` (≤ 64) | Warnings | same |
 | 10.4 | `TestBorrowNotCopied`: the library's bytes do not grow by the input's size | Borrow (FR-11) | same, allocation assertion |
-| 10.5 | `TestBorrowRelease`: the result's release signal fires only after in-flight jobs finish; a test that reuses the memory at once fails under the race detector | Release signal, hard to ignore (D-74) | same, race detector |
+| 10.5 | `TestReleasedAtOnceOnOneGoroutine`; `TestDrainingReportedByWorkReturn`: with a reader held mid-read on another goroutine, `Set` returns not-yet, `InUse` is true, and the `Work` call's return reports the release; `TestOldShapeDrawsFromOwnCopy`; `TestBorrowCheckWarnsOnMutation`; and, as a guarded sub-process run under the race detector, a program that reuses the memory too early exits non-zero with a data race reported, while one that waits is clean | End of a borrow: reported, never waited for (D-86) | same; the sub-process test needs the race detector's toolchain |
 | 10.6 | `TestSimplifyIterative`: a 14,001-vertex ring, no recursion, result within tolerance | Simplification | same |
 | 10.7 | `TestSubDotPolygonsDropped` (the fixture keeps 62 of 1,107 at its view) | Drop rule | same |
 | 10.8 | `TestZoomBuckets`: fractional zoom maps to one bucket; nearest bucket drawn on a miss | Buckets — definition fixed here | same |

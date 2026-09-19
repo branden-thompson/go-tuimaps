@@ -191,7 +191,7 @@ flowchart LR
       direction TB
       A1["<b>Create and close</b><br/>New(options) · Close()"]
       A2["<b>Where and how big</b><br/>intents: Pan · PanCells · Zoom · ZoomAround · Recentre · FitWorld · FitTo(places, overlays, margin) (FR-24, D-76)<br/>focus: Next · Previous (FR-24a)"]
-      A3["<b>What is on it</b><br/>Set(overlay) → replaced or created, and when the old borrow ends<br/>Remove(id)<br/>overlay structs: Features · ScalarGrid · Image (· VectorGrid · TileImages later)<br/>presets: Temperature · Radar · Alerts (· Wind later) (D-69)"]
+      A3["<b>What is on it</b><br/>Set(overlay) → created or replaced · old geometry released yes/no (D-86)<br/>Remove(id) → found or not · released yes/no · InUse(id) · BorrowCheck(on)<br/>overlay structs: Features · ScalarGrid · Image (· VectorGrid · TileImages later)<br/>presets: Temperature · Radar · Alerts (· Wind later) (D-69)"]
       A4["<b>How it looks</b><br/>SetPalette(tokens) (D-63) · SafeRamps(on) · Ground(paint or declared) (D-64)<br/>ColourDepth(hint) · ReduceMotion(on) (NFR-21) · Layers(on/off) (FR-36)"]
       A5["<b>Tiles</b><br/>Source(named network source) (D-65) · CacheRoot(path) · a replacement fetcher"]
       A6["<b>Running the work</b> (D-73)<br/>Pending() · Work(ctx) · Settle(ctx)"]

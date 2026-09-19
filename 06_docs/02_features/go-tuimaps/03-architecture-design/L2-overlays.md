@@ -12,7 +12,7 @@ flowchart TB
     VAL -- "refused" --> ERR["Typed error from a closed list:<br/>what happened · why · what to do"]
     VAL -- "accepted with warnings" --> WARN["Warnings (≤ 64, de-duplicated)<br/>e.g. a ramp that breaks the colour rules — reported, never refused (D-53)"]
     VAL -- "accepted" --> REPL{"Same id already set?"}
-    REPL -- yes --> OLD["Replaced. The old overlay keeps drawing until the new one is prepared.<br/>The result says: replaced, and when the old borrow ends (FR-11, D-74)"]
+    REPL -- yes --> OLD["Replaced. Returns at once: replaced, and whether the old borrow is ALREADY released (D-86).<br/>The old shape keeps drawing from the library's own simplified copy until the new one is prepared"]
     REPL -- no --> NEW["Created — the result says so, so a mistyped id is visible (D-74)"]
     OLD --> Q
     NEW --> Q

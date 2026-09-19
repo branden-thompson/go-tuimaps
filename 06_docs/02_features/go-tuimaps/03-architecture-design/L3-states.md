@@ -1,6 +1,6 @@
 # Level 3 — State machines
 
-Up: [architecture](architecture.md) · Carries: FR-11, FR-22a, FR-23, FR-25, FR-26, FR-32, NFR-21, D-30, D-56, D-73, D-74
+Up: [architecture](architecture.md) · Carries: FR-11, FR-22a, FR-23, FR-25, FR-26, FR-32, NFR-21, D-30, D-56, D-73, D-74, D-86
 
 ## 1 · A tile
 
@@ -29,28 +29,38 @@ stateDiagram-v2
     end note
 ```
 
-## 2 · Borrowed geometry (FR-11, D-74)
+## 2 · Borrowed geometry (FR-11, D-74, D-86)
 
-The one dangerous part of the contract: the host's memory, read by the library. The host must not change or reuse it until the library says the borrow is over.
+The one dangerous part of the contract: the host's memory, read by the library. **Every reader runs inside a call the host itself made** — `Work` (simplifying, describing) or `Render` (drawing a very large shape directly) — so the end of a borrow is **reported to the host, never waited for** (D-86).
 
 ```mermaid
 stateDiagram-v2
     [*] --> Borrowed: Set(features) accepted
-    Borrowed --> Borrowed: read by simplify, draw-from-borrowed, describe
-    Borrowed --> Replacing: Set(same id) or Remove(id)
-    Replacing --> Released: no library job still reads the old geometry
-    Released --> [*]: the host may now change or reuse that memory
-    note right of Replacing
-      Cancellation is cooperative, so a job may
-      still be reading for a moment. The old overlay
-      keeps drawing until the new one is prepared.
-      The result of Set and Remove carries the signal
-      that the borrow has ended — designed to be
-      hard to ignore (D-74).
+    Borrowed --> Borrowed: read inside the host's own Work and Render calls
+    Borrowed --> ReleasedAtOnce: Set(same id) or Remove(id) with no reader in flight
+    Borrowed --> Draining: Set(same id) or Remove(id) while a Work or Render on another goroutine is reading
+    Draining --> Released: that Work or Render call returns and says so
+    ReleasedAtOnce --> [*]: the host may reuse the memory
+    Released --> [*]: the host may reuse the memory
+    note right of ReleasedAtOnce
+      Set and Remove never block. They return
+      "released: yes". With one goroutine making
+      every call this is the only path there is.
+    end note
+    note right of Draining
+      Set and Remove return "released: not yet".
+      Queued jobs for the old geometry are dropped
+      at once. The job in flight is cancelled and
+      stops at its next check. A query answers
+      "still in use?" at any time. Nothing fires
+      later on its own.
     end note
     note left of Borrowed
-      A race-detector test reuses the memory
-      at once and must fail.
+      The old shape keeps drawing from the library's
+      OWN simplified copy until the new one is ready.
+      Opt-in borrow check: fingerprint at hand-in,
+      re-checked at every read. A change is a warning
+      that names the overlay.
     end note
 ```
 
@@ -99,6 +109,6 @@ stateDiagram-v2
 | If this changes… | …this moves |
 |---|---|
 | The retry times (FR-23) | Machine 1's note |
-| How the end of a borrow is signalled — settled in the implementation plan | Machine 2 |
+| How the end of a borrow is reported (D-86) | Machine 2 |
 | Flash and pulse are built; camera tours arrive | Machine 3 gains the camera's own machine beside it |
 | Image loops are built (FR-37) | Machine 4 gains a per-frame valid time |
