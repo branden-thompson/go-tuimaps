@@ -107,6 +107,10 @@ The sixteen-colour depth has its own small set of values for the basemap tokens,
 | `near-duplicate-id` | A `Set` **creates** an overlay whose id is not already set, and that id differs from an existing id by letter case only, by surrounding or repeated white space only, or by exactly one character added, dropped or changed |
 | `implausible-unit` | Temperature declared °C with any value above 60 or below −90; declared °F with any value above 140 or below −130; radar declared dBZ with any value above 95. Values are accepted either way |
 
+### The closed glyph list (NFR-8) — fixed in BUILD, task 02.10
+
+372 characters the renderer may emit of its own accord, each one cell wide under the pinned table and each seen on the terminal test card: the space and printable ASCII (95) · braille U+2800 to U+28FF (256) · markers U+00B7, U+2022, U+25C6, U+25C9, U+25CB, U+25CF · box-drawing U+2500, U+2502, U+250C, U+2510, U+2514, U+2518, U+251C, U+2524 · hatch U+2571, U+2572, U+2573 · shades U+2591 to U+2593 · U+FFFD. Arrows and block quadrants join it with wind and the block renderer. Outside text is not held to this list; it is cleaned and measured.
+
 ## 5 · Time
 
 | Constant | Value | Status |
