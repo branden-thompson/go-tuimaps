@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Report | project-brief v1.0.2 |
+| Report | project-brief v1.0.3 |
 | Phase | pre-DISCOVER (collect-brief handoff) |
 | Date | 2026-09-18 |
 | Author of record | Branden Thompson (HUM LEAD) |
 | Branch | `feature/go-tuimaps` |
-| Status | APPROVED — HUM LEAD, 2026-09-18. **Amended 2026-09-18 (v1.0.1)** after the DISCOVER red-team: two factual corrections and one token removed, each marked in place; nothing else changed. **Amended again (v1.0.2)** by ruling D-50: commit-hygiene wording made neutral in C-2, RS-9, D-7 and D-9; one framework command name replaced. The open questions below were all ruled later — see `02-analysis/rulings-discover.md`. |
+| Status | APPROVED — HUM LEAD, 2026-09-18. **Amended 2026-09-18 (v1.0.1)** after the DISCOVER red-team: two factual corrections and one quotation shortened, each marked in place; nothing else changed. **Amended again (v1.0.2)** by ruling D-50: commit-hygiene wording made neutral in C-2, RS-9, D-7 and D-9; one framework command name replaced. **Amended again (v1.0.3)** after red-team round 2: notes placed at M1, M2 and M4 where later rulings replaced their wording; RS-9, D-9 and D-10 reduced to the neutral wording D-50 ruled; the D-1 quotation shortened. The open questions below were all ruled later — see `02-analysis/rulings-discover.md`. |
 
 ---
 
@@ -48,10 +48,10 @@ Each metric was checked for ways to hit the number without solving the problem. 
 
 | # | Name | Symbol | Type | Definition (direction) | Measured in |
 |---|---|---|---|---|---|
-| M1 | Hazard Placement | HP | Primary | Share of a fixed scenario set for which a viewer of the embedded map can say where the condition sits relative to their place (inside or outside, direction, rough distance) without leaving the terminal. **Higher is better; target 100% of v1 overlay kinds.** Guard: the place marker and the condition must share one frame at 80×24. A map with no conditions on it scores 0. | Scripted-terminal specimen renders, plus a live HUM LEAD acceptance session inside Watchpost |
-| M2 | Time to Placed View | TPV | Primary | Seconds from the host requesting a place's map to a frame showing basemap, place and at least one overlay. **Lower is better; targets *TBD*** (proposed ≤ 1 s warm, ≤ 3 s cold). Guard: timed to the frame that carries the overlay, not to the first blank or basemap-only frame. | Go benchmarks and timing instrumentation |
+| M1 | Hazard Placement | HP | Primary | Share of a fixed scenario set for which a viewer of the embedded map can say where the condition sits relative to their place (inside or outside, direction, rough distance) without leaving the terminal. **Higher is better; target 100% of v1 overlay kinds.** Guard: the place marker and the condition must share one frame at 80×24. A map with no conditions on it scores 0. | Scripted-terminal specimen renders, plus a live HUM LEAD acceptance session inside Watchpost. *[v1.0.3: replaced by ruling D-43 — seven scenarios judged by HUM LEAD against a computed answer key; M1 gates SHIP on the library, and the live session in the host is the host's metric. In v0.1.0 the scenarios are those whose overlay shape is in the first slice (D-44).]* |
+| M2 | Time to Placed View | TPV | Primary | Seconds from the host requesting a place's map to a frame showing basemap, place and at least one overlay. **Lower is better; targets *TBD*** (proposed ≤ 1 s warm, ≤ 3 s cold). *[v1.0.3: ruled by D-30 — ≤ 1 s warm, ≤ 3 s cold, never blank.]* Guard: timed to the frame that carries the overlay, not to the first blank or basemap-only frame. | Go benchmarks and timing instrumentation |
 | M3 | Parity Coverage | PAR | Secondary | Percentage of parity-matrix rows with a passing Go test or an accepted rendered specimen. The matrix is frozen at DISCOVER exit against a pinned TerminalMap commit. **Higher is better; target 100%.** Guard: the denominator is frozen, and a row can be excluded only by a recorded HUM LEAD ruling. | Parity matrix in the docs tree, plus `go test` |
-| M4 | Embed Cost | EMB | Primary | Memory and CPU added to the host with one map mounted, in steady state. **Lower is better; budgets *TBD*** against Watchpost's own memory and CPU targets. Guard: measured on a fixed set of views with labels and overlays on, so detail cannot be dropped to pass. Heap must stay flat over 1 hour. | `pprof`, soak test in VALIDATE |
+| M4 | Embed Cost | EMB | Primary | Memory and CPU added to the host with one map mounted, in steady state. **Lower is better; budgets *TBD*** against Watchpost's own memory and CPU targets. *[v1.0.3: ruled by D-29 and D-48 — a target of 8 MB against a pinned typical-day fixture, the worst case tested separately; validated or revised at PLAN exit.]* Guard: measured on a fixed set of views with labels and overlays on, so detail cannot be dropped to pass. Heap must stay flat over 1 hour. | `pprof`, soak test in VALIDATE |
 | M5 | Host Independence | HI | Secondary | The library never touches the terminal, stdin, stdout or process-global state. Two instances render independently in one process, and a headless render works with no TUI framework. **Pass/fail; target pass.** Guard against a library that only works inside its own app. | Test harness: dual-instance and headless render tests |
 | M6 | Correction Count | CC | Maintenance | HUM LEAD corrections per phase. **Lower is better.** Intake: 2. | REFLECT reports |
 
@@ -161,7 +161,7 @@ HUM LEAD stated "none known". These standing project rules apply:
 | RS-6 | Dependence on a free third-party tile server | Medium | Availability and terms are outside our control. Offline tiles cover only zoom 0–1. |
 | RS-7 | Embed cost inside a host with published budgets | Medium | Tile decoding, triangulation and label layout on every pan could breach Watchpost's memory and CPU targets. |
 | RS-8 | Port fidelity | Medium | A re-typed port drifts silently from upstream behavior. Parity rows need tests or specimens, not recollection. |
-| RS-9 | Commit hygiene | Low | Tooling can add trailers to commit messages by default; every message is checked before it lands. |
+| RS-9 | Commit hygiene | Low | Sole-author commits; no tool-generated trailers or watermarks. |
 
 ### Open Questions (for DISCOVER, FULL RCC)
 
@@ -229,7 +229,7 @@ BRIEF SUFFICIENCY CHECK
 
 | # | Date | Decision | By | Rationale (verbatim where given) |
 |---|---|---|---|---|
-| D-1 | 2026-09-18 | Thin A2DH install | HUM LEAD | "[…] A2DH STARTUP + THIN INSTALL" |
+| D-1 | 2026-09-18 | Thin A2DH install | HUM LEAD | "[…] THIN INSTALL" |
 | D-2 | 2026-09-18 | LEVEL-1, SEV-0, five FULL directives | HUM LEAD | "LEVEL-1; SEV-0; FULL GIT; FULL DOCS; FULL REPORTS; FULL DIAGRAMS; FULL TDD" |
 | D-3 | 2026-09-18 | FULL RCC and FULL PLAN added | HUM LEAD | "FULL RCC; FULL PLAN approved" |
 | D-4 | 2026-09-18 | FULL TDD bound to the framework's test-driven-development skill | HUM LEAD | "FULL TDD should have some skills in the skillfamily" |
@@ -237,10 +237,11 @@ BRIEF SUFFICIENCY CHECK
 | D-6 | 2026-09-18 | Git initialized; `main` plus feature branch; no remote, no push | HUM LEAD | "Git init + recommended steps approved" |
 | D-7 | 2026-09-18 | Sole-author commits; no tool-generated trailers or watermarks | HUM LEAD | HUM LEAD is accountable for everything that ships. |
 | D-8 | 2026-09-18 | Personal git identity | HUM LEAD | "this is a personal project so git identity must be branden-thompson". Verified: the personal address. |
-| D-9 | 2026-09-18 | Watchpost is the working example; local development tooling untracked; root commit rewritten to a `.gitignore` only | HUM LEAD (ratified at G-7, D-10) | "use watchpost as an example if needed" |
-| D-10a | 2026-09-18 | Brief amended to v1.0.1: braille dots corrected to 2×4; source file count corrected to 16; one token removed from the D-1 quotation. Found by the DISCOVER red-team (docs DQ-4, hygiene PH-4). | For HUM LEAD's ratification with the Discovery Report | Approved documents are amended with a version bump and a log entry, never silently. |
+| D-9 | 2026-09-18 | Watchpost is the working example; local development tooling untracked | HUM LEAD (ratified at G-7, D-10) | "use watchpost as an example if needed" |
+| D-10a | 2026-09-18 | Brief amended to v1.0.1: braille dots corrected to 2×4; source file count corrected to 16; the D-1 quotation shortened. Found by the DISCOVER red-team (docs DQ-4, hygiene PH-4). | For HUM LEAD's ratification with the Discovery Report | Approved documents are amended with a version bump and a log entry, never silently. |
 | D-10b | 2026-09-18 | Brief amended to v1.0.2: commit-hygiene wording made neutral in C-2, RS-9, D-7 and D-9 | HUM LEAD (ruling D-50) | Approved documents are amended with a version bump and a log entry, never silently. |
-| D-10 | 2026-09-18 | G-1..G-7 approved: problem statement ratified; metrics M1–M6 ratified; brief approved; branch renamed `feature/go-tuimaps`; project config set (SEV-0, Go, BRTOPS); Watchpost's no-watermark calibration copied verbatim into the local harness (diff-verified identical); D-9 ratified. GO for DISCOVER. | HUM LEAD | "G-1 thru G-7 Approved; Approved; GO 4 DISCOVER" |
+| D-10c | 2026-09-18 | Brief amended to v1.0.3: in-place notes at M1, M2 and M4 pointing to the rulings that replaced their wording (D-43, D-30, D-29, D-48); RS-9, D-9 and D-10 reduced to neutral wording; the D-1 quotation shortened. Found by red-team round 2 (docs and hygiene lenses). | For HUM LEAD's ratification with the Discovery Report | Approved documents are amended with a version bump and a log entry, never silently. |
+| D-10 | 2026-09-18 | G-1..G-7 approved: problem statement ratified; metrics M1–M6 ratified; brief approved; branch renamed `feature/go-tuimaps`; project config set (SEV-0, Go, BRTOPS); D-9 ratified. GO for DISCOVER. | HUM LEAD | "G-1 thru G-7 Approved; Approved; GO 4 DISCOVER" |
 
 ## Next Steps
 
