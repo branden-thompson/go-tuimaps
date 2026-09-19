@@ -84,6 +84,7 @@ Each question was presented one at a time with: what was being decided, the evid
 | D-92 | A very large borrowed shape, replaced | A. Keep drawing the old shape; `Set` answers "not yet released" even to a one-goroutine host, for these shapes only; the release is reported by the `Work` or `Settle` that readies the replacement · B. Stop drawing until the new one is ready; "released: yes" stays unconditional; a very large hazard disappears for a frame or more on every refresh · **C. `Set` builds the cheap index itself — one linear pass — so the new shape draws on the next frame and the old is released at once; both rulings hold; `Set` does a few milliseconds of real work on the interface goroutine for every shape above a vertex count** | A ◇ |
 | D-93 | Verdict on specimen group T: the corrected light-ground radar ramp (22f) and the light-ground temperature variant (21d) | *Not put as options.* HUM LEAD's words. The question also described, without recommending it, using 21d's colours on both grounds; HUM LEAD did not take it up. | — |
 | D-94 | The two MAPSCII additions carried since DISCOVER | **A. The app gains `--style PATH` (the library still takes bytes); per-layer label margin and clustering not taken up for v1, reopenable by the integration review** · B. Both into v0.1.0: per-layer margin and cluster honoured, and the flag · C. Close both as not taken up; a user's style stays reachable only from a host's code | A |
+| D-95 | Approval of the Plan of Record, and the opening of BUILD | *Not put as options.* HUM LEAD's words. The report offered: approve, send back, strike any of six listed matters, or order a fourth red-team round. | — |
 
 ## Where HUM LEAD chose against the recommendation ◇
 
@@ -91,7 +92,7 @@ Fourteen times: **D-14** (all five overlay shapes, not three), **D-18** (a PMTil
 
 ## Rulings not given as options
 
-D-32, D-40, D-41, D-42, D-54, D-77, D-78, D-79, D-89 and D-93 are HUM LEAD's verdicts on specimens HUM LEAD viewed, in HUM LEAD's own words. D-71 is the approval of the Discovery Report, with HUM LEAD's directives for PLAN. **This file records options only.** Where a ruling's record says "accepted with the ruling, as put", that is the strongest counter-argument that was put with the question, carried into the record so the cost HUM LEAD accepted is not lost. D-38 confirmed a proposed set of review personas. D-39 is HUM LEAD's clarification of three earlier rulings.
+D-32, D-40, D-41, D-42, D-54, D-77, D-78, D-79, D-89 and D-93 are HUM LEAD's verdicts on specimens HUM LEAD viewed, in HUM LEAD's own words. D-71 is the approval of the Discovery Report, with HUM LEAD's directives for PLAN; D-95 is the approval of the Plan of Record. **This file records options only.** Where a ruling's record says "accepted with the ruling, as put", that is the strongest counter-argument that was put with the question, carried into the record so the cost HUM LEAD accepted is not lost. D-38 confirmed a proposed set of review personas. D-39 is HUM LEAD's clarification of three earlier rulings.
 
 ## Three rulings whose options the table above shortens too far
 

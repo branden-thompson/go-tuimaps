@@ -4,7 +4,7 @@
 |---|---|
 | Phase | PLAN |
 | Date | 2026-09-19 |
-| Status | Draft for HUM LEAD's review, revised after the PLAN red-team. Built on rulings D-11 to D-94. HUM LEAD's first read, 2026-09-19: "These look good so far" — a basic understanding, not yet a deep one; formal approval comes with the Plan of Record. |
+| Status | **Approved with the Plan of Record (D-95).** Revised after each of the PLAN red-team's three rounds. Built on rulings D-11 to D-94. HUM LEAD's first read, 2026-09-19: "These look good so far" — a basic understanding, not yet a deep one; the set was approved with the Plan of Record (D-95). |
 | How to use this | These diagrams are **living references** (D-71). Point at one when asking a question; when a decision changes, the diagram changes in the same commit. Every diagram file names the rulings and requirements it carries on its first lines, so a change to one of those says which file to open; for the three diagrams in this file, the ids are in the text beside each. |
 
 ## Start here

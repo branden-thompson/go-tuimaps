@@ -4,7 +4,7 @@
 |---|---|
 | Phase | PLAN |
 | Date | 2026-09-19 |
-| Status | Revised after the PLAN red-team's first round (74 findings; `../08-reports/red-team-plan.md`) and rulings D-81 to D-89; again after its second round (60 findings) and rulings D-90 to D-94; and after its third, narrow round (27 findings, no Critical). For HUM LEAD's approval with the Plan of Record. |
+| Status | Revised after the PLAN red-team's first round (74 findings; `../08-reports/red-team-plan.md`) and rulings D-81 to D-89; again after its second round (60 findings) and rulings D-90 to D-94; and after its third, narrow round (27 findings, no Critical). **Approved by HUM LEAD with the Plan of Record (D-95).** |
 | Goal | Build the first release, v0.1.0, as ruled in D-44 and refined through D-94: a braille basemap with features, images and scalar grids on it, the view described as data, and a small app — ready to integrate into the first host. |
 | Architecture | [`architecture.md`](../03-architecture-design/architecture.md) and its diagram set; **[the contract](../03-architecture-design/contract.md)** — what each public call promises; **[the constants](../03-architecture-design/constants.md)** — every number a test below asserts. This plan names the diagram each work package builds. |
 | Tech stack | Go 1.25 (the floor toolchain), standard library, plus `mattn/go-runewidth` and `clipperhouse/uax29/v2` (D-75, D-81). No C toolchain (D-22). |

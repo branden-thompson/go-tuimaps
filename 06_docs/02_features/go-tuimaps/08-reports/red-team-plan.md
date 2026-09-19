@@ -420,5 +420,5 @@ One commit carries all of it, with this section.
 5. The alert preset's colours are designed in BUILD, with HUM LEAD's look inside M-B.
 6. Twenty-two requirement rows that the Discovery Report ratified were revised in PLAN; the requirements file's status line lists them.
 
-**No fourth round.** Critical findings went 6, 2, 0. What round 3 found was one task row and one requirement sentence that had kept a withdrawn rule, tasks phrased in terms their package cannot see, and definitions a first test would have demanded on its first day. Both reviewers said the same in their counter-arguments. BUILD is test-first from these documents and stops at M-A for HUM LEAD's look. This is the coordinator's judgement; HUM LEAD may order another round before approving.
+**No fourth round — and HUM LEAD, offered one, approved the plan without ordering it (D-95).** Critical findings went 6, 2, 0. What round 3 found was one task row and one requirement sentence that had kept a withdrawn rule, tasks phrased in terms their package cannot see, and definitions a first test would have demanded on its first day. Both reviewers said the same in their counter-arguments. BUILD is test-first from these documents and stops at M-A for HUM LEAD's look. This is the coordinator's judgement; HUM LEAD may order another round before approving.
 

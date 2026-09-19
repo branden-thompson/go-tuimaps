@@ -7,7 +7,7 @@ level: LEVEL-1
 sev: SEV-0
 authority: HUM LEAD
 directives: FULL GIT; FULL DOCS; FULL REPORTS; FULL DIAGRAMS; FULL RCC; FULL PLAN; FULL TDD
-status: "PRESENTED — awaiting HUM LEAD's approval"
+status: "APPROVED — HUM LEAD 2026-09-19 (\"APPROVED; Go 4 BUILD\"), recorded as D-95. The six matters listed as the coordinator's were accepted; none was struck. PLAN exited; BUILD opened."
 ---
 
 # go-tuiMaps — PLAN OF RECORD
@@ -22,7 +22,7 @@ status: "PRESENTED — awaiting HUM LEAD's approval"
 - **What is still unproven.** Peak memory. Three maps over the fixture region come to about 3.0 MB of lasting memory by the measured parts, against lean caps HUM LEAD chose (D-85); what the maps are drawing is never evicted, so three maps on three different dense views run to about 4.9 MB — over the 4 MB line, reported by the library, not prevented (D-90). The peak while two tiles decode at once can only be measured with the library. **RS-7 stays High** until BUILD's benchmark (task 14.6) says otherwise.
 - **What is not designed yet.** The alert preset's colours (risk RS-26). PLAN's specimens drew two of five severities, on a dark ground; checked in round 2, those pass there and **fail 3:1 on a light ground**. Task 08.10 designs all five for both grounds, and HUM LEAD looks at them inside milestone M-B (task 08.23).
 - **How it was checked.** Three red-team rounds in PLAN, each on a frozen tree with fresh reviewers. Round 1: NO-GO, 74 findings, 6 Critical. Round 2, on the remediation: NO-GO narrowly, 60 findings, 2 Critical — both rules the coordinator had never written down. Round 3, narrow: ship-with-conditions, 27 findings, no Critical. Every finding has a disposition; every round found fixes from the round before that had not held (13, then 8), which is why there were three.
-- **Rulings.** 24 in PLAN (D-71 to D-94), one at a time, recorded in HUM LEAD's words. Five went against the coordinator's recommendation (D-73, D-84, D-85, D-86, D-92); in D-86 HUM LEAD's instinct was the better design, and the record says so.
+- **Rulings.** 24 in PLAN before this report (D-71 to D-94; its approval is D-95), one at a time, recorded in HUM LEAD's words. Five went against the coordinator's recommendation (D-73, D-84, D-85, D-86, D-92); in D-86 HUM LEAD's instinct was the better design, and the record says so.
 
 ## Context
 
