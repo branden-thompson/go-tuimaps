@@ -44,8 +44,10 @@ Everything that touches the network goes through one package, so the rules are e
 
 ```mermaid
 flowchart TB
-    REQ["A fetch for the named source"] --> T1{"Secure transport?"}
-    T1 -- "no, and not loopback, and not explicitly allowed" --> X1["Refused"]
+    REQ["A fetch for the named source"] --> SAME{"Same scheme and host as the source,<br/>or a host the options allow?"}
+    SAME -- no --> X0["Refused before anything is sent"]
+    SAME -- yes --> T1{"Secure transport?"}
+    T1 -- "no, and not a LITERAL loopback address (a name can resolve anywhere), and not explicitly allowed" --> X1["Refused"]
     T1 -- yes --> DIAL["Dial — check the address actually connected to:<br/>not loopback, link-local or private unless the source already is (FR-22b)"]
     DIAL --> SEND["Send: identifying User-Agent (library, version, host's token)<br/>no Referer · proxy settings honoured"]
     SEND --> RESP{"Response"}
@@ -55,7 +57,7 @@ flowchart TB
     RESP -- "range asked, but not 206 with exactly that range" --> X3["Closed unread (AI-9 §8)"]
     RESP -- "success" --> LIM["Body read through a limit"]
     LIM --> OUT["Bytes to the gate"]
-    X1 & X2 & X3 --> ERR["Error names scheme and host only<br/>never the address — it may hold a key<br/>never wraps the transport error (FR-22b)"]
+    X0 & X1 & X2 & X3 --> ERR["Error names scheme and host only<br/>never the address — it may hold a key<br/>never wraps the transport error (FR-22b)"]
 ```
 
 ## The disk cache

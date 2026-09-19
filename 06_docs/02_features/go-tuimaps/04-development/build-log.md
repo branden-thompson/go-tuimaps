@@ -69,4 +69,13 @@ The exemptions file is part of the local harness and is not tracked; this table 
 
 **WP-03 is complete: 19 of 19 tasks.**
 
-**Next:** WP-05 (fetch) and WP-07 (work); then WP-04 and WP-06.
+## WP-05 — fetch
+
+| Task | Commit | The failing test, first | Learned |
+|---|---|---|---|
+| 05.1 to 05.11 The fetcher | this commit | `TestGetOverSecureTransport`, `TestPlainHTTPRefused`, `TestRedirectLimit`, `TestNoSecureToPlain`, `TestCrossHostRefusedUnlessAllowed`, `TestPrivateAddressRefusedAtDial`, `TestNoReferer`, `TestUserAgent`, `TestBodyReadThroughLimit`, `TestRangeMustBe206Exact`, `TestErrorNeverCarriesAddress`, `TestStatusChecked`, `TestTimeout`, `TestContextCancel`, `TestProxyFromEnvironment`, `TestReplacementFetcherContract` — failed to compile; every one runs against loopback servers | A fetcher is made for **one named source**, and a request to any other scheme or host is refused before anything is sent — stricter than the plan said, and it is what makes "errors name the scheme and host" always true. **"localhost" is a name, and a name can resolve anywhere:** plain http is allowed to a literal loopback address only, and the dial test uses "localhost" as its public-looking name that lands in private space. The check is on the address actually connected to; the carrier-grade shared range counts as private. **Behind a proxy from the environment the connection lands on the proxy, so that check cannot be made;** the request is marked and the check skipped, as FR-22b documents. The standard client adds a Referer on redirects; it is removed in the redirect check. The transport's error is never returned or wrapped — a test walks the chain and tries `errors.As` for it. A token that could break out of the User-Agent header is refused. `textsafe.Join` was added so an error can name the scheme and host: cleaned pieces are cleaned once more as a whole. **The code-quality check matches calls by name,** so `New` calling `fault.New` and `Get` calling `Header.Get` read as recursion: renamed `ForSource` and `Fetch`. No exemption |
+| 05.12 The shaped server | this commit | `TestShapedServer`, `TestShapedServerRefusesABadLink` — written before the code, in the same step, so their failure was not watched | Secure transport with its own trust anchor; a client without it is refused. **Its clock is virtual and is arithmetic:** the connection once, a round trip for each round of as many requests as the pump is wide, every body byte at the link's bandwidth. Four requests for the Midwest fixture's 1,245,163 bytes on NFR-5's link cost exactly 0.300 + 0.300 + 1.245163 s — the constants file's own sum — and nothing really waits |
+
+**WP-05 is complete: 12 of 12 tasks.**
+
+**Next:** WP-07 (work); then WP-04 and WP-06.

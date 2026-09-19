@@ -86,3 +86,14 @@ func ID(id string) (Text, error) {
 	}
 	return Text{s: id}, nil
 }
+
+// Join puts cleaned pieces together and cleans the result once more, so a
+// piece cannot change what its neighbour means: a mark that was dropped as
+// a stray cannot come back by landing beside a letter.
+func Join(parts ...Text) Text {
+	var b strings.Builder
+	for _, p := range parts {
+		b.WriteString(p.s)
+	}
+	return Clean(b.String())
+}
