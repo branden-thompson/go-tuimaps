@@ -52,6 +52,7 @@ Each question was presented one at a time with: what was being decided, the evid
 | D-60 | The compatibility promise before v1.0; a checkpoint after the integration | (a) **A. Breaks only at a minor version, listed with a migration note, guarded by an automated contract check** · B. Frozen after v0.1.0 · C. No promise. (b) **1. A written integration review, then HUM LEAD's GO, before the remaining shapes** · 2. No checkpoint | A, 1 |
 | D-61 | How a parity row counts when v0.1.0 contains only part of it | A. Count a row only when wholly shown (v0.1.0 reads 57 of 57 in scope, of 70) · **B. Split the five rows in two (62 of 75)** · C. Count partial rows, with a note (62 of 62, five asterisks) | A ◇ |
 | D-62 | What "temperature is not themeable" fixes | **A. A fully absolute scale: colours, midpoint at freezing and the breaks all library-owned** (flat-looking on ordinary days; needs a longer ramp; specimen owed) · B. Anchored at freezing, the host sets the steps · C. Relative, as specimen 16. Common to all: a closed set of kinds; errors for an unknown kind or a supplied ramp; "a convention, not a control" | B ◇ |
+| D-63 | A "safe ramps" switch for the person using a themed host | **A. A switch in the library, exposed by the app, documented for hosts, in v0.1.0** · B. The host's job; no switch · C. A, plus automatic use on a host hint — *HUM LEAD added: a clear semantic-token data contract, so hosts can theme or integrate easily — A's benefit with B's flexibility* | A |
 
 ## Where HUM LEAD chose against the recommendation ◇
 
