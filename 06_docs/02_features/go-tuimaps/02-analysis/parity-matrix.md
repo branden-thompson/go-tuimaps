@@ -120,12 +120,23 @@ Tracked so they are tested and reported, never counted as parity.
 | E-09 | Credits reported by the library; optional on-map credit line, on by default | D-25, S9-1 |
 | E-10 | Host-supplied palette, changeable at runtime; themeable overlay ramps that stay ordered, distinct and readable | D-26, D-36 |
 | E-11 | Overlays: features, scalar grids, vector grids, georeferenced images, tile-image providers | D-14, D-15 |
-| E-12 | Simplification and clipping of host shapes, cached per zoom, off the drawing path | D-16 |
+| E-12 | Simplification of host shapes, cached per zoom bucket, off the drawing path; host geometry borrowed, not copied; nothing drawn outside the rectangle | D-16, FR-11 |
 | E-13 | Never-blank: stand-in tiles while detail loads | D-30, S7-1 |
 | E-14 | No-colour forms by kind of data: contours for smooth fields, block shades for patchy data; basemap thinned | D-34, D-35 |
 | E-15 | Placed images re-coloured through a required colour-to-intensity table; legend data exposed for every overlay | D-36, S1-6 |
 | E-16 | Legibility at four colour depths with a ramp per depth | D-23, S10 |
 | E-17 | Style profiles: the basemap thins by renderer, size and what is drawn on top; water owns its cells under a field | S1-2, S2-1, S5-1, S3-4 |
+| E-18 | The view described as data for every place the host names — inside or outside, distance and bearing, band, intensity, valid time, staleness; speakable | D-52, D-67, FR-29 |
+| E-19 | A valid time on every overlay, with a stale mark | FR-32 |
+| E-20 | A distance reference: ground distance per column and per row, and a scale mark | FR-33 |
+| E-21 | Basemap layers switched off and on by intent | D-42, FR-36 |
+| E-22 | Image overlays as a sequence of timed frames, built after v0.1.0 | D-47, FR-37 |
+| E-23 | Reduce-motion; nothing hidden by a frozen clock | D-56, NFR-21 |
+| E-24 | Focus intents: next, previous, zoom around the focused target | FR-24a |
+| E-25 | A ramp checker a host can run, and a safe-ramps setting that returns every overlay to its preset | D-53, D-63, FR-15, FR-16 |
+| E-26 | The palette as a documented contract of semantic tokens | D-63, FR-15 |
+| E-27 | Overlay presets — temperature, radar and precipitation, alert areas, wind — fully defined and overridable; the temperature preset an absolute scale anchored at freezing | D-62, D-68, D-69, FR-16 |
+| E-28 | A painted ground by default, with an opt-out in which the host declares it | D-64, FR-20 |
 
 ## Rows as read, before the D-61 split
 
