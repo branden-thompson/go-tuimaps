@@ -140,3 +140,16 @@ func clusterWidth(cluster string) int {
 	narrow := runewidth.Condition{EastAsianWidth: false, StrictEmojiNeutral: true}
 	return narrow.StringWidth(cluster)
 }
+
+// constant is a string type no other package can name. A caller elsewhere
+// can therefore hand Const an untyped string constant and nothing else: not
+// a variable, not text that came from outside.
+type constant string
+
+// Const makes Text from a string constant written in the library's own
+// source: its notices, its error messages. Such text needs no cleaning; it
+// is the library's, and the static rules keep invisible characters out of
+// the source it is written in.
+func Const(s constant) Text {
+	return Text{s: string(s)}
+}
