@@ -394,3 +394,31 @@ Put one at a time; each ruling is recorded in HUM LEAD's words in the rulings fi
 *Counted from the rows above. Three rows carry two ids each, because both reviewers raised the same thing; each is counted once, under reviewer A.*
 
 **What held,** by the reviewers' own recounts: 272 tasks; 62 parity rows with owners 4, 5, 1, 4, 6, 31, 7, 4; D-11 to D-94 contiguous, fourteen ◇ marks; 24 and 13 kinds, identical in both places; 34 and 41 diagrams; every "Carries" header equal to its file's text; 48 files with no broken link or ragged table; fixture hashes 25 of 25; all eight commits sole-author and clean; no pronoun for HUM LEAD anywhere. Every colour figure recomputed independently to the first decimal. The pump walked through with two goroutines and five jobs: no wake lost, nothing left spinning. The memory sums re-added: 3.04, 3.34, 4.94 MB.
+
+### Remediation after round 3
+
+One commit carries all of it, with this section.
+
+| Area | What changed | Findings answered |
+|---|---|---|
+| Contract | "Live view" and "need" defined, with the bound on need; the shared-caches handle's own lock and the lock order; the re-entrancy guard armed only by hooks an owner call fired; a `Work` that gives up a shared job for **any** reason — cancelled, or its map closed — re-queues it and wakes the other map; `Close` reworded, and what a `Work` returning `closed` carries; the run index's size, home and life, and which bullet governs a large shape's replacement; the borrow check by run; caps fixed at creation | P3-A-1, -2, -4, -6, -8, -11 |
+| Constants, glossary | The vertex count recomputed with the index's own bytes — 30,303, not 31,250; the run index's row; the mid-grey figure corrected to 8.1; the scope of "ordered" stated; three glossary terms | P3-A-7, P3-B-4, -6, -3 |
+| Requirements | FR-11's "`Work` or `Render`"; the embedded-tiles figure; the status line now lists every row PLAN revised | P3-B-H1, P3-A-H5, P3-B-5 |
+| Diagrams | L1: the test kit inside the library's module, six more edges into `fault`, `CacheUse` on the contract; L2-colour: alerts in the defaults box, the alert colours and the scope of "ordered" in the owed table; L2-memory and L2-tiles: the embedded-tiles figure; L2-overlays: the vertex count. All 41 parse | P3-B-H2, P3-A-12, P3-B-2 |
+| Plan | 284 tasks (was 272). 06.6 rewritten to the diagram's transitions; 06.3, 10.10 and 10.26 restated in what their packages own, with 09.31 (drawing through the run index), 12.27 and 12.28 (the two end-to-end cases) added; 08.4 renamed; 08.8 and 08.9 say lightness and state the scope; 08.23 is HUM LEAD's look at the alert colours, inside M-B; 14.8 no longer counts goroutines; edges from WP-02 to WP-01 and WP-07; **each of the eight owning packages closes with a task that lists its parity rows no other task names — 47 rows** | P3-A-H1, -H2, -H3, -H4, P3-A-3, -5, -9, P3-B-H3 |
+| Risks | RS-26, the alert preset's colours, Medium, with its fallback; 26 risks: High 3, Medium 14, Low 7, Closed 2 | P3-A-9, P3-B-2 |
+| Rulings and options | D-90's options row restored to what option A said; D-92's record corrected to 30,303 and the run length labelled; the summary's two rows no longer share D-89; the list of rulings not given as options completed; a note on what "accepted with the ruling" is | P3-B-1, -8 |
+| Specimens | The temperature ramp file: class 15 moved by 1.9 so that truecolor is ordered under every kind of vision, the 256-colour inversions recorded, the dark-ground figure's ground named; README: S21-8, the legends of 21d and 21e, S22-4's superseded figures | P3-B-3, -6, -7 |
+| First-host start; fixture README | The toolchain line, the tidy step, what a workspace file may hold, the test's conditions; the scan exemption for map tiles | P3-A-10, P3-B-9 |
+
+**For HUM LEAD, with the Plan of Record — not ruled, and not hidden:**
+
+1. Only `Work` and `Settle` report released ids; `Render` never can (the coordinator's reading of D-86's "`Work` or `Render`").
+2. The vertex count above which `Set` builds the run index — 30,303 at the default cap — and the run length of 64.
+3. "Two" as the pump width the peak line is stated at (D-84's option said "a named pump width").
+4. One temperature colour moved by an amount below what the eye can tell, after D-89 and D-93 approved the scale; and the 256-colour scale's three small inversions under simulated colour blindness, recorded and not fixed.
+5. The alert preset's colours are designed in BUILD, with HUM LEAD's look inside M-B.
+6. Twenty-two requirement rows that the Discovery Report ratified were revised in PLAN; the requirements file's status line lists them.
+
+**No fourth round.** Critical findings went 6, 2, 0. What round 3 found was one task row and one requirement sentence that had kept a withdrawn rule, tasks phrased in terms their package cannot see, and definitions a first test would have demanded on its first day. Both reviewers said the same in their counter-arguments. BUILD is test-first from these documents and stops at M-A for HUM LEAD's look. This is the coordinator's judgement; HUM LEAD may order another round before approving.
+

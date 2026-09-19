@@ -19,7 +19,7 @@ flowchart TB
 
     TYPE --> TOK["2 · Semantic tokens (D-63)<br/>each class has a named role — 'radar.4', 'alert.severe.outline', 'temperature.9' —<br/>its place in its scale, never a colour (the list: constants, section 4). A host's own ramp is tokenised low · middle · high and interpolated"]
     TOK --> PAL{"3 · Does the host's palette set this token?"}
-    PAL -- no --> DEF["The library's default for that token<br/>radar and temperature each have two sets of defaults: one for a dark ground, one for a light (D-91) —<br/>chosen by the ground IN EFFECT: painted, or the host's declared colour (D-64, D-88)"]
+    PAL -- no --> DEF["The library's default for that token<br/>radar, temperature and alerts each have two sets of defaults: one for a dark ground, one for a light (D-91) —<br/>chosen by the ground IN EFFECT: painted, or the host's declared colour (D-64, D-88)"]
     PAL -- yes --> THEME["The host's colour"]
     THEME --> SAFE{"4 · Safe ramps on? (D-63)"}
     SAFE -- yes --> DEF
@@ -73,4 +73,6 @@ A host can run the same checker in its own tests (`CheckRamp`).
 | A specimen of step D16 — a coloured basemap with a colourless overlay | D-59 | **Done (specimen 23).** Finding: the basemap needs its own palette chosen from the sixteen; converted colours collapse to white and grey. Seen by HUM LEAD and found good (D-79) |
 | Specimens of a painted light and a painted dark ground | D-64 | **Done (specimen 20), measured:** unpainted, 85% of drawn cells fall under 3:1 on a white terminal; painted, none do once the higher-contrast rule is applied to every line. Seen by HUM LEAD and found good (D-77). The bright style keeps a line's colour where it passes 3:1 on the cell and falls back to black or white where it does not |
 | The list of tokens | D-63; a named PLAN artefact | **Done:** [constants](constants.md), section 4 |
+| **The alert preset's colours** | FR-16; the PLAN artefact "default ramps with their checker results" | **Owed, in BUILD.** PLAN drew two of five severities, on a dark ground. Checked in red-team round 2: those pass there, and both outlines fail 3:1 on a light ground. Designed in task 08.10 for five severities and two grounds; **HUM LEAD looks at them before overlays are declared done (task 08.23, inside M-B)**. Risk RS-26 |
+| What "ordered" covers | FR-16 | Relative luminance, as FR-16 says. Radar's ramps also hold in lightness under every simulated kind of colour vision, at both depths; temperature's do in truecolor, and at 256 colours three neighbouring pairs invert by 0.1 to 1.6 lightness units (constants, section 4) |
 | The colour-vision threshold | FR-16 | **Ruled: D-88** |

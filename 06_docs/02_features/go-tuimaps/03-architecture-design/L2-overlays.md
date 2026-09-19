@@ -14,7 +14,7 @@ flowchart TB
     WARN --> REPL
     RM["Remove(id)"] --> RMR["Returns at once: found or not · old geometry released yes/no (D-86)<br/>queued jobs for it are dropped; it stops drawing at the next Render"]
     VAL -- "accepted" --> REPL{"Same id already set?"}
-    REPL -- yes --> OLD["Replaced. Returns at once: replaced, and whether the old borrow is ALREADY released (D-86).<br/>The old shape keeps drawing from the library's own simplified copy until the new one is prepared.<br/>Over 31,250 vertices: Set builds the run index itself, so the new shape draws next frame from the host's memory (D-92)"]
+    REPL -- yes --> OLD["Replaced. Returns at once: replaced, and whether the old borrow is ALREADY released (D-86).<br/>The old shape keeps drawing from the library's own simplified copy until the new one is prepared.<br/>Over 30,303 vertices at the default cap: Set builds the run index itself, so the new shape draws next frame from the host's memory (D-92)"]
     REPL -- no --> NEW["Created — the result says so, so a mistyped id is visible (D-74)"]
     OLD --> Q
     NEW --> Q

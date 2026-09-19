@@ -95,9 +95,9 @@
    17
   ],
   [
-   153,
-   34,
-   51
+   148,
+   29,
+   46
   ],
   [
    85,
@@ -207,7 +207,15 @@
   "history": "As first filed the scale passed for neighbouring classes only; two non-neighbouring warm classes were 7.5 apart under deuteranopia (8.4 at 256). Found by the PLAN red-team. One class was moved in each version.",
   "against_the_dark_ground": {
    "truecolor_closest_class": 12.1,
-   "colours_256_palette_closest_class": 19.8
+   "colours_256_palette_closest_class": 19.8,
+   "note": "truecolor against 16,22,28; the 256 figure is against 0,0,0 (it is 13.9 against the truecolor ground) - it passes either way"
+  },
+  "order": {
+   "rule": "FR-16: relative luminance rises to the break and falls from it - holds at both depths, both grounds",
+   "lightness_under_simulated_colour_vision": {
+    "truecolor": "holds under all three kinds, after class 15 was moved from 153,34,51 to 148,29,46 - a difference of 1.9, below what the eye can tell; before it, class 14 to 15 got lighter under protanopia (25.7 then 27.4). Found by red-team round 3. The rendered specimens 21a to 21e use the earlier colour.",
+    "colours_256_palette": "does NOT hold: classes 1 to 2 invert under protanopia (43.3, 42.4) and tritanopia (43.7, 42.1), classes 3 to 4 under tritanopia (58.0, 57.9). The palette is too coarse to fix without losing the all-pairs margin."
+   }
   }
  },
  "on_a_light_ground": {
@@ -289,9 +297,9 @@
     17
    ],
    [
-    153,
-    34,
-    51
+    148,
+    29,
+    46
    ],
    [
     85,

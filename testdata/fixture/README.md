@@ -1,6 +1,6 @@
 # The pinned fixture
 
-Test data for the memory and timing requirements (NFR-3, NFR-5; rulings D-29, D-48, D-85). Pinned in PLAN on 2026-09-19 and described in `06_docs/02_features/go-tuimaps/03-architecture-design/memory-measurement.md`. `HASHES` lists every file with its SHA-256; a test (plan task 00.9) fails if any file changes. 25 files, 6.6 MB (6,595,652 bytes).
+Test data for the memory and timing requirements (NFR-3, NFR-5; rulings D-29, D-48, D-85). Pinned in PLAN on 2026-09-19 and described in `06_docs/02_features/go-tuimaps/03-architecture-design/memory-measurement.md`. `HASHES` lists every file with its SHA-256; a test (plan task 00.9) fails if any file changes. 25 files, 6.6 MB (6,595,652 bytes). The map tiles are unmodified map data and hold street and place names from all over the world; a scan of this repository for words that should not appear must leave the `.pbf` files out.
 
 | Part | What | Source, fetched 2026-09-19 | Terms |
 |---|---|---|---|

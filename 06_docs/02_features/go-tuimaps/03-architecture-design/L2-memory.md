@@ -34,7 +34,7 @@ flowchart TB
     end
 
     subgraph NOTHEAP["Not heap at all"]
-      EMB["Embedded tiles: 1.7 MB of program data —<br/>invisible to heap metrics, present in the host's resident memory"]
+      EMB["Embedded tiles: at most 2.5 MB of program data —<br/>invisible to heap metrics, present in the host's resident memory"]
     end
 
     LIVE --> SUM["One view, MEASURED: 1.0 to 1.5 MB live<br/>Three maps over the fixture region, ruled caps, by the measured parts: about 3.0 MB live"]

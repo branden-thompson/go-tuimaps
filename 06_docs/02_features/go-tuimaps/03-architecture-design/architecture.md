@@ -145,6 +145,7 @@ flowchart TB
           TXT["<b>textsafe</b><br/>cleaning · clusters · width (FR-34, NFR-8)"]
           WORKQ["<b>work</b><br/>capped queue · newest view wins · no limiter: the pump's width is the host's (D-73, D-84)"]
           FAULT["<b>fault</b><br/>the typed error · both closed lists of kinds"]
+          KIT["<b>testkit</b><br/>imported by test files only — a static check says so"]
         end
       end
 
@@ -157,6 +158,12 @@ flowchart TB
       FETCH --> FAULT
       MVT --> FAULT
       STYL --> FAULT
+      ARC --> FAULT
+      WORKQ --> FAULT
+      REN --> FAULT
+      COL --> FAULT
+      DESC --> FAULT
+      PROJ --> FAULT
       TILES --> SCENE
       OVR --> SCENE
       REN --> SCENE
@@ -187,7 +194,6 @@ flowchart TB
       GEN["<b>tools/gen-assets</b><br/>builds the embedded tiles (FR-28a)"]
       ORA["<b>tools/oracle</b><br/>a proven decoder, tests only"]
       AK["<b>tools/answer-key</b><br/>the independent M1 key · imports nothing from the library (D-67)"]
-      KIT["<b>internal/testkit</b><br/>inside the library's module, imported by test files only — a static check says so"]
     end
     APP --> PUB
     EX --> PUB
@@ -223,7 +229,7 @@ flowchart LR
       A2b["<b>Places and markers</b><br/>SetPlaces(places) · AddPlace(place) · RemovePlace(id) — ids as upstream (P-61)<br/>what Describe answers for, what FitTo can fit, what markers draw (FR-26)"]
       A3["<b>Overlays</b> (D-74, D-86)<br/>Set(overlay) → created or replaced · old geometry released yes/no<br/>Remove(id) → found or not · released yes/no · InUse(id) · BorrowCheck(on)<br/>structs: Features · ScalarGrid · Image (· VectorGrid · TileImages later)<br/>presets: Temperature · Radar · Alerts (· Wind later) (D-69)"]
       A4["<b>Look</b><br/>SetPalette(tokens) (D-63) · SafeRamps(on) · Ground(painted or declared) (D-64)<br/>ColourDepth(hint) · ReduceMotion(on) (NFR-21) · Layers(on/off) (FR-36) · LabelLanguage(code) (D-82)"]
-      A5["<b>Tiles</b><br/>Source(named network source) (D-65) · CacheRoot(path) · Fetcher(replacement)<br/>SharedCaches(handle) (FR-27, D-85) · Purge() · Verify() (FR-22a)"]
+      A5["<b>Tiles</b><br/>Source(named network source) (D-65) · CacheRoot(path) · Fetcher(replacement)<br/>SharedCaches(handle) (FR-27, D-85) · CacheUse() (D-90) · Purge() · Verify() (FR-22a)"]
       A6["<b>Running the work</b> (D-73, D-84)<br/>Pending() · Work(ctx) · Settle(ctx) · OnPending(wake)<br/>Work and Settle report the ids whose borrow they ended (D-86)"]
     end
     subgraph OUTB["Map → Host"]
