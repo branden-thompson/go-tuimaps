@@ -143,7 +143,7 @@ Put one at a time. Rulings are recorded in `rulings-discover.md` from D-81.
 | Q | Question | From |
 |---|---|---|
 | PL-Q1 | The dependency allow-list, now that the fact behind D-75 is known to be wrong → **D-81: `go-runewidth` and `uax29`** | PL-CQ-1 |
-| PL-Q2 | Parity row P-36, label language, against dropping translations while decoding | PL-CQ-8, PL-BZ-1 |
+| PL-Q2 | Parity row P-36, label language, against dropping translations while decoding → **D-82: one configured language kept, English by default; it joins the cache key** | PL-CQ-8, PL-BZ-1 |
 | PL-Q3 | Parity row P-08, how a cell's colour is chosen | PL-BZ-1 |
 | PL-Q4 | Whether the library limits concurrent decodes — written into D-73's record without a ruling | PL-PM-4, PL-CQ-11, PL-PF-3 |
 | PL-Q5 | Default memory caps, and the line for three maps | PL-PF-1, PL-BZ-5 |

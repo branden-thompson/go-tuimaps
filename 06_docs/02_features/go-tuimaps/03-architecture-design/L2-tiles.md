@@ -8,7 +8,7 @@ Sources are asked in a fixed order. Embedded tiles never override a source the h
 
 ```mermaid
 flowchart LR
-    NEED["Render notes: tile z/x/y is wanted"] --> MEM{"In the memory cache?<br/>keyed by source identity + z/x/y<br/>(never by style or language — FR-31)"}
+    NEED["Render notes: tile z/x/y is wanted"] --> MEM{"In the memory cache?<br/>keyed by source identity + label language + z/x/y<br/>(never by style — FR-31, D-82)"}
     MEM -- yes --> USE["On hand → drawn next frame"]
     MEM -- no --> ANC["Meanwhile: draw the nearest ancestor on hand as a stand-in (D-30)<br/>embedded z0–3 guarantees one if the assets package is imported"]
     MEM -- no --> Q[("Pending work<br/>capped · de-duplicated · newest view wins")]
@@ -27,7 +27,7 @@ flowchart LR
       direction TB
       G1["Body ≤ 2 MiB · gzip or none · decompressed ≤ 8 MiB"]
       G2["Own decoder (D-75): layers ≤ 64 · features ≤ 100,000 · geometry integers ≤ 2,000,000"]
-      G3["Drop while decoding: layers the schema mapping does not use (FR-35) · place-name translations"]
+      G3["Drop while decoding: layers the schema mapping does not use (FR-35) · every place-name language but the configured one (D-82)"]
       G4["Keep coordinates as small integers · retained ≤ 4 MiB"]
       G1 --> G2 --> G3 --> G4
     end
@@ -73,7 +73,7 @@ flowchart TB
 ```mermaid
 flowchart LR
     PLANET[("Pinned planet archive<br/>version · length · entity tag")] -- "range requests, 206 only" --> GEN["tools/gen-assets (separate module)<br/>uses the minimal archive reader (D-58)"]
-    GEN --> STRIP["Decode with the library's own decoder<br/>strip place-name translations (D-33)"]
+    GEN --> STRIP["Decode with the library's own decoder<br/>strip every translation but English (D-33, D-82)"]
     STRIP --> OUT1["85 tiles, zoom 0–3, about 1.7 MB"]
     STRIP --> HASH["SHA-256 list: every source tile, every output tile"]
     OUT1 --> PKG["tuimaps/assets (opt-in import)"]

@@ -188,7 +188,7 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 03.3 | `TestGzipLimit`: a gzip bomb stops at 8 MiB decompressed | Limited decompression | same |
 | 03.4 | `TestLayerLimit` (65 layers refused) | Layer scan | same |
 | 03.5 | `TestDropUnusedLayer`: a layer absent from the schema mapping allocates nothing | Drop while decoding (D-75) | same, with an allocation assertion |
-| 03.6 | `TestKeysAndValues`: only `class`, `name` and the keys the mapping asks for are kept; `name:xx` is never materialised | Attribute filter | same |
+| 03.6 | `TestKeysAndValues`: only `class`, `name`, `house_num`, the configured language's name keys and the keys the mapping asks for are kept; no other `name:xx` is ever materialised (D-82) | Attribute filter | same |
 | 03.7 | `TestFeatureLimit`, `TestGeometryIntegerLimit` | Counts checked before allocating | same |
 | 03.8 | `TestGeometryCommands`: MoveTo, LineTo, ClosePath; zig-zag deltas; a malformed command stream is an error | Geometry decoding into 16-bit pairs with ring markers | same |
 | 03.9 | `TestExtentRange`: 0 and 65,537 refused | Extent | same |
@@ -211,7 +211,7 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 04.5 | `TestFindTile` against a small archive built in the test | Lookup | same |
 | 04.6 | `TestRangeReaderInsistsOn206`: a 200 reply is closed unread | Range reads through `internal/fetch` | same |
 | 04.7 | `FuzzHeader`, `FuzzDirectory` | Fuzz targets | 60 s each |
-| 04.8 | `TestGeneratorStripsTranslations`: output tiles carry `name` and no `name:xx` | `tools/gen-assets`: read pinned archive, decode, strip, re-encode | `go test` in the tool's module |
+| 04.8 | `TestGeneratorStripsTranslations`: output tiles carry `name` and English, and no other `name:xx` (D-82) | `tools/gen-assets`: read pinned archive, decode, strip, re-encode | `go test` in the tool's module |
 | 04.9 | `TestGeneratorWritesHashList`: every source and output tile listed with SHA-256 | HASHES file | same |
 | 04.10 | `TestPinChangesTogether`: pin, hash list and asset disagreeing fails | Pin check (FR-28a) | same |
 | 04.11 | `TestAssetsDecodeThroughGate`: all 85 embedded tiles pass `internal/mvt` with default limits; total ≈ 1.7 MB | `assets` package with `embed` | `go test ./assets` |
@@ -240,7 +240,7 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 06.1 | `TestNoSourceNoConnection`: a map with no named source never dials (D-65) | Source registry; nothing registered by default | `go test ./internal/tiles` |
 | 06.2 | `TestSourceOrder`: disk, then named network, then embedded | Order | same |
 | 06.3 | `TestMemoryCacheByteCap` and `TestOversizeTileDrawnNotCached` (> ¼ of the cap) | Byte-capped cache | same |
-| 06.4 | `TestCacheKeyIgnoresStyleAndLanguage` (FR-31) | Key = source identity + z/x/y | same |
+| 06.4 | `TestCacheKeyIncludesLanguageNotStyle` (FR-31, D-82): a tile decoded for English is never served for another language | Key = source identity + label language + z/x/y | same |
 | 06.5 | `TestAncestorStandIn`: with only a zoom-3 tile on hand, a zoom-6 request yields a stand-in region | Stand-ins (D-30) | same |
 | 06.6 | `TestTileStates`: the transitions of the state diagram, table-driven | State machine | same |
 | 06.7 | `TestNotBeforeDoubles`: 30 s doubling to 10 min; no timer is created | Retry times (FR-23) | same, with the goroutine helper |

@@ -70,6 +70,7 @@ Each question was presented one at a time with: what was being decided, the evid
 | D-79 | Verdict on specimen group Q | *Not put as options.* HUM LEAD's words. | — |
 | D-80 | The plan's milestones and estimate; the PLAN red-team's reviewers | *Not put as lettered options.* HUM LEAD's words: milestones good; estimates mean nothing — done right over done fast; reviewers approved. | — |
 | D-81 | The dependency allow-list, after the fact behind D-75 proved wrong | **A. `go-runewidth` and `uax29`, the module it requires, used for clusters too** · B. Those two plus `uniseg` as a second segmenter · C. Pin the old width library with `uniseg` — cannot work: the host's newer pin wins | A |
+| D-82 | Parity row P-36, label language, against dropping translations while decoding | **A. Keep one configured language, English by default; drop the rest; the language joins the cache key; embedded tiles keep English** · B. Local names only; reclassify the row as superseded · C. Keep every translation — fails the memory target and D-33 | A |
 
 ## Where HUM LEAD chose against the recommendation ◇
 

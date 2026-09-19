@@ -62,7 +62,7 @@
 | P-33 | Label bounds | renderer.rs:278-284 | The anchor must be inside both the world bounds and the canvas | **Fix** | v0.1.0 | L-8: negative rows guarded. |
 | P-34 | Collision | label.rs:28-70 | Works in cell coordinates (`x/2`, `y/4`). The rectangle is `[x-m, x+m+chars] × [y±m/2]`, overlap is inclusive, `m=5`. The scan is linear | **Match** | v0.1.0 | **The rectangle semantics are matched (D-49)** — cell coordinates, margin 5, inclusive overlap. The linear scan is not: how the search is done is free (D-11). |
 | P-35 | POI glyph | renderer.rs:271; config.rs:40 | A symbol with no name draws `◉` | **Match** | v0.1.0 |  |
-| P-36 | Label language | tile.rs:249-259 | Lookup order: `name_<lang>`, `name:<lang>`, `name_en`, `name:en`, `name`, `house_num` | **Match** | v0.1.0 |  |
+| P-36 | Label language | tile.rs:249-259 | Lookup order: `name_<lang>`, `name:<lang>`, `name_en`, `name:en`, `name`, `house_num` | **Match** | v0.1.0 | Matched for one configured language, English by default; every other language is dropped while decoding, and the embedded tiles keep English only (D-82). The language is part of the tile cache key (FR-31). |
 | P-37 | Gzip sniff | tile.rs:58-67 | Detected by the magic bytes `1f 8b` | **Match** | v0.1.0 |  |
 | P-38 | MVT decode | tile.rs:372-438; proto.rs | MoveTo, LineTo, ClosePath (which re-pushes the first point) and zigzag. The default extent is 4096 | **Match** | v0.1.0 |  |
 | P-39 | Ring grouping | tile.rs:443-484 | Signed area ≥0 starts a new polygon. Negative area is a hole in the previous polygon. Each polygon becomes its own feature | **Match** | v0.1.0 |  |
