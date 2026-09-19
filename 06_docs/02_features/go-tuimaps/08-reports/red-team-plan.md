@@ -7,7 +7,7 @@
 | Tree reviewed | `9d4cbd0`, frozen for the whole round — no tracked file changed while reviewers ran |
 | Reviewers | Five, fresh, covering the nine lenses HUM LEAD confirmed (D-38, D-80): code quality · performance and security · accessibility and newcomer · phase lens and business · docs and hygiene |
 | Subject | The architecture and its diagrams, the three approach notes, the implementation plan, the PLAN specimens (17 to 23), the memory measurement |
-| Status | Round 1: **NO-GO as written**, 74 findings; all eight questions ruled (D-81 to D-88); remediation listed below. **Round 2, on the remediation only: NO-GO as written, narrowly — 60 findings, 2 Critical; all five questions ruled (D-90 to D-94); remediation listed at the foot of this file.** **A third, narrow round follows.** |
+| Status | Round 1: **NO-GO as written**, 74 findings; all eight questions ruled (D-81 to D-88); remediation listed below. **Round 2, on the remediation only: NO-GO as written, narrowly — 60 findings, 2 Critical; all five questions ruled (D-90 to D-94); remediation listed at the foot of this file.** **Round 3, narrow: SHIP-WITH-CONDITIONS from every lens but hygiene, which is GO — no Critical, 27 findings, no new question.** Recorded at the foot of this file. |
 
 ## Verdicts
 
@@ -209,7 +209,7 @@ Every finding marked **Fix** above, and where it was done. A finding is listed h
 | P2-DOC-H4 | PL-DQ-14 | The index says the contract has three diagrams (two); the parity mapping is not listed | Minor | Verified | **Fix** |
 | P2-DOC-H5 | PL-BZ-5 | L2-memory's header still says RS-7 is Medium | Important | Verified | **Fix** |
 
-The product reviewer's seven rows under this heading are its findings P2-PRD-1, -2, -4, -5, -6, -7, -9 and -10 below; the docs reviewer's other three are P2-DOC-1, -4 and -8.
+The product reviewer's seven rows under this heading point at eight of its findings below — P2-PRD-1, -2, -4, -5, -6, -7, -9 and -10 (one row named two); the docs reviewer's other three are P2-DOC-1, -4 and -8.
 
 ### New findings
 
@@ -323,3 +323,74 @@ Put one at a time; each ruling is recorded in HUM LEAD's words in the rulings fi
 **The coordinator's errors this round exposed:** two rules never stated (what a cache may evict; a preset against its ground); a checker that tested differences and never order, after round 1 had already caught it testing neighbours only; a measurement reported without saying which fixture it was; an unruled exception written into the contract to keep a ruling literally true; parity owners assigned by upstream's file layout and never checked against who builds the behaviour; frozen parity rows designed against without reading them — for the second round running.
 
 **A third round follows**, narrow: whether round 2's fixes hold, and rulings D-90 to D-94. Both earlier rounds found fixes that did not hold, so this remediation gets the same check.
+
+## Round 3 — narrow: do round 2's fixes hold
+
+| Field | Value |
+|---|---|
+| Date | 2026-09-19 |
+| Tree reviewed | `5572fb5`, frozen for the whole round |
+| Scope | Commits `a96d09c..5572fb5`: round 2's remediation and rulings D-90 to D-94 |
+| Reviewers | Two, fresh: **A** — code quality, performance, security, accessibility, newcomer, business · **B** — docs quality, the phase lens, project hygiene |
+| Status | **No Critical. 27 findings, counting once what both reviewers raised: 15 Important, 12 Minor.** Eight are round-2 fixes that did not hold. No new question for HUM LEAD; five matters are listed in the Plan of Record for HUM LEAD to accept or reject with it |
+
+| Lens | Verdict |
+|---|---|
+| Reviewer A, all six lenses | SHIP-WITH-CONDITIONS |
+| Docs quality | SHIP-WITH-CONDITIONS |
+| Phase lens | SHIP-WITH-CONDITIONS |
+| Project hygiene | GO |
+
+**Critical findings by round: 6, 2, 0.** Reviewer A's summary line gave 10 Important and 4 Minor; its rows give 12 and 5, and the rows are what is counted here. The coordinator re-checked the claims that carry numbers before accepting them: the lightness inversions of P3-B-3, the mid-grey figure of P3-B-6 and the 47 unnamed parity tests of P3-A-H3 all reproduce.
+
+### Round-2 fixes that did not hold
+
+| ID | Round-2 item | What did not hold | Severity | Check | Disposition |
+|---|---|---|---|---|---|
+| P3-A-H1 | D-90, "the quarter rule withdrawn everywhere" | Task 06.6 still tests a held-for-view state "over a quarter of the cache"; the tile machine has no such state. *Found by both reviewers* | Important | Verified | **Fix** |
+| P3-A-H2 | P2-ENG-H7, edges | WP-07 and WP-01 report problems through `fault` and have no edge from WP-02; L1 has no `work` → `fault` edge | Important | Verified | **Fix** |
+| P3-A-H3 | P2-PRD-6, rows with no task | Only the six rows round 2 named were given tasks. 47 of the 62 mapping tests are named in no task, and several of their behaviours — forced pixels, normalising, ocean outside the world, the POI glyph — are built by no task either | Important | Verified: 47, by script | **Fix** — every owning work package gains a closing task that lists its rows |
+| P3-A-H4 | P2-ENG-H4 | Task 14.8 still gates on a goroutine count | Minor | Verified | **Fix** |
+| P3-A-H5 | P2-ENG-7 | L2-memory, L2-tiles and NFR-3 still give the embedded tiles as 1.7 MB; constants and 04.11 say at most 2.5 MB | Minor | Verified | **Fix** |
+| P3-B-H1 | P2-DOC-3, "only `Work` ends a borrow" | FR-11 still says "`Work` or `Render`" | Important | Verified | **Fix**, with the contract's label |
+| P3-B-H2 | P2-DOC-2, -13 | L1 draws the test kit among the separate modules; five packages that report problems have no edge to `fault` | Minor | Verified | **Fix** |
+| P3-B-H3 | P2-DOC-H1 | Task 08.4 is still named and described as the higher-contrast rule alone | Minor | Verified | **Fix** |
+
+*(P3-A-H1 is counted once; reviewer B's first row is the same finding.)*
+
+### New findings
+
+| ID | Finding | Severity | Check | Disposition |
+|---|---|---|---|---|
+| P3-A-1 | **"Live view" is never defined.** State or last render? Does a stand-in ancestor count? Tiles wanted and not arrived? An idle map? A closed one? And need has no stated bound | Important | Verified | **Fix** — defined in the contract, constants and glossary, with the bound |
+| P3-A-2 | `CacheUse` is classed as a short read under "the" lock, but need spans every map on a shared handle; the handle's lock and the lock order are unstated | Important | Verified | **Fix** |
+| P3-A-3 | Tasks 06.3, 10.10 and 10.26 assert things their packages cannot see — maps, views, frames; no render task draws through the run index. *The same class of defect as P2-ENG-H6, a third time* | Important | Verified | **Fix** — package tasks restated in what the package owns; a render task and two public-package tasks added |
+| P3-A-4 | The re-queue exception breaks the re-entrancy rule: a legal owner call arriving while another map's hook fires inside a `Work` would be refused. And a `Work` abandoned by `Close` is not said to re-queue its shared job | Important | Verified | **Fix** |
+| P3-A-5 | Task 08.9's "further from the ground at every step" fails for both ruled ramps if measured as colour difference; only lightness is monotone | Important | Verified | **Fix** — the task says lightness |
+| P3-A-6 | D-92's run index has no stated size, no stated home, and no rule for whether it is kept; at the vertex cap it is twice the shape cache; two bullets of the contract conflict for the fixture's own alert | Important | Verified | **Fix** |
+| P3-A-7, P3-B-4 | "Below 31,250 the fallback can never be needed" ignores the index's own bytes; the count is tied to a cap that might change | Minor | Verified: with the index counted it is 30,303 | **Fix** — recomputed; caps are fixed at creation |
+| P3-A-8 | The borrow check is a second linear pass in `Set`, and "re-checked at every read" re-reads a whole shape on every frame that draws from memory | Important | Verified | **Fix** — fingerprints by run; benchmarked on and off |
+| P3-A-9, P3-B-2 | **The alert-preset gap is not carried visibly**: no risk row, no plan risk row, not in L2-colour's owed table; HUM LEAD's look is a clause inside a task, after M-B | Important | Verified | **Fix** — a risk row (RS-26), both tables, and the look as its own task before M-B |
+| P3-A-10 | The local-override recipe omits the host's toolchain line, the tidy step and the checksum file, and misstates what a workspace file may hold; its test needs the network off and a warm module cache | Important | Accepted | **Fix** |
+| P3-A-11 | `Close` "drops every reference" against `InUse` answering yes afterwards; what a `Work` returning `closed` carries | Minor | Verified | **Fix** |
+| P3-A-12, P3-B-8 (part) | `CacheUse` missing from the L1 contract box and task 12.18; `render-failed` has no test; L2-colour's defaults box omits alerts | Minor | Verified | **Fix** |
+| P3-B-1 | **D-90's record and its options row disagree.** The record states the withdrawal of the quarter rule and the whole-cap threshold as ruled; the options row mentions neither | Important | **Checked against the question as put:** option A's text did say that a simplified shape goes to the host's memory "only when it is bigger than the whole cap, not a quarter of it". The options row shortened it away | **Fix** — the options row restored. The "accepted with the ruling" sentences in D-90 and D-94 are the strongest counter-argument as put with each question; the options file records options only, and now says so |
+| P3-B-3 | **Order under every kind of colour vision is asserted for radar only.** The temperature scale gets lighter from class 14 to 15 under protanopia in truecolor, and inverts in three places at 256 colours; its file says "ordered" with no scope | Important | **Verified** — 25.7 then 27.4; at 256: 43.3/42.4, 43.7/42.1, 58.0/57.9 | **Fix, in part.** FR-16 defines order as relative luminance, which holds. In truecolor one colour moved by 1.9 — below what the eye can tell — makes the scale ordered under all four kinds with every pair still 12.2 apart; done, and labelled as the coordinator's. At 256 colours the palette is too coarse; the scope is now stated and the three small inversions recorded. **Listed for HUM LEAD in the Plan of Record** |
+| P3-B-5 | Stale status headers in the plan; requirement rows edited in PLAN with no note in the file's status | Minor | Verified | **Fix** — and the edited rows are listed in the Plan of Record |
+| P3-B-6 | The mid-grey figure is 8.1, not 9.9; the temperature file's 19.8 is against black; S22-4 still gives the first light ramp's figures as current | Minor | Verified: 8.1 at grey 199, under 10 from 185 to 216 | **Fix** |
+| P3-B-7 | Specimens 21d and 21e carry a legend 20 °C off; the header's caveat covers the data, not the legend | Minor | Verified | **Fix** — a README line; D-93 judged colours |
+| P3-B-8 | "Seven rows" that name eight; D-89 in two summary rows; six verdict rulings missing from the list of rulings not given as options | Minor | Verified | **Fix** |
+| P3-B-9 | A vendor-name scan matches street names inside a Paris map tile | Minor | Verified: unmodified map data | **Accepted** — SHIP's scan exempts the tile files; noted in the fixture's README |
+
+### Tally, round 3
+
+| | Critical | Important | Minor | Total |
+|---|---|---|---|---|
+| Fixes that did not hold | 0 | 4 | 4 | 8 |
+| New — reviewer A | 0 | 9 | 3 | 12 |
+| New — reviewer B alone | 0 | 2 | 5 | 7 |
+| **Total** | **0** | **15** | **12** | **27** |
+
+*Counted from the rows above. Three rows carry two ids each, because both reviewers raised the same thing; each is counted once, under reviewer A.*
+
+**What held,** by the reviewers' own recounts: 272 tasks; 62 parity rows with owners 4, 5, 1, 4, 6, 31, 7, 4; D-11 to D-94 contiguous, fourteen ◇ marks; 24 and 13 kinds, identical in both places; 34 and 41 diagrams; every "Carries" header equal to its file's text; 48 files with no broken link or ragged table; fixture hashes 25 of 25; all eight commits sole-author and clean; no pronoun for HUM LEAD anywhere. Every colour figure recomputed independently to the first decimal. The pump walked through with two goroutines and five jobs: no wake lost, nothing left spinning. The memory sums re-added: 3.04, 3.34, 4.94 MB.
