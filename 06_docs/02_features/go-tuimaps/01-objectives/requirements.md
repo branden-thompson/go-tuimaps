@@ -13,7 +13,7 @@ Every requirement traces to a ruling, a finding, a brief item or a red-team find
 
 | Brief | Sharpened by rulings into |
 |---|---|
-| R-1 parity with TerminalMap | FR-1, FR-2, FR-26, FR-27 — behavioural parity on 68 frozen rows (D-11, D-37) |
+| R-1 parity with TerminalMap | FR-1, FR-2, FR-26, FR-27 — behavioural parity on a frozen denominator of 70 rows, 62 of them in v0.1.0 (D-11, D-37, D-49) |
 | R-2 embeddable in Watchpost | FR-4, FR-24, FR-25, FR-27, NFR-1..NFR-6 — a framework-neutral library imported as a Go package (D-13) |
 | R-3 overlays from sources independent of the basemap | FR-6..FR-19 — five input shapes; the host fetches (D-14, D-15) |
 | R-4 high-volume host data | FR-11 — a contract and simplification problem, not throughput (S1-5, D-16) |
@@ -27,7 +27,7 @@ Every requirement traces to a ruling, a finding, a brief item or a red-team find
 | FR-2 | Draw waterways, parks, airport runways and airport labels. | D-12, S8-1 |
 | FR-3 ◆ | Provide two renderers, each with reference-frame tests and approved specimens. **Braille is the default.** The block renderer is one a user opts into, with its own sparser profile (no roads unless asked for); the renderer can be switched at runtime in both directions. | D-23, D-42, S2-1 |
 | FR-20 | Ship its own `dark` and `bright` styles written against OpenMapTiles; accept a user's style in the same JSON format, honouring every zoom stop. | D-24, L-9 |
-| FR-19 | Thin the basemap by renderer, map size and what is drawn on top; let water own its cells when a field or image is active. | S1-2, S2-1, S3-4, S5-1 |
+| FR-19 | *(ratified by D-41, D-42, D-49)* Thin the basemap by renderer, map size and what is drawn on top; let water own its cells when a field or image is active. | S1-2, S2-1, S3-4, S5-1 |
 | **Overlays** | | |
 | FR-6 | Accept feature overlays: points, lines, polygons and circles in longitude/latitude, each with style, optional label, id and credit. | D-14 |
 | FR-7 | Accept scalar grids: a regular longitude/latitude grid of values with class breaks and a ramp. | D-14, S1-5 |
@@ -35,7 +35,7 @@ Every requirement traces to a ruling, a finding, a brief item or a red-team find
 | FR-9 | Accept georeferenced images, each with a **required** colour-to-intensity table, and re-colour them with the library's ramp; a provider's own colours are never shown. Matching is nearest-colour within a stated tolerance; unmatched pixels become no-data and are counted and reported, so a changed palette is visible rather than silently wrong. | D-14, D-36, D-39, D-45 |
 | FR-10 | Accept tile-image providers — a host-supplied function per tile — under the same table rule. | D-14, D-36 |
 | FR-11 ◆ | Simplify host shapes to the dot tolerance of the view. Shapes outside the view cost nothing to draw, and nothing is ever drawn outside the given rectangle. The simplified, *unclipped* result is cached per zoom bucket (buckets defined in PLAN; fractional zoom maps to one); on a miss, the nearest cached bucket is drawn while the right one is prepared, so a shape never vanishes mid-zoom. Simplification is iterative, never recursive, with a worst case no worse than n·log n. Host geometry is held by reference, not copied; raw and simplified bytes both count against the shape cap; input over the cap is refused with an error (NFR-20). Shapes crossing ±180° longitude are split there; the longitude convention is −180..180 and is stated. | D-16, CQ-7, CQ-10, P-4, S-3 |
-| FR-12 | Composite by a stated order: areas own the cell background (water, then images and fields, then tints); lines and glyphs own the foreground; labels sit on top. | specimens, cross-cutting 2 |
+| FR-12 | *(ratified by D-41, D-42, D-49)* Composite by a stated order: areas own the cell background (water, then images and fields, then tints); lines and glyphs own the foreground; labels sit on top. | specimens, cross-cutting 2 |
 | FR-13 | Expose legend data — class breaks and colours — for every overlay. | D-36, S1-6 |
 | FR-14 | Report the credits in force, basemap and overlays together; draw an optional one-line credit on the map, on by default. | D-25, S9-1 |
 | **Colour and theme** | | |
