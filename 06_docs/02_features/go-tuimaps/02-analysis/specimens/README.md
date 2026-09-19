@@ -112,7 +112,7 @@ Produced because the round found claims resting on renderings that did not exist
 
 ### Specimen 16 — a diverging temperature ramp (approved by ruling D-53)
 
-Made to see whether the weather convention — cold is blue, hot is red — can be kept safely. Files: `16-diverging-ramp-149x38`, `16-diverging-ramp-69x12`, `16-diverging-ramp-256-colour-149x38`. The ramp is the published seven-class blue–pale–red scheme from the ColorBrewer family, with line work chosen black or white per cell. **Not yet reviewed by HUM LEAD.**
+Made to see whether the weather convention — cold is blue, hot is red — can be kept safely. Files: `16-diverging-ramp-149x38`, `16-diverging-ramp-69x12`, `16-diverging-ramp-256-colour-149x38`. The ramp is the published seven-class blue–pale–red scheme from the ColorBrewer family, with line work chosen black or white per cell. **Reviewed by HUM LEAD on the review page (D-54): "Seen, Looks fine".**
 
 Measured with the same test the accessibility review used (relative luminance; colour difference between steps under simulated protanopia, deuteranopia and tritanopia):
 
