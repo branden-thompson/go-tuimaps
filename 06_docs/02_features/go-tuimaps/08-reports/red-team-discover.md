@@ -17,7 +17,7 @@
 |---|---|---|
 | DISCOVER phase lens | SHIP-WITH-CONDITIONS | RS-3 over-claimed; M1 has no scenario set; host dependency under-stated |
 | Code Quality | SHIP-WITH-CONDITIONS | Async ownership undefined; NFR-3 unmeasurable and fails its arithmetic; untrusted-input limits and escape injection missing |
-| Project Hygiene | SHIP-WITH-CONDITIONS | Reflog-only commit with a trailer; identity positional, not repo-local; public docs narrate the attribution rule |
+| Project Hygiene | SHIP-WITH-CONDITIONS | A superseded commit kept only in the local undo history; identity positional, not repo-local; wording of commit-hygiene rules in public docs |
 | Business Quality | SHIP-WITH-CONDITIONS | No written v0.1.0 slice; M1 unanchored; host work under-counted |
 | Docs Quality | SHIP-WITH-CONDITIONS | RS-3 claim unsupported by the record; stale statements unflagged |
 | Accessibility | SHIP-WITH-CONDITIONS | No non-visual answer to "where"; feature overlays meaningless with no colour; ramps not colour-vision-safe |
@@ -89,12 +89,12 @@ Each finding was checked against the documents or the source before being accept
 
 | # | Finding | Reviewer | Coordinator | Disposition |
 |---|---|---|---|---|
-| PH-1 | A reflog-only commit holds an attribution trailer and the harness files; not pushed by `git push`, but travels with any copy of `.git` | Important | **Verified** | **Ruling Q9:** destructive step; needs HUM LEAD's confirmation. |
+| PH-1 | A superseded commit, reachable only through the local undo history, held a tool-generated trailer and local tooling files; never pushed by `git push`, but it travels with any copy of `.git` | Important | **Verified** | **Fixed (D-50):** shown to HUM LEAD, then purged; branch tips, all commits and the integrity check verified unchanged. Publish only from a fresh clone. |
 | PH-2 | Identity was positional, not repo-local | Important | **Verified** | **Fixed:** repo-local identity set. **PLAN:** identity check in the phase-exit gate. |
-| PH-3 | Public docs narrate the attribution rule and its enforcement | Important (escalated) | Accepted; the first host's public docs carry the same narrative, so there is precedent either way | **Ruling Q9.** |
-| PH-4 | An employer-prefixed token inside a verbatim quote (brief, D-1); the framework's name in tracked text | Important | **Verified** — the coordinator's scan pattern had a hyphen where the quote has a space | **Fix:** token removed with an ellipsis mark; scan pattern corrected. Framework name: **Ruling Q9**. |
+| PH-3 | How much the public docs say about commit-hygiene rules and their enforcement | Important (escalated) | Accepted; the first host's public docs carry the same narrative, so there is precedent either way | **Fixed (D-50):** neutral wording in tracked documents. |
+| PH-4 | An employer-prefixed token inside a verbatim quote (brief, D-1); the framework's name in tracked text | Important | **Verified** — the coordinator's scan pattern had a hyphen where the quote has a space | **Fix:** token removed with an ellipsis mark; scan pattern corrected. Framework name kept, command names replaced with plain descriptions (D-50). |
 | PH-5 | Process vocabulary pervasive; undecodable by a public reader | Minor | Accepted | **Fix:** glossary. |
-| PH-6 | `.gitignore` names vendor products | Minor | **Declined:** the tracked ignore block is the guard that keeps harness files out; the first host does the same. Offered to HUM LEAD in Q9. | — |
+| PH-6 | `.gitignore` names vendor products | Minor | **Declined:** the tracked ignore block is the guard that keeps local tooling files out; the first host does the same. Offered to HUM LEAD in Q9. | — |
 | PH-7 | `.gitignore` gaps and one redundant line | Minor | Accepted | **BUILD entry.** |
 | PH-8 | Commit-unit drift in three commits | Minor | Accepted for DISCOVER | One unit per commit from here. |
 | PH-9 | No DISCOVER exit report yet; folders 03–07 absent | Minor | Phase-appropriate | The Discovery Report follows this review. |

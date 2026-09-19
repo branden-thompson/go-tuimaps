@@ -74,7 +74,7 @@ Every requirement traces to a ruling, a finding, a brief item or a red-team find
 | NFR-11 | Automated tests never contact the public tile server. | D-30 |
 | NFR-12 | The library never bulk-downloads or prefetches from the public tile server. | D-21 |
 | NFR-13 | MIT licence; both upstream notices carried; OpenMapTiles and OpenStreetMap credited; the embedded data carries its own notice. | D-13, D-25, D-33 |
-| NFR-14 | No AI attribution or watermark in any commit, PR, file or artifact; the development harness stays untracked. | C-2, D-7 |
+| NFR-14 | Sole-author commits: no tool-generated trailers or watermarks in commits, PRs, code or shipped artifacts. Local development tooling stays untracked. Checked on every commit and at every phase exit. | C-2, D-7 |
 | NFR-15 ◆ | Accessibility: nothing reachable by pointer only, shown by a scripted keys-only session that reaches every state a pointer session reaches; legible with no colour, shown by a reviewer answering the M1 questions from the no-colour reference frames alone; with no depth hint from the host, a non-empty `NO_COLOR` selects the no-colour depth. *Further accessibility requirements are proposed in Q11–Q13.* | D-17, D-23, D-35, A-6, A-7 |
 | NFR-16 ◆ | Tests first for all Go code, run with the race detector; the code-quality gate is declared and green from BUILD entry; builds use the floor toolchain (Go 1.25) with read-only modules, so an API newer than the first host's cannot slip in. | FULL TDD, D-20, CQ-12 |
 
