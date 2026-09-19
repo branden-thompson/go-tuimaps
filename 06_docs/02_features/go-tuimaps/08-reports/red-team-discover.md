@@ -9,7 +9,7 @@
 | Scope reviewed | Everything under `06_docs/02_features/go-tuimaps/`, plus `go.mod`, `.gitignore` and the git history, at commit `8830c11` |
 | Lens set | Four fixed axes (Code Quality solo; Project Hygiene; Business Quality and Docs Quality sectioned, independent verdicts) · the DISCOVER phase lens · four confirmed personas in two sectioned pairs. Safety-critical not activated: it triggers on compiled code under the P10 gate, declared at BUILD entry (D-20). |
 | Tree state | All six reviewers recorded a clean tree at `8830c11`. One uncommitted edit by the coordinator (the D-38 row in `rulings-discover.md`) was made after four reviewers had started, against the project's own freeze rule; one reviewer saw it, attributed it correctly, and did not report it as a defect. No other mutation during the round. |
-| Status | Round 1 recorded and remediated; its thirteen questions ruled (D-40 to D-56). **Round 2 recorded below**: four lenses SHIP-WITH-CONDITIONS, one NO-GO (accessibility), since remediated; ten questions for HUM LEAD. |
+| Status | Round 1 recorded and remediated; its thirteen questions ruled (D-40 to D-56). **Round 2 recorded below**: eight lenses SHIP-WITH-CONDITIONS, one NO-GO (accessibility), since remediated; ten questions, all ruled (D-57 to D-66). *(This line said "four lenses"; four was the number of reviewers who shipped with conditions.)* **Round 3 recorded below**: all three reviewers SHIP-WITH-CONDITIONS, no Critical. |
 
 ## Verdicts
 
@@ -393,7 +393,7 @@ Put one at a time, as in round 1. **All ten are ruled (D-57 to D-66)**, recorded
 | R2-Q9 | Whether the library reaches the network without being told to → **D-65: never; the app enables the default source, says so, and offers an offline flag** | R2-IS-B2, R2-NC-3 |
 | R2-Q10 | One commit message that narrates hygiene work → **D-66: it stands; history is not rewritten** | R2-PH-4 |
 
-Also asked of HUM LEAD, not as rulings: a second look at the corrected specimens (13a, 14, 16); a look at the specimen files in his own terminal before PLAN exit.
+Also asked of HUM LEAD, not as rulings, **both before PLAN exit**: a second look at the corrected specimens (13a, 14, 16); a look at the specimen files in his own terminal.
 
 ## Remediation after round 2
 
@@ -404,8 +404,81 @@ Also asked of HUM LEAD, not as rulings: a second look at the corrected specimens
 | `fe4e7eb` | Specimen files marked byte-exact |
 | `ae17b89` | Brief amended to v1.0.3 |
 | `2d97f91` | Sweep: answered questions, forward pointers, options in full, two risks |
-| (this commit) | This record; glossary terms; units and error kinds in the requirements |
+| `5b1fcdf` | This record; glossary terms; units and error kinds in the requirements |
+| `a6e2d5a`, `8b785a6`, `2436c09`, `fe4b33d`, `cfc824a`, `4ad3010`, `7388fc7` with `5cf56ea`, `7bba6e3`, `acaf041`, `9ef52d3` | Rulings D-57 to D-66, one commit each. *The message of `7388fc7` says it carried D-63 into the requirements; it did not — a script had stopped part-way — and `5cf56ea` did, saying so.* |
 
 **Carried to PLAN, added by round 2:** a passing radar ramp per depth; a confirmed bounding-box image source, at entry; renderings of scenarios 2, 6 and 7; per-tile maxima across all zoom levels; the pinned fixture's exact contents; a minimum-size note for braille. **Owed in the Discovery Report:** the options-and-do-nothing table, the M6 tally, the post-SHIP check, the cost breakdown, proposed extension rows.
 
 **A third round:** the find-rate has not converged — round 2 found five Criticals, most in round 1's fixes. A narrow third round follows the round-2 rulings: fresh reviewers, the round-2 fix commits only.
+
+---
+
+# Round 3
+
+| Field | Value |
+|---|---|
+| Date | 2026-09-19 |
+| Tree reviewed | `9ef52d3`, frozen for the whole round |
+| Scope | Narrow: only what round 2's remediation and rulings D-57 to D-66 changed |
+| Reviewers | Three, fresh: requirements (code quality, performance, security); product (accessibility, newcomer, phase lens, business); docs and hygiene |
+| Finding codes | R3-REQ · R3-PRD · R3-DOC · R3-HYG |
+
+**Verdicts: SHIP-WITH-CONDITIONS from all three. No Critical.** Each reviewer argued against their own verdict in both directions; two noted that a literal contradiction inside the first release could be called Critical, and each held at conditions because every such item is a one-sentence fix with the later-ruled row unambiguous. Find-rate by round: 8 Critical, then 5, then 0.
+
+## Round-2 fixes that held only in part
+
+| Round-2 finding | What was still wrong | Disposition |
+|---|---|---|
+| R2-AX-4 · R2-AX-5 | Specimen 14's legends now matched, but its text colour was still chosen by a brightness threshold: white on the teal band at 3.82:1 where black gives 5.49:1 — the file offered to HUM LEAD for a second look | **Fixed and measured**: both contrasts compared; lowest pair 5.49:1 in both files |
+| R2-AX-1 | The specimen fix held, but closing it changed FR-18a's acceptance to "the frame *together with* the description" while M1 and NFR-15 still say "from the frame alone" | **Question R3-Q1** — M1 is under HUM LEAD's change control and was weakened without him |
+| R2-CQ-1 | An idle host makes no call, so a failed tile was never retried; the deadline's clock was unstated | **Fixed** (FR-23, FR-25: the deadline includes the retry time, on the wall clock) |
+| R2-CQ-4 | The borrow had no end: a cancelled job could still be reading geometry the host had reused | **Fixed** (FR-11: the replace and remove calls report when nothing still reads it) |
+| R2-PF-A1 | Memory passed by moving the cost into drawing: no time bound, whole-ring culling, no seam handling, "(proposed)" left in | **Fixed** (FR-11); the time figure is **owed at PLAN exit** |
+| R2-PF-A5 | Sharing was optional and the test measured one instance | **Fixed** (NFR-3: one instance and three) |
+| R2-IS-B5 | "A stated range" with no range | **Fixed** (FR-9) |
+| R2-IS-B3 | A wrapped transport error still carries the address | **Fixed** (FR-22b) |
+| R2-DQ-3 · 4 · 5 | Answered questions shown as open, again, after the rulings | **Fixed** |
+| R2-PH-1 | Neutral wording holds only for the two rows round 2 declined | **Question R3-Q3** |
+| R2-CQ-15 | The attributes file did half of what its comment said | **Fixed** |
+
+## New findings
+
+| ID | Finding | Severity | Check | Disposition |
+|---|---|---|---|---|
+| R3-REQ-1 · R3-PRD-6 | NFR-19 told every grid to supply breaks; after D-62 that is an error for temperature | Important | Verified | **Fixed** |
+| R3-REQ-2 | NFR-20 refused a ramp that fails FR-16; D-53 says reported, not refused | Important | Verified | **Fixed** |
+| R3-REQ-3 | NFR-3's numbers left zero bytes for other live state, and at the default collector setting the peak line is reached by garbage alone | Important | accepted | Headroom **fixed**; the tension between the two ruled lines is stated in NFR-3 and reported by the PLAN-exit measurement — the lines are HUM LEAD's (D-48) |
+| R3-REQ-4 | Input ceilings exceed the memory budget | Important | Verified by arithmetic | **Fixed** (the budget applies to the fixture; a formula bounds the rest) |
+| R3-REQ-5 · R3-PRD-8 | "Contrast checks are exact" is false at 16 colours; the compositing order had no ground | Important | accepted | **Fixed** (FR-20, FR-12) |
+| R3-REQ-6 | "Never by position" cannot hold for a generic grid; no cap on classes | Important | accepted | **Fixed** (FR-15, FR-7) |
+| R3-REQ-7 | "One colour, one temperature" fails across units if each unit has round breaks | Important | accepted | **Fixed** (FR-16: defined once, converted exactly) |
+| R3-REQ-8 | Shared caches against "nothing outlives the instance" | Important | accepted | **Fixed** (FR-27) |
+| R3-REQ-9 | The unit the fill rule applies to was unstated; across a whole feature, overlapping parts would read "outside" | Important | accepted | **Fixed** (FR-11) |
+| R3-REQ-10 to 13 | The closed glyph list; zero-width marks inside clusters; ids colliding after cleaning; settle silent about failure; wording | Minor | accepted | **Fixed**, except NFR-4's provisional figure, which stays marked unverified |
+| R3-PRD-1 | The primary metric's acceptance was weakened inside a requirement without a ruling | Important; exit condition | Verified | **Question R3-Q1** |
+| R3-PRD-2 | D-62 records consent by silence, against D-39 | Important | Verified | **Question R3-Q2**, part b |
+| R3-PRD-3 | D-62 against M1 scenario 4: on an ordinary day an absolute scale may show one band, and no contour at all with no colour; the option said "flat-looking" and the ruling row dropped it; the ramp-length tension was filed for PLAN, not put to him | Important; exit condition | Verified | **Question R3-Q2**, part a |
+| R3-PRD-4 | D-57 can leave a user with no map and no warning | Important | Verified | **Fixed** (NFR-8, A-2, NFR-20; new risk RS-25) |
+| R3-PRD-5 | "Can always reach the safe defaults" over-claimed | Important | Verified | **Fixed** |
+| R3-PRD-7 | Owed items without a phase or a home | Important | Verified | **Fixed** |
+| R3-PRD-9 · 10 · R3-DOC-6 | Stale markers; glossary terms | Minor | Verified | **Fixed** |
+| R3-DOC-1 | Four statements contradicted by the round-2 rulings | Important | Verified | **Fixed** |
+| R3-DOC-2 to 5 | Unmarked rows; a miscounted status line; the row split not carried to three places; the remediation table stopped short | Minor | Verified | **Fixed** |
+| R3-HYG-1 | **A second commit message narrates hygiene work** (`ae17b89`). D-66 was put to HUM LEAD as "one commit message"; the premise was an undercount | Important | **Verified** | **Question R3-Q3**, part a |
+| R3-HYG-2 | About twenty sentences in tracked documents say more about commit hygiene than the ruled sentence — in the brief's change log, a risk row, the rulings summary and this record | Important | Verified | **Question R3-Q3**, part b |
+| R3-HYG-3 | One unreachable object: an earlier draft of the specimen findings, read by the reviewer and found benign | Minor | Verified | **Question R3-Q3**, part c |
+| R3-HYG-4 | The attributes file | Minor | Verified | **Fixed** |
+
+**Tally:** 11 round-2 fixes held only in part; 33 new findings (13 requirements, 10 product, 6 docs, 4 hygiene); no Critical; three questions for HUM LEAD; none dropped. **Verified clean by recount:** parity 48 · 13 · 2 · 12 · 2, denominator 75, 62 in the first release, the five original rows character-identical to the research; 25 risks after this round; 66 requirements, all placed; rulings D-11 to D-66 without a gap; every commit sole-author with no trailers.
+
+**Coordinator's own errors found by this round:** an acceptance criterion of the primary metric changed without a ruling; consent recorded from silence, against D-39 and for the second time; a ruling's known downside dropped from its record; a question to HUM LEAD built on an undercount; a text colour said to be fixed that was not; answered questions left showing as open, for the third round running.
+
+## Questions for HUM LEAD from round 3
+
+| Q | Question | From |
+|---|---|---|
+| R3-Q1 | Whether M1 at the smallest map size may use the text description, or must be answerable from the frame alone | R3-PRD-1 |
+| R3-Q2 | D-62: (a) the flat-day consequence for M1 scenario 4; (b) the common part, in his own words | R3-PRD-3, R3-PRD-2 |
+| R3-Q3 | Hygiene: (a) the second commit message; (b) whether D-50 exempts the review record and change logs; (c) one unreachable object | R3-HYG-1, -2, -3 |
+
+**A fourth round:** not proposed. The find-rate has converged — no Critical, and every finding a wording or record defect — and two reviewers independently judged that a fourth round would mostly review its own fixes. The round-3 rulings and their edits are checked by the coordinator's recount and by HUM LEAD's reading of the Discovery Report.
