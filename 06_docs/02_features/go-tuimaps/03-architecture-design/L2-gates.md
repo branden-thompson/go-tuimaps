@@ -11,10 +11,11 @@ flowchart TB
       M0["library"] --- M1["cmd/tuimaps"] --- M2["examples"] --- M3["tools/gen-assets"] --- M4["tools/answer-key"] --- M5["tools/oracle"]
     end
     GATE["The gate script<br/>writes a throw-away workspace file so the nested modules resolve the library from this tree —<br/>the tracked module files carry no replace line"] --> MODS
-    MODS --> T1["Tests under the race detector"]
+    MODS --> T0["A module with no packages yet is named and called EMPTY — not failed, not hidden"]
+    MODS --> T1["Tests under the race detector, on the floor toolchain"]
     MODS --> T2["A second leg WITHOUT the race detector: the zero-allocation and allocation-count tests live here"]
     MODS --> T3["Fuzz: every target, 60 s (an hour before a release)"]
-    MODS --> T4["Vulnerability scan: each module AND the standard library at the toolchain in use"]
+    MODS --> T4["Vulnerability scan: each module AND the standard library —<br/>on the machine's NEWEST toolchain, named in the report, not on the floor:<br/>the floor keeps a newer API out, and its standard library carries every vulnerability fixed since"]
     MODS --> T5["Licence file present for every module in each graph"]
     M0 --> A1["Allow-list: with the workspace file off, the library's graph is go-runewidth and uax29 only (D-81)"]
     M0 --> A2["Static checks on library packages: no 'go' statement · no timer or ticker ·<br/>no write to standard output or error · render imports neither tiles nor fetch"]

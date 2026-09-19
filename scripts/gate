@@ -1,0 +1,156 @@
+#!/usr/bin/env bash
+# The local gate. No remote exists until SHIP, so this script is what stands
+# before every merge; at SHIP it becomes the hosted workflow.
+#
+#   scripts/gate            every leg
+#   scripts/gate --quick    skip the slow legs: fuzzing, the vulnerability
+#                           scan, licences, the cross-compile, the second
+#                           architecture
+#
+# GATE_ROOT names the tree to check; by default, the repository this script
+# is in. Every module in the tree is checked, one by one - not only the
+# library. The separate modules resolve the library through a throw-away
+# workspace file written here and removed on exit; tracked module files
+# carry no replace directive, and the workspace file is never tracked.
+#
+# What cannot run on this machine is listed at the end as NOT RUN, never
+# counted as passed: Linux, Windows, real amd64 hardware, a nightly soak.
+
+set -u
+set -o pipefail
+
+FLOOR_TOOLCHAIN="go1.25.0"
+FUZZ_TIME="60s"
+TARGETS="darwin/arm64 darwin/amd64 linux/amd64 linux/arm64 windows/amd64"
+
+quick=0
+for arg in "$@"; do
+  case "$arg" in
+    --quick) quick=1 ;;
+    *) echo "gate: unknown argument: $arg" >&2; exit 2 ;;
+  esac
+done
+
+root="${GATE_ROOT:-}"
+if [ -z "$root" ]; then
+  root="$(cd "$(dirname "$0")/.." && pwd)"
+fi
+cd "$root" || { echo "gate: cannot enter $root" >&2; exit 2; }
+
+export GOTOOLCHAIN="$FLOOR_TOOLCHAIN"
+export GOFLAGS="-mod=readonly"
+
+failures=""
+fail() { failures="${failures}  FAILED  $1"$'\n'; echo "  FAILED  $1"; }
+pass() { echo "  ok      $1"; }
+
+# leg NAME COMMAND... runs one leg and records the outcome. The output of a
+# failing leg is shown; a passing leg is one line.
+leg() {
+  local name="$1"; shift
+  local out
+  if out="$("$@" 2>&1)"; then
+    pass "$name"
+  else
+    fail "$name"
+    printf '%s\n' "$out" | sed 's/^/          /'
+  fi
+}
+
+echo "gate: $root"
+echo "gate: toolchain $FLOOR_TOOLCHAIN, read-only modules$([ "$quick" = 1 ] && echo ', quick legs only')"
+
+# --- the workspace file is never tracked -------------------------------------
+if git -C "$root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  tracked="$(git -C "$root" ls-files -- go.work go.work.sum)"
+  if [ -n "$tracked" ]; then
+    fail "go.work is tracked: $(echo $tracked). Remove it from the index (git rm --cached) - the gate writes its own"
+  fi
+fi
+
+# --- every module, found by its module file ----------------------------------
+modules="$(find . -name go.mod -not -path '*/testdata/*' -not -path '*/.*' -not -path './_*' -not -path './dist/*' | sed 's|/go.mod$||' | sort)"
+if [ -z "$modules" ]; then
+  echo "gate: no module found under $root" >&2
+  exit 2
+fi
+
+# --- the throw-away workspace file ------------------------------------------
+made_work=0
+if [ -z "${tracked:-}" ]; then
+  rm -f go.work go.work.sum
+  if GOFLAGS= go work init $modules >/dev/null 2>&1; then
+    made_work=1
+  else
+    fail "could not write the workspace file"
+  fi
+fi
+cleanup() { [ "$made_work" = 1 ] && rm -f "$root/go.work" "$root/go.work.sum"; }
+trap cleanup EXIT
+
+for dir in $modules; do
+  path="$(cd "$dir" && GOWORK=off go list -m 2>/dev/null)"
+  echo
+  echo "module ${path:-$dir}"
+  (
+    cd "$dir" || exit 1
+    failures=""
+    # A module whose packages arrive with a later work package has nothing
+    # to check yet. It is named and said to be empty - not failed, not hidden.
+    if [ -z "$(go list ./... 2>/dev/null)" ]; then
+      echo "  empty   no Go packages yet"
+      exit 0
+    fi
+    leg "vet" go vet ./...
+    leg "tests, race detector on" go test -race ./...
+    leg "tests, race detector off (allocation counts live here)" go test ./...
+    if [ "$quick" = 0 ]; then
+      for pkg in $(go list ./... 2>/dev/null); do
+        for target in $(go test -list '^Fuzz' "$pkg" 2>/dev/null | grep '^Fuzz'); do
+          leg "fuzz $target, $FUZZ_TIME" go test -run '^$' -fuzz "^${target}\$" -fuzztime "$FUZZ_TIME" "$pkg"
+        done
+      done
+      if command -v govulncheck >/dev/null 2>&1; then
+        # The floor toolchain keeps a newer API out; it is not what a release
+        # is built with, and its standard library carries every vulnerability
+        # fixed since. The scan runs on this machine's own toolchain, named here.
+        leg "vulnerability scan, module and standard library at $(GOTOOLCHAIN=local go env GOVERSION)" env GOTOOLCHAIN=local govulncheck ./...
+      else
+        fail "govulncheck is not installed: go install golang.org/x/vuln/cmd/govulncheck@latest"
+      fi
+      # A licence file for every module in this module's graph. A module
+      # of this repository is covered by the repository's own licence file.
+      for mdir in $(GOWORK=off go list -m -f '{{.Dir}}' all 2>/dev/null); do
+        case "$mdir" in "$root"|"$root"/*) mdir="$root" ;; esac
+        if ! ls "$mdir"/LICEN[SC]E* >/dev/null 2>&1; then
+          fail "no licence file in $mdir"
+        fi
+      done
+    fi
+    [ -z "$failures" ]
+  ) || failures="${failures}  FAILED  module ${path:-$dir}"$'\n'
+done
+
+# --- the library only ---------------------------------------------------------
+if [ "$quick" = 0 ]; then
+  echo
+  echo "library"
+  for target in $TARGETS; do
+    leg "cross-compile $target, C toolchain off" env CGO_ENABLED=0 GOOS="${target%/*}" GOARCH="${target#*/}" go build ./...
+  done
+  # Reference frames must be byte-identical on a second architecture. This
+  # leg FAILS - never skips - when the second architecture cannot be run.
+  host_arch="$(go env GOARCH)"
+  other_arch="amd64"; [ "$host_arch" = "amd64" ] && other_arch="arm64"
+  leg "tests on $other_arch (emulated here; real hardware is NOT RUN)" env GOARCH="$other_arch" go test ./...
+fi
+
+echo
+if [ -n "$failures" ]; then
+  echo "gate: FAILED"
+  printf '%s' "$failures"
+  echo "What to do: fix each FAILED leg above and run the gate again. Nothing merges until it is green."
+  exit 1
+fi
+echo "gate: green"
+echo "NOT RUN on this machine, and not assumed: Linux and Windows test runs; real amd64 hardware; the nightly one-hour soak; the contract check against the last tag (none exists yet)."
