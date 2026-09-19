@@ -65,6 +65,7 @@ Each question was presented one at a time with: what was being decided, the evid
 | D-74 | PLAN approach 2: the style of the overlay contract | **A. Plain structs, one per shape, set by id; presets as ready-made type values with helper constructors** · B. Layer handles · C. Functional options | A |
 | D-75 | PLAN approach 3: the dependency allow-list | A. Standard library only, with own Unicode tables · **B. A short allow-list for text tables only (`uniseg`, `go-runewidth`); own tile decoder, fuzzed, with the proven decoder as a test-only oracle** · C. The proven tile decoder too | B |
 | D-76 | An intent to fit the view to named places and overlays | **A. Add it, in v0.1.0** · B. Leave it to the host, exposing projection helpers · C. Defer to the integration review (D-60) | A |
+| D-77 | Verdict on specimen groups M, N and O | *Not put as options.* HUM LEAD's words on viewing them. | — |
 
 ## Where HUM LEAD chose against the recommendation ◇
 

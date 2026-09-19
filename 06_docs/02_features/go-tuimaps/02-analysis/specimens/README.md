@@ -136,7 +136,7 @@ Made in PLAN, because the scenario HUM LEAD called "the one to watch" had never 
 
 **The answer key**, computed by a separate script that shares no code with the renderer (D-43, D-67): **inside**; nearest edge **0.9 km to the north** (bearing 342°). Distance from the edge in cells: **0.56 at 149×38, 0.26 at 69×12** — so by D-67 the correct reading of the frame is **"on the edge" at both sizes**, and the description (M1b) must say "inside, 0.9 km, north".
 
-| ID | Finding (coordinator's assessment; not yet seen by HUM LEAD; the colour files were not viewed by the coordinator) | Consequence |
+| ID | Finding (coordinator's assessment; **seen by HUM LEAD on the review page and found good — D-77**) | Consequence |
 |---|---|---|
 | S17-1 | In the no-colour frames the zone draws as a hatched area with a plain-word label, its river edge follows the basemap's river, and the marker sits on the area's top edge at both sizes — which is what the key says a frame can show here. | M1a for this scenario is "on the edge", and the frame does not contradict the key. |
 | S17-2 | **A cell is twice as tall as it is wide, so an edge to the north or south is resolved only half as well as one to the east or west**: 1.6 km a row against 0.8 km a column at 149×38. A place 0.9 km from a northern edge is under one cell away even at the large size. Nobody had stated this before; D-67's "under one cell" must name which dimension, and the key does — by the bearing to the edge. | The description (M1b) matters at the large size too, not only at 69×12. Carried into the implementation plan's definition of the key. |
@@ -148,12 +148,12 @@ The last two unrendered scenarios. The place is Great Falls, Montana. **Scenario
 
 **The answer key** (separate script): earthquake **6.0 km north** (343°) — 3.4 cells away at 149×38, 1.6 at 69×12; fire **43.3 km south-east**; the track's closest approach **31.9 km, passing to the north-west**. The cell figures use the mean of a cell's two dimensions and are approximate.
 
-| ID | Finding (coordinator's assessment; not yet seen by HUM LEAD; colour files not viewed by the coordinator) | Consequence |
+| ID | Finding (coordinator's assessment; **seen by HUM LEAD on the review page and found good — D-77**) | Consequence |
 |---|---|---|
 | S18-1 | With no colour, the three kinds of point read apart by glyph alone — ◉ place, ◆ earthquake, ● fire — and the label carries the magnitude. At 69×12 the earthquake sits one row up and one column left of the place, which matches "very close, to the north". | Glyph differences are enough for points (FR-18a). All three glyphs passed the terminal card. |
 | S18-2 | **The first placement of the fire point fell off the frame**: 36 km south is seven rows, and a 12-row map centred on the place shows only six below it. M1's guard — the place and the condition must share one frame — is therefore a demand on **the view the host chooses**, and the contract has no intent for "fit these things in" (FR-24 has only "fit the world"). | Put to HUM LEAD and ruled: **D-76** adds an intent that fits the view to named places and overlays, in v0.1.0. |
 | S19-1 | **With no colour, a track is a braille line exactly like a river.** Drawn two dots thick and labelled, it is still only the word "track" that tells it from the river a few cells away. FR-18a already asks for "a distinct stroke family"; this shows why. | Owed: a stroke for line features that no basemap line uses — dashed, or beaded — and a specimen of it. |
-| S19-3 | **A dashed stroke settles S19-1.** Redrawn with five dots on and four off, a little heavier than a road, the track reads as a different kind of line from the unbroken river beside it at both sizes, before the label is read (`19c-*`, no colour). No basemap line is dashed, so the family is free. | The no-colour stroke for line features is a dashed one (FR-18a); the dash lengths are a style value, fixed in the implementation plan. Not yet seen by HUM LEAD. |
+| S19-3 | **A dashed stroke settles S19-1.** Redrawn with five dots on and four off, a little heavier than a road, the track reads as a different kind of line from the unbroken river beside it at both sizes, before the label is read (`19c-*`, no colour). No basemap line is dashed, so the family is free. | The no-colour stroke for line features is a dashed one (FR-18a); the dash lengths are a style value, fixed in the implementation plan. Seen by HUM LEAD and found good (D-77). |
 | S19-2 | Which side the track passes, and roughly how far, reads from the frame at both sizes (about 12 columns west of the place at 69×12; the scale mark gives 20 km for 8). | Scenario 7 is answerable from the frame (M1a) once S19-1 is dealt with. |
 
 ### Specimen 20 — a painted ground, light and dark (PLAN, 2026-09-19)
@@ -167,7 +167,7 @@ Owed by ruling D-64: HUM LEAD had never seen a painted ground. The same view as 
 | `20a-painted-ground-light-*` | Painted light (245·245·240), a first bright style with coloured lines | 16.2% — white labels left over from the dark style, water lines on water, coloured lines crossing an alert tint |
 | `20d-painted-ground-light-best-contrast-149x38` | Painted light, every line and label drawn black or white by the higher contrast (FR-16) | **0%** |
 
-| ID | Finding (coordinator's assessment; not yet seen by HUM LEAD; the colour files were measured, not viewed) | Consequence |
+| ID | Finding (coordinator's assessment, measured from the colour files; **seen by HUM LEAD on the review page and found good — D-77**) | Consequence |
 |---|---|---|
 | S20-1 | **The number behind D-64:** drawn as every earlier specimen was, 85 cells in 100 fall below 3:1 on a white terminal. Painted, the same map holds on either ground. | The painted default is justified by measurement, not only by argument. |
 | S20-2 | A bright style with **coloured** lines is not automatically safe: one cell in six failed, mostly where a coloured line crosses a tint or sits on water. Applying FR-16's rule — compute both, take the higher — to every line and label brought it to zero, at the price of all line work being black or white. | The bright style needs the per-cell rule everywhere, or coloured lines checked against every background they can cross. A choice for the style work in the implementation plan; how it looks is for HUM LEAD. |
@@ -189,7 +189,7 @@ Owed by ruling D-62, which asked for a longer ramp than specimen 16's seven step
 
 A search for the ceiling found ordered, safe scales of up to **21 classes** in truecolor (worst pair 12.2).
 
-| ID | Finding (coordinator's assessment; the colour files were measured, not viewed; not yet seen by HUM LEAD) | Consequence |
+| ID | Finding (coordinator's assessment, measured from the colour files; **seen by HUM LEAD on the review page and found good — D-77**) | Consequence |
 |---|---|---|
 | S21-1 | **HUM LEAD was right and the coordinator was too cautious:** a long, absolute, colour-vision-safe temperature scale exists. Stretching a short scale fails; choosing the colours for distinctness passes with room to spare. | D-62 and D-53 do not conflict. 5 °C bands across −30 to +45 °C are available. |
 | S21-2 | The many-hued scale common on broadcast maps fails on three counts: it is not ordered by brightness, its closest adjacent pair is 6.3 under protanopia, and two steps that are **not** neighbours (yellow-green and orange) differ by only 4.4 under deuteranopia. | "Established" is not enough; the checker decides. The preset draws on the cartographic family, not the broadcast one. |
