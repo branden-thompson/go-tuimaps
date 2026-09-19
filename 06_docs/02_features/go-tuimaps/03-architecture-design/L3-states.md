@@ -11,15 +11,13 @@ stateDiagram-v2
     Queued --> Dropped: left the view, or the cap dropped the oldest
     Queued --> Loading: a Work call picks it up (D-73)
     Loading --> Dropped: context cancelled — it left the view
-    Loading --> OnHand: passed the gate (NFR-10) and fits the cache
-    Loading --> HeldForView: passed the gate but is over a quarter of the cache
-    HeldForView --> Dropped: the view no longer needs it
+    Loading --> OnHand: passed the gate (NFR-10)
     Loading --> Unavailable: NO source is named, and the embedded tiles do not hold it — nothing was tried that could fail
     Loading --> Waiting: a NAMED source refused, failed, or answered that it has no such tile
     Waiting --> Queued: its not-before time has passed and it is still wanted
     Waiting --> Dropped: no longer wanted
     Unavailable --> Wanted: a source is named, or the assets are registered
-    OnHand --> Evicted: memory cache over its byte cap
+    OnHand --> Evicted: NO live view of any map draws it, and the cache is over its cap (D-90)
     Evicted --> Wanted: wanted again
     Dropped --> [*]
     note right of Waiting
@@ -30,8 +28,8 @@ stateDiagram-v2
     note right of OnHand
       While not OnHand, the nearest ancestor
       on hand is drawn as a stand-in (D-30).
-      HeldForView: drawn while this view needs it,
-      never cached. Unavailable: not retried on a
+      A tile a live view draws is never evicted,
+      even over the cap (D-90). Unavailable: not retried on a
       timer, so an offline map reports nothing due.
     end note
 ```

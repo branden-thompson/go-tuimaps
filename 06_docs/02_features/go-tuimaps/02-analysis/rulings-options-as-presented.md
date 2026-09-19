@@ -79,6 +79,7 @@ Each question was presented one at a time with: what was being decided, the evid
 | D-87 | Whether water hides what is drawn over it | **A. By kind: images are never masked by water; scalar fields are; a host can flip either per overlay** · B. Water always owns its cells — hides rain offshore · C. Water never owns its cells — the look rejected in specimen 01a | A |
 | D-88 | The colour-vision threshold | **A. 10, for every pair of classes and for every class against the ground; method pinned (full-severity simulation in linear light, 1976 Lab difference, D65)** · B. 12 — the 256-colour temperature scale would need fewer classes · C. 10 for neighbours only, as first proposed — leaves both red-team defects undetectable | A |
 | D-89 | Verdict on specimen group S, and the second look at groups I and J | *Not put as options.* HUM LEAD's words. Group L was not mentioned and is still owed. | — |
+| D-90 | When live views need more than a shared cache's cap | **A. Need first, cap second: what a live view draws is never evicted; spares only in the room left; over the cap is reported, not prevented; NFR-3 gated on three maps over the fixture region** · B. The cap is hard: a view that does not fit is drawn from coarser tiles and says so; the 4 MB line becomes a promise; at 0.5 MB one Midwest view is coarse by default · C. Raise the caps to the worst measured need, about 2.5 MB of tiles; live about 5 MB, against D-29, D-48 and "lean first" | A |
 
 ## Where HUM LEAD chose against the recommendation ◇
 

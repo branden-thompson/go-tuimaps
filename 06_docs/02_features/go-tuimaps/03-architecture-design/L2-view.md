@@ -11,7 +11,7 @@ flowchart LR
     T --> HAVE{"Is bucket 6 prepared for this shape?"}
     HAVE -- yes --> DRAW["Draw it"]
     HAVE -- no --> NEAR["Draw the NEAREST prepared bucket meanwhile — a shape never vanishes mid-zoom —<br/>and queue bucket 6 as pending work"]
-    NEAR --> PREP["A Work call simplifies the borrowed shape for bucket 6:<br/>iterative, never recursive · rings under three distinct points dropped ·<br/>over a quarter of the shape cache: not cached, drawn from the borrowed shape instead"]
+    NEAR --> PREP["A Work call simplifies the borrowed shape for bucket 6:<br/>iterative, never recursive · rings under three distinct points dropped ·<br/>larger than the whole shape cache: not cached, drawn from the borrowed shape instead (D-90)"]
     PREP --> DRAW
 ```
 

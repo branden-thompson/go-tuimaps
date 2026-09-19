@@ -295,7 +295,7 @@ Put one at a time; each ruling is recorded in HUM LEAD's words in the rulings fi
 
 | # | Question | From | Ruling |
 |---|---|---|---|
-| P2-Q1 | When the live views need more tiles or shapes than a shared cache's cap, what gives | P2-ENG-1, -2, -H1, P2-DOC-5 | @@Q1@@ |
+| P2-Q1 | When the live views need more tiles or shapes than a shared cache's cap, what gives | P2-ENG-1, -2, -H1, P2-DOC-5 | **D-90: "A"** — need first, cap second |
 | P2-Q2 | The temperature preset beside a light ground | P2-PRD-1 | @@Q2@@ |
 | P2-Q3 | A very large borrowed shape, replaced: keep drawing the old, or stop until the new is ready | P2-PRD-12, P2-DOC-3 | @@Q3@@ |
 | P2-Q4 | A look at the retuned light-ground radar ramp | P2-PRD-2 | @@Q4@@ |

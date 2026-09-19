@@ -266,7 +266,7 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 |---|---|---|---|
 | 06.1 | `TestNoSourceNoConnection`: a map with no named source never dials (D-65) | Source registry; nothing registered by default | `go test ./internal/tiles` |
 | 06.2 | `TestSourceOrder`: disk, then named network, then embedded | Order | same |
-| 06.3 | `TestMemoryCacheByteCap` at the default of 0.5 MB, shared between maps (D-85), and `TestOversizeTileDrawnNotCached` (> ¼ of the cap) | Byte-capped cache | same |
+| 06.3 | `TestMemoryCacheByteCap` at the default of 0.5 MB, shared between maps (D-85); `TestLiveViewTilesNeverEvicted`: two maps on different views whose need is over the cap both reach "complete" and stay there with no further fetch; `TestCacheUnderNeedWarnedOnce`; `TestCacheUseReportsNeedHeldCap` (D-90) | Byte-capped cache: need first, cap second | same |
 | 06.4 | `TestCacheKeyIncludesLanguageNotStyle` (FR-31, D-82): a tile decoded for English is never served for another language | Key = source identity + label language + z/x/y | same |
 | 06.5 | `TestAncestorStandIn`: with only a zoom-3 tile on hand, a zoom-6 request yields a stand-in region | Stand-ins (D-30) | same |
 | 06.6 | `TestTileStates`: every transition of the state diagram, table-driven, including held-for-view (over a quarter of the cache: drawn, never cached) and unavailable (no source has it: not retried on a timer) | State machine | same |
@@ -380,7 +380,7 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 10.7 | `TestSubDotRingsDropped`: a ring that simplifies to fewer than three distinct points at the bucket's tolerance is dropped, and one that does not is kept — shown on three hand-made rings; the fixture's count is then recorded, not asserted | Drop rule (constants, section 3) | same |
 | 10.8 | `TestZoomBuckets`: fractional zoom maps to one bucket; nearest bucket drawn on a miss | Buckets — definition fixed here | same |
 | 10.9 | `TestSplitAtAntimeridian` | ±180° | same |
-| 10.10 | `TestDrawFromBorrowedFallback`: over ¼ of the cap → not cached; culled by segment runs; inside its time bound at zoom 12 | Fallback | same |
+| 10.10 | `TestDrawFromBorrowedFallback`: a simplified form larger than the **whole** shape cap is not cached (D-90); culled by runs of 64 vertices; the count of box tests and vertices visited is inside the stated bound at zoom 12 (constants, section 3); `TestLiveViewShapesNeverEvicted` | Fallback; the shape cache's rule | same |
 | 10.11 | `TestVertexCaps`: 2,000,000 an overlay, 4,000,000 an instance | Caps | same |
 | 10.12 | `TestGridClassify`: breaks, non-finite = no data | Scalar grid | same |
 | 10.13 | `TestGridPresetSuppliesBreaks`; `TestOwnTypeNeedsBreaks`; `TestClassCap` | Types (D-69) | same |
@@ -478,7 +478,7 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 14.3 | Reference frames for the M1 scenarios in the slice, both sizes, truecolor and no colour | Golden frames | same, both runners |
 | 14.4 | `TestM1aFrameDoesNotContradictKey` | M1a | same |
 | 14.5 | `TestM1GuardSharedFrame`: `FitTo` puts place and hazard in one frame at 80×24 | M1's guard | same |
-| 14.6 | `BenchmarkFixtureLive`, `…Peak`: after a scripted tour filling every cache; **three maps sharing caches (two at 149×38, one at 69×12), two `Work` calls at a time — the ruled condition (D-84, D-85)** — and one map. One processor and a fixed collector setting; the heap metric sampled every 10 ms by a test-side sampler **while** `Work` runs, as NFR-3 defines peak, and read again after every `Work` call | NFR-3 | the gate's benchmark leg |
+| 14.6 | `BenchmarkFixtureLive`, `…Peak`: after a scripted tour filling every cache; **three maps sharing caches (two at 149×38, one at 69×12), two `Work` calls at a time — the ruled condition (D-84, D-85)** — **over the fixture region, which is what gates**; one map; and, recorded without gating, three maps on three different views (D-90). One processor and a fixed collector setting; the heap metric sampled every 10 ms by a test-side sampler **while** `Work` runs, as NFR-3 defines peak, and read again after every `Work` call | NFR-3 | the gate's benchmark leg |
 | 14.7 | `BenchmarkChangedFrame`: marker phase, one-cell pan, at 100 and 1,000 features | NFR-4 | same |
 | 14.8 | `TestSoakOneHour` (nightly): heap slope and goroutine count | NFR-4 | nightly job |
 | 14.9 | `TestColdAndWarm` on a **virtual-clock** link, two `Work` calls wide, so the result is deterministic; a real-time run against the shaped secure local server is recorded, not gating | NFR-5, M2 | same |
@@ -492,7 +492,7 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 14.17 | — | Describe-mode output for every M1 scenario is played through a speech engine and a screen reader; what is misread is fixed or recorded (PL-AX-3) | record |
 | 14.18 | — | NFR-15's reviewer session: the M1 questions answered from the no-colour frames alone | record |
 | 14.19 | — | **Before the tag:** a spike in the first host using the local-override recipe — one map, one overlay, its pump in the host's idiom (RS-2, RS-4). **After the integration:** the written review D-60 requires, from a template committed here: what the host needed that the contract lacked; memory and timing in the real host; contract changes proposed; whether the plan for the rest holds | the review, to HUM LEAD |
-| 14.20 | `TestUrbanTilesInFixture` | The fixture gains the four heavy city tiles measured in PLAN (PL-PF-7) | same |
+| 14.20 | `TestFixtureAtZoomNine`: the fixture's alert overlay at zoom 9 (87 KB simplified) is cached and drawn from the library's own copy, not from the host's memory — the case the withdrawn quarter rule would have sent down the fallback (P2-ENG-2). *(The city tiles this task was to add were committed in PLAN.)* | The ordinary path stays ordinary | same |
 
 ## Risks this plan carries, and where each is met
 

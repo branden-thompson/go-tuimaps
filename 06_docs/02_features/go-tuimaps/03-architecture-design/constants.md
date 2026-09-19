@@ -36,7 +36,9 @@ Measured on real tiles across the whole range the map uses. **Zoom 0 to 4:** all
 | An image being replaced | The old one draws until the new one is prepared, so for that moment a map holds both. **That is peak, not live**: the cap bounds what is kept | Set here; task 14.6 measures it |
 | Pending queue | 256 jobs a map; past that the oldest job for a view no map is showing is dropped first, then the oldest | Set here. A 149×38 view wants at most 9 tiles and their ancestors; 256 is an order above any honest need |
 | Embedded tiles, compressed, inside the binary | At most 2.5 MB | Set in PLAN, after D-82 kept English names; the figure task 04.11 measures replaces it |
-| A tile or simplified shape larger than a quarter of its cache | Drawn, not cached | Set here |
+| What a live view is drawing | **Never evicted (D-90).** Spare tiles and shapes are kept only in the room left under the cap; when need alone exceeds a cap, the cache holds exactly the need, a `cache-under-need` warning is raised once, and `CacheUse()` reports need and cap for each cache | Ruled (D-90). *An earlier line here — "larger than a quarter of its cache is drawn, not cached" — was the coordinator's, ratified only with the requirements as a whole, and is withdrawn* |
+| A simplified shape larger than the **whole** shape cap | Not cached: drawn from the host's memory by FR-11's fallback | Ruled (D-90) |
+| What one 149×38 view draws, in kept form | 0.33 MB on the Gulf coast at zoom 6; 0.80 MB in the Midwest at zoom 5 | Measured in PLAN |
 | Vertices an overlay · a map | 2,000,000 · 4,000,000 | Set in DISCOVER round 3 |
 | Pixels an image | 1,048,576, read from the header before decoding | Set in DISCOVER round 2 |
 | Pump width the peak line is measured at | 2 `Work` calls | Ruled (D-84) |
@@ -130,4 +132,4 @@ PLAN was to "validate or revise" these. Without the library they can only be che
 | NFR-4 changed frame, marker phase ≤ 16 KB | Only the marker's row is rebuilt: 149 cells at about 41 bytes is 6 KB | Task 14.7 |
 | NFR-4 one-cell pan | Every row changes: about 232 KB of row bytes, **reused, not allocated** — the frame's buffers persist between renders (contract, section 5). The target of "no more than the first host's own window cost" stands | Task 14.7 |
 | FR-29 description: fixture with 60 places ≤ 50 ms | 60 places × about 1,200 simplified-or-boxed segment tests is well inside it; the exact unsimplified test runs only for shapes whose box contains the place | A new benchmark task in WP-11 |
-| NFR-3 live and peak | See [memory-measurement.md](memory-measurement.md): 3.0 MB live by the measured parts; the peak sits at the line by arithmetic | Task 14.6. **Risk RS-7 stays High until then** |
+| NFR-3 live and peak | See [memory-measurement.md](memory-measurement.md): about 3.0 MB live for three maps over the fixture region, by the measured parts; the peak sits at the line by arithmetic. Three maps on three different dense views run to about 4.9 MB live — over the line, reported, recorded by the benchmark and not gated (D-90) | Task 14.6. **Risk RS-7 stays High until then** |

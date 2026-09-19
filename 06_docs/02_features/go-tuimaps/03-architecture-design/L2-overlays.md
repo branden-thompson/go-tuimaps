@@ -36,7 +36,7 @@ flowchart LR
       subgraph F["Features — points · lines · polygons · circles"]
         direction LR
         F1["Borrowed geometry<br/>not copied (FR-11)"] --> F2["Simplify to the dot tolerance<br/>per zoom bucket · iterative"]
-        F2 --> F3{"Simplified form > ¼ of the cap?"}
+        F2 --> F3{"Simplified form larger than the WHOLE shape cap? (D-90)"}
         F3 -- no --> F4["Cache the unclipped result;<br/>split at ±180° here"]
         F3 -- yes --> F5["Do not cache: draw from the borrowed shape,<br/>culled by segment runs · a stated bound on work, not on time (constants, section 3)"]
         F4 --> F6["Bounding boxes per run<br/>for drawing and for the description"]

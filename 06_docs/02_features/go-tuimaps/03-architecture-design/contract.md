@@ -20,7 +20,7 @@ One public package. Everything a host hands in is a plain struct (D-74); everyth
 | Places and markers | `SetPlaces(places)` · `AddPlace(place)` · `RemovePlace(id)` — each place a name, a position, a marker style and an id | Places are what `Describe` answers for and what `FitTo` can fit; markers are how they are drawn (FR-26). Separate from overlays: they are the host's "my places", not data. **As upstream (P-61):** an id left empty defaults to the position written to six decimal places, and `RemovePlace` removes every place with that id |
 | Overlays | `Set(overlay)` · `Remove(id)` · `InUse(id)` · `BorrowCheck(on)` | Section 4 |
 | Look | `SetPalette(tokens)` · `SafeRamps(on)` · `Ground(painted or declared)` · `ColourDepth(hint)` · `ReduceMotion(on)` · `Layers(on, off)` · `LabelLanguage(code)` | All take effect at the next `Render`; none re-parses a tile, except the language, which is part of the tile cache key (D-82) |
-| Tiles | `Source(named source)` · `CacheRoot(path)` · `Fetcher(replacement)` · `SharedCaches(handle)` · `Purge()` · `Verify()` | Nothing is reached until `Source` is called (D-65). Section 8 for shared caches. `Purge` and `Verify` are the disk cache's two maintenance calls (FR-22a) |
+| Tiles | `Source(named source)` · `CacheRoot(path)` · `Fetcher(replacement)` · `SharedCaches(handle)` · `CacheUse()` · `Purge()` · `Verify()` | Nothing is reached until `Source` is called (D-65). Section 8 for shared caches. `CacheUse` reports, for each memory cache, the bytes live views need, the bytes held, and the cap (D-90). `Purge` and `Verify` are the disk cache's two maintenance calls (FR-22a) |
 | Running the work | `Pending()` · `Work(ctx)` · `Settle(ctx)` · `OnPending(func)` | Section 2 |
 | The picture | `Render(size, now)` → `Frame` | Section 5 |
 | When to call again | `Changed()` · `NextCall(wallClock)` | The counter moves whenever a redraw would differ. `NextCall` is the earliest of: the next marker phase, a failed tile's retry time, an overlay going stale — on the wall clock, which is passed in separately from animation time (FR-25, FR-32) |
@@ -109,7 +109,7 @@ One map is used from two kinds of goroutine: the **owner** — the host's interf
 |---|---|---|
 | **Owner** | `Render`, `Set`, `Remove`, the intents, `SetSize`, `SetPlaces`, `AddPlace`, `RemovePlace`, every look and tile setting, `BorrowCheck`, `OnPending`, `Purge`, `Verify`, `Describe`, `Legend`, `Credits`, `Scale`, `Footer`, `Focused`, `Warnings`, `NextCall` | **One at a time.** They are not safe against each other from two goroutines. Safe beside any pump call |
 | **Pump** | `Work`, `Settle` | Any number at once, beside each other and beside owner calls |
-| **Any goroutine** | `Pending`, `InUse`, `Changed` | Safe beside everything; each is one short read under the lock. This is what lets a pump poll `Pending` |
+| **Any goroutine** | `Pending`, `InUse`, `Changed`, `CacheUse` | Safe beside everything; each is one short read under the lock. This is what lets a pump poll `Pending` |
 | **No map involved** | `CheckRamp` | A pure function |
 | **`Close`** | | Meant to come after the last owner call and after every pump call has returned. If a call is still inside, `Close` does not wait: **the map is closed at once**, every later call returns the `closed` kind, a `Work` still inside abandons or finishes its job, publishes nothing to this map, and returns `closed`; and `Close` reports how many calls were inside. `InUse` still answers afterwards, and says yes for a borrowed id until those calls have returned |
 
@@ -126,7 +126,7 @@ One map is used from two kinds of goroutine: the **owner** — the host's interf
 |---|---|---|
 | When | A hand-in or a call is refused | Accepted, but something is off; or something happened during `Work` |
 | Form | A typed error with a **kind from a closed list**, saying what happened, why, and what to do; never a tile address; quoted outside text cleaned and cut to 64 clusters | A list, at most 64, de-duplicated; each with a kind, the overlay or tile it concerns, and a count |
-| Kinds (the list is closed; adding one is a minor version) | invalid-coordinates · size-mismatch · unsorted-breaks · malformed-ramp · missing-table · malformed-table · unknown-preset · invalid-id · over-vertex-cap · over-image-cap · image-refused · ring-too-short · bad-currency · unsupported-schema · unsupported-tile · over-limit · fetch-refused · fetch-failed · cache-refused · no-size · reentrant-call · cancelled · closed · internal | ramp-rule-broken · unmatched-image-colours · stale-overlay · future-valid-time · implausible-unit · near-duplicate-id · set-refused · borrow-changed · no-work-called · tile-failed · cache-write-failed · render-failed |
+| Kinds (the list is closed; adding one is a minor version) | invalid-coordinates · size-mismatch · unsorted-breaks · malformed-ramp · missing-table · malformed-table · unknown-preset · invalid-id · over-vertex-cap · over-image-cap · image-refused · ring-too-short · bad-currency · unsupported-schema · unsupported-tile · over-limit · fetch-refused · fetch-failed · cache-refused · no-size · reentrant-call · cancelled · closed · internal | ramp-rule-broken · unmatched-image-colours · stale-overlay · future-valid-time · implausible-unit · near-duplicate-id · set-refused · borrow-changed · no-work-called · tile-failed · cache-write-failed · render-failed · cache-under-need |
 
 Every string in either passes through the one cleaning type that only the text-safety package can construct (PL-IS-5); no foreign error is ever wrapped. **One stated exemption:** the `cancelled` kind answers `errors.Is` for the context package's two errors, so a host's usual check works; it carries none of their text. The typed error and both lists of kinds live in one leaf package, `internal/fault`, which imports only text-safety; the public package re-exports them.
 
@@ -144,6 +144,8 @@ flowchart LR
     Q -- "ANY map's Work call may run it" --> DONE["Stored once · every waiting map's counter moves"]
     Q -- "the view that wanted it moved away in EVERY waiting map" --> DROP["Dropped"]
 ```
+
+**What a shared cache may drop (D-90).** A tile or shape that any live view of any map is drawing is never evicted; the cap governs only what is kept beyond that. When the maps' need alone is over the cap, the cache holds exactly the need, raises `cache-under-need` once, and `CacheUse` gives the figures — so two maps on different views can never evict each other into fetching without end.
 
 There is no goroutine for a shared fetch to "live on" (PL-CQ-11, PL-PM-2): a shared job belongs to the shared queue, and whichever host `Work` call picks it up runs it to the end or to that call's cancellation; if cancelled while other maps still want the tile, the job returns to the queue.
 

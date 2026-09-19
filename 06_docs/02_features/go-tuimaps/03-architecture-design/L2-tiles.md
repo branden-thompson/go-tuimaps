@@ -31,7 +31,7 @@ flowchart LR
       G4["Keep coordinates as small integers · retained ≤ 4 MiB"]
       G1 --> G2 --> G3 --> G4
     end
-    GATE -- "ok" --> STORE["Memory cache (byte-capped)<br/>a tile over a quarter of the cap is drawn, not cached"]
+    GATE -- "ok" --> STORE["Memory cache (byte-capped)<br/>what a live view draws is never evicted · spares only in the room left (D-90)"]
     GATE -- "ok, and it came from the network" --> WRITE["Write to disk cache<br/>only after a complete successful decode (FR-22a)<br/>temporary file, then rename"]
     GATE -- "refused or failed" --> FAIL["Record a not-before time for this tile<br/>30 s doubling to 10 min (FR-23)<br/>a bad cached file is deleted"]
     STORE --> BUMP["Change counter +1 · call-me-by = now"]
