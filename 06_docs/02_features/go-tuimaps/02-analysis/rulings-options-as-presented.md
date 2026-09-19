@@ -1,8 +1,8 @@
 # DISCOVER — The options as they were presented
 
-Companion to [`rulings-discover.md`](rulings-discover.md). Many rulings there record HUM LEAD's answer as a letter. This file records **what each letter stood for when he chose it**, so a ruling can be read without the conversation it came from. Added after the DISCOVER red-team (docs finding DQ-5) found 16 of 27 rulings recorded as a bare letter with the options nowhere in the record.
+Companion to [`rulings-discover.md`](rulings-discover.md). Many rulings there record HUM LEAD's answer as a letter. This file records **what each letter stood for when HUM LEAD chose it**, so a ruling can be read without the conversation it came from. Added after the DISCOVER red-team (docs finding DQ-5) found 16 of 27 rulings recorded as a bare letter with the options nowhere in the record.
 
-Each question was presented one at a time with: what was being decided, the evidence, the options and their consequences, a recommendation, and the strongest argument against it. The option HUM LEAD chose is in **bold**. Where the recommendation was *not* what he chose, that is marked ◇.
+Each question was presented one at a time with: what was being decided, the evidence, the options and their consequences, a recommendation, and the strongest argument against it. The option HUM LEAD chose is in **bold**. Where the recommendation was *not* what HUM LEAD chose, that is marked ◇.
 
 | Ruling | Question | Options as presented | Recommended |
 |---|---|---|---|
@@ -58,16 +58,16 @@ Each question was presented one at a time with: what was being decided, the evid
 | D-66 | One commit message that says more than D-50's ruled sentence | **A. Accept it as it stands; commit messages from here on describe the change only** · B. Reword it now, rewriting the commits above it · C. Decide at SHIP | A, with a SHIP checklist line |
 | D-67 | What M1 may use at the smallest map size | A. Frame plus description, everywhere · **B. Two parts, both must pass: the frame alone, judged to its own resolution with "on the edge" under one cell; and the description, exact** · C. Frame alone, with scenarios kept at least two cells from an edge at the small size | B |
 | D-68 | D-62's flat day against M1 scenario 4 | **A. Accept flat days; the frame is judged to the scale's resolution ("no visible change" inside one band) and the description carries the gradient** · B. Absolute colour bands plus labelled isotherms at a finer fixed interval, specimen owed, A as the fall-back · C. Reopen D-62 | B ◇ |
-| D-69 | Whether the library guards certain overlay types' colours — raised by HUM LEAD in place of confirming D-62's common part | **X. Presets, no locks: four fully defined presets; a host may override any of them or define its own type; overrides checked and reported; safe-ramps returns to the presets; D-55 withdrawn** · Y. The same presets, with temperature still locked (D-55 stands) — *the question as first put (confirm the common part: A, B or C) was set aside by his reply* | X |
+| D-69 | Whether the library guards certain overlay types' colours — raised by HUM LEAD in place of confirming D-62's common part | **X. Presets, no locks: four fully defined presets; a host may override any of them or define its own type; overrides checked and reported; safe-ramps returns to the presets; D-55 withdrawn** · Y. The same presets, with temperature still locked (D-55 stands) — *the question as first put (confirm the common part: A, B or C) was set aside by HUM LEAD's reply* | X |
 | D-70 | Hygiene, three parts | (a) **A. D-66 covers both messages** · B. Reword now. (b) **A. Records of decisions are exempt from the wording rule; it binds everything that describes the project** · B. No exemption. (c) **A. Remove the unreachable object now** · B. Leave it | A, A, A |
 
 ## Where HUM LEAD chose against the recommendation ◇
 
-Nine times: **D-14** (all five overlay shapes, not three), **D-18** (a PMTiles reader in v1, not deferred), **D-19** (no remote until SHIP, not a private one now), **D-34** (contours with a specimen first, not the value lattice), **D-36** (re-colour images, not dim them), **D-44** (the wider first slice), **D-61** (split the partial parity rows rather than hold them back), **D-62** (a fully absolute temperature scale, not one anchored only at freezing), **D-68** (accept flat days rather than add isotherms over colour). In seven of the nine he chose the wider or more demanding option. Each was his to make; the recommendation and the argument against it were both in front of him.
+Nine times: **D-14** (all five overlay shapes, not three), **D-18** (a PMTiles reader in v1, not deferred), **D-19** (no remote until SHIP, not a private one now), **D-34** (contours with a specimen first, not the value lattice), **D-36** (re-colour images, not dim them), **D-44** (the wider first slice), **D-61** (split the partial parity rows rather than hold them back), **D-62** (a fully absolute temperature scale, not one anchored only at freezing), **D-68** (accept flat days rather than add isotherms over colour). In seven of the nine HUM LEAD chose the wider or more demanding option. Each was HUM LEAD's to make; the recommendation and the argument against it were both in front of HUM LEAD.
 
 ## Rulings not given as options
 
-D-32, D-40, D-41, D-42 and D-54 are HUM LEAD's verdicts on specimens he viewed, in his own words. D-38 confirmed a proposed set of review personas. D-39 is his clarification of three earlier rulings.
+D-32, D-40, D-41, D-42 and D-54 are HUM LEAD's verdicts on specimens HUM LEAD viewed, in HUM LEAD's own words. D-38 confirmed a proposed set of review personas. D-39 is HUM LEAD's clarification of three earlier rulings.
 
 ## Three rulings whose options the table above shortens too far
 
@@ -82,13 +82,13 @@ Presented with a reviewer's size estimate: about 7,800 lines for the library and
 | A. Radar-first slice | The braille basemap to parity on the rows it touches. Network, cache, embedded tiles. On-demand and headless render with the asynchronous model. Feature overlays, including simplification. Images re-coloured through a table. Legend, credits, valid time, scale, text safety, input validation. Truecolor, 256 colours and no colour. Static and blinking markers. A minimal app (pan, zoom, toggles, headless flag). | Scalar grids and contours. Wind. Tile-image providers. PMTiles. Block renderer. 16-colour. Camera tours. Pointer and focus-zoom. Airport layers. Style expressions beyond legacy filters. | Alerts and radar on a map: M1 scenarios 1, 2, 3 and 6. Roughly 5,500–6,000 lines. **"M3 would be stated per release: v0.1.0's denominator is the rows its scope touches."** |
 | **B. A plus temperature** | A, plus scalar grids, ramps and contouring | As A, minus grids | Adds M1 scenario 4 and the most design-heavy no-colour form, for roughly +650 lines. Proves the ramp and theming rules early. |
 | C. Everything in v0.1.0 | All requirements and parity rows | Nothing | Truest to the rulings as literally written; about 10,000 lines before the first tag; the contract published in one step with no usable milestone before it. |
-| D. HUM LEAD's own cut | He names the contents | | |
+| D. HUM LEAD's own cut | HUM LEAD names the contents | | |
 
-Recommended: A, "I'd rather you chose B than have PLAN over-build". The argument against A as given: a slice can harden, and a contract designed around two shapes may not fit the other three; safeguard — PLAN designs the contract for all five shapes and BUILD implements the slice. *Not shown to him at the time, and found by round 2:* that a braille-only slice sits below the first host's stated glyph floor; that the tile generator needs the deferred archive reader; that every radar specimen used the deferred tile shape.
+Recommended: A, "I'd rather you chose B than have PLAN over-build". The argument against A as given: a slice can harden, and a contract designed around two shapes may not fit the other three; safeguard — PLAN designs the contract for all five shapes and BUILD implements the slice. *Not shown to HUM LEAD at the time, and found by round 2:* that a braille-only slice sits below the first host's stated glyph floor; that the tile generator needs the deferred archive reader; that every radar specimen used the deferred tile shape.
 
 ### D-48 — what the 8 MB memory test contains
 
-**The change of measure was stated in the question, not put as an option:** "'Added resident memory' is too noisy to measure. Watchpost's own run-to-run spread is 8.5 MB, which is larger than the figure being measured. I've already fixed the method. NFR-3 now measures live heap from Go's own runtime metrics, against a pinned fixture. What goes into the fixture is your decision." D-29 had named added resident memory. He was also told: "Go's runtime typically holds about twice the live heap as resident memory. So 4 MB live is roughly 8 MB resident."
+**The change of measure was stated in the question, not put as an option:** "'Added resident memory' is too noisy to measure. Watchpost's own run-to-run spread is 8.5 MB, which is larger than the figure being measured. I've already fixed the method. NFR-3 now measures live heap from Go's own runtime metrics, against a pinned fixture. What goes into the fixture is your decision." D-29 had named added resident memory. HUM LEAD was also told: "Go's runtime typically holds about twice the live heap as resident memory. So 4 MB live is roughly 8 MB resident."
 
 | Option | The fixture | Consequence as stated |
 |---|---|---|

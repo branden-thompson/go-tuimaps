@@ -81,7 +81,7 @@ One plain sentence per term. Added after the DISCOVER red-team found that the do
 | **HUM LEAD** | The human lead: the project's owner, who approves every decision at this project's risk level. |
 | **SEV-0** | The highest rigor level: every decision is the human lead's. |
 | **DISCOVER (RCC) · PLAN · BUILD · REVIEW · VALIDATE · SHIP · REFLECT** | The project's phases, in order: requirements; design; implementation; quality review; checking it works where it will run; release; lessons learned. |
-| **Ruling (D-n)** | A recorded decision by the human lead, with his words quoted. |
+| **Ruling (D-n)** | A recorded decision by the human lead, with HUM LEAD's words quoted. |
 | **Red-team** | A deliberate adversarial review at the end of each phase, by reviewers told to find what is wrong. |
 | **Specimen** | A real rendering produced to judge a visual idea. Nothing visual is approved from a description. |
 | **Defect ledger (L-n)** | The closed list of known bugs in the original program, each marked *fix* or *replicate*. |

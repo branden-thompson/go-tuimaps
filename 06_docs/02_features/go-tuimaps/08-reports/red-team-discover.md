@@ -183,7 +183,7 @@ Presented one at a time, 2026-09-18. What each lettered option stood for is in [
 
 | Q | Question | From | Ruling |
 |---|---|---|---|
-| Q1 | Which specimens HUM LEAD had viewed | C-1 | **D-40** — specimen 1 only; a review page of every specimen was built at his request. **D-41, D-42, D-54** — he then viewed them all: fine, except the block renderer, which is acceptable thinned and as an opt-in renderer |
+| Q1 | Which specimens HUM LEAD had viewed | C-1 | **D-40** — specimen 1 only; a review page of every specimen was built at HUM LEAD's request. **D-41, D-42, D-54** — HUM LEAD then viewed them all: fine, except the block renderer, which is acceptable thinned and as an opt-in renderer |
 | Q2 | How M1 is judged | C-5 | **D-43** — seven scenarios; judged against a computed answer key; the session in the first host is the host's metric |
 | Q3 | The first release | C-6 | **D-44** — three overlay shapes; then integration into the first host; then the rest |
 | Q4 | Whether the colour table is mandatory | C-8, D-39 | **D-45** — required; a tested example table ships with the project |
@@ -385,7 +385,7 @@ Put one at a time, as in round 1. **All ten are ruled (D-57 to D-66)**, recorded
 | R2-Q1 | A braille-only first release against the first host's block-character glyph floor → **D-57: stands; the host states the need; the text description is the fallback** | R2-BZ-A1 |
 | R2-Q2 | How the tile generator reads the planet file when the archive reader is deferred → **D-58: a minimal internal reader in v0.1.0, hardened and fuzzed** | R2-BZ-B2, R2-IS-B9 |
 | R2-Q3 | What the first release does with a 16-colour hint → **D-59: basemap and features in 16 colours, ramps in their no-colour form; specimen owed** | R2-BZ-B3 |
-| R2-Q4 | The compatibility promise before v1, and whether integration findings return to HUM LEAD before the remaining shapes are built → **D-60: breaks only at a minor version, listed and guarded; a written integration review and his GO** | R2-BZ-A6, R2-NC-6 |
+| R2-Q4 | The compatibility promise before v1, and whether integration findings return to HUM LEAD before the remaining shapes are built → **D-60: breaks only at a minor version, listed and guarded; a written integration review and HUM LEAD's GO** | R2-BZ-A6, R2-NC-6 |
 | R2-Q5 | The first release's parity denominator, given five split rows → **D-61: the five rows are split; 62 of 75** | R2-BZ-B1 |
 | R2-Q6 | The closed set of scalar kinds, temperature's midpoint per unit, and default breaks → **D-62: a fully absolute, library-owned temperature scale; a closed set of kinds; a convention, not a control** | R2-CQ-10, R2-BZ-A7 |
 | R2-Q7 | A user-level "safe ramps" switch → **D-63: a switch in v0.1.0, and the palette as a documented semantic-token contract** | R2-AX-7 |
@@ -393,7 +393,7 @@ Put one at a time, as in round 1. **All ten are ruled (D-57 to D-66)**, recorded
 | R2-Q9 | Whether the library reaches the network without being told to → **D-65: never; the app enables the default source, says so, and offers an offline flag** | R2-IS-B2, R2-NC-3 |
 | R2-Q10 | One commit message that narrates hygiene work → **D-66: it stands; history is not rewritten** | R2-PH-4 |
 
-Also asked of HUM LEAD, not as rulings, **both before PLAN exit**: a second look at the corrected specimens (13a, 14, 16); a look at the specimen files in his own terminal.
+Also asked of HUM LEAD, not as rulings, **both before PLAN exit**: a second look at the corrected specimens (13a, 14, 16); a look at the specimen files in HUM LEAD's own terminal.
 
 ## Remediation after round 2
 
@@ -430,7 +430,7 @@ Also asked of HUM LEAD, not as rulings, **both before PLAN exit**: a second look
 | Round-2 finding | What was still wrong | Disposition |
 |---|---|---|
 | R2-AX-4 · R2-AX-5 | Specimen 14's legends now matched, but its text colour was still chosen by a brightness threshold: white on the teal band at 3.82:1 where black gives 5.49:1 — the file offered to HUM LEAD for a second look | **Fixed and measured**: both contrasts compared; lowest pair 5.49:1 in both files |
-| R2-AX-1 | The specimen fix held, but closing it changed FR-18a's acceptance to "the frame *together with* the description" while M1 and NFR-15 still say "from the frame alone" | **Question R3-Q1** — M1 is under HUM LEAD's change control and was weakened without him |
+| R2-AX-1 | The specimen fix held, but closing it changed FR-18a's acceptance to "the frame *together with* the description" while M1 and NFR-15 still say "from the frame alone" | **Question R3-Q1** — M1 is under HUM LEAD's change control and was weakened without HUM LEAD |
 | R2-CQ-1 | An idle host makes no call, so a failed tile was never retried; the deadline's clock was unstated | **Fixed** (FR-23, FR-25: the deadline includes the retry time, on the wall clock) |
 | R2-CQ-4 | The borrow had no end: a cancelled job could still be reading geometry the host had reused | **Fixed** (FR-11: the replace and remove calls report when nothing still reads it) |
 | R2-PF-A1 | Memory passed by moving the cost into drawing: no time bound, whole-ring culling, no seam handling, "(proposed)" left in | **Fixed** (FR-11); the time figure is **owed at PLAN exit** |
@@ -457,7 +457,7 @@ Also asked of HUM LEAD, not as rulings, **both before PLAN exit**: a second look
 | R3-REQ-10 to 13 | The closed glyph list; zero-width marks inside clusters; ids colliding after cleaning; settle silent about failure; wording | Minor | accepted | **Fixed**, except NFR-4's provisional figure, which stays marked unverified |
 | R3-PRD-1 | The primary metric's acceptance was weakened inside a requirement without a ruling | Important; exit condition | Verified | **Question R3-Q1** |
 | R3-PRD-2 | D-62 records consent by silence, against D-39 | Important | Verified | **Question R3-Q2**, part b |
-| R3-PRD-3 | D-62 against M1 scenario 4: on an ordinary day an absolute scale may show one band, and no contour at all with no colour; the option said "flat-looking" and the ruling row dropped it; the ramp-length tension was filed for PLAN, not put to him | Important; exit condition | Verified | **Question R3-Q2**, part a |
+| R3-PRD-3 | D-62 against M1 scenario 4: on an ordinary day an absolute scale may show one band, and no contour at all with no colour; the option said "flat-looking" and the ruling row dropped it; the ramp-length tension was filed for PLAN, not put to HUM LEAD | Important; exit condition | Verified | **Question R3-Q2**, part a |
 | R3-PRD-4 | D-57 can leave a user with no map and no warning | Important | Verified | **Fixed** (NFR-8, A-2, NFR-20; new risk RS-25) |
 | R3-PRD-5 | "Can always reach the safe defaults" over-claimed | Important | Verified | **Fixed** |
 | R3-PRD-7 | Owed items without a phase or a home | Important | Verified | **Fixed** |
@@ -478,7 +478,7 @@ Also asked of HUM LEAD, not as rulings, **both before PLAN exit**: a second look
 | Q | Question | From |
 |---|---|---|
 | R3-Q1 | Whether M1 at the smallest map size may use the text description, or must be answerable from the frame alone → **D-67: two parts, both must pass — the frame alone to its own resolution, and the description, exact** | R3-PRD-1 |
-| R3-Q2 | D-62: (a) the flat-day consequence for M1 scenario 4 → **D-68: flat days accepted; the frame judged to the scale's resolution; the description carries the gradient**; (b) the common part, in his own words — put again on its own, where HUM LEAD questioned the premise instead → **D-69: presets, not locks; D-55 withdrawn; the common part replaced** | R3-PRD-3, R3-PRD-2 |
+| R3-Q2 | D-62: (a) the flat-day consequence for M1 scenario 4 → **D-68: flat days accepted; the frame judged to the scale's resolution; the description carries the gradient**; (b) the common part, in HUM LEAD's own words — put again on its own, where HUM LEAD questioned the premise instead → **D-69: presets, not locks; D-55 withdrawn; the common part replaced** | R3-PRD-3, R3-PRD-2 |
 | R3-Q3 | Hygiene: (a) the second commit message; (b) whether D-50 exempts the review record and change logs; (c) one unreachable object → **D-70: both messages stand; records of decisions are exempt; the object removed** | R3-HYG-1, -2, -3 |
 
 **A fourth round:** not proposed. The find-rate has converged — no Critical, and every finding a wording or record defect — and two reviewers independently judged that a fourth round would mostly review its own fixes. The round-3 rulings and their edits are checked by the coordinator's recount and by HUM LEAD's reading of the Discovery Report.
