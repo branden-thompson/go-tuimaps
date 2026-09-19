@@ -142,6 +142,19 @@ Made in PLAN, because the scenario HUM LEAD called "the one to watch" had never 
 | S17-2 | **A cell is twice as tall as it is wide, so an edge to the north or south is resolved only half as well as one to the east or west**: 1.6 km a row against 0.8 km a column at 149×38. A place 0.9 km from a northern edge is under one cell away even at the large size. Nobody had stated this before; D-67's "under one cell" must name which dimension, and the key does — by the bearing to the edge. | The description (M1b) matters at the large size too, not only at 69×12. Carried into the implementation plan's definition of the key. |
 | S17-3 | Of fourteen real zones sampled for this specimen, the largest had 527 vertices and most had 50 to 400. The scenario table's "900 to 14,000" describes the hard cases DISCOVER measured, not the usual one. | The 14,000-vertex case — where simplifying could flip "inside" (risk RS-19) — is **still unrendered**; it belongs to the worst-case test (NFR-3), and a specimen of it is still owed. |
 
+### Specimens 18 and 19 — M1 scenarios 6 and 7: point hazards, and a track passing the place (PLAN, 2026-09-19)
+
+The last two unrendered scenarios. The place is Great Falls, Montana. **Scenario 6:** a real earthquake (magnitude 3.6, from the public earthquake feed, fetched 2026-09-19) and a **synthetic** fire detection. **Scenario 7:** a **synthetic** storm track. Both map sizes, with colour and without; the headers say what is real and what is not. Files: `18a-*`, `18b-*`, `19a-*`, `19b-*`, `18-19-scenarios6-7-answer-key.json`.
+
+**The answer key** (separate script): earthquake **6.0 km north** (343°) — 3.4 cells away at 149×38, 1.6 at 69×12; fire **43.3 km south-east**; the track's closest approach **31.9 km, passing to the north-west**. The cell figures use the mean of a cell's two dimensions and are approximate.
+
+| ID | Finding (coordinator's assessment; not yet seen by HUM LEAD; colour files not viewed by the coordinator) | Consequence |
+|---|---|---|
+| S18-1 | With no colour, the three kinds of point read apart by glyph alone — ◉ place, ◆ earthquake, ● fire — and the label carries the magnitude. At 69×12 the earthquake sits one row up and one column left of the place, which matches "very close, to the north". | Glyph differences are enough for points (FR-18a). All three glyphs passed the terminal card. |
+| S18-2 | **The first placement of the fire point fell off the frame**: 36 km south is seven rows, and a 12-row map centred on the place shows only six below it. M1's guard — the place and the condition must share one frame — is therefore a demand on **the view the host chooses**, and the contract has no intent for "fit these things in" (FR-24 has only "fit the world"). | A proposal for the implementation plan: an intent that fits the view to named places and overlays. It adds to FR-24, so it goes to HUM LEAD. |
+| S19-1 | **With no colour, a track is a braille line exactly like a river.** Drawn two dots thick and labelled, it is still only the word "track" that tells it from the river a few cells away. FR-18a already asks for "a distinct stroke family"; this shows why. | Owed: a stroke for line features that no basemap line uses — dashed, or beaded — and a specimen of it. |
+| S19-2 | Which side the track passes, and roughly how far, reads from the frame at both sizes (about 12 columns west of the place at 69×12; the scale mark gives 20 km for 8). | Scenario 7 is answerable from the frame (M1a) once S19-1 is dealt with. |
+
 ### Cross-cutting
 
 1. **One rendering core carried every specimen.** A cell is a glyph, a foreground and a background; features, grids, vector grids and images all reduce to writing those three. The five input shapes of D-14 do not need five renderers.
