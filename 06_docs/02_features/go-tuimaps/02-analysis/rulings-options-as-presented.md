@@ -80,6 +80,7 @@ Each question was presented one at a time with: what was being decided, the evid
 | D-88 | The colour-vision threshold | **A. 10, for every pair of classes and for every class against the ground; method pinned (full-severity simulation in linear light, 1976 Lab difference, D65)** · B. 12 — the 256-colour temperature scale would need fewer classes · C. 10 for neighbours only, as first proposed — leaves both red-team defects undetectable | A |
 | D-89 | Verdict on specimen group S, and the second look at groups I and J | *Not put as options.* HUM LEAD's words. Group L was not mentioned and is still owed. | — |
 | D-90 | When live views need more than a shared cache's cap | **A. Need first, cap second: what a live view draws is never evicted; spares only in the room left; over the cap is reported, not prevented; NFR-3 gated on three maps over the fixture region** · B. The cap is hard: a view that does not fit is drawn from coarser tiles and says so; the 4 MB line becomes a promise; at 0.5 MB one Midwest view is coarse by default · C. Raise the caps to the worst measured need, about 2.5 MB of tiles; live about 5 MB, against D-29, D-48 and "lean first" | A |
+| D-91 | The temperature preset beside a light ground | **A. A light-ground variant, as radar has; the question said two bands would change, with a thin margin** · B. Scope D-88's ground rule to patchy overlays; for a field, draw its edge and bracket legend swatches; colours unchanged · C. Both | A |
 
 ## Where HUM LEAD chose against the recommendation ◇
 

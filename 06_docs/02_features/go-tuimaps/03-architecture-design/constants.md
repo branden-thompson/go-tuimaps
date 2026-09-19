@@ -69,7 +69,7 @@ Measured on real tiles across the whole range the map uses. **Zoom 0 to 4:** all
 | 256 colours | Only indices 16 to 255 | DISCOVER round 3 |
 | Image colour tolerance | 0 to 25, default 10, in the same Lab difference | DISCOVER round 3. The provider PLAN tested needs 0: all 20,959 pixels matched exactly |
 | Image resampling | Eight samples a cell, the heaviest class wins | Ruled (D-78) |
-| Temperature preset | 17 classes; breaks every 5 °C from −30 to +45; pale break at 0 °C; °F breaks are these converted exactly | D-62, specimen 21 |
+| Temperature preset | 17 classes; breaks every 5 °C from −30 to +45; pale break at 0 °C; °F breaks are these converted exactly. **Two sets of colours, chosen by the ground in effect:** they differ in three bands, −10 to +5 °C (D-91) | D-62, D-91, specimen 21 |
 | Radar preset | Six classes from 10, 20, 30, 40, 50, 60 dBZ; two ramps, chosen by the ground's luminance | D-69, specimen 22, PL-AX-1 |
 | Ground counts as light when | Black gives more contrast against it than white does | Set here — the same test as the foreground rule |
 | Which ground that test reads | **The ground in effect**: the `ground` token when the library paints it, the host's declared colour when it does not. "Do not paint" cannot be set without a declaration (D-64), so there is always one | Set here (P2-PRD-3) |

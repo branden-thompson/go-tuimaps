@@ -1,0 +1,18 @@
+SPECIMEN 21d — the same, smallest Watchpost window. COLOUR TEST, NOT A FORECAST: the evening's real temperatures drawn 20 degrees C colder than they were, so that the bands either side of freezing appear
+69x12 cells · braille renderer · truecolor · centre 41.08,-85.14 · zoom 4.3 · 4 basemap tile(s) at z4 © OpenMapTiles © OpenStreetMap
+field: Open-Meteo current temperature_2m, 12x8 lattice, one request (CC BY 4.0)
+cell colour: the HIGHEST-PRIORITY line in the cell wins (the rule every earlier specimen used)
+ground: PAINTED 245,245,240 on every cell (D-64); style chosen by the ground's brightness
+       ⢸⠤⣀⡀    ⢟⡄    ⡇   ⢀⣟⣀⣀⣀⠤⠶⠤⠤⠶⢺⠤⠦⠤⠤⠴⠒⠒⠒⠦⣠⣸⡭⣽·Detroit⠶⠃  ⢀⣀⠤⠤⠔⠒⡖⠉
+       ⢸  ⠉⠑⠲⠤⢬⣼⣗⡄  ⢰⠁  ⢠⡷⠉        ⢸           ⣧⣿⠤⣀⠤⢄⡔⠁   ⣀⠔⠊⠁    ⢀⣇⢤
+ ⢀⣀⣀⡠⠤⠔⢺⠒⠒⠒⠤⣀⣠⡿⣟⡾·Chicago⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣸⣀⡀        ⣰⡫⠊⢆⡀  ⠁ ⡠⠔⠊    ⣀⣤⣒⠮⠓⡏⠁
+⠊⠁⠈⠁   ⡎     ⣰⢻⣉⣳⣿⣷⣤⣤⣶⠿⠓⠋⠈⠉⠉⠉⠉⠉⠉ ⠉⠈⡝⠑⡷⠶⠶⣒⣒⠭⠭⣹⣻⣏⠙⠤⢄⢈⣑⠒⠒⠉    ⣀⣴⠝⠋    ⡇ 
+⠤⠤⠤⠤⠤⣤⣀⣇⣀⣀⣀⣠⠔⡏⠉ ⡎ ⡇⢮               ⡇ ⡇       ⡇⠉⠑⠤⠶⣛⣛⡦⣤⣒⠶⢿⣿·Cleveland 
+    ⠘⠒ ⡇   ⢀⡴⠃ ⢰⠁ ⡇⢸              ⣀⢇ ⡇       ⡇      ⠉     ⡯⡗⠛⢒⠒⠒⣆⣀⡠⣧⠤
+       ⡇  ⡠⠊   ⡜  ⡇⠘⡄            ⡰◉ Fort Wayne         ⢀⡠⠒⠓⠚⢯⠉⠉⠉⠉⠒⢇⡧⡇
+⠉⠉⠲⣄   ⢻ ⢰⠁   ⢸   ⡇ ⠸⡄   ⣀⠤⠤⠤⠒⠊⠉⢉⠗⠢⡀ ⡇   ⢀⡔⠋         ⡰⠉⠁    ⢸⠆     ⡏⡗
+   ⠉⡗⠒⠒⢼⠔⠁    ⡎   ⡇  ⠑⢄⡰⠉      ⢰⠃  ⠈⠑⡇   ⢸         ⣠⠜       ⡎     ⣞⡏⢹
+    ⢹ ⡠⠊⠑⠢⣀  ⡜    ⡇⣀⠔⠊⠉INDIANA ⢸     ⡟⠂  ⡸       OHIO      ⢰⠁     ⡺⡇⠘
+ILLINOIS  ⣀⠭⢵⠧⠤⠤⠤⠤⣿⠤⠤⠤⣀⡀⠑⡄    ⢀⣸    ⢰⠁   ⡇      ⢠⢴⡇        ⢸⢀⣀⣀⣀⣀⣠⣇⡧⠔
+   ⢰⣁⣀⣀⡠⠔⠉  ⢸     ⡟⡄   ⠈⠑⢬⣳⣚⣖⣉⣁⣀⣀⣀⣀⡠⢼⣀⣀⣀⣠⡧⢤⠤⠴⠒⠒⠒⣙⡿⠿⠒⠒⠒⠒⠒⠒⠚⠉⢩⠇    ⡎ ⡇ 
+temp °C  -15.0  -10.0  -5.0   0.0   5.0  10.0  15.0  20.0  25.0  30.0  35.0  40.0  45.0  50.0  55.0  60.0  65.0  →70.0

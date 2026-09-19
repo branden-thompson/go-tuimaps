@@ -76,8 +76,9 @@
   "method": "as specimen 21",
   "threshold_proposed": 10,
   "truecolor_worst_pair_any_vision_including_lowest_class_against_a_dark_ground": 21.5,
-  "palette_256_worst_pair": 23.8,
-  "ordered": true
+  "palette_256_worst_pair": 18.2,
+  "ordered": true,
+  "palette_256_worst_pair_note": "all pairs; an earlier figure here, 23.8, was for neighbouring classes only (red-team round 2)"
  },
  "replaces": "the ramp of specimens 15a to 15d, which failed at 256 colours (S15-3)",
  "on_a_light_ground": {
@@ -93,18 +94,18 @@
     175
    ],
    [
-    70,
-    140,
-    70
+    110,
+    150,
+    60
    ],
    [
-    190,
-    125,
+    200,
+    70,
     0
    ],
    [
-    190,
-    40,
+    150,
+    10,
     30
    ],
    [
@@ -125,13 +126,13 @@
     175
    ],
    [
-    95,
+    0,
     175,
     95
    ],
    [
     215,
-    135,
+    95,
     0
    ],
    [
@@ -146,9 +147,78 @@
    ]
   ],
   "checker": {
-   "worst_of_all_pairs": 16.0,
-   "worst_of_all_pairs_256": 12.6,
-   "closest_class_to_the_ground": 18.7
+   "worst_of_all_pairs": 17.7,
+   "worst_of_all_pairs_256": 14.4,
+   "closest_class_to_the_ground": 18.7,
+   "closest_class_to_the_ground_256": 18.8,
+   "darker_at_every_step_under_every_kind_of_vision": true
+  },
+  "first_version": {
+   "truecolor": [
+    [
+     150,
+     205,
+     215
+    ],
+    [
+     60,
+     160,
+     175
+    ],
+    [
+     70,
+     140,
+     70
+    ],
+    [
+     190,
+     125,
+     0
+    ],
+    [
+     190,
+     40,
+     30
+    ],
+    [
+     80,
+     0,
+     70
+    ]
+   ],
+   "colours_256_palette": [
+    [
+     175,
+     215,
+     175
+    ],
+    [
+     135,
+     175,
+     175
+    ],
+    [
+     95,
+     175,
+     95
+    ],
+    [
+     215,
+     135,
+     0
+    ],
+    [
+     175,
+     0,
+     0
+    ],
+    [
+     95,
+     0,
+     95
+    ]
+   ],
+   "defect": "got LIGHTER from class 2 to class 3 under every kind of vision (lightness 52.4 then 57.7); the 256 version inverted under deuteranopia. Seen by HUM LEAD as specimen 22d (D-89) before the defect was found by red-team round 2."
   }
  },
  "history": "As first filed there was one ramp, valid on a dark ground only: on a light ground its heaviest class was 3.1 from the ground. Found by the PLAN red-team (PL-AX-1)."
