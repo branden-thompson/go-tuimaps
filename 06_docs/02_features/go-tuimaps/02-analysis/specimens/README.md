@@ -110,6 +110,25 @@ Produced because the round found claims resting on renderings that did not exist
 | S15-2 | Known defect: the note line in the 15-series headers still says the image was "placed as-is"; the title line is correct — the image is re-coloured. | `15*` headers |
 | S12-1 | Thinning helps the block renderer but does not make it braille's equal. Braille is the default; the block renderer is opt-in with no roads by default (D-42). | `12a`, `12b` |
 
+### Specimen 16 — a diverging temperature ramp (approved by ruling D-53)
+
+Made to see whether the weather convention — cold is blue, hot is red — can be kept safely. Files: `16-diverging-ramp-149x38`, `16-diverging-ramp-69x12`, `16-diverging-ramp-256-colour-149x38`. The ramp is the published seven-class blue–pale–red scheme from the ColorBrewer family, with line work chosen black or white per cell. **Not yet reviewed by HUM LEAD.**
+
+Measured with the same test the accessibility review used (relative luminance; colour difference between steps under simulated protanopia, deuteranopia and tritanopia):
+
+| Measure | Result |
+|---|---|
+| Brightness | 0.128 · 0.358 · 0.759 · **0.930** · 0.757 · 0.374 · 0.103 — rises to the pale midpoint, then falls: ordered on each side, as FR-16 allows for a diverging ramp |
+| Cold arm against its hot twin (steps 1~7, 2~6, 3~5) | protanopia 60.8 / 55.4 / 19.4 · deuteranopia 83.9 / 69.8 / 23.7 · tritanopia 105.5 / 91.0 / 26.3 — blue and red are never confused |
+| Closest adjacent pair | protanopia **9.4** · deuteranopia 11.5 · tritanopia 13.0 — one marginal case against a proposed threshold of 10 |
+| Contrast with per-cell line work | 5.9 · 8.2 · 16.2 · 19.6 · 16.1 · 8.5 · 6.9 — every step clears 4.5:1 |
+
+| ID | Finding (coordinator's assessment — unreviewed) | Consequence |
+|---|---|---|
+| S16-1 | A diverging blue–pale–red ramp keeps the weather convention and passes the colour-vision test on every measure but one marginal adjacent pair, which a tuned ramp would fix. | A safe default for temperature need not give up "cold is blue, hot is red". |
+| S16-2 | It needs a **meaningful midpoint**. In this specimen the midpoint is simply the middle of the data's range (about 21 °C); a real default needs a stated one — freezing, a seasonal normal, or a host-supplied value — and a legend that labels it. | A contract question for scalar grids: the midpoint is data the host supplies. |
+| S16-3 | The pale middle bands are the brightest cells on a dark terminal, and line work there is black, not white. Whether that reads well is a visual question for HUM LEAD. | — |
+
 ### Cross-cutting
 
 1. **One rendering core carried every specimen.** A cell is a glyph, a foreground and a background; features, grids, vector grids and images all reduce to writing those three. The five input shapes of D-14 do not need five renderers.
