@@ -13,6 +13,9 @@ coverage.out
 # OS and editor
 .DS_Store
 
+# Browser-automation scratch output
+.playwright-mcp/
+
 # Local development harness — not part of the public project
 .claude/
 .a2dh/
