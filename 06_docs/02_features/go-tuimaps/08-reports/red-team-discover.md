@@ -469,7 +469,7 @@ Also asked of HUM LEAD, not as rulings, **both before PLAN exit**: a second look
 | R3-HYG-3 | One unreachable object: an earlier draft of the specimen findings, read by the reviewer and found benign | Minor | Verified | **Question R3-Q3**, part c |
 | R3-HYG-4 | The attributes file | Minor | Verified | **Fixed** |
 
-**Tally:** 11 round-2 fixes held only in part; 33 new findings (13 requirements, 10 product, 6 docs, 4 hygiene); no Critical; three questions for HUM LEAD; none dropped. **Verified clean by recount:** parity 48 · 13 · 2 · 12 · 2, denominator 75, 62 in the first release, the five original rows character-identical to the research; 25 risks after this round; 66 requirements, all placed; rulings D-11 to D-66 without a gap; every commit sole-author with no trailers.
+**All three questions are ruled (D-67 to D-70; R3-Q2 produced two rulings, D-68 and D-69).** **Tally:** 11 round-2 fixes held only in part; 33 new findings (13 requirements, 10 product, 6 docs, 4 hygiene); no Critical; three questions for HUM LEAD; none dropped. **Verified clean by recount:** parity 48 · 13 · 2 · 12 · 2, denominator 75, 62 in the first release, the five original rows character-identical to the research; 25 risks after this round; 66 requirements, all placed; rulings D-11 to D-66 without a gap; every commit sole-author with no trailers.
 
 **Coordinator's own errors found by this round:** an acceptance criterion of the primary metric changed without a ruling; consent recorded from silence, against D-39 and for the second time; a ruling's known downside dropped from its record; a question to HUM LEAD built on an undercount; a text colour said to be fixed that was not; answered questions left showing as open, for the third round running.
 
@@ -479,6 +479,6 @@ Also asked of HUM LEAD, not as rulings, **both before PLAN exit**: a second look
 |---|---|---|
 | R3-Q1 | Whether M1 at the smallest map size may use the text description, or must be answerable from the frame alone → **D-67: two parts, both must pass — the frame alone to its own resolution, and the description, exact** | R3-PRD-1 |
 | R3-Q2 | D-62: (a) the flat-day consequence for M1 scenario 4 → **D-68: flat days accepted; the frame judged to the scale's resolution; the description carries the gradient**; (b) the common part, in his own words — put again on its own, where HUM LEAD questioned the premise instead → **D-69: presets, not locks; D-55 withdrawn; the common part replaced** | R3-PRD-3, R3-PRD-2 |
-| R3-Q3 | Hygiene: (a) the second commit message; (b) whether D-50 exempts the review record and change logs; (c) one unreachable object | R3-HYG-1, -2, -3 |
+| R3-Q3 | Hygiene: (a) the second commit message; (b) whether D-50 exempts the review record and change logs; (c) one unreachable object → **D-70: both messages stand; records of decisions are exempt; the object removed** | R3-HYG-1, -2, -3 |
 
 **A fourth round:** not proposed. The find-rate has converged — no Critical, and every finding a wording or record defect — and two reviewers independently judged that a fourth round would mostly review its own fixes. The round-3 rulings and their edits are checked by the coordinator's recount and by HUM LEAD's reading of the Discovery Report.
