@@ -49,4 +49,10 @@ The exemptions file is part of the local harness and is not tracked; this table 
 
 **WP-02 is complete: 11 of 11 tasks.**
 
-**Next:** WP-01 (`project`): projection, the view-to-cell mapping, distances, fit-to.
+## WP-01 — project
+
+| Task | Commit | The failing test, first | Learned |
+|---|---|---|---|
+| 01.1 Mercator · 01.11 The non-finite guard · 01.13 Parity rows P-17, P-18, P-20, P-21 | this commit | `TestMercatorRoundTrip`, `TestNoNonFiniteReachesInt`, `TestParityP17_TileZoom`, `TestParityP18_TilePixelSize`, `TestParityP20_Projection`, `TestParityP21_Normalize` — failed to compile | The projection is written as atanh(sin) and asin(tanh), as the constants file says, and **a test holds it equal to upstream's own formula** — logarithm and tangent — to one part in a thousand million across fourteen points and four zooms. Round trip within 1e-9 of a degree to zoom 22, on arm64 and on emulated amd64. **The density rule counts only guards whose condition makes no call,** so `math.IsNaN` did not count; "is finite" is written as a comparison with the largest finite float, which NaN and both infinities fail. No exemption was needed. A latitude beyond the poles is refused, not clamped; one inside them is clamped to 85.0511 as upstream does |
+
+**Next:** 01.2 to 01.4 (the view, its dots, the tiles it needs), then distances and fit-to.
