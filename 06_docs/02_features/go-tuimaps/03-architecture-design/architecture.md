@@ -151,7 +151,7 @@ flowchart TB
       OVR --> PROJ
       DESC --> PROJ
       DESC --> TXT
-      TXT --> DEP["uniseg · go-runewidth<br/>the only third-party imports (D-75)"]
+      TXT --> DEP["go-runewidth · uax29<br/>the only third-party imports (D-75, D-81)"]
     end
 
     subgraph OUT["Separate modules, same repository"]

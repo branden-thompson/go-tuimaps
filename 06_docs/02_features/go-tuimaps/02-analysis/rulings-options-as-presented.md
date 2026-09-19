@@ -69,6 +69,7 @@ Each question was presented one at a time with: what was being decided, the evid
 | D-78 | Verdict on specimen group P, and the heaviest-in-cell rule | *Not put as options.* HUM LEAD's words. | — |
 | D-79 | Verdict on specimen group Q | *Not put as options.* HUM LEAD's words. | — |
 | D-80 | The plan's milestones and estimate; the PLAN red-team's reviewers | *Not put as lettered options.* HUM LEAD's words: milestones good; estimates mean nothing — done right over done fast; reviewers approved. | — |
+| D-81 | The dependency allow-list, after the fact behind D-75 proved wrong | **A. `go-runewidth` and `uax29`, the module it requires, used for clusters too** · B. Those two plus `uniseg` as a second segmenter · C. Pin the old width library with `uniseg` — cannot work: the host's newer pin wins | A |
 
 ## Where HUM LEAD chose against the recommendation ◇
 

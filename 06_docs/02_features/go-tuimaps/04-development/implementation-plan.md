@@ -7,7 +7,7 @@
 | Status | Draft for HUM LEAD's review, then red-team. |
 | Goal | Build the first release, v0.1.0, as ruled in D-44 and refined through D-79: a braille basemap with features, images and scalar grids on it, the view described as data, and a small app — ready to integrate into the first host. |
 | Architecture | [`../03-architecture-design/architecture.md`](../03-architecture-design/architecture.md) and its diagram set. This plan names the diagram each work package builds. |
-| Tech stack | Go 1.25 (the floor toolchain), standard library, plus `rivo/uniseg` and `mattn/go-runewidth` (D-75). No C toolchain (D-22). |
+| Tech stack | Go 1.25 (the floor toolchain), standard library, plus `mattn/go-runewidth` and `clipperhouse/uax29/v2` (D-75, D-81). No C toolchain (D-22). |
 | Branch | `feature/go-tuimaps`, merged to `release/v0.1.0` at each phase exit (D-28). |
 
 ## How this plan is written (D-71)
@@ -140,7 +140,7 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 |---|---|---|---|
 | 00.1 | — (BUILD-entry checklist, D-20) | Restore the language declaration in the project configuration; run the first code-quality check; confirm the floor toolchain | the framework's structure check and code-quality check pass |
 | 00.2 | `TestModuleHasNoReplace` reads `go.mod` and fails on a `replace` line | Module layout per the file map; separate `go.mod` for `cmd/`, `examples/`, `tools/*`; untracked `go.work` | `go build ./...` in each module |
-| 00.3 | `TestAllowList` fails if `go list -m all` names anything beyond the two allowed modules | Dependency allow-list check (NFR-9, D-75) | the test |
+| 00.3 | `TestAllowList` fails if `go list -m all`, run with the workspace file switched off, names anything beyond the two allowed modules | Dependency allow-list check (NFR-9, D-75, D-81) | the test |
 | 00.4 | `testkit.NoNewGoroutines(t)` self-test: passes when nothing is started, fails when a goroutine is leaked | The goroutine-count helper | `go test ./internal/testkit` |
 | 00.5 | `testkit.LoopbackOnly` self-test: a dial to a public address fails the test | The dial hook (NFR-11) | the test |
 | 00.6 | `testkit.BlockingTransport` self-test: a request never returns until cancelled | The transport used to prove Render never waits (FR-23) | the test |

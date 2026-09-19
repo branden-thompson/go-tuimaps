@@ -5,7 +5,7 @@
 | Phase | PLAN |
 | Date | 2026-09-19 |
 | Decides | The dependency allow-list NFR-9 requires, and with it who writes the code that parses untrusted bytes (risk RS-12; the contradiction X-5 carried from the research). The layout below follows from the answer and is reviewed with the architecture. |
-| Status | **Ruled 2026-09-19 (D-75): Option B — a short allow-list for text tables only; own tile decoder with a test-only oracle.** Options A and C are kept as the record of what was considered. The layout is reviewed with the architecture. |
+| Status | **The allow-list was amended by D-81: `go-runewidth` and `clipperhouse/uax29/v2`. This note's statement that the width library imports `uniseg` was wrong for the version the first host uses.** Ruled 2026-09-19 (D-75): Option B — a short allow-list for text tables only; own tile decoder with a test-only oracle.** Options A and C are kept as the record of what was considered. The layout is reviewed with the architecture. |
 
 ## The facts (research AI-3, AI-4, AI-9; red-team rounds 2 and 3)
 
