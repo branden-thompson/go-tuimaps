@@ -6,15 +6,15 @@
 | Surface | Behavioural parity: same features, same controls, same intentional constants. Byte-for-byte frame equality is not required (D-11). |
 | Source of rows | [`research/AI-1`](research/AI-1-upstream-module-read.md) §3. The first four columns of every P-row are copied from that file by script and verified identical by diff; nothing was retyped. |
 | Defects | [`defect-ledger.md`](defect-ledger.md), approved and closed (D-37) |
-| Frozen | 2026-09-18, on approval of the defect ledger. **Corrected 2026-09-18 under its own change control by ruling D-49**, after the DISCOVER red-team found four Match rows written in the vocabulary of the superseded renaming shim, unrecorded exceptions to P-08, and an "Open for PLAN" disposition that left the denominator unfrozen. The first four columns of every P-row remain the verified copy of the source read; every correction is in the Disposition, Release and Note columns. Proposed to HUM LEAD for ratification in the Discovery Report. |
+| Frozen | 2026-09-18, on approval of the defect ledger. **Corrected 2026-09-18 under its own change control by ruling D-49**, (and again by D-56, for the flash rate in P-59) after the DISCOVER red-team found four Match rows written in the vocabulary of the superseded renaming shim, unrecorded exceptions to P-08, and an "Open for PLAN" disposition that left the denominator unfrozen. The first four columns of every P-row remain the verified copy of the source read; every correction is in the Disposition, Release and Note columns. Proposed to HUM LEAD for ratification in the Discovery Report. |
 | Change control | **The denominator is frozen.** A row changes disposition, or leaves the denominator, only by a recorded HUM LEAD ruling (the anti-solution guard on metric M3). |
 
 ## Dispositions
 
 | Disposition | Meaning | Rows |
 |---|---|---|
-| **Match** | go-tuiMaps behaves as upstream does. | 45 |
-| **Fix** | Upstream's behaviour is a ledgered defect; go-tuiMaps does the intended thing. | 12 |
+| **Match** | go-tuiMaps behaves as upstream does. | 44 |
+| **Fix** | Upstream's behaviour is a ledgered defect; go-tuiMaps does the intended thing. | 13 |
 | **Replicate** | A ledgered convention kept deliberately. | 2 |
 | **Extended** | Upstream's behaviour is kept and added to by a ruling. | 11 |
 | **Superseded** | Replaced by design under a ruling; **outside the M3 denominator**. | 2 |
@@ -83,7 +83,7 @@
 | P-56 [LIB] | fit_world | widget.rs:166-192 | Latitude 84 to −56. `zoom=min(log2(h/span_px), log2(w/256))`. Longitude 0, latitude at the Mercator midpoint | **Match** | v0.1.0 |  |
 | P-57 [LIB] | Footer | widget.rs:195-202; utils.rs:52 | `center: lat, lon   zoom: z`, truncated with floor | **Match** | v0.1.0 |  |
 | P-58 [LIB] | Marker shapes | renderer.rs:395-440 | Dot is 3×3. Cross is ±3. Diamond has radius 3. Ring(r) uses a midpoint circle. FilledCircle(r). Char | **Match** | v0.1.0 |  |
-| P-59 [LIB] | Marker animation | marker.rs:97-118 | Blink: `(tick/8)%2==0`. Flash: `(tick/3)%2==0`. Pulse: radius 1,2,3,4,3,2 advancing every 4 ticks, for Ring only (renderer.rs:419) | **Match** | v0.1.0 | Durations matched, converted from ticks at upstream's 50 ms loop; time is supplied by the host's clock (L-15). **Blink is in v0.1.0; flash and pulse later (D-44). Flash rate awaits a ruling (red-team Q13):** upstream's is 3.33 Hz, above the three-per-second accessibility threshold. |
+| P-59 [LIB] | Marker animation | marker.rs:97-118 | Blink: `(tick/8)%2==0`. Flash: `(tick/3)%2==0`. Pulse: radius 1,2,3,4,3,2 advancing every 4 ticks, for Ring only (renderer.rs:419) | **Fix** | v0.1.0 | **Flash: Fix (D-56)** — no more than 2.5 per second; upstream's 3.33 per second is above the three-per-second accessibility threshold. Blink and pulse keep upstream's rates. Durations converted from ticks at upstream's 50 ms loop; time is supplied by the host's clock (L-15). Blink is in v0.1.0; flash and pulse later (D-44). Reduce-motion and "never hidden by a frozen clock" apply (NFR-21). |
 | P-60 [LIB] | Marker cull and label | renderer.rs:389,443-450 | ±20 px cull. The label sits at `px+4` and is collision-checked after the map labels. It takes the marker colour | **Match** | v0.1.0 |  |
 | P-61 [LIB] | Marker id | marker.rs:62 | The default is `"{lat:.6},{lon:.6}"`. `remove_marker` removes every marker with that id | **Match** | v0.1.0 |  |
 | P-62 [LIB] | Camera easing | camera.rs:296-302 | Cubic ease-in-out. Defaults are 60 travel ticks and 40 hold ticks (camera.rs:31-32) | **Match** | later | As P-59. |

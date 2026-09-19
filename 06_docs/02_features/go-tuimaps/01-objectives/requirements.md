@@ -52,7 +52,7 @@ Every requirement traces to a ruling, a finding, a brief item or a red-team find
 | FR-4 | Render a complete frame on demand into a given rectangle with no terminal attached and no TUI framework loaded. | D-13, M5 |
 | FR-24 | Expose control as intents — pan, pan by cells, zoom, zoom around a point, re-centre, fit world — and never read keys or the mouse itself. | D-17, AI-4 §7 |
 | FR-25 ◆ | Take animation time from the host: advance by the clock, run no timers of its own, report **when the next visible change is due** (a deadline, not a yes/no — a 150 ms flash sampled by a 300 ms clock would otherwise never be seen to flash), and report whether the visible state changed so the change counter moves. | L-15, AI-4 §9, CQ-5 |
-| FR-26 | Reproduce upstream's markers (shapes, blink, flash, pulse) and camera (easing, zoom arc, tours), with durations converted from upstream's ticks. | P-58..P-67 |
+| FR-26 ◆ | Reproduce upstream's markers (shapes, blink, flash, pulse) and camera (easing, zoom arc, tours), with durations converted from upstream's ticks — **except flash, which runs at no more than 2.5 per second** (D-56). | P-58..P-67, D-56 |
 | FR-27 | Support several independent map instances in one process. | upstream, M5 |
 | **Standalone app** | | |
 | FR-5 | Match upstream's key bindings and footer; add drag-to-pan and zoom-toward-the-pointer with a keyboard equivalent for each; offer a one-shot headless flag; always restore the terminal, including on error. | D-13, D-17, L-16 |
@@ -76,6 +76,7 @@ Every requirement traces to a ruling, a finding, a brief item or a red-team find
 | NFR-13 | MIT licence; both upstream notices carried; OpenMapTiles and OpenStreetMap credited; the embedded data carries its own notice. | D-13, D-25, D-33 |
 | NFR-14 | Sole-author commits: no tool-generated trailers or watermarks in commits, PRs, code or shipped artifacts. Local development tooling stays untracked. Checked on every commit and at every phase exit. | C-2, D-7 |
 | NFR-15 ◆ | Accessibility: nothing reachable by pointer only, shown by a scripted keys-only session that reaches every state a pointer session reaches; legible with no colour, shown by a reviewer answering the M1 questions from the no-colour reference frames alone; with no depth hint from the host, a non-empty `NO_COLOR` selects the no-colour depth. A non-visual description of the view is FR-29 (D-52). *Ramp safety and motion are Q12–Q13.* | D-17, D-23, D-35, A-6, A-7 |
+| NFR-21 ✚ | **Motion is safe and optional.** Nothing flashes faster than 2.5 times a second. A reduce-motion setting draws markers in a steady "on" form, makes camera moves jump, and stops all animation; a host can set it and the app honours the terminal convention where one exists. A frozen clock never hides a marker. The on-map credit never disappears on a timer alone. | D-56, A-5 |
 | NFR-16 ◆ | Tests first for all Go code, run with the race detector; the code-quality gate is declared and green from BUILD entry; builds use the floor toolchain (Go 1.25) with read-only modules, so an API newer than the first host's cannot slip in. | FULL TDD, D-20, CQ-12 |
 
 ## Added after red-team round 1 ✚
