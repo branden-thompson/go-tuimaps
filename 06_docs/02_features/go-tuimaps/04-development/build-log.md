@@ -87,4 +87,10 @@ The exemptions file is part of the local harness and is not tracked; this table 
 
 **WP-07 is complete: 15 of 15 tasks.**
 
-**Next:** WP-04 (the archive reader, the generator, the embedded tiles), then WP-06 (tiles).
+## WP-04 (archive, generator, assets)
+
+| Task | Commit | The failing test, first | Learned |
+|---|---|---|---|
+| 04.1 to 04.7, 04.15 The archive reader | this commit | `TestHeader` (nine kinds of damage), `TestTileIDHilbert`, `TestFindTile` (flat, and through a leaf directory), `TestRunLengthsServeManyTilesFromOneEntry`, `TestDirectoryLimits`, `TestLeafDepthAndCycle`, `TestMetadataNeverParsed`, `TestReaderFailuresAreTheLibrarysOwnErrors`, `FuzzHeader`, `FuzzDirectory`, `FuzzOpenAndFind`, `TestRealArchive`: failed to compile; the archives are built inside the tests | The reader takes a function that returns exactly a range of bytes and imports nothing that opens a connection. **04.6 is met in two places:** the fetcher already refuses a range reply that is not a 206 with exactly the range asked for (05.6), and the reader refuses any read that returns a different length; the adapter that joins them is `tiles`' (WP-06). A directory's decompressed size and its entry count are checked before anything is allocated; an entry count larger than a quarter of the bytes that follow is refused as a lie. Offsets are checked in a form that cannot overflow. Leaves that lead only to more leaves end in an error after three levels, and the test counts the reads. The metadata block is never read: a test records every range asked for. **Against a real archive** (16 MB, zoom 0 to 3, from the research phase, too large to commit): all 85 tiles found in 87 reads. That test runs only when an environment variable names an archive, and prints NOT RUN otherwise. The code-quality check refuses a hand-written binary search as an unbounded loop; the standard library's search took its place |
+
+**Next:** 04.8 to 04.14, the generator and the embedded tiles; then WP-06 (tiles).
