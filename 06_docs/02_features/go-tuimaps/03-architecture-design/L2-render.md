@@ -45,16 +45,17 @@ flowchart LR
     P --> C["Clip to the rectangle<br/>nothing is ever drawn outside it (FR-11)"]
     C --> RAS["Rasterise lines and fills into a dot mask"]
     RAS --> CELL["Per cell: 8 dots → one braille character<br/>U+2800 + mask; an empty cell is U+2800 (P-03a)"]
-    CELL --> COLR["Per cell: one foreground colour<br/>the highest-priority line in the cell wins"]
+    CELL --> COLR["Per cell: one foreground colour<br/>the MAJORITY colour among its lit dots;<br/>a tie goes to the colour commoner in the 8 neighbouring cells (P-08, D-83)"]
 ```
 
-**Why one colour per cell matters.** A terminal cell has one foreground and one background. Two lines of different colours crossing one cell cannot both keep their colour; the style profile's priority order decides. This is the reason the basemap thins under overlays (FR-19) rather than competing with them.
+**Why one colour per cell matters.** A terminal cell has one foreground and one background. Two lines of different colours crossing one cell cannot both keep their colour; within the basemap upstream's majority vote decides (P-08, D-83), and across layers the compositing order does. This is the reason the basemap thins under overlays (FR-19) rather than competing with them.
 
 ## What can change this diagram
 
 | If this changes… | …this part moves |
 |---|---|
 | The compositing order (FR-12) | The numbered list in "Paint the cell grid" |
+| The cell-colour rule (P-08, D-83) | The last box of "The braille canvas" |
 | The block renderer is built (after v0.1.0, D-42) | A second canvas beside the braille one; steps 5 to 7 use it; its own sparser profile |
 | The ground ruling (D-64) | Step 1 |
 | A new kind of furniture | Step 9, and NFR-8's closed list of characters |

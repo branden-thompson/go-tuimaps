@@ -300,7 +300,7 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 09.2 | `TestLineRaster` golden: eight directions | Line rasteriser | same |
 | 09.3 | `TestFillEvenOdd`: a polygon with a hole; overlapping parts are inside (FR-11) | Fill | same |
 | 09.4 | `TestClipNothingOutside` | Clip to the rectangle | same |
-| 09.5 | `TestCellColourPriority`: the higher-priority line owns the cell's colour | One colour per cell | same |
+| 09.5 | `TestCellColourVote`: the majority colour among a cell's lit dots wins; a tie goes to the colour commoner among the eight neighbours; a deterministic last resort when that ties too (P-08, D-83) | One colour per cell, within the basemap | same |
 | 09.6 | `TestCompositingOrder`: nine layers, table-driven, each pair (FR-12) | Compositor | same |
 | 09.7 | `TestWaterOwnsCellsUnderField` (S1-2) | Water rule | same |
 | 09.8 | `TestProfileThinsUnderOverlay`, `TestProfileBySize` | Basemap profiles (FR-19) | same |

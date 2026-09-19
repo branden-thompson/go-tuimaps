@@ -233,7 +233,7 @@ Made because HUM LEAD, asked to rule between the two (PLAN red-team PL-Q3), answ
 | Braille cells drawn | 1,290 | 1,220 |
 | Cells whose colour differs under the vote | 41 (3.2%) | 62 (5.1%) |
 
-| ID | Finding (coordinator's assessment; the difference was counted, the frames were not viewed by the coordinator; not yet seen by HUM LEAD) | Consequence |
+| ID | Finding (coordinator's assessment; the difference was counted; **seen by HUM LEAD, who chose 24b, the majority vote — D-83**) | Consequence |
 |---|---|---|
 | S24-1 | The two rules agree on about 95 to 97 cells in 100. They differ only where two kinds of line share a cell — a river under a road, a border along a highway. | Whichever is ruled, the map's overall look barely moves; the choice is about those crossings. |
 | S24-2 | Overlays are untouched by either rule: they sit above the basemap in the compositing order (FR-12). | The ruling concerns basemap lines only. |
