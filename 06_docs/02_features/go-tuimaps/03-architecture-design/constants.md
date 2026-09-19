@@ -22,6 +22,7 @@ Measured on real tiles across the whole range the map uses. **Zoom 0 to 4:** all
 | Geometry integers a tile | 2,000,000 | about 200,000 (96,027 vertices) — Paris | 10× |
 | Vertices in one feature | — (bounded by the above) | 20,441 | — |
 | Retained after decode, one tile | 4 MiB | **0.24 MB — world tile 2/2/1.** Others: 0.19 to 0.20 MB a tile for New York at zoom 10 and the Midwest at zoom 5; 0.06 to 0.13 MB for the four city tiles at zoom 14; 0.08 MB a tile on the Gulf coast at zoom 6 | 17× |
+| Tile zoom the library will address | **Set in BUILD (task 00.10): 0 to 22.** Sources in the schema the library reads stop at 14 and the view at 18; 22 is the deepest a web-map tile source goes, and keeps a column or row inside 32 bits | 14 in every source measured | — |
 | **Tile extent** | **Set here: 1 to 8,192** *(was "1 to 65,536")* | 4,096 in every tile | 2× |
 
 **Why the extent changed (PL-IS-2).** Coordinates are kept as 16-bit integers (D-75), which hold −32,768 to 32,767. An extent of 65,536 does not fit. With an extent of at most 8,192, a coordinate may run a full extent outside the tile on every side — far more than any buffer — and still fit. **A cursor that leaves the 16-bit range is an error**, never a wrap.
