@@ -177,22 +177,37 @@ Each finding was checked against the documents or the source before being accept
 
 Coordinator's own errors found by this round: the RS-3 over-claim; the D-34 "both sizes" claim; the risk miscount; "2×8"; a scan pattern that missed a token; recording silence as assent in D-34; certifying HUM LEAD's own condition in D-14; rating RS-4 settled. Each is corrected on the record rather than quietly.
 
-## Questions for HUM LEAD arising from this round
+## Questions for HUM LEAD arising from this round — all ruled
 
-Presented one at a time.
+Presented one at a time, 2026-09-18. What each lettered option stood for is in [`rulings-options-as-presented.md`](../02-analysis/rulings-options-as-presented.md).
 
-| Q | Question | From |
-|---|---|---|
-| Q1 | Viewing rulings for specimens 2–11, by group | C-1 |
-| Q2 | The M1 scenario set, who judges it, and whether the live session in the first host gates SHIP | C-5 |
-| Q3 | A v0.1.0 cut line, with rough sizes shown | C-6 |
-| Q4 | Whether the colour-to-intensity table is mandatory | C-8, D-39 |
-| Q5 | The D-18 schema item, now that AI-9 has reported | PM-5 |
-| Q6 | Whether radar animation is in v1 | PM-6 |
-| Q7 | What the 8 MB scenario contains | C-3 |
-| Q8 | Parity-matrix changes under its change control | CQ-4, BQ-4, P-4 |
-| Q9 | Pre-publication hygiene: the reflog, the attribution narrative, the framework's name | PH-1, PH-3, PH-4 |
-| Q10 | Confirm the reading of "0.01.0" as v0.1.0 | DQ-5 |
-| Q11 | A text description of the view as a first-class deliverable | C-7 |
-| Q12 | Colour-vision-safe, luminance-ordered ramps with contrast numbers | A-3, A-4 |
-| Q13 | The flash rate, and a reduce-motion option | A-5 |
+| Q | Question | From | Ruling |
+|---|---|---|---|
+| Q1 | Which specimens HUM LEAD had viewed | C-1 | **D-40** — specimen 1 only; a review page of every specimen was built at his request. **D-41, D-42, D-54** — he then viewed them all: fine, except the block renderer, which is acceptable thinned and as an opt-in renderer |
+| Q2 | How M1 is judged | C-5 | **D-43** — seven scenarios; judged against a computed answer key; the session in the first host is the host's metric |
+| Q3 | The first release | C-6 | **D-44** — three overlay shapes; then integration into the first host; then the rest |
+| Q4 | Whether the colour table is mandatory | C-8, D-39 | **D-45** — required; a tested example table ships with the project |
+| Q5 | The D-18 schema item | PM-5 | **D-46** — OpenMapTiles only in v1; the schema stays a seam |
+| Q6 | Radar animation | PM-6 | **D-47** — in v1, built after v0.1.0, designed into the contract now |
+| Q7 | What the 8 MB test contains | C-3 | **D-48** — a typical-day fixture; a separate rule for the worst case |
+| Q8 | Parity-matrix changes | CQ-4, BQ-4, P-4 | **D-49** — six corrections; denominator 70, 62 in v0.1.0 |
+| Q9 | Pre-publication hygiene | PH-1, PH-3, PH-4 | **D-50** — purged and fresh-clone rule; neutral wording; command names replaced |
+| Q10 | The reading of "0.01.0" | DQ-5 | **D-51** — v0.1.0 |
+| Q11 | A text answer to "where" | C-7 | **D-52** — the view described as data, in v0.1.0; renderable and speakable by a host |
+| Q12 | Colour-vision-safe ramps | A-3, A-4 | **D-53** — required for defaults, reported for themes; **D-54** — the diverging ramp is fine; **D-55** — temperature's ramp is fixed |
+| Q13 | The flash rate; reduce-motion | A-5 | **D-56** — flash at no more than 2.5 per second; reduce-motion; nothing hidden by a timer |
+
+## Remediation — what was done after round 1
+
+| Commit | What |
+|---|---|
+| `8119003` | Requirements: 13 rows rewritten to be testable, 20 added; risk assessment corrected in the open; glossary; dated supersession notes; brief amended to v1.0.1 |
+| `0479e5a`, `dde7df9`, `05ce211`, `8d24075` | Owed specimens: thinned block renderer; feature overlays and wind with no colour; contours; radar with no colour, re-coloured and themed; a colour-vision-safe ramp; a diverging ramp |
+| `80cc327` … `82921ee` | Rulings D-40 to D-56, each with its requirement, risk and matrix changes |
+| `3b47b9f` | Parity matrix corrected under its own change control |
+| `fdab035` | Pre-publication hygiene: neutral wording; a superseded commit purged after being shown to HUM LEAD |
+| (this commit) | The options as presented for every ruling (docs finding DQ-5) |
+
+**Still open after remediation, carried to PLAN with an owner:** the asynchronous-work model (FR-30 states the constraints; PLAN chooses between at least two models); the terminal glyph-width matrix (PLAN entry); a proper contouring pass; the radar resampling rule; an exact colour table for one radar provider; the memory measurement against the D-48 fixture (PLAN exit); module layout before the first tag; the two MAPSCII additions with no disposition; offering the defect findings upstream.
+
+**A second round follows**, with fresh reviewers given this record and the fix commits, told to re-verify the fixes, hunt for what round 1 missed, and attack what the fixes introduced.

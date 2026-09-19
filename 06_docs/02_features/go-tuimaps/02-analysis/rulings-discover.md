@@ -1,6 +1,6 @@
 # DISCOVER — HUM LEAD Rulings
 
-Rulings on the open questions carried out of Tier 1 ([`tier1-synthesis.md`](tier1-synthesis.md) §5). Presented one at a time at HUM LEAD's direction (2026-09-18: "Present questions requiring my ruling 1 by 1 so I can read and take the time to make good decisions"). Each ruling is recorded verbatim. Decision numbers continue from the project brief (D-10).
+Rulings on the open questions carried out of Tier 1 ([`tier1-synthesis.md`](tier1-synthesis.md) §5). Presented one at a time at HUM LEAD's direction (2026-09-18: "Present questions requiring my ruling 1 by 1 so I can read and take the time to make good decisions"). Each ruling is recorded verbatim. Decision numbers continue from the project brief (D-10). **What each lettered answer stood for is recorded in [`rulings-options-as-presented.md`](rulings-options-as-presented.md).**
 
 | # | Date | Question | Ruling (verbatim) | Recorded implication |
 |---|---|---|---|---|
