@@ -11,6 +11,7 @@ import (
 
 	"github.com/branden-thompson/go-tuimaps/internal/fault"
 	"github.com/branden-thompson/go-tuimaps/internal/fetch"
+	"github.com/branden-thompson/go-tuimaps/internal/jsonsafe"
 	"github.com/branden-thompson/go-tuimaps/internal/scene"
 	"github.com/branden-thompson/go-tuimaps/internal/textsafe"
 )
@@ -131,31 +132,6 @@ type TileJSON struct {
 	Attribution      textsafe.Text // outside text, cleaned
 }
 
-// withinDepth reports whether the document nests no deeper than limit,
-// counting brackets outside strings.
-func withinDepth(body []byte, limit int) bool {
-	depth, inString, escaped := 0, false, false
-	for _, c := range body {
-		switch {
-		case escaped:
-			escaped = false
-		case inString:
-			escaped = c == '\\'
-			inString = c != '"'
-		case c == '"':
-			inString = true
-		case c == '{' || c == '[':
-			depth++
-			if depth > limit {
-				return false
-			}
-		case c == '}' || c == ']':
-			depth--
-		}
-	}
-	return true
-}
-
 func overLimit() error {
 	return fault.New(fault.OverLimit, textsafe.Const("the tile source was refused"),
 		textsafe.Const("its TileJSON is larger than 1 MiB or nested deeper than 64"),
@@ -179,7 +155,7 @@ func ParseTileJSON(body []byte, source string, allowHosts []string) (TileJSON, e
 	if len(body) == 0 || source == "" {
 		return TileJSON{}, refusedAddress(textsafe.Const("it sent no TileJSON, or no source was named"))
 	}
-	if len(body) > maxTileJSONBytes || !withinDepth(body, maxTileJSONDepth) {
+	if !jsonsafe.Within(body, maxTileJSONBytes, maxTileJSONDepth) {
 		return TileJSON{}, overLimit()
 	}
 	from, err := url.Parse(source)

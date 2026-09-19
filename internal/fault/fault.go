@@ -25,6 +25,7 @@ const (
 	MissingTable
 	MalformedTable
 	UnknownPreset
+	MalformedStyle
 	InvalidID
 	OverVertexCap
 	OverImageCap
@@ -53,7 +54,7 @@ func (k Kind) String() string {
 	}
 	return [...]string{
 		"invalid-coordinates", "size-mismatch", "unsorted-breaks", "malformed-ramp", "missing-table",
-		"malformed-table", "unknown-preset", "invalid-id", "over-vertex-cap", "over-image-cap",
+		"malformed-table", "unknown-preset", "malformed-style", "invalid-id", "over-vertex-cap", "over-image-cap",
 		"image-refused", "ring-too-short", "bad-currency", "unsupported-schema", "unsupported-tile",
 		"over-limit", "fetch-refused", "fetch-failed", "cache-refused", "no-size", "reentrant-call",
 		"cancelled", "closed", "internal",
@@ -71,6 +72,7 @@ const (
 	FutureValidTime
 	ImplausibleUnit
 	NearDuplicateID
+	UnknownToken
 	SetRefused
 	BorrowChanged
 	NoWorkCalled
@@ -89,7 +91,7 @@ func (k WarningKind) String() string {
 	}
 	return [...]string{
 		"ramp-rule-broken", "unmatched-image-colours", "stale-overlay", "future-valid-time",
-		"implausible-unit", "near-duplicate-id", "set-refused", "borrow-changed", "no-work-called",
+		"implausible-unit", "near-duplicate-id", "unknown-token", "set-refused", "borrow-changed", "no-work-called",
 		"tile-failed", "cache-write-failed", "render-failed", "cache-under-need",
 	}[k-1]
 }

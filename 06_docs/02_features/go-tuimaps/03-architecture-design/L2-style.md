@@ -61,5 +61,6 @@ flowchart LR
 | If this changes… | …this moves |
 |---|---|
 | The provider changes its schema | Only the mapping box and the role table |
-| Style expressions arrive (after v0.1.0) | The user's-file branch |
+| Style expressions arrive (after v0.1.0) | The user's-file branch. Until then a style that uses them is refused as `malformed-style`, saying so (D-102) |
+| What a filter can ask about | `$type`, `class`, `name`, `rank`, `admin_level`, `maritime` — what the decoder keeps. `==` on any other key is false, as upstream has it for a key a feature lacks (P-42) |
 | The block renderer is built | A second, sparser set of profiles |

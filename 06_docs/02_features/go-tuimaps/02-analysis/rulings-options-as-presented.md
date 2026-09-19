@@ -91,6 +91,8 @@ Each question was presented one at a time with: what was being decided, the evid
 | D-99 | Ratify a code-quality exemption for `assets` | **A. Exempt as written** · B. Reshape to one `Text(which)` call · C. Split checks to reach the count | A |
 | D-100 | Ratify a code-quality exemption for `internal/tiles` | **A. Exempt as written** · B. Reshape: fold some 25 helpers into their callers · C. Add checks that can never fire | A |
 | D-101 | Ratify a code-quality exemption for `internal/colour` | **A. Exempt as written** · B. Make the arithmetic return errors no input can produce · C. Add checks that can never fire | A |
+| D-102 | The error kind for a refused style file and for an unknown palette token | A. Two new error kinds · **B. One new error kind, `malformed-style`; an unknown token is a warning, `unknown-token`, and the rest of the palette takes effect** · C. No new kind; reuse two existing kinds | B |
+| D-103 | Ratify a code-quality exemption for `internal/style` | A. Exempt now · **B. Exempt only after the style fuzz target is written and has run clean** · C. Merge helpers until the count passes | B |
 
 ## Where HUM LEAD chose against the recommendation ◇
 
