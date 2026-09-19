@@ -18,12 +18,12 @@ flowchart TB
     subgraph LIVE["Library, live after a collection — the 4 MB line"]
       direction TB
       FIX["<b>Fixed buffers</b> — measured 0.44 MB<br/>cell grid × 2 frames · dot mask · output lines (149×38)"]
-      TC["<b>Tile cache</b> — byte-capped · one view measured 0.33 to 0.80 MB<br/>with data dropped while decoding and coordinates as 16-bit integers (D-75)"]
+      TC["<b>Tile cache</b> — default cap 0.5 MB, shared · one view measured 0.33 to 0.80 MB<br/>a tile over a quarter of the cap is drawn, not cached · with data dropped while decoding and coordinates as 16-bit integers (D-75)"]
       SC["<b>Shape cache</b> — byte-capped · measured 0.01 MB for 56,827 borrowed vertices<br/>simplified forms and bounding boxes · a form over ¼ of the cap is not cached"]
       IC["<b>Image cache</b> — byte-capped · measured 0.25 MB for a 600×400 image<br/>one byte per pixel (D-36) · a loop's frames must fit inside this cap (FR-37)"]
       GC2["<b>Grids, contours, ramps, legend</b> ≈ 0.05 MB"]
       ST["<b>Styles, tokens, pools</b> ≈ 0.6 MB (an estimate; NOT measured)"]
-      CAPS["Rule: default caps + fixed buffers ≤ 3 MB, leaving 1 MB for everything else (NFR-3)"]
+      CAPS["Default caps (D-85, lean first): tiles 0.5 MB and shapes 0.25 MB, shared by every map;<br/>images 0.25 MB a map · all host-settable · the lines cover THREE maps sharing caches<br/>Rule: default caps + fixed buffers ≤ 3 MB, leaving 1 MB for everything else (NFR-3)"]
     end
 
     subgraph TRANS["Transient — what pushes the peak toward 8 MB"]
@@ -49,7 +49,7 @@ flowchart TB
 |---|---|
 | Live | The change in the runtime's live-heap metric after a forced collection, **after a scripted tour that fills every cache to its cap** — not after a first view |
 | Peak | The maximum change in the runtime's heap-objects metric, sampled every 10 ms in a standalone harness, default collector setting |
-| Instances | One, and again three sharing caches — the first host plans three placements (FR-27) |
+| Instances | **Three sharing caches — two at 149×38, one at 69×12 — which is what the lines cover (D-85)**; and one |
 | Unchanged frame | Zero allocations |
 | Changed frame — the steady state, since a blinking marker changes most frames | Provisional, unverified: a marker-phase change ≤ 16 KB and ≤ 64 allocations; a one-cell pan no more than the first host's own window cost; identical at 100 and 1,000 features |
 | One hour | Live heap grows ≤ 1 KB a minute; the count of goroutines does not change — and under D-73 the library starts none |

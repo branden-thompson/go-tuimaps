@@ -43,6 +43,14 @@ Three runs each; the spread between runs was under 0.02 MB live and 0.2 MB peak.
 - **The tension NFR-3 names is eased, not removed.** At 1.0 to 1.5 MB live there is room between live and the 8 MB peak line; at 4 MB live there would not be.
 - **The real confirmation is the library's own benchmark in BUILD**, against this same fixture (NFR-3). Until then the 8 MB target stands as ruled, with this as the evidence that it is reachable.
 
+## Re-run after the PLAN red-team, and the ruling that followed
+
+The red-team (PL-PF-1, PL-BZ-5) was right that the first run was not NFR-3's condition: it was one view, with no cache filled and one map. Re-run with a tile cache filled to 1.25 MB (thirteen real tiles) and three maps — two at 149×38 and one at 69×12, each with a radar image: **3.56 MB live**, under the 4 MB line.
+
+**The peak line cannot be shown by this program.** It uses a general decoder, whose waste dominates the peak it sees (11.8 MB in that run, which says nothing about the library). By arithmetic — the heap roughly doubles between collections at the default setting, and under D-84 two concurrent `Work` calls each hold about 1 MB while decoding — peak is about twice live plus 2 MB, so live must sit near 3 MB for the peak to stay under 8.
+
+**Ruled (D-85): lean first.** The lines cover three maps sharing caches. Default caps: tiles 0.5 MB and shapes 0.25 MB, shared; images 0.25 MB a map. By the measured parts above, three maps then hold about 0.94 (fixed buffers) + 0.5 + 0.25 + 0.75 + 0.6 (unmeasured) ≈ **3.0 MB live**, and about 8 MB peak by the same arithmetic — at the line, not under it with room. **Risk RS-7 stays High** until the library's own benchmark (plan task 14.6) measures it.
+
 ## A correction to DISCOVER's worst case
 
 The "58-zone, 812,058-vertex alert" in NFR-3 was never observed. It is the largest zone in a three-zone sample (14,001 vertices — Citrus County, Florida, a coast of islands) multiplied by the largest zone count seen in any alert (58). Measured in PLAN:

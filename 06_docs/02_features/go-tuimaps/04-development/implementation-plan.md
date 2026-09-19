@@ -239,7 +239,7 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 |---|---|---|---|
 | 06.1 | `TestNoSourceNoConnection`: a map with no named source never dials (D-65) | Source registry; nothing registered by default | `go test ./internal/tiles` |
 | 06.2 | `TestSourceOrder`: disk, then named network, then embedded | Order | same |
-| 06.3 | `TestMemoryCacheByteCap` and `TestOversizeTileDrawnNotCached` (> ¼ of the cap) | Byte-capped cache | same |
+| 06.3 | `TestMemoryCacheByteCap` at the default of 0.5 MB, shared between maps (D-85), and `TestOversizeTileDrawnNotCached` (> ¼ of the cap) | Byte-capped cache | same |
 | 06.4 | `TestCacheKeyIncludesLanguageNotStyle` (FR-31, D-82): a tile decoded for English is never served for another language | Key = source identity + label language + z/x/y | same |
 | 06.5 | `TestAncestorStandIn`: with only a zoom-3 tile on hand, a zoom-6 request yields a stand-in region | Stand-ins (D-30) | same |
 | 06.6 | `TestTileStates`: the transitions of the state diagram, table-driven | State machine | same |
@@ -341,7 +341,7 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 10.16 | `TestTableRequired`, `TestTableRules` (≤ 256 entries, ascending, no duplicates) | Table (D-45) | same |
 | 10.17 | `TestExactTableZeroUnmatched` with the fixture image and the provider's table (specimen 22) | Colour → class | same |
 | 10.18 | `TestUnmatchedCountedAndSampled` (≤ 16 samples) | Report | same |
-| 10.19 | `TestOneBytePerPixel` | Class bytes (D-36) | same |
+| 10.19 | `TestOneBytePerPixel`; `TestImageOverCapRefused`: over the map's image cap (default 0.25 MB, D-85) a typed error says what size would fit | Class bytes (D-36) | same |
 | 10.20 | `TestHeaviestInCell` (D-78); both projections | Resampling | same |
 | 10.21 | `TestFreshnessStates`: current, stale, uncertain; currency 0 to 7 days | Freshness (FR-32) | same |
 
@@ -409,7 +409,7 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 14.3 | Reference frames for the M1 scenarios in the slice, both sizes, truecolor and no colour | Golden frames | same, both runners |
 | 14.4 | `TestM1aFrameDoesNotContradictKey` | M1a | same |
 | 14.5 | `TestM1GuardSharedFrame`: `FitTo` puts place and hazard in one frame at 80×24 | M1's guard | same |
-| 14.6 | `BenchmarkFixtureLive`, `…Peak`: after a scripted tour filling every cache; one instance and three | NFR-3 | `go test -bench`, harness |
+| 14.6 | `BenchmarkFixtureLive`, `…Peak`: after a scripted tour filling every cache; **three maps sharing caches (two at 149×38, one at 69×12), two `Work` calls at a time — the ruled condition (D-84, D-85)** — and one map | NFR-3 | `go test -bench`, harness |
 | 14.7 | `BenchmarkChangedFrame`: marker phase, one-cell pan, at 100 and 1,000 features | NFR-4 | same |
 | 14.8 | `TestSoakOneHour` (nightly): heap slope and goroutine count | NFR-4 | nightly job |
 | 14.9 | `TestColdAndWarm` against the shaped local server with secure transport | NFR-5, M2 | same |
