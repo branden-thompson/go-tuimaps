@@ -63,6 +63,9 @@ stateDiagram-v2
     note left of Borrowed
       The old shape keeps drawing from the library's
       OWN simplified copy until the new one is ready.
+      A very large shape has no such copy: Set indexes
+      it in one pass, so the new one draws next frame
+      and the old is released at once (D-92).
       Opt-in borrow check: fingerprint at hand-in,
       re-checked at every read. A change is a warning
       that names the overlay.

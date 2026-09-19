@@ -1,6 +1,6 @@
 # Level 2 — The overlay pipeline, shape by shape
 
-Up: [architecture](architecture.md) · Carries: FR-9, FR-11, FR-13, FR-14, FR-15, FR-32, FR-37, NFR-20, D-35, D-36, D-44, D-45, D-53, D-60, D-63, D-69, D-73, D-74, D-86
+Up: [architecture](architecture.md) · Carries: FR-9, FR-11, FR-13, FR-14, FR-15, FR-32, FR-37, NFR-20, D-35, D-36, D-44, D-45, D-53, D-60, D-63, D-69, D-73, D-74, D-86, D-92
 
 ## One path for every overlay
 
@@ -14,7 +14,7 @@ flowchart TB
     WARN --> REPL
     RM["Remove(id)"] --> RMR["Returns at once: found or not · old geometry released yes/no (D-86)<br/>queued jobs for it are dropped; it stops drawing at the next Render"]
     VAL -- "accepted" --> REPL{"Same id already set?"}
-    REPL -- yes --> OLD["Replaced. Returns at once: replaced, and whether the old borrow is ALREADY released (D-86).<br/>The old shape keeps drawing from the library's own simplified copy until the new one is prepared"]
+    REPL -- yes --> OLD["Replaced. Returns at once: replaced, and whether the old borrow is ALREADY released (D-86).<br/>The old shape keeps drawing from the library's own simplified copy until the new one is prepared.<br/>Over 31,250 vertices: Set builds the run index itself, so the new shape draws next frame from the host's memory (D-92)"]
     REPL -- no --> NEW["Created — the result says so, so a mistyped id is visible (D-74)"]
     OLD --> Q
     NEW --> Q

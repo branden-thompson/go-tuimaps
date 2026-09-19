@@ -136,14 +136,14 @@ flowchart LR
 | WP-07 work | 15 | M | 2 |
 | WP-08 style and colour | 22 | L | 3 |
 | WP-09 render | 30 | L | 4 to 5 |
-| WP-10 overlay | 25 | L | 4 |
+| WP-10 overlay | 26 | L | 4 |
 | WP-11 describe · answer key | 17 | M | 2 to 3 |
 | WP-12 public package · examples | 26 | M | 3 to 4 |
 | WP-13 app | 14 | M | 2 |
 | WP-14 parity · reference frames · benchmarks | 20 | L | 3 to 4 |
-| **Total** | **270** | | **33 to 41, or 43 to 53 with the 30% allowance** |
+| **Total** | **271** | | **33 to 41, or 43 to 53 with the 30% allowance** |
 
-The count rose from 210 to 264 when the PLAN red-team found requirements with no task, and to 270 when its second round found parity rows with an owner and nothing to build them; the parity tests are counted inside the work packages that own them ([parity mapping](parity-mapping.md)). Tasks 14.15 to 14.19 are HUM LEAD's sessions or manual passes, not code. Cross-check against the Discovery Report's size estimate (about 6,700 to 7,300 lines): 270 cycles at 25 to 30 lines of production code a cycle is 6,750 to 8,100 lines — agreement that says only that the two share assumptions.
+The count rose from 210 to 264 when the PLAN red-team found requirements with no task, and to 271 after its second round found parity rows with an owner and nothing to build them, and D-92 added one; the parity tests are counted inside the work packages that own them ([parity mapping](parity-mapping.md)). Tasks 14.15 to 14.19 are HUM LEAD's sessions or manual passes, not code. Cross-check against the Discovery Report's size estimate (about 6,700 to 7,300 lines): 271 cycles at 25 to 30 lines of production code a cycle is 6,775 to 8,130 lines — agreement that says only that the two share assumptions.
 
 ## The work packages
 
@@ -396,6 +396,7 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 10.23 | `TestToleranceRange`, `TestTransparentPixelsUncounted`, `TestLimitsSettableDownwardOnly` | FR-9 | same |
 | 10.24 | `FuzzHandIn`: random structs never panic and always yield a kind from the closed list | Host structs (PL-IS-1) | same |
 | 10.25 | `TestRefusedSetLeavesWarning`; `TestNearDuplicateIDWarned`; `TestImplausibleUnitWarned`; `TestRemoveUnknownReportsNotFound` | First-hour mistakes (PL-NC-4) | same |
+| 10.26 | `TestLargeShapeIndexedInsideSet`: an overlay over the vertex count is drawable from the host's memory on the frame after `Set`, with no `Work`; replacing it never leaves a frame without it; the old geometry is released at once on one goroutine. `TestSmallShapeNotIndexedInSet`. `BenchmarkSetIndexAtVertexCap`: the pass at 2,000,000 vertices, recorded against the few milliseconds PLAN estimated | The run index, built inside `Set` (D-92) | same; the benchmark leg |
 
 ### WP-11 — describe · answer key · builds: L2 Describe, both diagrams
 

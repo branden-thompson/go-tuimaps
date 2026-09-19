@@ -55,6 +55,7 @@ Measured on real tiles across the whole range the map uses. **Zoom 0 to 4:** all
 | On a miss | The nearest prepared bucket is drawn while the right one is prepared | FR-11 |
 | Dropped | A ring that simplifies to fewer than three distinct points at the bucket's tolerance — smaller than a dot | Set here. Measured: of the fixture's 1,107 rings (in 1,011 polygons, mostly islands), 62 survive at zoom 6.4 and 1,099 at zoom 12 |
 | Draw-from-borrowed fallback: culling | Bounding boxes over runs of 64 vertices | Set here |
+| Draw-from-borrowed fallback: **when the index is built** | **Inside `Set`, in one linear pass** (D-92), for any feature overlay with more vertices than would fill the shape cache unsimplified at 8 bytes a vertex — **31,250 at the default cap**. Below that the fallback can never be needed. A shape above it is drawable from the host's memory on the next frame; if a `Work` call later finds its simplified form fits the cache, drawing moves to that copy | The pass is ruled (D-92); the count is set here |
 | Draw-from-borrowed fallback: **bound** | **Stated as work, not as time** (PL-PF-6): at most one box test per run, plus the vertices of the runs whose box meets the view. For the synthetic worst case (812,058 vertices) that is 12,689 box tests a frame | By arithmetic. Task 14.10 asserts the count; a time figure is recorded by the benchmark, not gated |
 | Line features with no colour | Dashed: five dots on, four off, two dots thick | Set here, from specimen 19c (D-77) |
 
