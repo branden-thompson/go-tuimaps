@@ -148,5 +148,5 @@ Put one at a time. Rulings are recorded in `rulings-discover.md` from D-81.
 | PL-Q4 | Whether the library limits concurrent decodes — written into D-73's record without a ruling → **D-84: no limiter; the peak line is stated two `Work` calls wide** | PL-PM-4, PL-CQ-11, PL-PF-3 |
 | PL-Q5 | Default memory caps, and the line for three maps → **D-85: lean first — tiles 0.5 MB and shapes 0.25 MB shared, images 0.25 MB a map; the lines cover three maps** | PL-PF-1, PL-BZ-5 |
 | PL-Q6 | How the end of a borrow is signalled → **D-86: reported, never waited for — `Set` and `Remove` return released yes-or-no; the host's own calls report the rest; an opt-in borrow check** | PL-CQ-2, PL-NC-3 |
-| PL-Q7 | Whether radar is masked over water | PL-DQ-6 |
+| PL-Q7 | Whether radar is masked over water → **D-87: by kind — images never masked, scalar fields masked, a host can flip either** | PL-DQ-6 |
 | PL-Q8 | The colour-vision threshold | PL-PM-1, PL-DQ-7 |

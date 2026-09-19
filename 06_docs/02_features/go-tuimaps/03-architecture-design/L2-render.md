@@ -20,8 +20,8 @@ flowchart TB
     subgraph PAINT["Paint the cell grid — each cell is glyph + foreground + background"]
       direction TB
       L0["1 Ground<br/>painted from the ground token, or left to the terminal if the host declared it (D-64)"]
-      L1["2 Water<br/>owns its cells' background under a field or image (S1-2)"]
-      L2["3 Images and fields<br/>cell background by class → colour (L2-colour)"]
+      L1["2 Water<br/>masks a scalar FIELD: temperature stops at the shore (D-32)<br/>never masks an IMAGE: rain shows over water, the coast drawn as an outline (D-87)<br/>a host can flip either, per overlay"]
+      L2["3 Images and fields<br/>cell background by class → colour (L2-colour)<br/>fields skip water cells; images do not (D-87)"]
       L3["4 Area tints<br/>alert polygons' interior; hatch when there is no colour (FR-18a)"]
       L4["5 Basemap lines<br/>braille dots, 2×4 per cell: coast, borders, roads, rivers, parks"]
       L5["6 Overlay lines and outlines<br/>polygon outlines always drawn (FR-16), contours (D-35), tracks"]

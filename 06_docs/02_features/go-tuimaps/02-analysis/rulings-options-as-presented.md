@@ -75,6 +75,7 @@ Each question was presented one at a time with: what was being decided, the evid
 | D-84 | Whether the library limits concurrent decodes | A. The library limits decodes to two, host-settable; fetches unlimited; a waiting `Work` is cancellable · **B. No limiter, as D-73's option B was put: the peak is the host's job; the peak line is stated for a named pump width; the documents say what each extra concurrent `Work` costs** | A ◇ |
 | D-85 | Default memory caps, and what the 4 MB and 8 MB lines cover | A. One map: tile cache 1.0 MB, shapes 0.25 MB, images 0.5 MB a map; three maps reported, not gated · **B. Three maps sharing caches: tile cache 0.5 MB, shapes 0.25 MB, images 0.25 MB a map — lean first** · C. Two lines: 4 and 8 for one map, 5 and 10 for three | A ◇ |
 | D-86 | How a host learns that borrowed geometry is free | A. The return of `Set` or `Remove` is the signal: the call waits for readers · **B. A release signal — then shaped, at HUM LEAD's prompting, into: never blocks; returns released yes-or-no; reported by the host's own `Work` and `Render` calls; a query; an opt-in borrow check** · C. Copy small shapes, borrow large ones | A ◇ |
+| D-87 | Whether water hides what is drawn over it | **A. By kind: images are never masked by water; scalar fields are; a host can flip either per overlay** · B. Water always owns its cells — hides rain offshore · C. Water never owns its cells — the look rejected in specimen 01a | A |
 
 ## Where HUM LEAD chose against the recommendation ◇
 

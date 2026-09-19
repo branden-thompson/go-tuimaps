@@ -302,7 +302,7 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 09.4 | `TestClipNothingOutside` | Clip to the rectangle | same |
 | 09.5 | `TestCellColourVote`: the majority colour among a cell's lit dots wins; a tie goes to the colour commoner among the eight neighbours; a deterministic last resort when that ties too (P-08, D-83) | One colour per cell, within the basemap | same |
 | 09.6 | `TestCompositingOrder`: nine layers, table-driven, each pair (FR-12) | Compositor | same |
-| 09.7 | `TestWaterOwnsCellsUnderField` (S1-2) | Water rule | same |
+| 09.7 | `TestWaterMasksField` (D-32); `TestWaterNeverMasksImage`: rain over a lake is drawn and the shore is an outline (D-87); `TestHostCanFlipEither` | Water and overlays, by kind | same |
 | 09.8 | `TestProfileThinsUnderOverlay`, `TestProfileBySize` | Basemap profiles (FR-19) | same |
 | 09.9 | `TestLayerToggle` (FR-36) | Layer switches | same |
 | 09.10 | `TestLabelCollision` per upstream's rule (P-34) | Labels | same |
