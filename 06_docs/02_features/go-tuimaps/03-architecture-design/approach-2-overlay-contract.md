@@ -5,7 +5,7 @@
 | Phase | PLAN |
 | Date | 2026-09-19 |
 | Decides | How a host hands an overlay to the map — the part of the library the first host imports and D-60 promises to keep stable. Risk RS-2 (High). Judged on developer ergonomics first (D-69). |
-| Status | Put to HUM LEAD. Not yet ruled. |
+| Status | **Ruled 2026-09-19 (D-74): Style A — plain structs set by id.** Styles B and C are kept below as the record of what was considered. Two points from the argument against A are carried into the design: the end of a borrow must be hard to ignore, and a set call says whether it replaced or created. |
 
 ## What any contract must carry
 
