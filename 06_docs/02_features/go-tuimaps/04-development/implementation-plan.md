@@ -4,9 +4,9 @@
 |---|---|
 | Phase | PLAN |
 | Date | 2026-09-19 |
-| Status | Draft for HUM LEAD's review, then red-team. |
-| Goal | Build the first release, v0.1.0, as ruled in D-44 and refined through D-79: a braille basemap with features, images and scalar grids on it, the view described as data, and a small app — ready to integrate into the first host. |
-| Architecture | [`../03-architecture-design/architecture.md`](../03-architecture-design/architecture.md) and its diagram set. This plan names the diagram each work package builds. |
+| Status | Revised after the PLAN red-team's first round (74 findings; `../08-reports/red-team-plan.md`) and rulings D-81 to D-89. For a second round, then HUM LEAD's approval with the Plan of Record. |
+| Goal | Build the first release, v0.1.0, as ruled in D-44 and refined through D-89: a braille basemap with features, images and scalar grids on it, the view described as data, and a small app — ready to integrate into the first host. |
+| Architecture | [`architecture.md`](../03-architecture-design/architecture.md) and its diagram set; **[the contract](../03-architecture-design/contract.md)** — what each public call promises; **[the constants](../03-architecture-design/constants.md)** — every number a test below asserts. This plan names the diagram each work package builds. |
 | Tech stack | Go 1.25 (the floor toolchain), standard library, plus `mattn/go-runewidth` and `clipperhouse/uax29/v2` (D-75, D-81). No C toolchain (D-22). |
 | Branch | `feature/go-tuimaps`, merged to `release/v0.1.0` at each phase exit (D-28). |
 
@@ -22,21 +22,25 @@
 
 | Rule | Check |
 |---|---|
-| Tests first, race detector on, floor toolchain, read-only modules | `go test -race ./...` in continuous integration (NFR-16) |
-| The library starts no goroutine | A helper asserts the goroutine count is unchanged around every public-call test (D-73, FR-30) |
+| Tests first, race detector on, floor toolchain, read-only modules | The gate script, in **every module** of the repository, not only the library (NFR-16). A second leg runs **without** the race detector: zero-allocation and allocation-count tests live in files built only there, because they are unreliable under it |
+| No remote exists until SHIP (D-19) | So there is no hosted runner yet. **The gate is a script run locally before every merge**; at SHIP it becomes the hosted workflow. What cannot run locally — Linux, Windows, real amd64 hardware, a nightly soak — is listed as untested, not assumed ([tests and gates](../03-architecture-design/L2-gates.md)) |
+| Separate modules resolve the library from this tree | The gate script writes a throw-away workspace file; tracked module files carry no `replace`. The allow-list test runs with the workspace switched off (D-81) |
+| The library starts no goroutine and no timer | **A static check**: no `go` statement and no timer or ticker in any library package (D-73). A goroutine count cannot prove it — the network stack starts goroutines of its own, and a count cannot see timers. A stack-filtered leak check runs after `Close` |
 | Anything that parses outside bytes has a fuzz target, 60 s on every change | `go test -fuzz` per target (NFR-10) |
 | Builds for five targets with the C toolchain off | cross-compile job (NFR-1) |
-| Reference frames run on amd64 **and** arm64 | two runners (NFR-6) |
+| Reference frames byte-identical on amd64 **and** arm64 | arm64 natively, amd64 under local emulation until a hosted runner exists (NFR-6) |
 | Public contract compared with the last tag | contract-check job, from the first tag (NFR-22) |
-| Tests connect to loopback only | a dial hook fails the test otherwise (NFR-11) |
+| Tests connect to loopback only | The dial hook is installed **by default** in every test binary, not opted into (NFR-11) |
 | Every exported name has a doc comment | lint (NFR-20) |
+| **Parity is tested first, inside the work package that owns the row** | [`parity-mapping.md`](parity-mapping.md) names the owner and the test for each of the 62 rows; a work package is not done until its rows' tests pass (PL-BZ-2) |
 | Sole-author commits; no tool-generated trailers or watermarks | NFR-14 |
 
 ## File map
 
 ```
 go.mod                         module github.com/branden-thompson/go-tuimaps · go 1.25.0
-go.work                        local only, untracked: ties the separate modules together during development
+go.work                        never tracked: written by the gate script so the separate modules resolve the library from this tree
+scripts/gate                   the local gate: every module, both legs, fuzz, scans, static checks, cross-compile
 tuimaps/ (module root)         the public package: map.go · options.go · intents.go · overlay.go · presets.go
                                palette.go · frame.go · legend.go · describe.go · errors.go · doc.go
 assets/                        opt-in embedded tiles: assets.go · tiles/ (generated) · HASHES · NOTICE
@@ -52,7 +56,8 @@ internal/colour/               tokens, presets' ramps per depth, checker, ground
 internal/render/               braille canvas, rasteriser, compositing, labels, markers, furniture, frame
 internal/overlay/              validation, features, grids, images, freshness
 internal/describe/             description as data
-internal/testkit/              goroutine-count helper, dial hook, blocking transport, fixture loaders
+internal/scene/                the prepared types every part shares — decoded tile, prepared overlay, the job type; imports nothing here
+internal/testkit/              leak check, dial hook, blocking transport, shaped secure test server, fixture loaders
 testdata/                      pinned fixture (memory-measurement.md) · reference frames · M1 scenario data · answer keys
 cmd/tuimaps/   (own module)    the app
 examples/      (own module)    one per shape · pump · pump in the first host's idiom · radar with its table
@@ -65,38 +70,41 @@ tools/oracle/  (own module)    differential tests of internal/mvt against a prov
 
 ```mermaid
 flowchart LR
-    WP00["WP-00<br/>Scaffold and gates"] --> WP01["WP-01<br/>project"]
+    WP00["WP-00<br/>Scaffold, gates,<br/>scene types, parity mapping"] --> WP01["WP-01<br/>project"]
     WP00 --> WP02["WP-02<br/>textsafe"]
     WP00 --> WP03["WP-03<br/>mvt decoder"]
     WP00 --> WP05["WP-05<br/>fetch"]
+    WP00 --> WP07["WP-07<br/>work"]
     WP03 --> WP04["WP-04<br/>archive · generator · assets"]
     WP05 --> WP04
     WP03 --> WP06["WP-06<br/>tiles"]
-    WP05 --> WP06
     WP04 --> WP06
-    WP06 --> WP07["WP-07<br/>work"]
+    WP05 --> WP06
     WP01 --> WP08["WP-08<br/>style and colour"]
     WP01 --> WP09["WP-09<br/>render"]
     WP02 --> WP09
     WP08 --> WP09
     WP01 --> WP10["WP-10<br/>overlay"]
     WP08 --> WP10
-    WP07 --> WP10
-    WP10 --> WP11["WP-11<br/>describe · answer key"]
+    WP01 --> WP11["WP-11<br/>describe · answer key"]
     WP02 --> WP11
-    WP07 --> WP12["WP-12<br/>public package · examples"]
+    WP10 --> WP11
+    WP06 --> WP12["WP-12<br/>public package · examples"]
+    WP07 --> WP12
     WP09 --> WP12
     WP10 --> WP12
     WP11 --> WP12
     WP12 --> WP13["WP-13<br/>app"]
-    WP12 --> WP14["WP-14<br/>parity · reference frames · benchmarks"]
+    WP12 --> WP14["WP-14<br/>reference frames · benchmarks · judging"]
     WP13 --> WP14
 ```
 
+**Why these edges.** `render`, `overlay`, `describe`, `tiles` and `work` meet only through `internal/scene` (WP-00): render draws prepared types and never imports the packages that prepare them; `work` runs jobs it knows only by `scene`'s job type, so it depends on none of the packages that supply jobs. That is what lets WP-07 start early and keeps the import graph free of cycles (PL-CQ-7).
+
 | Milestone | Reached when | Shows |
 |---|---|---|
-| M-A **A map from embedded tiles** | WP-00 to WP-04, WP-06, WP-07, WP-09 (basemap only), a thin WP-12 | The three-call world map (NFR-19); never blank; no goroutines; deterministic frames |
-| M-B **Overlays** | WP-08, WP-10 | Alerts, radar by the image path, temperature; presets; safe ramps; no-colour forms |
+| M-A **A map from embedded tiles** | WP-00 to WP-07; from WP-08 the styles, tokens, ground and foreground rule (08.1 to 08.5, 08.16, 08.17, 08.21); WP-09's basemap tasks; from WP-12 tasks 12.1 to 12.4 | The three-call world map (NFR-19); never blank; no goroutines; deterministic frames |
+| M-B **Overlays** | The rest of WP-08; WP-10; WP-09's overlay tasks | Alerts, radar by the image path, temperature; presets; safe ramps; no-colour forms |
 | M-C **The same facts as words** | WP-11 | M1b for every scenario in the slice, against the independent key |
 | M-D **Release candidate** | WP-12 to WP-14 | The app; examples; 62 parity rows; M1 to M5; the benchmark against the pinned fixture |
 
@@ -111,24 +119,24 @@ flowchart LR
 
 | Work package | Tasks | Size | Sessions |
 |---|---|---|---|
-| WP-00 Scaffold and gates | 9 | S | 1 |
-| WP-01 project | 11 | S | 1 |
+| WP-00 Scaffold and gates | 13 | S | 1 to 2 |
+| WP-01 project | 12 | S | 1 |
 | WP-02 textsafe | 10 | S | 1 |
-| WP-03 mvt decoder | 16 | L | 2 to 3 |
-| WP-04 archive · generator · assets | 12 | M | 2 |
-| WP-05 fetch | 11 | M | 1 to 2 |
-| WP-06 tiles | 15 | L | 2 to 3 |
-| WP-07 work | 12 | M | 2 |
-| WP-08 style and colour | 17 | L | 3 |
-| WP-09 render | 22 | L | 4 to 5 |
-| WP-10 overlay | 21 | L | 4 |
-| WP-11 describe · answer key | 13 | M | 2 to 3 |
-| WP-12 public package · examples | 16 | M | 3 |
-| WP-13 app | 11 | M | 2 |
-| WP-14 parity · reference frames · benchmarks | 14 | L | 3 to 4 |
-| **Total** | **210** | | **33 to 39, or 43 to 51 with the 30% allowance** |
+| WP-03 mvt decoder | 18 | L | 2 to 3 |
+| WP-04 archive · generator · assets | 16 | M | 2 |
+| WP-05 fetch | 12 | M | 1 to 2 |
+| WP-06 tiles | 19 | L | 2 to 3 |
+| WP-07 work | 15 | M | 2 |
+| WP-08 style and colour | 22 | L | 3 |
+| WP-09 render | 28 | L | 4 to 5 |
+| WP-10 overlay | 25 | L | 4 |
+| WP-11 describe · answer key | 16 | M | 2 to 3 |
+| WP-12 public package · examples | 24 | M | 3 to 4 |
+| WP-13 app | 13 | M | 2 |
+| WP-14 parity · reference frames · benchmarks | 20 | L | 3 to 4 |
+| **Total** | **263** | | **33 to 41, or 43 to 53 with the 30% allowance** |
 
-Cross-check against the size estimate in the Discovery Report (about 6,700 to 7,300 lines for v0.1.0): 210 cycles at 30 to 35 lines of production code a cycle is 6,300 to 7,350 lines. The two agree, which says only that they share assumptions.
+The count rose from 210 to 263 when the PLAN red-team found requirements with no task; the parity tests are counted inside the work packages that own them ([parity mapping](parity-mapping.md)). Tasks 14.15 to 14.19 are HUM LEAD's sessions or manual passes, not code. Cross-check against the Discovery Report's size estimate (about 6,700 to 7,300 lines): 263 cycles at 25 to 30 lines of production code a cycle is 6,600 to 7,900 lines — agreement that says only that the two share assumptions.
 
 ## The work packages
 
@@ -141,12 +149,16 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 00.1 | — (BUILD-entry checklist, D-20) | Restore the language declaration in the project configuration; run the first code-quality check; confirm the floor toolchain | the framework's structure check and code-quality check pass |
 | 00.2 | `TestModuleHasNoReplace` reads `go.mod` and fails on a `replace` line | Module layout per the file map; separate `go.mod` for `cmd/`, `examples/`, `tools/*`; untracked `go.work` | `go build ./...` in each module |
 | 00.3 | `TestAllowList` fails if `go list -m all`, run with the workspace file switched off, names anything beyond the two allowed modules | Dependency allow-list check (NFR-9, D-75, D-81) | the test |
-| 00.4 | `testkit.NoNewGoroutines(t)` self-test: passes when nothing is started, fails when a goroutine is leaked | The goroutine-count helper | `go test ./internal/testkit` |
+| 00.4 | `testkit.LeakCheck` self-test: after `Close`, no goroutine whose stack is inside the library remains; goroutines of the network stack are filtered | The leak check (the no-goroutine rule itself is proved statically — 00.11) | `go test ./internal/testkit` |
 | 00.5 | `testkit.LoopbackOnly` self-test: a dial to a public address fails the test | The dial hook (NFR-11) | the test |
 | 00.6 | `testkit.BlockingTransport` self-test: a request never returns until cancelled | The transport used to prove Render never waits (FR-23) | the test |
-| 00.7 | — | Continuous integration: race tests, five-target cross-compile with the C toolchain off, vulnerability scan of module and standard library, fuzz 60 s per target, amd64 and arm64 runners | a green run on an empty package |
+| 00.7 | — | **The local gate script** (D-19: no remote until SHIP): for every module — tests with the race detector, a second leg without it, fuzz 60 s a target, vulnerability scan of the module and the standard library, licence files; for the library also the five-target cross-compile with the C toolchain off, and reference frames on arm64 natively and amd64 emulated | a green run on an empty package |
 | 00.8 | — | Lint: exported names documented; no writes to standard output or error from the library | lint job |
 | 00.9 | `TestFixturePinned` hashes `testdata/fixture/` against a committed list | Commit the pinned fixture of `memory-measurement.md` | the test |
+| 00.10 | `TestSceneImportsNothingHere`: `internal/scene` imports no other internal package | The shared prepared types and the job type (PL-CQ-7) | `go test ./internal/scene` |
+| 00.11 | The static checks fail on a planted `go` statement, a timer, a write to standard output, and an import of `tiles` from `render` | Static checks (D-73, FR-23, NFR-20) | the gate |
+| 00.12 | The gate fails when any one module's test fails, and when the workspace file is tracked | Per-module gate (PL-CQ-5, PL-IS-3) | the gate |
+| 00.13 | — | **`parity-mapping.md` written first**: each of the 62 rows, the work package that owns it, and the test that will prove it (PL-BZ-2) | 14.1 |
 
 ### WP-01 — project · builds: L2 Render "The braille canvas", L2 Describe
 
@@ -161,8 +173,9 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 01.7 | `TestCellSpan`: at the scenario-2 view a column is 0.8 km and a row 1.6 km (specimen 17) | Ground distance per column and per row (FR-33) | same |
 | 01.8 | `TestLongitudeIsCircular`: distance across ±180° is the short way | Circular longitude (FR-29) | same |
 | 01.9 | `TestFitToContainsAll`: for the scenario-6 points and a 69×12 rectangle, every named point lies inside with the margin | `FitTo(places, boxes, margin)` → centre and zoom (D-76) | same |
-| 01.10 | `TestFitToLargestZoom`: one zoom step closer would push a point outside | Largest-zoom search | same |
+| 01.10 | `TestFitToLargestZoom`: the zoom is solved directly, and a zoom 1/256 of a level closer pushes a named point outside the margin | Largest-zoom solve | same |
 | 01.11 | `TestNoNonFiniteReachesInt`: NaN or infinite input returns an error, never a conversion | Guard (NFR-6) | same |
+| 01.12 | `TestFitToEdgeCases`: a single point keeps the zoom; a box across ±180° takes the short way; works before any `Work` has run, from boxes recorded at hand-in | Fit-to (L2-view) | same |
 
 ### WP-02 — textsafe · builds: L0 "Way out"
 
@@ -191,14 +204,16 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 03.6 | `TestKeysAndValues`: only `class`, `name`, `house_num`, the configured language's name keys and the keys the mapping asks for are kept; no other `name:xx` is ever materialised (D-82) | Attribute filter | same |
 | 03.7 | `TestFeatureLimit`, `TestGeometryIntegerLimit` | Counts checked before allocating | same |
 | 03.8 | `TestGeometryCommands`: MoveTo, LineTo, ClosePath; zig-zag deltas; a malformed command stream is an error | Geometry decoding into 16-bit pairs with ring markers | same |
-| 03.9 | `TestExtentRange`: 0 and 65,537 refused | Extent | same |
+| 03.9 | `TestExtentRange`: 0 and 8,193 refused (constants, section 1); `TestCursorLeavesInt16IsError`: a delta stream that walks outside the 16-bit range is an error, never a wrap | Extent and coordinate range (PL-IS-2) | same |
 | 03.10 | `TestRetainedLimit`: a tile whose kept form exceeds 4 MiB is refused | Retained-size accounting | same |
 | 03.11 | `TestUnsupported`: a non-vector tile type and an unknown compression give a clear "unsupported" error | Error kinds | same |
-| 03.12 | `TestCompactSize`: the four fixture tiles keep about 0.33 MB in total, within 10% of the measurement | Size regression against `memory-measurement.md` | same |
+| 03.12 | `TestCompactNeverLargerThanSource`: for every tile of the fixture and the urban set, the kept form is smaller than the tile's own bytes and under the retained cap — a one-sided bound from NFR-10, not a figure from the throwaway measurement | Size regression | same |
 | 03.13 | `TestNeverPanics` over the corpus of real tiles, truncated at every byte | Robustness | same |
 | 03.14 | `FuzzDecode`, seeded with real tiles | Fuzz target | 60 s |
 | 03.15 | `tools/oracle`: every kept feature of the fixture tiles equals what the proven decoder gives, after the same filter | Differential test, separate module | `go test` in `tools/oracle` |
 | 03.16 | `BenchmarkDecode`: records time and allocations for a fixture tile | Baseline for NFR-4 | `go test -bench` |
+| 03.17 | `TestProtobufPitfalls`, table-driven: a group wire type; an unknown wire type; an unpacked repeated field; a nested length larger than its parent; a length beyond the platform's `int`; an odd number of tag integers; a key or value index out of range; a command count beyond the integers left; `LineTo` before `MoveTo`; a wrong `ClosePath` count — each a clear error | Decoder correctness, not only no-panic (PL-IS-2) | same |
+| 03.18 | `tools/oracle` run over the fuzz corpus: wherever both decoders accept a tile, the kept features agree | Differential fuzzing | the tool's module |
 
 ### WP-04 — archive · generator · assets · builds: L2 Tiles "The embedded tiles and their generator"
 
@@ -214,8 +229,12 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 04.8 | `TestGeneratorStripsTranslations`: output tiles carry `name` and English, and no other `name:xx` (D-82) | `tools/gen-assets`: read pinned archive, decode, strip, re-encode | `go test` in the tool's module |
 | 04.9 | `TestGeneratorWritesHashList`: every source and output tile listed with SHA-256 | HASHES file | same |
 | 04.10 | `TestPinChangesTogether`: pin, hash list and asset disagreeing fails | Pin check (FR-28a) | same |
-| 04.11 | `TestAssetsDecodeThroughGate`: all 85 embedded tiles pass `internal/mvt` with default limits; total ≈ 1.7 MB | `assets` package with `embed` | `go test ./assets` |
+| 04.11 | `TestAssetsDecodeThroughGate`: all 85 embedded tiles pass `internal/mvt` with default limits; total size under 2.5 MB — the figure measured here replaces the 1.7 MB estimate made before English names were kept (D-82) | `assets` package with `embed` | `go test ./assets` |
 | 04.12 | `TestAssetsNeverOverrideChosenSource` | Registration rule (L-13) | same |
+| 04.13 | `TestEncodeRoundTrip`: a tile decoded, stripped and re-encoded decodes to the same kept features | A minimal vector-tile **encoder**, inside the generator's module only — the library never encodes (PL-PM-9) | the tool's module |
+| 04.14 | `TestGeneratorDeterministic`: two runs against a small local archive give byte-identical output | Reproducible assets (PL-IS-6) | same |
+| 04.15 | `TestMetadataNeverParsed`: the archive reader skips the metadata block without reading it | Reader scope | `go test ./internal/archive` |
+| 04.16 | `TestAssetsRegisterExplicitly`: importing the package changes nothing; tiles are used only when passed as an option — so a test for "no source and no assets" can live in the same binary | No package-level side effect | `go test ./assets` |
 
 ### WP-05 — fetch · builds: L2 Tiles "The network edge"
 
@@ -232,6 +251,7 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 05.9 | `TestReplacementFetcherContract`: range and maximum length are passed, and what returns is checked | The host's replacement fetcher | same |
 | 05.10 | `TestTimeout`, `TestContextCancel` | Cancellation | same |
 | 05.11 | `TestStatusChecked`: 404 and 500 are errors with a kind | Status (L-2) | same |
+| 05.12 | `testkit.ShapedServer` self-test: secure transport with its own trust anchor, a stated latency and bandwidth, a virtual clock | The server NFR-5 is measured against (PL-PM-5) | `go test ./internal/testkit` |
 
 ### WP-06 — tiles · builds: L2 Tiles "Where a tile can come from", L3 States "A tile"
 
@@ -242,7 +262,7 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 06.3 | `TestMemoryCacheByteCap` at the default of 0.5 MB, shared between maps (D-85), and `TestOversizeTileDrawnNotCached` (> ¼ of the cap) | Byte-capped cache | same |
 | 06.4 | `TestCacheKeyIncludesLanguageNotStyle` (FR-31, D-82): a tile decoded for English is never served for another language | Key = source identity + label language + z/x/y | same |
 | 06.5 | `TestAncestorStandIn`: with only a zoom-3 tile on hand, a zoom-6 request yields a stand-in region | Stand-ins (D-30) | same |
-| 06.6 | `TestTileStates`: the transitions of the state diagram, table-driven | State machine | same |
+| 06.6 | `TestTileStates`: every transition of the state diagram, table-driven, including held-for-view (over a quarter of the cache: drawn, never cached) and unavailable (no source has it: not retried on a timer) | State machine | same |
 | 06.7 | `TestNotBeforeDoubles`: 30 s doubling to 10 min; no timer is created | Retry times (FR-23) | same, with the goroutine helper |
 | 06.8 | `TestDiskCacheOffByDefault` | Disk cache only with a root (FR-21b) | same |
 | 06.9 | `TestCachePathConfined`: hostile source identities cannot escape the root; path is hash plus integers | Paths | same |
@@ -252,6 +272,10 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 06.13 | `TestPurgeAndVerify` | Maintenance calls | same |
 | 06.14 | `TestSchemaMappingSeam`: a source declaring unknown layers gives "unsupported schema" (D-46, FR-35) | Mapping | same |
 | 06.15 | `TestDedupInFlight`: two wants for one tile make one job | De-duplication | same |
+| 06.16 | `TestTileJSONLimits` (1 MiB, nesting 64), `TestTileJSONAddressesObeyFetchRules`, `FuzzTileJSON` | TileJSON (FR-21, NFR-10, FR-22b; parity P-49) | same |
+| 06.17 | `TestCacheRootOpenedOnce`: the root is opened once as a confined handle and the permission check is made on that handle; `TestSymlinkInsideRootNotFollowed`; `TestCachedFileSizeCheckedBeforeRead`; `TestReadOnlyRootTolerated`; `TestMemoryHitRefreshesDiskRecency` | Disk cache hardening (PL-IS-4) | same |
+| 06.18 | `TestOverzoomAboveSourceMax`: above zoom 14 the zoom-14 tile is drawn scaled (parity P-18) | Overzoom | same |
+| 06.19 | `TestAncestorsAreWanted`: a missing tile also wants its nearest ancestor a source can supply, and that job sorts first | Stand-ins have a source (PL-DQ-1) | same |
 
 ### WP-07 — work · builds: L3 Sequences, all four
 
@@ -265,16 +289,19 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 07.6 | `TestLeftViewCancelsJob` | Jobs tied to the view | same |
 | 07.7 | `TestChangeCounterMovesOnCompletion` | Counter (FR-25) | same |
 | 07.8 | `TestNextCallIsEarliest`: of blink phase, retry time, staleness; on the wall clock | Deadline | same |
-| 07.9 | `TestSettleEnds`: with a blocking transport and a failed tile in back-off, `Settle` returns and reports the failure count | `Settle(ctx) (SettleResult, error)` | same |
+| 07.9 | `TestSettleEndsWhenIdle`: with a failed tile in back-off, `Settle` returns at once with the failure count. `TestSettleEndsOnContext`: with a transport that blocks for ever, `Settle` returns when its context ends. `TestSettleSaysNoSource`: with no source and no assets its result says why nothing was fetched | `Settle(ctx) (SettleResult, error)` | same |
 | 07.10 | `TestRenderWhileWorking`: one Render beside one Work under the race detector | Concurrency contract | same |
 | 07.11 | `TestNoPanicEscapes`: a panicking job is recovered into an error | Recovery | same |
-| 07.12 | `TestIdleHostStopsRetrying` documents the behaviour | Documentation test | same |
+| 07.12 | `TestNothingDueWhenOffline`: with every wanted tile unavailable, `NextCall` reports nothing due | Deadlines | same |
+| 07.13 | `TestOnPendingFiresOnceInsideOwnerCall`: when pending goes from none to some, the hook is called once, before the owner call returns, with no lock held; calling the map from inside it is detected and reported | The pump's wake rule (contract, section 2) | same |
+| 07.14 | `TestSharedJobReturnsToQueue`: a shared fetch cancelled by one map while another still wants the tile goes back to the queue | Shared caches with no goroutine to live on (contract, section 8) | same |
+| 07.15 | `TestNoWorkCalledWarning`: after 20 renders that found work pending and no `Work`, one warning | The newcomer's silent failure (PL-NC-2) | same |
 
 ### WP-08 — style and colour · builds: L2 Colour, both diagrams
 
 | # | Test first | Then | Verify |
 |---|---|---|---|
-| 08.1 | `TestTokensAreStable`: the token list matches a committed golden file | Semantic tokens (D-63) — the named PLAN artefact | `go test ./internal/colour` |
+| 08.1 | `TestTokensMatchTheDocumentedList`: the token names equal the list in the constants document, which was written first | Semantic tokens (D-63) | `go test ./internal/colour` |
 | 08.2 | `TestPaletteOverridesToken`, `TestUnsetTokenFallsBack` | Palette resolution | same |
 | 08.3 | `TestContrastFormula` against published WCAG pairs | Relative luminance and ratio | same |
 | 08.4 | `TestForegroundIsHigherContrast` for every default background | Both-candidates rule (FR-16) | same |
@@ -291,6 +318,11 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 08.15 | `TestNoColourSelectedByEnv`: non-empty `NO_COLOR` with no hint | Depth selection (NFR-15) | same |
 | 08.16 | `TestGroundPaintedByDefault`, `TestDeclaredGroundNotPainted`, `TestStyleByGroundLuminance` | Ground (D-64) | same |
 | 08.17 | `TestUserStyleLegacyFilters`: every zoom stop honoured (L-9); an unknown expression is a clear error | `internal/style` | `go test ./internal/style` |
+| 08.18 | `TestCheckerAllPairs`: the temperature scale as first filed fails (two non-neighbours 7.5 apart). `TestCheckerGroundRule`: the dark-ground radar ramp fails on a light ground (3.1) | Checker rules of D-88 (PL-AX-1, PL-AX-2) | same |
+| 08.19 | `TestSixteenReferenceTable`: checks at 16 colours use the stated reference table and are reported as indicative; roads and borders differ by more than intensity | 16-colour depth (PL-AX-6) | same |
+| 08.20 | `TestStyleLimits` (1 MiB, nesting 64, reference cycles), `FuzzStyle` | A user's style file is untrusted (PL-IS-1) | `go test ./internal/style` |
+| 08.21 | `TestBuiltInStylesCoverEveryRole`: dark and bright each give every role a token; roads give way first, coast and water last (D-83) | Built-in styles (FR-20) | same |
+| 08.22 | `TestPaletteSwapKeepsTiles`: a palette change moves the counter and re-decodes nothing | FR-15 | `go test ./internal/colour` |
 
 ### WP-09 — render · builds: L2 Render, both diagrams; L3 States "A marker"
 
@@ -312,12 +344,18 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 09.14 | `TestFrozenClockDrawsOn`; `TestReduceMotionSteady` (NFR-21) | Motion safety | same |
 | 09.15 | `TestHatchAndLabelNoColour`; `TestDashedLineNoColour` (specimen 19c) | No-colour feature strokes | same |
 | 09.16 | `TestScaleMark`, `TestStaleMark`, `TestCreditLine`, `TestNoTilesNotice` | Furniture | same |
-| 09.17 | `TestEveryLineExactWidth` over a fuzzed set of labels | Frame emit (NFR-8) | same |
+| 09.17 | `TestEveryLineExactWidth` over a fuzzed set of labels, measured by calling the width library directly, not through the code under test | Frame emit (NFR-8) | same |
 | 09.18 | `TestOnlyColourSequences`: output holds colour sequences and cleaned text only | Emit safety (FR-34) | same |
-| 09.19 | `TestUnchangedFrameZeroAllocs` | Frame reuse (NFR-4) | `go test -run … -benchmem` |
-| 09.20 | `TestRenderNeverWaits` with the blocking transport | No input or output (FR-23) | same |
+| 09.19 | `TestUnchangedFrameZeroAllocs`, in a file built only without the race detector | Frame reuse (NFR-4) | the gate's second leg |
+| 09.20 | `TestRenderImportsNoSlowPackage`: `render`'s dependency list contains neither `tiles` nor `fetch` nor `overlay` | The layout rule (the behavioural test — Render beside a blocked `Work` — is 12.22) | same |
 | 09.21 | `TestDeterministicAcrossMapOrder`: shuffled tile arrival gives identical bytes | Determinism (NFR-6) | same, both runners |
 | 09.22 | `TestFrameStatus`: complete, still sharpening, no tiles | Status | same |
+| 09.23 | `TestImageResampledAtDrawTime`: a pan redraws a prepared image with no `Work`, into a reused buffer | Resampling (PL-PF-4, D-78) | same |
+| 09.24 | `TestReuseKey`: a change of freshness, status, focus, layers or safe ramps each forces a redraw; nothing else does | Frame reuse key (PL-PF-5) | same |
+| 09.25 | `TestOnlyChangedRowsRebuilt`; `TestFrameValidUntilNextRender` | The frame (contract, section 5) | same |
+| 09.26 | `TestWaterwaysAndParksDrawn` | FR-2 | same |
+| 09.27 | `TestImageBlockShadesNoColour` | FR-18 | same |
+| 09.28 | `TestProjectionRounded`: results are rounded to 1/256 of a dot before rastering; a product feeding a sum carries the explicit conversion | NFR-6 (constants, section 6) | same, both architectures |
 
 ### WP-10 — overlay · builds: L2 Overlays, all three; L3 States "Borrowed geometry", "Freshness"
 
@@ -329,7 +367,7 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 10.4 | `TestBorrowNotCopied`: the library's bytes do not grow by the input's size | Borrow (FR-11) | same, allocation assertion |
 | 10.5 | `TestReleasedAtOnceOnOneGoroutine`; `TestDrainingReportedByWorkReturn`: with a reader held mid-read on another goroutine, `Set` returns not-yet, `InUse` is true, and the `Work` call's return reports the release; `TestOldShapeDrawsFromOwnCopy`; `TestBorrowCheckWarnsOnMutation`; and, as a guarded sub-process run under the race detector, a program that reuses the memory too early exits non-zero with a data race reported, while one that waits is clean | End of a borrow: reported, never waited for (D-86) | same; the sub-process test needs the race detector's toolchain |
 | 10.6 | `TestSimplifyIterative`: a 14,001-vertex ring, no recursion, result within tolerance | Simplification | same |
-| 10.7 | `TestSubDotPolygonsDropped` (the fixture keeps 62 of 1,107 at its view) | Drop rule | same |
+| 10.7 | `TestSubDotRingsDropped`: a ring that simplifies to fewer than three distinct points at the bucket's tolerance is dropped, and one that does not is kept — shown on three hand-made rings; the fixture's count is then recorded, not asserted | Drop rule (constants, section 3) | same |
 | 10.8 | `TestZoomBuckets`: fractional zoom maps to one bucket; nearest bucket drawn on a miss | Buckets — definition fixed here | same |
 | 10.9 | `TestSplitAtAntimeridian` | ±180° | same |
 | 10.10 | `TestDrawFromBorrowedFallback`: over ¼ of the cap → not cached; culled by segment runs; inside its time bound at zoom 12 | Fallback | same |
@@ -344,12 +382,16 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 10.19 | `TestOneBytePerPixel`; `TestImageOverCapRefused`: over the map's image cap (default 0.25 MB, D-85) a typed error says what size would fit | Class bytes (D-36) | same |
 | 10.20 | `TestHeaviestInCell` (D-78); both projections | Resampling | same |
 | 10.21 | `TestFreshnessStates`: current, stale, uncertain; currency 0 to 7 days | Freshness (FR-32) | same |
+| 10.22 | `FuzzImage`, `FuzzTable`; `TestImageBytesCappedBeforeDecode` | Image inputs (PL-IS-1) | same |
+| 10.23 | `TestToleranceRange`, `TestTransparentPixelsUncounted`, `TestLimitsSettableDownwardOnly` | FR-9 | same |
+| 10.24 | `FuzzHandIn`: random structs never panic and always yield a kind from the closed list | Host structs (PL-IS-1) | same |
+| 10.25 | `TestRefusedSetLeavesWarning`; `TestNearDuplicateIDWarned`; `TestImplausibleUnitWarned`; `TestRemoveUnknownReportsNotFound` | First-hour mistakes (PL-NC-4) | same |
 
 ### WP-11 — describe · answer key · builds: L2 Describe, both diagrams
 
 | # | Test first | Then | Verify |
 |---|---|---|---|
-| 11.1 | `tools/answer-key`: `TestKeyScenario2` reproduces specimen 17's key (inside, 0.9 km, north; 0.56 and 0.26 cells) | The independent script, its own module, no import from `internal/` (D-67) | `go test` in the tool's module |
+| 11.1 | `tools/answer-key`: `TestKeyOnHandMadeShapes` — a square and a triangle whose answers are worked out by hand; `TestKeyModuleRequiresNothing` — its module file has no requirement at all, so it cannot share code with the library (D-67). Specimen 17's key is then reproduced as a regression, not as the oracle | The independent script | `go test` in the tool's module |
 | 11.2 | `TestKeyNamesDimensionByBearing` (S17-2) | "Under one cell" uses the row for north–south, the column for east–west | same |
 | 11.3 | `TestInsideOutsideUnsimplified`: uses the borrowed ring, not the simplified one | Areas | `go test ./internal/describe` |
 | 11.4 | `TestNearestEdgeDistanceAndBearing`; `TestSeamIsNeverAnEdge` | Areas | same |
@@ -362,6 +404,9 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 11.11 | `TestMemoised`: an unchanged repeat allocates nothing; recomputed on overlay, place, staleness or depth change | Cost rule (FR-29) | same |
 | 11.12 | `TestNeverInsideRender`; `TestCancellable` | Work integration | same |
 | 11.13 | `TestM1bEveryScenarioInSlice`: description equals the independent key for scenarios 1, 2, 3, 4, 6, 7 | M1b | same |
+| 11.14 | `TestCloserThanOneCellFlag`: the description says, per view, when a place is under one cell from an edge, so a host can tell the viewer the picture cannot settle it | PL-AX-4, D-67 | same |
+| 11.15 | `BenchmarkDescribeSixtyPlaces`: recorded against the 50 ms target | FR-29's cost | the benchmark leg |
+| 11.16 | `TestDescribeReadyOrPending`: a call returns at once, each part marked ready or pending | Contract, section 1 | same |
 
 ### WP-12 — public package · examples · builds: L1 "The public contract at a glance"
 
@@ -370,7 +415,7 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 12.1 | `ExampleThreeCalls` compiles with exactly create, settle, render, assets imported, network disabled (NFR-18, NFR-19) | `New`, `Settle`, `Render` | `go test .` |
 | 12.2 | `TestNewStartsNothing`: no goroutine, no connection, no file | Constructor (D-65, D-73) | same |
 | 12.3 | `TestIntents`: each intent changes the view as documented; none reads input | Intents incl. `FitTo` (FR-24) | same |
-| 12.4 | `TestFocusIntents`: next, previous; label and id exposed | Focus (FR-24a, keyboard part) | same |
+| 12.4 | `TestSizeIsStateBeforeSettle`: with `WithSize` and the assets imported, `Settle` finds work to do before any `Render` (contract, section 3); `TestSetPlaces`: places draw as markers, are what `Describe` answers for and what `FitTo` fits | The three-call path; places | same |
 | 12.5 | `TestOverlayStructsRoundTrip`: each struct of the contract sets and removes | Overlay structs | same |
 | 12.6 | `TestPresetOneCall`: `TemperatureGrid(id, grid, unit, validAt)` needs nothing else | Helper constructors (D-69) | same |
 | 12.7 | `TestLegendShowsDrawnColours` at each depth | `Legend()` | same |
@@ -383,6 +428,14 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 12.14 | `TestExampleTermsRecorded`: the radar example cites the provider's terms and credit | Compliance | same |
 | 12.15 | README quick-start extracted and built by a test | README, with the deferred list, the compatibility promise, the braille need, the safe-ramps ask, what is sent and stored | the test |
 | 12.16 | Contract snapshot committed | Contract check baseline (NFR-22) | the job |
+| 12.17 | Public-surface tests, look: `SetPalette`, `SafeRamps`, `Ground`, `ColourDepth`, `ReduceMotion`, `Layers`, `LabelLanguage` each change the next frame as documented | Contract group "Look" (PL-NC-6) | same |
+| 12.18 | Public-surface tests, tiles: `Source`, `CacheRoot`, a replacement fetcher, shared caches | Contract group "Tiles" | same |
+| 12.19 | Public-surface tests, work: `Pending`, `Work`, `Settle`, `OnPending` through the public package | Contract group "Running the work" | same |
+| 12.20 | Public-surface tests: `Changed`, `NextCall` with a wall clock separate from animation time, `Describe`, `Warnings`, `CheckRamp`, frame status | Contract groups "When to call again", "What went wrong" | same |
+| 12.21 | `TestErrorKindsClosed`, `TestWarningKindsClosed`: the lists equal the contract's | Contract, section 7 | same |
+| 12.22 | `TestCallsSafeTogether`: a race test for every owner call beside `Work` and `Settle`; `TestRenderBesideBlockedWork`: with `Work` stuck in a transport that blocks for ever, `Render` returns at once — no lock is held across I/O | Contract, section 6 (PL-CQ-3) | same, race detector |
+| 12.23 | `TestPanicRecoveredAtEveryPublicCall`: a planted panic in each becomes an internal error, or a failed frame, and the map stays usable | Contract, section 6, rule 4 (PL-PM-7) | same |
+| 12.24 | `TestLocalOverrideRecipe`: a throw-away host module builds against this tree by the documented recipe (no remote exists until SHIP — CD-4) | The first host can start integrating (PL-BZ-4) | same |
 
 ### WP-13 — app · builds: parity rows P-68a, P-72a and the app half of FR-5
 
@@ -399,25 +452,33 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 13.9 | `TestTerminalRestoredOnPanic` | Restore (L-16) | same |
 | 13.10 | `TestHelpStatesBrailleNeed` | Help text (D-57) | same |
 | 13.11 | `TestPrintsOnlyCleanText` | Output safety | same |
+| 13.12 | `TestScenarioFlag`: `--scenario N` loads an M1 scenario's places and overlays, so HUM LEAD can judge M1a live and `--describe` has something to describe | M1 in the app (PL-BZ-3) | same |
+| 13.13 | `TestHelpListsAccessibilitySwitches`: safe ramps, reduce motion, no colour, describe mode, `NO_COLOR`; each also has a key and a flag | PL-AX-5 | same |
 
 ### WP-14 — parity · reference frames · benchmarks · builds: the evidence for M1 to M5
 
 | # | Test first | Then | Verify |
 |---|---|---|---|
-| 14.1 | `TestParityRowsCovered`: every one of the 62 rows marked v0.1.0 names a test, from a committed mapping | Parity index (M3) | `go test ./...` |
-| 14.2 | Tests for parity rows not already covered by WP-01 to WP-13 | The remainder | same |
+| 14.1 | `TestParityMappingComplete`: every one of the 62 rows is in [`parity-mapping.md`](parity-mapping.md), and **every test it names exists** | Parity index (M3) — the mapping itself is written first, in WP-00 (00.13) | `go test ./...` |
+| 14.2 | `TestParitySuite`: the 62 tests named in the mapping run as one suite and the result is M3's figure for the release | M3 reported from tests, not counted by hand | same |
 | 14.3 | Reference frames for the M1 scenarios in the slice, both sizes, truecolor and no colour | Golden frames | same, both runners |
 | 14.4 | `TestM1aFrameDoesNotContradictKey` | M1a | same |
 | 14.5 | `TestM1GuardSharedFrame`: `FitTo` puts place and hazard in one frame at 80×24 | M1's guard | same |
-| 14.6 | `BenchmarkFixtureLive`, `…Peak`: after a scripted tour filling every cache; **three maps sharing caches (two at 149×38, one at 69×12), two `Work` calls at a time — the ruled condition (D-84, D-85)** — and one map | NFR-3 | `go test -bench`, harness |
+| 14.6 | `BenchmarkFixtureLive`, `…Peak`: after a scripted tour filling every cache; **three maps sharing caches (two at 149×38, one at 69×12), two `Work` calls at a time — the ruled condition (D-84, D-85)** — and one map. One processor and a fixed collector setting; the heap metric read after every `Work` call, not on a timer | NFR-3 | the gate's benchmark leg |
 | 14.7 | `BenchmarkChangedFrame`: marker phase, one-cell pan, at 100 and 1,000 features | NFR-4 | same |
 | 14.8 | `TestSoakOneHour` (nightly): heap slope and goroutine count | NFR-4 | nightly job |
-| 14.9 | `TestColdAndWarm` against the shaped local server with secure transport | NFR-5, M2 | same |
-| 14.10 | `TestWorstCaseSynthetic`: 812,058 vertices accepted, not copied, inside the fallback's time bound | NFR-3 | same |
+| 14.9 | `TestColdAndWarm` on a **virtual-clock** link, two `Work` calls wide, so the result is deterministic; a real-time run against the shaped secure local server is recorded, not gating | NFR-5, M2 | same |
+| 14.10 | `TestWorstCaseSynthetic`: 812,058 vertices accepted, not copied, and drawn within the **stated work bound** — box tests and vertices visited are counted (constants, section 3); the time is recorded | NFR-3 | same |
 | 14.11 | `TestCoastalZone14001`: the real 14,001-vertex county at zoom 12 — inside-or-outside never flips against the key (RS-19) | The hard case, from real data | same |
 | 14.12 | `TestHostIndependence`: no terminal, no TUI framework in the module graph | M5 | same |
 | 14.13 | Keys-only scripted session reaches every state | NFR-15 | in `cmd/tuimaps` |
-| 14.14 | Release checklist: checksums, binary scan, licence files, the log read before first push (D-66) | SHIP inputs | checklist |
+| 14.14 | Release checklist: checksums, binary scan, licence files; tags in order — the library, then `cmd/tuimaps/v0.1.0` and the other nested modules | SHIP inputs | checklist |
+| 14.15 | — | **HUM LEAD judges M1a** in the app, scenario by scenario, against the key; the result is recorded | M1 (D-43, D-67) |
+| 14.16 | — | **Golden frames are approved by HUM LEAD before they become goldens** (RS-15) | record |
+| 14.17 | — | Describe-mode output for every M1 scenario is played through a speech engine and a screen reader; what is misread is fixed or recorded (PL-AX-3) | record |
+| 14.18 | — | NFR-15's reviewer session: the M1 questions answered from the no-colour frames alone | record |
+| 14.19 | — | **Before the tag:** a spike in the first host using the local-override recipe — one map, one overlay, its pump in the host's idiom (RS-2, RS-4). **After the integration:** the written review D-60 requires, from a template committed here: what the host needed that the contract lacked; memory and timing in the real host; contract changes proposed; whether the plan for the rest holds | the review, to HUM LEAD |
+| 14.20 | `TestUrbanTilesInFixture` | The fixture gains the four heavy city tiles measured in PLAN (PL-PF-7) | same |
 
 ## Risks this plan carries, and where each is met
 
