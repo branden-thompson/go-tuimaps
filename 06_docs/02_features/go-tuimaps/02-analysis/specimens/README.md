@@ -240,6 +240,16 @@ Made because HUM LEAD, asked to rule between the two (PLAN red-team PL-Q3), answ
 | S24-1 | The two rules agree on about 95 to 97 cells in 100. They differ only where two kinds of line share a cell — a river under a road, a border along a highway. | Whichever is ruled, the map's overall look barely moves; the choice is about those crossings. |
 | S24-2 | Overlays are untouched by either rule: they sit above the basemap in the compositing order (FR-12). | The ruling concerns basemap lines only. |
 
+### Specimen 25 — temperature with no colour: isolines at the preset's absolute breaks (PLAN, 2026-09-19)
+
+Owed since DISCOVER as assumption A-5 — "a proper contouring pass yields clean lines at terminal resolution" — and named by the PLAN red-team as an artefact not produced (PL-PM-1). A first attempt with the throwaway renderer's old contour mode gave broken staircases of box-drawing characters and was discarded. This one classifies the field **at every braille dot** and lights a dot wherever the class changes against the dot to its right or below: continuous braille isolines, every 5 °C — the temperature preset's own breaks — with a value label along each. Files: `25a-*` (continental, both sizes), `25b-*` (regional).
+
+| ID | Finding (coordinator's assessment, from the text frames; not yet seen by HUM LEAD) | Consequence |
+|---|---|---|
+| S25-1 | **Assumption A-5 holds.** Classifying per dot yields unbroken isolines that bend smoothly at terminal resolution, with no special cases; the 10 and 15 °C lines cross the continental view as single curves and carry their values. | The no-colour form of a scalar field (D-35) is per-dot classification at the type's breaks; it needs no box-drawing characters, so NFR-8's closed list loses none and gains none. |
+| S25-2 | At the regional view the evening's range sits inside one or two bands, so there is one isoline or none — the flat day of D-68, as it looks with no colour. | As ruled: the description carries the gradient. |
+| S25-3 | **An isoline is a plain braille line, and so is a state border.** With no colour the two are told apart only by the isoline's value labels and its curve. | The same question specimen 19 raised for tracks. A lighter dotted stroke for isolines is the obvious answer; it is not drawn here. Owed in BUILD's style work, for HUM LEAD's eyes before the golden frames are approved (plan task 14.16). |
+
 ### Cross-cutting
 
 1. **One rendering core carried every specimen.** A cell is a glyph, a foreground and a background; features, grids, vector grids and images all reduce to writing those three. The five input shapes of D-14 do not need five renderers.

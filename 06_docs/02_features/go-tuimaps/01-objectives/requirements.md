@@ -159,5 +159,5 @@ Every requirement in this file is in **v1**. This table says which are in the **
 | A-2 | Every non-braille character the renderer emits — quadrant blocks, box-drawing, shades, arrows, U+FFFD — is one column wide in the supported terminals, **and the fonts people use carry braille** (D-57 rests on this, and nobody has measured it). | A terminal matrix check **at PLAN entry** (NFR-8). |
 | A-3 | The rendering rules hold on a light-background terminal. | **Did not hold as first drawn:** light line work on the terminal's own ground nearly vanishes on a light terminal. D-64 rules a painted ground by default; specimens on light and dark grounds are owed in PLAN. |
 | A-4 | The standard HTTP client returns 206 reliably for range reads of a very large file. | A test in BUILD; one anomalous 200 was seen from another client (AI-9 §8). |
-| A-5 | A proper contouring pass yields clean lines at terminal resolution. | A specimen in PLAN. |
+| A-5 | A proper contouring pass yields clean lines at terminal resolution. | **Held (specimen 25):** classifying the field at every braille dot gives unbroken isolines. Telling an isoline from a border with no colour is still open (S25-3). |
 | A-6 | Simplifying tens of large polygons off the drawing path fits the host's budgets. | Measurement in BUILD. |
