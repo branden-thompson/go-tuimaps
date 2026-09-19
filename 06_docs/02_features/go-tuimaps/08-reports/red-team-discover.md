@@ -477,7 +477,7 @@ Also asked of HUM LEAD, not as rulings, **both before PLAN exit**: a second look
 
 | Q | Question | From |
 |---|---|---|
-| R3-Q1 | Whether M1 at the smallest map size may use the text description, or must be answerable from the frame alone | R3-PRD-1 |
+| R3-Q1 | Whether M1 at the smallest map size may use the text description, or must be answerable from the frame alone → **D-67: two parts, both must pass — the frame alone to its own resolution, and the description, exact** | R3-PRD-1 |
 | R3-Q2 | D-62: (a) the flat-day consequence for M1 scenario 4; (b) the common part, in his own words | R3-PRD-3, R3-PRD-2 |
 | R3-Q3 | Hygiene: (a) the second commit message; (b) whether D-50 exempts the review record and change logs; (c) one unreachable object | R3-HYG-1, -2, -3 |
 

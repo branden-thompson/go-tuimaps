@@ -8,7 +8,7 @@
 
 ## The metric
 
-M1 is the share of the scenarios below for which a viewer can answer the stated questions **from the frame alone**, without leaving the terminal. Target: all of them. *In v0.1.0, all of those whose overlay shape is in the first slice (D-44) — the wind scenario waits for the release that builds wind.*
+M1 is the share of the scenarios below that pass **both parts (D-67)**, without leaving the terminal. **M1a — from the frame alone**, judged to the frame's own resolution: where the answer key puts the place less than one cell from an edge in that view, the correct reading of the frame is "on the edge"; otherwise "inside" or "outside". **M1b — the description as data (FR-29)** must match the exact key, with no tolerance. Target: all of them, on both parts. *[Until D-67 this read "from the frame alone" only. Red-team rounds 2 and 3 showed that no frame can settle a distance smaller than a cell — at 69×12 a column is 1.6 km — and that the coordinator had loosened a requirement's acceptance to get round it without asking.]* *In v0.1.0, all of those whose overlay shape is in the first slice (D-44) — the wind scenario waits for the release that builds wind.*
 
 ## The scenarios
 
@@ -28,7 +28,7 @@ Each is rendered at both of the first host's map sizes — 69×12 and 149×38 ce
 
 ## How it is judged
 
-**HUM LEAD judges, against a computed answer key.** For every scenario the right answers — inside or outside, bearing, distance, class — are calculated from the geometry and the data, not read off the picture. A scenario passes only if HUM LEAD's reading of the frame matches the key. The key is also an automated test: no frame may contradict it.
+**HUM LEAD judges, against a computed answer key.** For every scenario the right answers — inside or outside, bearing, distance, class — are calculated from the geometry and the data, not read off the picture. A scenario passes only if HUM LEAD's reading of the frame matches the key (M1a) and the description matches it exactly (M1b). The key is computed by a script independent of the library's code, states each distance in cells for each view, and so decides "on the edge" itself. The key is also an automated test: no frame and no description may contradict it.
 
 Scenario 2 is the one to watch. It is the common real-world case, it had not been rendered at the time of this ruling, and it is where simplifying a large outline could give a wrong "inside" answer when one cell spans kilometres (RS-19).
 

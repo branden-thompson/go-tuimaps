@@ -10,7 +10,7 @@ Source of truth: [`../08-reports/project-brief.md`](../08-reports/project-brief.
 
 | ID | Metric | Type | Target |
 |---|---|---|---|
-| M1 | Hazard Placement | Primary | All seven scenarios in [`m1-scenarios.md`](m1-scenarios.md), judged against a computed answer key (D-43) |
+| M1 | Hazard Placement | Primary | All seven scenarios in [`m1-scenarios.md`](m1-scenarios.md), judged against a computed answer key (D-43), in two parts that must both pass: the frame alone, to its own resolution, and the description, exact (D-67) |
 | M2 | Time to Placed View | Primary | **Target** ≤ 1 s warm / ≤ 3 s cold to full detail, never blank (D-30) — validated or revised at PLAN exit |
 | M3 | Parity Coverage | Secondary | 100% of the frozen matrix's denominator — 75 rows, stated per release: 62 in v0.1.0 (D-49, D-61) |
 | M4 | Embed Cost | Primary | **Target** ≤ 8 MB against a pinned fixture (D-29; fixture ruled in D-48) — validated or revised at PLAN exit; flat heap over 1 h |

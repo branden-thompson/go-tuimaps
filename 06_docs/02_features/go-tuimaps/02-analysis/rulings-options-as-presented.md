@@ -56,6 +56,7 @@ Each question was presented one at a time with: what was being decided, the evid
 | D-64 | Who owns the ground the map is drawn on | A. The library always paints it · B. The host declares it; nothing is painted · **C. Painted by default, with an opt-out in which the host declares the ground and owns that declaration** | C |
 | D-65 | Whether the library reaches the network without being told to | **A. The library is silent until told; the app enables the default source, says so, and offers an offline flag** · B. On by default, with an off switch · C. Silent everywhere, the app included | A |
 | D-66 | One commit message that says more than D-50's ruled sentence | **A. Accept it as it stands; commit messages from here on describe the change only** · B. Reword it now, rewriting the commits above it · C. Decide at SHIP | A, with a SHIP checklist line |
+| D-67 | What M1 may use at the smallest map size | A. Frame plus description, everywhere · **B. Two parts, both must pass: the frame alone, judged to its own resolution with "on the edge" under one cell; and the description, exact** · C. Frame alone, with scenarios kept at least two cells from an edge at the small size | B |
 
 ## Where HUM LEAD chose against the recommendation ◇
 
