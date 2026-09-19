@@ -2,7 +2,7 @@
 
 Up: [architecture](architecture.md)
 
-The diagram set is wide — twenty-four diagrams. This page is the other way in: **one story, followed end to end**, that passes through almost every diagram once. Read it with the diagrams open beside it. Each step says which diagram you are standing in and which ruling put that step there.
+The diagram set is wide — thirty-four diagrams, not counting the six in the approach notes and the one in the plan. This page is the other way in: **one story, followed end to end**, that passes through almost every diagram once. Read it with the diagrams open beside it. Each step says which diagram you are standing in and which ruling put that step there.
 
 **The story:** it is a stormy evening. Watchpost is showing Fort Wayne. A flood warning is in force and rain is moving in from the south-west. Follow the warning and the radar picture from Watchpost to the cells on your screen — and to the sentence Watchpost can speak.
 
@@ -13,7 +13,7 @@ The diagram set is wide — twenty-four diagrams. This page is the other way in:
 | 1 | Watchpost creates a map and tells it where tiles may come from. Until it does, the library will not touch the network. | L0 Context — the *Tile service* box says "only if the host names one" | D-65 |
 | 2 | Watchpost hands over its theme as a palette of named colour jobs — "heavy rain", "severe alert outline", "ground". | L2 Colour — step 2, *Semantic tokens* | D-63 |
 | 3 | Watchpost — not the library — fetches tonight's weather: the warning's outline, one radar picture for the area, a temperature grid. | L0 Context — *Host's weather fetchers* | D-15 |
-| 4 | It hands each one in as a plain struct: `Set(alerts)`, `Set(radar)`, `Set(temperature)`. It names a preset for each, so it supplies no colours or breaks at all. | L1 Public contract — *What is on it* · L2 Overlays — *Presets and host-defined types* | D-74, D-69 |
+| 4 | It hands each one in as a plain struct: `Set(alerts)`, `Set(radar)`, `Set(temperature)`. It names a preset for each, so it supplies no colours or breaks at all. | L1 Public contract — the *Overlays* box · L2 Overlays — *Presets and host-defined types* | D-74, D-69 |
 | 5 | Each hand-in is checked at the door. A missing colour table for the radar picture would be refused here, with a message saying what to do. | L2 Overlays — *One path for every overlay*, the first diamond | NFR-20, D-45 |
 | 6 | The warning's outline is **borrowed**: the library reads Watchpost's copy and never makes its own. Watchpost must leave it alone until told the borrow is over. | L3 States — *Borrowed geometry* · L2 Memory — *The host's memory* | FR-11, D-48 |
 
@@ -31,7 +31,7 @@ The diagram set is wide — twenty-four diagrams. This page is the other way in:
 |---|---|---|---|
 | 10 | A `Work` call picks up a tile. It tries the disk cache, then the named service, then the tiles shipped inside the program. | L2 Tiles — *Where a tile can come from* | FR-21, D-27 |
 | 11 | The network request leaves through one guarded door: secure transport, at most three redirects, never into a private address, and no error message ever prints the address. | L2 Tiles — *The network edge* | FR-22b |
-| 12 | The bytes that come back are treated as hostile. Sizes and counts are checked **before** memory is set aside; layers the map does not draw and the place-name translations are thrown away during decoding. | L2 Tiles — *Untrusted-input gate* | NFR-10, D-75 |
+| 12 | The bytes that come back are treated as hostile. Sizes and counts are checked **before** memory is set aside; layers the map does not draw, and every place-name translation but the one configured language, are thrown away during decoding. | L2 Tiles — *Untrusted-input gate* | NFR-10, D-75, D-82 |
 | 13 | If the tile fails, it is given a "not before" time — 30 seconds, doubling. No timer is set; the time simply becomes part of the answer to "when should I call you next?" | L3 States — *A tile* · L3 Sequences — *An idle host* | FR-23, FR-25 |
 | 14 | Another `Work` call prepares the radar picture: each pixel's colour is looked up in the provider's table and kept as **one byte — how heavy** — and the provider's own colours are thrown away. | L2 Overlays — *Image*, steps I3–I4 | D-36, D-45 |
 | 15 | Another prepares the warning: the borrowed outline is simplified to what a braille dot can show at this zoom. | L2 Overlays — *Features*, step F2 | D-16 |
@@ -63,7 +63,7 @@ The diagram set is wide — twenty-four diagrams. This page is the other way in:
 | 26 | Watchpost asks "when should I call you next?" The answer is the soonest of: the marker's next blink, a failed tile's retry time, the moment the radar goes stale. | L3 Sequences — *An idle host* | FR-25 |
 | 27 | Twenty minutes later the radar has not been refreshed. It is marked stale on the map, in the legend and in the description. | L3 States — *An overlay's freshness* | FR-32 |
 | 28 | Watchpost sets a new radar picture under the same id. The old one keeps drawing until the new one is ready. | L2 Overlays — *Same id already set?* | FR-11, D-74 |
-| 29 | All of this had to fit in about 4 MB of lasting memory. The map of where those bytes go — and the one place the numbers are tight — is its own diagram. | L2 Memory — *Where the bytes live* | D-29, D-48 |
+| 29 | All of this — for three maps at once — had to fit in about 4 MB of lasting memory. The map of where those bytes go — and the one place the numbers are tight — is its own diagram. | L2 Memory — *Where the bytes live* | D-29, D-48 |
 
 ## If you only look at three diagrams
 

@@ -5,11 +5,11 @@
 | Phase | PLAN |
 | Date | 2026-09-19 |
 | Status | Draft for HUM LEAD's review, revised after the PLAN red-team. Built on rulings D-11 to D-89. HUM LEAD's first read, 2026-09-19: "These look good so far" — a basic understanding, not yet a deep one; formal approval comes with the Plan of Record. |
-| How to use this | These diagrams are **living references** (D-71). Point at one when asking a question; when a decision changes, the diagram changes in the same commit. Every diagram names the rulings and requirements it carries, so a change to one of those says which diagram to open. |
+| How to use this | These diagrams are **living references** (D-71). Point at one when asking a question; when a decision changes, the diagram changes in the same commit. Every diagram file names the rulings and requirements it carries on its first lines, so a change to one of those says which file to open; for the three diagrams in this file, the ids are in the text beside each. |
 
 ## Start here
 
-Twenty-four diagrams is a lot to hold. **[A guided tour](architecture-tour.md)** follows one story — a flood warning and a radar picture, from the first host to the cells on the screen and the sentence it can speak — through almost every diagram once, in 29 steps, each naming the diagram to look at and the ruling behind it. It ends with the three diagrams to read if you read no others.
+Thirty-four diagrams is a lot to hold. **[A guided tour](architecture-tour.md)** follows one story — a flood warning and a radar picture, from the first host to the cells on the screen and the sentence it can speak — through almost every diagram once, in 29 steps, each naming the diagram to look at and the ruling behind it. It ends with the three diagrams to read if you read no others.
 
 ## The documents of PLAN, and the diagram set
 
@@ -21,7 +21,7 @@ Read down for more detail, up for context. Each file's first lines say which rul
 | 0 | **Context and trust boundary** — the library among its neighbours, and which side of the line each byte comes from | this file |
 | 1 | **The parts** — packages, what each owns, what may import what | this file |
 | 1 | **The public contract at a glance** | this file |
-| 1 | **The contract** — what a host can rely on: the pump, the three-call path, the end of a borrow, the frame, which calls are safe together, shared caches, where each deferred shape lands (3 diagrams) | [`contract.md`](contract.md) |
+| 1 | **The contract** — what a host can rely on: the pump, the three-call path, the end of a borrow, the frame, which calls are safe together, shared caches, where each deferred shape lands (2 diagrams) | [`contract.md`](contract.md) |
 | 1 | **Constants** — every number a test needs, and the semantic token list | [`constants.md`](constants.md) |
 | 2 | Render and compositing (2 diagrams) | [`L2-render.md`](L2-render.md) |
 | 2 | Tile pipeline, the network edge, the embedded tiles and their generator (3) | [`L2-tiles.md`](L2-tiles.md) |
@@ -39,6 +39,9 @@ Read down for more detail, up for context. Each file's first lines say which rul
 | — | The three approach notes, kept as the record of what was considered; their diagrams show the options, not the design (6) | [`approach-1`](approach-1-background-work.md) · [`approach-2`](approach-2-overlay-contract.md) · [`approach-3`](approach-3-dependencies-and-layout.md) |
 | — | PLAN entry checks: the radar image source; the terminal matrix | [`plan-entry-checks.md`](plan-entry-checks.md) |
 | — | The implementation plan, with the work packages' dependency diagram (1) | [`../04-development/implementation-plan.md`](../04-development/implementation-plan.md) |
+| — | The parity mapping: each of this release's 62 parity rows, the work package that builds it, the test that proves it | [`../04-development/parity-mapping.md`](../04-development/parity-mapping.md) |
+
+**Counted:** 3 in this file, 2 in the contract, 21 at level 2, 8 at level 3 — **34**; with the approach notes' 6 and the plan's 1, **41**.
 
 ---
 
@@ -125,7 +128,7 @@ flowchart TB
           MVT["<b>mvt</b><br/>own decoder · limits · drop-at-decode (D-75)"]
           ARC["<b>archive</b><br/>minimal single-file reader (D-58)"]
           FETCH["<b>fetch</b><br/>secure transport · redirects · limits (FR-22b)"]
-          OVR["<b>overlay</b><br/>validate · simplify · resample · index"]
+          OVR["<b>overlay</b><br/>validate · simplify · classify · index — resampling is render's, at draw time"]
         end
         subgraph DRAW["turning it into cells"]
           direction LR
@@ -140,10 +143,19 @@ flowchart TB
           DESC["<b>describe</b><br/>description as data (D-52)"]
           TXT["<b>textsafe</b><br/>cleaning · clusters · width (FR-34, NFR-8)"]
           WORKQ["<b>work</b><br/>capped queue · newest view wins · no limiter: the pump's width is the host's (D-73, D-84)"]
+          FAULT["<b>fault</b><br/>the typed error · both closed lists of kinds"]
         end
       end
 
       PUB --> WORKQ
+      PUB --> TILES
+      PUB --> FAULT
+      FAULT --> TXT
+      TILES --> FAULT
+      OVR --> FAULT
+      FETCH --> FAULT
+      MVT --> FAULT
+      STYL --> FAULT
       TILES --> SCENE
       OVR --> SCENE
       REN --> SCENE
@@ -153,7 +165,7 @@ flowchart TB
       PUB --> OVR
       PUB --> DESC
       PUB --> COL
-      ASSETS -. "registers a source" .-> TILES
+      ASSETS -. "handed to New as an option — never registers itself" .-> PUB
       TILES --> FETCH
       TILES --> MVT
       TILES --> ARC
@@ -174,6 +186,7 @@ flowchart TB
       GEN["<b>tools/gen-assets</b><br/>builds the embedded tiles (FR-28a)"]
       ORA["<b>tools/oracle</b><br/>a proven decoder, tests only"]
       AK["<b>tools/answer-key</b><br/>the independent M1 key · imports nothing from the library (D-67)"]
+      KIT["<b>internal/testkit</b><br/>inside the library's module, imported by test files only — a static check says so"]
     end
     APP --> PUB
     EX --> PUB
@@ -189,7 +202,8 @@ flowchart TB
 | A host imports `tuimaps`, and `tuimaps/assets` if it wants offline tiles. Nothing else is importable. | D-74; internal parts stay free to change under D-60's promise |
 | `render` never imports `tiles`, `fetch` or `overlay`'s slow paths. It reads what is already on hand. | FR-23: Render does no input or output, ever |
 | Only `work` runs slow jobs, and only when the host calls `Work`. It knows jobs only through `scene`'s job type — `tiles`, `overlay` and `describe` supply jobs; `work` imports none of them. | D-73; this is what keeps the import graph free of cycles (PL-CQ-7) |
-| Only `fetch` opens a connection; only `textsafe` lets a string out. | One place to enforce FR-22b; one place to enforce FR-34 |
+| Only `fetch` opens a connection; only `textsafe` lets a string out. Every package that reports a problem does it through `fault`, whose only import is `textsafe`. | One place to enforce FR-22b; one place to enforce FR-34 |
+| The public package imports `tiles` to configure sources and caches and to hand its jobs to `work`. | Without this edge nothing reaches `tiles`, and through it `fetch`, `mvt` and `archive` (P2-DOC-2) |
 | Only `textsafe` imports third-party code. | D-75 |
 | The framework the first host uses appears only under `examples/`. | D-13, D-75 |
 
@@ -203,19 +217,19 @@ Everything a host can call or hand in, grouped by what it is for. Names are illu
 flowchart LR
     subgraph IN["Host → Map"]
       direction TB
-      A1["<b>Life</b><br/>New(options, WithSize) · Close() · SharedCaches(handle) (FR-27, D-85)"]
+      A1["<b>Life</b><br/>New(options, WithSize) · Close() — closes at once and reports calls still inside"]
       A2["<b>Size and view</b><br/>SetSize(cols, rows) — state, set BEFORE Settle or Render<br/>intents: Pan · PanCells · Zoom · ZoomAround · Recentre · FitWorld · FitTo(places, overlays, margin) (FR-24, D-76)"]
-      A2b["<b>Places and markers</b><br/>SetPlaces(places) — what Describe answers for, what FitTo can fit, what markers draw (FR-26)"]
+      A2b["<b>Places and markers</b><br/>SetPlaces(places) · AddPlace(place) · RemovePlace(id) — ids as upstream (P-61)<br/>what Describe answers for, what FitTo can fit, what markers draw (FR-26)"]
       A3["<b>Overlays</b> (D-74, D-86)<br/>Set(overlay) → created or replaced · old geometry released yes/no<br/>Remove(id) → found or not · released yes/no · InUse(id) · BorrowCheck(on)<br/>structs: Features · ScalarGrid · Image (· VectorGrid · TileImages later)<br/>presets: Temperature · Radar · Alerts (· Wind later) (D-69)"]
       A4["<b>Look</b><br/>SetPalette(tokens) (D-63) · SafeRamps(on) · Ground(painted or declared) (D-64)<br/>ColourDepth(hint) · ReduceMotion(on) (NFR-21) · Layers(on/off) (FR-36) · LabelLanguage(code) (D-82)"]
-      A5["<b>Tiles</b><br/>Source(named network source) (D-65) · CacheRoot(path) · Fetcher(replacement)"]
-      A6["<b>Running the work</b> (D-73, D-84)<br/>Pending() · Work(ctx) · Settle(ctx) · OnPending(wake)"]
+      A5["<b>Tiles</b><br/>Source(named network source) (D-65) · CacheRoot(path) · Fetcher(replacement)<br/>SharedCaches(handle) (FR-27, D-85) · Purge() · Verify() (FR-22a)"]
+      A6["<b>Running the work</b> (D-73, D-84)<br/>Pending() · Work(ctx) · Settle(ctx) · OnPending(wake)<br/>Work and Settle report the ids whose borrow they ended (D-86)"]
     end
     subgraph OUTB["Map → Host"]
       direction TB
-      B1["<b>The picture</b><br/>Render(size, now) → Frame: exactly-sized rows (NFR-8), valid until the next Render<br/>status: complete · still sharpening · no tiles · failed — and the ids whose borrow this call ended"]
+      B1["<b>The picture</b><br/>Render(size, now) → Frame: exactly-sized rows (NFR-8), valid until the next Render<br/>status: complete · still sharpening · no tiles · failed"]
       B2["<b>When to call again</b><br/>Changed() counter · NextCall(wallClock): the earliest of a marker phase, a retry time, an overlay going stale (FR-25, FR-32)"]
-      B3["<b>The same facts as data</b><br/>Legend() · Credits() · Scale() (FR-13, FR-14, FR-33)<br/>Describe(places): each part ready or pending (D-52) · Focused()"]
+      B3["<b>The same facts as data</b><br/>Legend() · Credits() · Scale() (FR-13, FR-14, FR-33)<br/>Footer(): centre and zoom in upstream's wording (P-57)<br/>Describe(places): each part ready or pending (D-52) · Focused()"]
       B4["<b>What went wrong</b><br/>errors of a closed list of kinds · Warnings() ≤ 64 (NFR-20)<br/>CheckRamp(ramp, ground) for a host's own tests (D-53, D-88)"]
     end
     IN --> M((Map)) --> OUTB

@@ -11,17 +11,17 @@ Up: [architecture](architecture.md) · Carries: FR-11, FR-15, FR-16, FR-29, NFR-
 
 ## 1 · Untrusted input (NFR-10) — with what real tiles measure
 
-Measured on twelve real tiles from zoom 5 to zoom 14, chosen to be heavy: central Paris, Tokyo, New York and London at zoom 14; New York and Tokyo at 12, 10 and 8; the two fixture views.
+Measured on real tiles across the whole range the map uses. **Zoom 0 to 4:** all 85 tiles of zoom 0 to 3 from the planet archive the embedded tiles are cut from, and four zoom-4 tiles *(added after red-team round 2 found the range started at 5 — P2-PRD-14)*. **Zoom 5 to 14:** twelve tiles chosen to be heavy — central Paris, Tokyo, New York and London at zoom 14; New York and Tokyo at 12, 10 and 8; the two fixture views. "MB" in this file is 1,000,000 bytes; "MiB" is 1,048,576.
 
 | Limit | Default (set in DISCOVER round 2) | Largest measured | Headroom |
 |---|---|---|---|
-| Tile body | 2 MiB | 1.10 MB — central Paris, zoom 14 | 1.9× |
-| Decompressed | 8 MiB | 1.10 MB | 7× |
+| Tile body, as received | 2 MiB | 1.10 MB — central Paris, zoom 14, served uncompressed | 1.9× |
+| Decompressed | 8 MiB | **1.56 MB — world tile 2/2/1** (0.72 MB compressed). *The low zooms are the heaviest tiles there are: the first table, which stopped at zoom 5, said 1.10 MB* | 5× |
 | Layers a tile | 64 | 13 | 5× |
 | Features a tile | 100,000 | 16,952 — Paris | 6× |
 | Geometry integers a tile | 2,000,000 | about 200,000 (96,027 vertices) — Paris | 10× |
 | Vertices in one feature | — (bounded by the above) | 20,441 | — |
-| Retained after decode | 4 MiB | 0.80 MB for four zoom-5 tiles together | — |
+| Retained after decode, one tile | 4 MiB | **0.24 MB — world tile 2/2/1.** Others: 0.19 to 0.20 MB a tile for New York at zoom 10 and the Midwest at zoom 5; 0.06 to 0.13 MB for the four city tiles at zoom 14; 0.08 MB a tile on the Gulf coast at zoom 6 | 17× |
 | **Tile extent** | **Set here: 1 to 8,192** *(was "1 to 65,536")* | 4,096 in every tile | 2× |
 
 **Why the extent changed (PL-IS-2).** Coordinates are kept as 16-bit integers (D-75), which hold −32,768 to 32,767. An extent of 65,536 does not fit. With an extent of at most 8,192, a coordinate may run a full extent outside the tile on every side — far more than any buffer — and still fit. **A cursor that leaves the 16-bit range is an error**, never a wrap.
@@ -30,9 +30,12 @@ Measured on twelve real tiles from zoom 5 to zoom 14, chosen to be heavy: centra
 
 | Constant | Value | Status |
 |---|---|---|
-| Tile cache, shared by every map | 0.5 MB | Ruled (D-85); host-settable |
-| Shape cache, shared | 0.25 MB | Ruled (D-85); host-settable |
-| Images, per map | 0.25 MB | Ruled (D-85); host-settable |
+| Tile cache, shared by every map | 0.5 MB — 500,000 bytes | Ruled (D-85); host-settable |
+| Shape cache, shared | 0.25 MB — 250,000 bytes | Ruled (D-85); host-settable |
+| Images, per map | 0.25 MB — 250,000 bytes. A 600×400 image at one byte a pixel is 240,000 | Ruled (D-85); host-settable |
+| An image being replaced | The old one draws until the new one is prepared, so for that moment a map holds both. **That is peak, not live**: the cap bounds what is kept | Set here; task 14.6 measures it |
+| Pending queue | 256 jobs a map; past that the oldest job for a view no map is showing is dropped first, then the oldest | Set here. A 149×38 view wants at most 9 tiles and their ancestors; 256 is an order above any honest need |
+| Embedded tiles, compressed, inside the binary | At most 2.5 MB | Set in PLAN, after D-82 kept English names; the figure task 04.11 measures replaces it |
 | A tile or simplified shape larger than a quarter of its cache | Drawn, not cached | Set here |
 | Vertices an overlay · a map | 2,000,000 · 4,000,000 | Set in DISCOVER round 3 |
 | Pixels an image | 1,048,576, read from the header before decoding | Set in DISCOVER round 2 |
@@ -45,9 +48,10 @@ Measured on twelve real tiles from zoom 5 to zoom 14, chosen to be heavy: centra
 | Constant | Value | Reason |
 |---|---|---|
 | **Zoom bucket** | One bucket per whole zoom level: bucket *b* serves every zoom from *b* up to, not including, *b* + 1 | Set here. Simple to state and test; fractional zoom maps to exactly one bucket |
-| Tolerance inside a bucket | Half a braille dot **at zoom *b* + 1** — the finest zoom the bucket serves | Set here. The simplified shape is never coarser than the view needs; it costs at most twice the vertices of an exact fit |
+| Simplification | **Ramer–Douglas–Peucker**, ring by ring, keeping each ring closed — the algorithm upstream uses for its own lines (P-31), and the one PLAN's measurements were made with | Set here (FR-11 asked for it to be named — P2-PRD-15) |
+| Tolerance inside a bucket | Half a braille dot **at zoom *b* + 1** — the finest zoom the bucket serves | Set here. The simplified shape is never coarser than the view needs. *What it costs was first written as "at most twice the vertices of an exact fit"; the fixture says more — its kept vertices grow about 2.3 times a zoom level (9.5 KB at zoom 6.4, 87 KB at 9, 359 KB at 12) — so a bucket can hold up to about 2.3 times what an exact fit would* |
 | On a miss | The nearest prepared bucket is drawn while the right one is prepared | FR-11 |
-| Dropped | A ring that simplifies to fewer than three distinct points at the bucket's tolerance — smaller than a dot | Set here. Measured: of 1,107 real island polygons, 62 survive at zoom 6.4 and 1,099 at zoom 12 |
+| Dropped | A ring that simplifies to fewer than three distinct points at the bucket's tolerance — smaller than a dot | Set here. Measured: of the fixture's 1,107 rings (in 1,011 polygons, mostly islands), 62 survive at zoom 6.4 and 1,099 at zoom 12 |
 | Draw-from-borrowed fallback: culling | Bounding boxes over runs of 64 vertices | Set here |
 | Draw-from-borrowed fallback: **bound** | **Stated as work, not as time** (PL-PF-6): at most one box test per run, plus the vertices of the runs whose box meets the view. For the synthetic worst case (812,058 vertices) that is 12,689 box tests a frame | By arithmetic. Task 14.10 asserts the count; a time figure is recorded by the benchmark, not gated |
 | Line features with no colour | Dashed: five dots on, four off, two dots thick | Set here, from specimen 19c (D-77) |
@@ -66,6 +70,8 @@ Measured on twelve real tiles from zoom 5 to zoom 14, chosen to be heavy: centra
 | Temperature preset | 17 classes; breaks every 5 °C from −30 to +45; pale break at 0 °C; °F breaks are these converted exactly | D-62, specimen 21 |
 | Radar preset | Six classes from 10, 20, 30, 40, 50, 60 dBZ; two ramps, chosen by the ground's luminance | D-69, specimen 22, PL-AX-1 |
 | Ground counts as light when | Black gives more contrast against it than white does | Set here — the same test as the foreground rule |
+| Which ground that test reads | **The ground in effect**: the `ground` token when the library paints it, the host's declared colour when it does not. "Do not paint" cannot be set without a declaration (D-64), so there is always one | Set here (P2-PRD-3) |
+| Presets against a ground | Required to pass D-88 on the library's own two painted grounds — dark (16, 22, 28) and light (245, 245, 240) — and their 256-colour forms. On any other ground, painted by a host's token or declared, the result is **reported, not refused**, as for any host colour (D-53): on a mid-grey ground of about 185 to 217 the light radar ramp's palest class falls to 9.9 | Set here (P2-PRD-3) |
 
 ### The semantic tokens (D-63)
 
@@ -79,12 +85,19 @@ Stable names; adding one is a minor version. A host sets any subset; the rest ke
 | Furniture | `scale` · `credit` · `notice` · `stale` · `focus` |
 | Places | `marker` · `marker.label` |
 | Alert areas | `alert.extreme.outline` · `alert.extreme.tint` · and the same pair for `severe`, `moderate`, `minor`, `unknown` |
-| Radar and precipitation | `radar.1` to `radar.6` — named by class floor: 10, 20, 30, 40, 50, 60 dBZ |
-| Temperature | `temperature.1` to `temperature.17` — named by band, coldest first |
+| Radar and precipitation | `radar.1` to `radar.6` — numbered by position, lightest rain first; the floors are 10, 20, 30, 40, 50, 60 dBZ. One set of names: the library's defaults for them differ by ground, and a host that sets them has set them for its own ground |
+| Temperature | `temperature.1` to `temperature.17` — numbered by position, coldest first |
 | A host's own type | `low` · `middle` · `high` — interpolated across its classes |
 | Line features | `track` · `track.label` |
 
 The sixteen-colour depth has its own small set of values for the basemap tokens, chosen from the sixteen by hand (specimen 23, D-79).
+
+### Two warnings that need a rule to be testable (P2-ENG-7)
+
+| Warning | Fires when |
+|---|---|
+| `near-duplicate-id` | A `Set` **creates** an overlay whose id is not already set, and that id differs from an existing id by letter case only, by surrounding or repeated white space only, or by exactly one character added, dropped or changed |
+| `implausible-unit` | Temperature declared °C with any value above 60 or below −90; declared °F with any value above 140 or below −130; radar declared dBZ with any value above 95. Values are accepted either way |
 
 ## 5 · Time
 
@@ -94,12 +107,14 @@ The sixteen-colour depth has its own small set of values for the basemap tokens,
 | Blink | Upstream's 800 ms period | Parity P-59a |
 | Flash, when built | At most 2.5 a second | Ruled (D-56) |
 | Overlay currency | More than 0, at most 7 days; a valid time over 5 minutes ahead is uncertain and treated as stale | DISCOVER round 2 |
+| Fetch: whole request · waiting for the first byte | 20 s · 10 s. Enforced by the context `Work` was given plus the standard library's own client timeout — the one timer the static check allows, because it lives and dies inside the host's `Work` call | Set here (FR-22); task 05.10 |
 | "No `Work` has been called" warning | After 20 consecutive renders that found work pending | Set here — about 6 s at the first host's tick |
 
 ## 6 · Determinism (NFR-6)
 
 | Constant | Value | Reason |
 |---|---|---|
+| Projection: which functions | Forward: *y* = atanh(sin φ). Inverse: φ = asin(tanh *y*). Written with the standard library's sine, arcsine, hyperbolic tangent and its inverse — **none of which has an assembly version on either gated architecture**, unlike the exponential and logarithm the textbook forms use, which on one architecture also branch on a processor feature | Set here (P2-ENG-10; the processor-feature claim is the reviewer's, not re-checked) |
 | Projection results | Rounded to 1/256 of a dot before they are used to raster | Set here. Finer than anything visible; coarse enough to absorb last-bit differences between architectures in the standard library's transcendental functions. The two-architecture reference frames decide whether it is enough |
 | Tile order | By zoom, then x, then y | NFR-6 |
 | Ties in the cell-colour vote after neighbours | The colour with the larger value, read as one number | D-83; any fixed rule would do |
@@ -110,7 +125,7 @@ PLAN was to "validate or revise" these. Without the library they can only be che
 
 | Target | By arithmetic | Measured by |
 |---|---|---|
-| NFR-5 cold start ≤ 3 s, on the stated link, **two `Work` calls wide** (D-84) | Connection setup 0.30 s + two rounds of requests 0.30 s + 1.245 MB at 8 Mbit/s 1.25 s + decode 0.10 s + one 0.30 s tick = **about 2.25 s**. One wide: about 2.45 s. The target holds, with less room than it looked | Task 14.9, on a virtual-clock link so it is deterministic; a real-time run is recorded but not gating |
+| NFR-5 cold start ≤ 3 s, on the stated link, **two `Work` calls wide** (D-84) | Connection setup 0.30 s + two rounds of requests 0.30 s + 1.245 MB at 8 Mbit/s 1.25 s + decode 0.10 s + one 0.30 s tick = **about 2.25 s**. One wide: about 2.55 s (three rounds of requests, not two). Not counted in either: a TileJSON round trip, about 0.15 s, paid once for a source named by TileJSON. The target holds, with less room than it looked | Task 14.9, on a virtual-clock link so it is deterministic; a real-time run is recorded but not gating |
 | NFR-5 warm ≤ 1 s | Nothing fetched; four decodes and three overlay prepares, tens of milliseconds | Task 14.9 |
 | NFR-4 changed frame, marker phase ≤ 16 KB | Only the marker's row is rebuilt: 149 cells at about 41 bytes is 6 KB | Task 14.7 |
 | NFR-4 one-cell pan | Every row changes: about 232 KB of row bytes, **reused, not allocated** — the frame's buffers persist between renders (contract, section 5). The target of "no more than the first host's own window cost" stands | Task 14.7 |

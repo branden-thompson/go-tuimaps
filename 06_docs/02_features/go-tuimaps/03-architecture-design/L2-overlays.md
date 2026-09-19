@@ -38,22 +38,22 @@ flowchart LR
         F1["Borrowed geometry<br/>not copied (FR-11)"] --> F2["Simplify to the dot tolerance<br/>per zoom bucket · iterative"]
         F2 --> F3{"Simplified form > ¼ of the cap?"}
         F3 -- no --> F4["Cache the unclipped result;<br/>split at ±180° here"]
-        F3 -- yes --> F5["Do not cache: draw from the borrowed shape,<br/>culled by segment runs · own time bound"]
+        F3 -- yes --> F5["Do not cache: draw from the borrowed shape,<br/>culled by segment runs · a stated bound on work, not on time (constants, section 3)"]
         F4 --> F6["Bounding boxes per run<br/>for drawing and for the description"]
         F5 --> F6
       end
       subgraph S["Scalar grid — lon/lat grid of values with a unit"]
         direction LR
         S1["Type: a preset (breaks and colours supplied)<br/>or the host's own breaks (D-69)"] --> S2["Classify each value → class index<br/>non-finite = no data"]
-        S2 --> S3["Resample to cell centres for the view"]
-        S3 --> S4["Contour lines at the breaks<br/>for the no-colour form (D-35)"]
+        S2 --> S3["Kept as classes on the host's own grid.<br/>PREPARE ENDS HERE"]
+        S3 -. "at draw time, in render" .-> S4["Each cell samples the grid at its centre ·<br/>contour lines at the breaks for the no-colour form (D-35)<br/>work bounded by the cell count, not the data"]
       end
       subgraph I["Image — one PNG for one bounding box"]
         direction LR
         I1["Header read first: PNG only ·<br/>≤ 1,048,576 pixels · 8-bit (FR-9)"] --> I2["Decode directly (never via a format registry)"]
         I2 --> I3["Colour → class by the required table (D-45)<br/>nearest within tolerance; unmatched = no data, counted"]
         I3 --> I4["Keep ONE byte per pixel: the class index (D-36)<br/>the provider's colours are never shown"]
-        I4 --> I5["Resample for the view, from the projection the host stated:<br/>each cell takes the HEAVIEST class inside it, never the mean (S22-3)"]
+        I4 -. "PREPARE ENDS HERE · at draw time, in render" .-> I5["From the projection the host stated: eight samples a cell,<br/>the HEAVIEST class wins, never the mean (D-78)<br/>so a pan needs no Work (PL-PF-4)"]
       end
     end
     subgraph LATER["After the integration (D-44, D-60)"]
@@ -82,6 +82,6 @@ flowchart LR
 | If this changes… | …this part moves |
 |---|---|
 | The integration review (D-60) finds the contract lacking | The struct fields behind `Set`, and the "later" box |
-| The radar resampling rule changes (now: the heaviest class in the cell, S22-3) | Step I5 |
-| A proper contouring pass is proven by specimen (A-5) | Step S4 |
-| The zoom buckets are defined (owed in PLAN) | Step F2 |
+| The radar resampling rule changes (now: the heaviest class in the cell, D-78) | Step I5, and render's task 09.23 |
+| The contouring pass changes (per-dot isolines, specimen 25) | Step S4 |
+| The zoom buckets change ([constants](constants.md), section 3) | Step F2 |

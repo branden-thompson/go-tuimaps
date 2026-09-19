@@ -17,9 +17,9 @@ flowchart TB
       TH["The host's own type"]
     end
 
-    TYPE --> TOK["2 · Semantic tokens (D-63)<br/>each class has a named role — 'radar.heavy', 'alert.severe.outline', 'temperature.band.−5to0' —<br/>never a position. A host's own ramp is tokenised low · middle · high and interpolated"]
+    TYPE --> TOK["2 · Semantic tokens (D-63)<br/>each class has a named role — 'radar.4', 'alert.severe.outline', 'temperature.9' —<br/>its place in its scale, never a colour (the list: constants, section 4). A host's own ramp is tokenised low · middle · high and interpolated"]
     TOK --> PAL{"3 · Does the host's palette set this token?"}
-    PAL -- no --> DEF["The library's default for that token"]
+    PAL -- no --> DEF["The library's default for that token<br/>radar has two sets of defaults: one for a dark ground, one for a light —<br/>chosen by the ground IN EFFECT: painted, or the host's declared colour (D-64, D-88)"]
     PAL -- yes --> THEME["The host's colour"]
     THEME --> SAFE{"4 · Safe ramps on? (D-63)"}
     SAFE -- yes --> DEF
@@ -68,9 +68,9 @@ A host can run the same checker in its own tests (`CheckRamp`).
 
 | Item | Why | Due |
 |---|---|---|
-| The temperature preset's actual scale | D-62; PQ-5 | **A candidate exists (specimen 21):** 17 classes of 5 °C from −30 to +45, pale at freezing, worst adjacent pair 13.7 under colour blindness in truecolor and 11.1 within the 256-colour palette. Seen by HUM LEAD and found good (D-77) |
+| The temperature preset's actual scale | D-62; PQ-5 | **A candidate exists (specimen 21):** 17 classes of 5 °C from −30 to +45, pale at freezing. **Every pair of classes**, not only neighbours, is at least 12.2 apart under every kind of colour vision in truecolor and 11.1 within the 256-colour palette (the scale was retuned after D-88; an earlier figure here, 13.7, was for neighbours only). Seen by HUM LEAD and found good (D-77). *Against a light ground its two freezing bands fail D-88 — red-team round 2, question P2-Q2* |
 | A radar preset ramp that passes at 256 colours | S15-3 | **A candidate exists (specimen 22):** six classes, two ramps chosen by the ground; every pair and the ground at least 12.6 apart. Seen by HUM LEAD and found fine (D-78, D-89) |
 | A specimen of step D16 — a coloured basemap with a colourless overlay | D-59 | **Done (specimen 23).** Finding: the basemap needs its own palette chosen from the sixteen; converted colours collapse to white and grey. Seen by HUM LEAD and found good (D-79) |
 | Specimens of a painted light and a painted dark ground | D-64 | **Done (specimen 20), measured:** unpainted, 85% of drawn cells fall under 3:1 on a white terminal; painted, none do once the higher-contrast rule is applied to every line. Seen by HUM LEAD and found good (D-77). The bright style keeps a line's colour where it passes 3:1 on the cell and falls back to black or white where it does not |
-| The list of tokens | D-63; a named PLAN artefact | With the contract |
+| The list of tokens | D-63; a named PLAN artefact | **Done:** [constants](constants.md), section 4 |
 | The colour-vision threshold | FR-16 | **Ruled: D-88** |

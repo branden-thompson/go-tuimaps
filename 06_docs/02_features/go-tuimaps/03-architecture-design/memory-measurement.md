@@ -14,10 +14,10 @@ Up: [architecture](architecture.md) · [memory budget map](L2-memory.md)
 | Part | Contents | Source |
 |---|---|---|
 | View | 149×38 cells, zoom 6.4, centred on Tampa Bay (27.6, −82.4) | — |
-| Alert overlay | **Ten real county zones of Florida's Gulf coast** — Hernando, Pasco, Pinellas, Hillsborough, Manatee, Sarasota, Charlotte, Lee, Collier, Dixie: **56,827 vertices in 1,107 polygons** (mostly small islands), 0.91 MB as the host holds them | The weather service's public zone shapes, fetched 2026-09-19 |
+| Alert overlay | **Ten real county zones of Florida's Gulf coast** — Hernando, Pasco, Pinellas, Hillsborough, Manatee, Sarasota, Charlotte, Lee, Collier, Dixie: **56,827 vertices in 1,107 rings** — 1,011 polygons, mostly small islands, 0.91 MB as the host holds them | The weather service's public zone shapes, fetched 2026-09-19 |
 | Basemap | The four zoom-6 tiles of that view, 540 KB of vector-tile data, from a version-pinned address | The tile service |
-| Radar | One image, 600×400, held as one byte a pixel (D-36) | sized for the view |
-| Temperature | One grid, 64×48 | — |
+| Radar | One image, 600×400, held as one byte a pixel (D-36). *The first runs used a blank array of that size; the committed image, `radar/gulf-2026-09-19.png`, is a real one of the same size over the same view* | The radar provider of the entry checks |
+| Temperature | One grid, 64×48, built from a stated rule — only its size matters here | The fixture's README |
 | A heavier variant | The same, with the four zoom-5 Midwest tiles named in NFR-5 — 1,245 KB of vector-tile data | — |
 
 ## Results
@@ -28,7 +28,7 @@ Three runs each; the spread between runs was under 0.02 MB live and 0.2 MB peak.
 |---|---|---|---|
 | Fixed buffers: two cell grids, dot mask, output | 0.44 MB | 0.44 MB | |
 | Tiles, compact form — layers the map does not draw and every place-name translation dropped, coordinates as 16-bit integers | 0.33 MB (1,079 features) | 0.80 MB (2,371 features) | |
-| Shapes simplified for the view: 56,827 → 1,192 vertices; 62 of 1,107 polygons survive, the rest are smaller than a dot | 0.01 MB | 0.01 MB | |
+| Shapes simplified for the view: 56,827 → 1,192 vertices; 62 of 1,107 rings survive, the rest are smaller than a dot | 0.01 MB | 0.01 MB | |
 | Radar at one byte a pixel, and the grid | 0.25 MB | 0.25 MB | |
 | **Live, added** | **1.03 MB** | **1.50 MB** | **4 MB** |
 | **Peak heap objects, above the baseline** — an upper bound | **2.8 to 2.9 MB** | **4.75 MB** | **8 MB** |

@@ -86,5 +86,5 @@ flowchart LR
 | If this changes… | …this part moves |
 |---|---|
 | The public PMTiles source is built (after v0.1.0) | A fourth source in "try sources in order"; it wraps the same archive reader |
-| Per-tile maxima measured across zoom 0–14 (owed in PLAN) | The numbers in the gate |
+| Per-tile maxima, measured across zoom 0 to 14 ([constants](constants.md), section 1), change | The numbers in the gate |
 | The provider changes its schema | Only the schema mapping (FR-35), and "drop while decoding" follows it |

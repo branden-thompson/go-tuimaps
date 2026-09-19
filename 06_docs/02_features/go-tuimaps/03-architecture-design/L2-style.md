@@ -44,7 +44,7 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-    C["Candidates: places on hand, largest rank first<br/>name by the language rule (P-36, D-82): the configured language, then English, then the local name"] --> CL["Cleaned and measured by grapheme cluster (FR-34, NFR-8)<br/>a wide character takes two cells"]
+    C["Candidates: places on hand, largest rank first<br/>name by upstream's order with one language kept (P-36, D-82): the configured language — English unless the host says otherwise — then the local name, then the house number. No other language survives decoding"] --> CL["Cleaned and measured by grapheme cluster (FR-34, NFR-8)<br/>a wide character takes two cells"]
     CL --> FIT{"Fits inside the rectangle?"}
     FIT -- no --> SKIP["Skipped whole — never cut mid-cluster"]
     FIT -- yes --> COL{"Collides with a label already placed?<br/>upstream's rule: a padded box in cell units (P-34)"}

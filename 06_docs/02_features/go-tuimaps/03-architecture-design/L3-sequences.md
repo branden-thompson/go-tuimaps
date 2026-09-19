@@ -88,10 +88,10 @@ sequenceDiagram
     autonumber
     participant C as Caller (a test, the app's headless flag, a script)
     participant M as Map
-    C->>M: New(assets imported, no network)
+    C->>M: New(WithSize(cols, rows)) — assets imported, no network
     C->>M: Settle(ctx)
-    Note over M: The same loop as a pump, on the caller's goroutine:<br/>Work until nothing is pending, or the context ends.<br/>Work that failed and is waiting to retry is not pending — so Settle always ends (FR-30)
-    M-->>C: settled · or context ended · with a count of work that failed
+    Note over M: Settle first notes what a render of the map's size would want (no size: refused, 'no-size').<br/>Then the same loop as a pump, on the caller's goroutine:<br/>Work until nothing is pending, or the context ends.<br/>Work that failed and is waiting to retry is not pending — so Settle always ends (FR-30)
+    M-->>C: settled, or context ended · work that failed · why nothing could be fetched, if so · jobs in flight elsewhere · ids released
     C->>M: Render(rect, now)
     M-->>C: frame · status "complete" — or marked incomplete, never silently (NFR-20)
 ```

@@ -17,14 +17,14 @@ One public package. Everything a host hands in is a plain struct (D-74); everyth
 |---|---|---|
 | Life | `New(options)` · `Close()` | `New` starts nothing: no goroutine, connection or file. `Close` drops every reference, including borrowed geometry, and reports whether any host call is still inside the map |
 | Size and view | `SetSize(cols, rows)` · intents: `Pan`, `PanCells`, `Zoom`, `ZoomAround`, `Recentre`, `FitWorld`, `FitTo(places, overlay ids, margin)` | **The size is state, set before the first `Settle` or `Render`** — this is what makes the three-call path work (section 3). `Render` takes the size too and updates it |
-| Places and markers | `SetPlaces(places)` — each a name, a position, a marker style | Places are what `Describe` answers for and what `FitTo` can fit; markers are how they are drawn (FR-26). Separate from overlays: they are the host's "my places", not data |
-| Overlays | `Set(overlay)` · `Remove(id)` · `InUse(id)` | Section 4 |
+| Places and markers | `SetPlaces(places)` · `AddPlace(place)` · `RemovePlace(id)` — each place a name, a position, a marker style and an id | Places are what `Describe` answers for and what `FitTo` can fit; markers are how they are drawn (FR-26). Separate from overlays: they are the host's "my places", not data. **As upstream (P-61):** an id left empty defaults to the position written to six decimal places, and `RemovePlace` removes every place with that id |
+| Overlays | `Set(overlay)` · `Remove(id)` · `InUse(id)` · `BorrowCheck(on)` | Section 4 |
 | Look | `SetPalette(tokens)` · `SafeRamps(on)` · `Ground(painted or declared)` · `ColourDepth(hint)` · `ReduceMotion(on)` · `Layers(on, off)` · `LabelLanguage(code)` | All take effect at the next `Render`; none re-parses a tile, except the language, which is part of the tile cache key (D-82) |
-| Tiles | `Source(named source)` · `CacheRoot(path)` · `Fetcher(replacement)` · `SharedCaches(handle)` | Nothing is reached until `Source` is called (D-65). Section 6 for shared caches |
+| Tiles | `Source(named source)` · `CacheRoot(path)` · `Fetcher(replacement)` · `SharedCaches(handle)` · `Purge()` · `Verify()` | Nothing is reached until `Source` is called (D-65). Section 8 for shared caches. `Purge` and `Verify` are the disk cache's two maintenance calls (FR-22a) |
 | Running the work | `Pending()` · `Work(ctx)` · `Settle(ctx)` · `OnPending(func)` | Section 2 |
 | The picture | `Render(size, now)` → `Frame` | Section 5 |
 | When to call again | `Changed()` · `NextCall(wallClock)` | The counter moves whenever a redraw would differ. `NextCall` is the earliest of: the next marker phase, a failed tile's retry time, an overlay going stale — on the wall clock, which is passed in separately from animation time (FR-25, FR-32) |
-| The same facts as data | `Legend()` · `Credits()` · `Scale()` · `Describe(places)` · `Focused()` | `Describe` returns what it has at once, with each part marked **ready** or **pending**; the pending parts are computed by `Work` (FR-29) |
+| The same facts as data | `Legend()` · `Credits()` · `Scale()` · `Footer()` · `Describe(places)` · `Focused()` | `Footer` is the centre and zoom in upstream's own wording, cut with floor as upstream cuts it (P-57); it is drawn inside the map only if the host turns that furniture layer on, and it is off by default. `Describe` returns what it has at once, with each part marked **ready** or **pending**; the pending parts are computed by `Work` (FR-29) |
 | What went wrong | errors of a closed list of kinds · `Warnings()` · `CheckRamp(ramp, ground)` | Section 7 |
 
 ## 2 · Running the work — the pump, drawn
@@ -41,16 +41,16 @@ sequenceDiagram
     U->>M: Render(size, now)
     Note over M: Render notes missing tiles. Pending goes 0 → 4.<br/>wake() is called HERE, on the interface goroutine, before Render returns.<br/>It must not block and must not call the map: it only signals the pump.
     M-->>U: frame · "still sharpening"
-    U-)P: wake: a non-blocking send on the host's own channel
+    U-)P: wake: non-blocking sends on the host's own BUFFERED channel, one slot for each pump goroutine
     loop while Work reports it did something
         P->>M: Work(ctx)
         Note over M: one job, on the pump's goroutine: fetch, gate, decode, store.<br/>No lock is held while it fetches or decodes.
-        M-->>P: did work · released ids, if any (D-86) · error, if any
+        M-->>P: did work · released ids, if any (D-86) · error, if any (kind 'cancelled' when ctx ends)
         P-)U: "map changed" — the host's own message
     end
     U->>M: Render(size, now)
     M-->>U: frame · "complete"
-    U->>P: on quit: cancel ctx, wait for the pump, then Close()
+    U->>P: on quit: cancel ctx (a Work blocked in a fetch returns 'cancelled'), wait for the pump, then Close()
 ```
 
 **The rules a pump follows**
@@ -58,10 +58,13 @@ sequenceDiagram
 | Rule | Why |
 |---|---|
 | Work arrives only from the host's own calls — `Render`, `Set`, `Remove`, an intent, `SetSize`, `Describe` — and `OnPending` fires inside that call when pending goes from none to some | So the pump needs no polling and no timer. A host that prefers to poll checks `Pending()` after those calls |
+| **How `wake` is written.** It does nothing but non-blocking sends on a channel the host made **buffered, with one slot for each pump goroutine**, filling every free slot. It never blocks and never calls the map | An unbuffered send made while the pump is busy inside `Work` would be dropped and the wake lost. One slot a goroutine is what makes the pump as wide as the host meant: each pump goroutine takes one token, then calls `Work` until it says it did nothing |
+| **One exception to "only inside the host's own calls", for shared caches.** When a `Work` call is cancelled while it holds a shared job that another map still wants, the job returns to the queue and **that map's hook fires from inside the cancelled `Work` call** | Otherwise the other map's pump, already told there was nothing to do, would sleep for ever on a job that is waiting. It is why `wake` must be safe from any goroutine — which a non-blocking send is |
+| `Pending()` counts jobs **waiting to be picked up**. It does not count a job already inside a `Work` call, nor failed work waiting for its retry time | A retry does not wake the pump by itself — nothing in the library can. It becomes pending at the first owner call after its time, and the host learns that time from `NextCall` (section 1); a host that renders on a tick meets it within a tick |
 | `Work(ctx)` does at most one job and says whether it did one. Call it until it says no | A blocking call, cancellable; never call it from the interface goroutine — a fetch can take seconds |
 | Two pump goroutines is the width the memory line is measured at. Each further one can add about 1 MB while a tile decodes, more at the input limits | D-84: the width and its memory are the host's |
 | If renders keep finding work pending and no `Work` has been called for a while, a warning says so, once | The silent failure a newcomer would otherwise meet (PL-NC-2) |
-| `Settle(ctx)` is the same loop run on the caller's goroutine. It returns when nothing is pending or the context ends, with how much work failed, and with **why nothing could be fetched** if no source is named and no assets are imported | One-shot renders and tests. Work that failed and is waiting to retry is not pending, so `Settle` always ends. `Settle` never waits on a `Work` running elsewhere: if jobs are in flight on other goroutines when the queue empties, it returns and says how many |
+| `Settle(ctx)` is the same loop run on the caller's goroutine. It returns when nothing is pending or the context ends, with how much work failed, and with **why nothing could be fetched** if no source is named and no assets are imported | One-shot renders and tests. Work that failed and is waiting to retry is not pending, so `Settle` always ends. `Settle` never waits on a `Work` running elsewhere: if jobs are in flight on other goroutines when the queue empties, it returns and says how many. Its result also carries every id released while it ran (D-86). Called on a map that has no size yet, it is refused with the `no-size` kind |
 
 ## 3 · The three-call path, corrected
 
@@ -80,9 +83,10 @@ As first drawn, tiles became wanted only when `Render` noticed them missing, yet
 | `Set(overlay)` | created or replaced · **old geometry released: yes or no** · an error of a closed kind if refused — and a refused `Set` also leaves a warning, so a discarded error is still visible | blocks |
 | `Remove(id)` | found or not · released: yes or no | blocks |
 | `InUse(id)` | whether any host call is still reading that id's old geometry | blocks |
-| `Work`, `Render` | among their results: the ids whose old geometry this call was the last to read | — |
+| `Work`, `Settle` | among their results: the ids whose old geometry this call was the last to read | — |
 
 - With **one goroutine** making every call, "released" is always yes.
+- *The coordinator's reading, not a ruling:* D-86's record says the release is reported by "`Work` or `Render`". Under section 6 `Render` never runs beside `Set` or `Remove`, so it is never the last reader and has nothing to report; only `Work` and `Settle` carry released ids. Listed for HUM LEAD in the Plan of Record.
 - The old shape keeps drawing from the library's **own simplified copy** until the new one is prepared. **One exception:** a shape so large that it was being drawn straight from borrowed memory (FR-11's fallback) has no such copy; it is not drawn from the moment it is replaced or removed until its replacement is prepared, and the frame's status says "still sharpening".
 - A mistyped id on a refresh makes a second overlay; the result says **created**, and a warning notes a create whose id differs from an existing id only slightly.
 - Values declared in one unit that are implausible for it — for example temperatures all above 60 declared as °C — are accepted with a warning.
@@ -92,25 +96,28 @@ As first drawn, tiles became wanted only when `Render` noticed them missing, yet
 
 | Question | Answer |
 |---|---|
-| What is it | The rendered rows, each exactly the requested width, held as bytes the map owns; `Frame.Line(i)`, `Frame.WriteTo(w)`, `Frame.String()`; plus its status and the ids released by this call |
+| What is it | The rendered rows, each exactly the requested width, held as bytes the map owns; `Frame.Line(i)`, `Frame.WriteTo(w)`, `Frame.String()`; plus its status |
 | How long is it valid | **Until the next `Render` on the same map.** The buffers are reused; a host that keeps a frame copies it. `String()` copies |
-| When is it reused unchanged, at no cost | When nothing that could change a cell has changed: view, size, depth, palette, safe ramps, ground, layers, language, focus, the overlays' versions, the tiles on hand, the marker phase, **each overlay's freshness**, and the frame's status |
+| When is it reused unchanged, at no cost | When nothing that could change a cell has changed: view, size, depth, palette, safe ramps, ground, layers, language, focus, **the places**, reduce-motion, the overlays' versions, the tiles on hand, the marker phase, **each overlay's freshness**, and the frame's status. This list is the key; L2 Render's diagram points here rather than repeating it |
 | What does a changed frame cost | Only the rows that changed are rebuilt; a marker blink rebuilds the marker's row |
 
 ## 6 · Which calls are safe together
 
 One map is used from two kinds of goroutine: the **owner** — the host's interface goroutine — and the **pump**.
 
-| | Owner calls: `Render`, `Set`, `Remove`, intents, `SetSize`, `SetPlaces`, look and tile settings, `Describe`, `Legend`, `Credits`, `Scale`, `Warnings`, `Changed`, `NextCall`, `Pending` | Pump calls: `Work`, `Settle` | `Close` |
-|---|---|---|---|
-| **Owner calls** | One at a time. They are not safe against each other from two goroutines | Safe together | After the last owner call |
-| **Pump calls** | Safe together | Safe together, any number | After every pump call has returned; `Close` reports it if one has not |
+| Class | Calls | Rule |
+|---|---|---|
+| **Owner** | `Render`, `Set`, `Remove`, the intents, `SetSize`, `SetPlaces`, `AddPlace`, `RemovePlace`, every look and tile setting, `BorrowCheck`, `OnPending`, `Purge`, `Verify`, `Describe`, `Legend`, `Credits`, `Scale`, `Footer`, `Focused`, `Warnings`, `NextCall` | **One at a time.** They are not safe against each other from two goroutines. Safe beside any pump call |
+| **Pump** | `Work`, `Settle` | Any number at once, beside each other and beside owner calls |
+| **Any goroutine** | `Pending`, `InUse`, `Changed` | Safe beside everything; each is one short read under the lock. This is what lets a pump poll `Pending` |
+| **No map involved** | `CheckRamp` | A pure function |
+| **`Close`** | | Meant to come after the last owner call and after every pump call has returned. If a call is still inside, `Close` does not wait: **the map is closed at once**, every later call returns the `closed` kind, a `Work` still inside abandons or finishes its job, publishes nothing to this map, and returns `closed`; and `Close` reports how many calls were inside. `InUse` still answers afterwards, and says yes for a borrowed id until those calls have returned |
 
 **How it is kept** — rules for the implementation, each with a test:
 
 1. One lock guards the map's state. **It is never held across a fetch, a decode, a simplification or a description.** A job copies what it needs under the lock, works with the lock released, and publishes its result under the lock.
 2. `Render` takes the lock only to snapshot what is on hand and to note what is missing.
-3. `OnPending` is called with the lock released. It must not call the map.
+3. `OnPending` is called with the lock released. It must not call the map. An **owner** call made from inside it is detected — owner calls are one at a time, so a second one arriving while the hook runs can only be re-entry or misuse — and refused with the `reentrant-call` kind. A pump call made from inside it cannot be told from a legal concurrent one and is not detected; the rule is documentation there.
 4. A panic inside any public call is recovered at that call's edge and returned as an error of the "internal" kind (or, for `Render`, a frame whose status is "failed" with the last good rows kept); the map stays usable. Out-of-memory is not recoverable and is not claimed to be.
 
 ## 7 · Errors and warnings
@@ -119,9 +126,9 @@ One map is used from two kinds of goroutine: the **owner** — the host's interf
 |---|---|---|
 | When | A hand-in or a call is refused | Accepted, but something is off; or something happened during `Work` |
 | Form | A typed error with a **kind from a closed list**, saying what happened, why, and what to do; never a tile address; quoted outside text cleaned and cut to 64 clusters | A list, at most 64, de-duplicated; each with a kind, the overlay or tile it concerns, and a count |
-| Kinds (the list is closed; adding one is a minor version) | invalid-coordinates · size-mismatch · unsorted-breaks · malformed-ramp · missing-table · malformed-table · unknown-preset · invalid-id · over-vertex-cap · over-image-cap · image-refused · ring-too-short · bad-currency · unsupported-schema · unsupported-tile · over-limit · fetch-refused · fetch-failed · cache-refused · closed · internal | ramp-rule-broken · unmatched-image-colours · stale-overlay · future-valid-time · implausible-unit · near-duplicate-id · set-refused · borrow-changed · no-work-called · tile-failed · cache-write-failed |
+| Kinds (the list is closed; adding one is a minor version) | invalid-coordinates · size-mismatch · unsorted-breaks · malformed-ramp · missing-table · malformed-table · unknown-preset · invalid-id · over-vertex-cap · over-image-cap · image-refused · ring-too-short · bad-currency · unsupported-schema · unsupported-tile · over-limit · fetch-refused · fetch-failed · cache-refused · no-size · reentrant-call · cancelled · closed · internal | ramp-rule-broken · unmatched-image-colours · stale-overlay · future-valid-time · implausible-unit · near-duplicate-id · set-refused · borrow-changed · no-work-called · tile-failed · cache-write-failed · render-failed |
 
-Every string in either passes through the one cleaning type that only the text-safety package can construct (PL-IS-5); no foreign error is ever wrapped.
+Every string in either passes through the one cleaning type that only the text-safety package can construct (PL-IS-5); no foreign error is ever wrapped. **One stated exemption:** the `cancelled` kind answers `errors.Is` for the context package's two errors, so a host's usual check works; it carries none of their text. The typed error and both lists of kinds live in one leaf package, `internal/fault`, which imports only text-safety; the public package re-exports them.
 
 ## 8 · Shared caches (FR-27, D-85)
 

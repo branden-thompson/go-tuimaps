@@ -10,7 +10,7 @@ Up: [architecture](architecture.md) · Carries: FR-11, FR-12, FR-14, FR-16, FR-1
 
 ```mermaid
 flowchart TB
-    CALL["Render(rectangle, now)"] --> SAME{"Same inputs as last time?<br/>view · size · depth · palette ·<br/>overlay versions · tile set · animation phase"}
+    CALL["Render(rectangle, now)"] --> SAME{"Anything that could change a cell changed?<br/>the full list is the contract's, section 5 —<br/>view · size · look · places · overlays · tiles · phase · freshness · status"}
     SAME -- yes --> REUSE["Return the previous frame<br/>zero allocations (NFR-4)"]
     SAME -- no --> SNAP["Take a snapshot of what is on hand<br/>tiles in a fixed order (NFR-6) · prepared overlays · markers"]
     SNAP --> NEED["Note what is missing → pending work<br/>(never fetched here; the host's Work does it — D-73)"]
@@ -34,7 +34,7 @@ flowchart TB
     PAINT --> FG["Choose each cell's foreground (FR-16, D-77)<br/>the line's own colour where it meets 3:1 on this cell; otherwise whichever of black and white contrasts more"]
     FG --> DEPTH["Map colours to the depth in use<br/>truecolor · 256 (indices 16–255 only) · 16 · none (L2-colour)"]
     DEPTH --> EMIT["Emit lines<br/>each exactly the requested width (NFR-8)<br/>colour sequences and cleaned text, nothing else (FR-34)"]
-    EMIT --> STATUS["Frame + status<br/>complete · still sharpening · no tiles"]
+    EMIT --> STATUS["Frame + status<br/>complete · still sharpening · no tiles · failed<br/>(failed: a panic was recovered — the last good rows are kept)"]
 ```
 
 ## The braille canvas

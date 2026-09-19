@@ -19,8 +19,8 @@ flowchart TB
     M0 --> A1["Allow-list: with the workspace file off, the library's graph is go-runewidth and uax29 only (D-81)"]
     M0 --> A2["Static checks on library packages: no 'go' statement · no timer or ticker ·<br/>no write to standard output or error · render imports neither tiles nor fetch"]
     M0 --> A3["Cross-compile, C toolchain off: macOS arm64 and amd64 · Linux amd64 and arm64 · Windows amd64"]
-    M0 --> A4["Reference frames byte-identical on arm64 (native) and amd64 (emulated locally)"]
-    M0 --> A5["Loopback only: the dial hook is installed for every test binary by default, not opted into"]
+    M0 --> A4["Reference frames byte-identical on arm64 (native) and amd64 (emulated locally)<br/>FAILS — never skips — if the second architecture cannot be run"]
+    M0 --> A5["Loopback only: the dial hook is installed for every test binary by default, not opted into<br/>a static check fails any test package that does not link it"]
     M0 --> A6["Sub-process test: a program that reuses borrowed memory too early must be caught by the race detector (D-86)"]
     M0 --> A7["From the first tag: the public contract compared with the last tag (NFR-22)"]
     T1 & T2 & T3 & T4 & T5 & A1 & A2 & A3 & A4 & A5 & A6 & A7 --> OK{"All green?"}

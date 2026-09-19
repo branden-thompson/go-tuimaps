@@ -14,8 +14,8 @@ stateDiagram-v2
     Loading --> OnHand: passed the gate (NFR-10) and fits the cache
     Loading --> HeldForView: passed the gate but is over a quarter of the cache
     HeldForView --> Dropped: the view no longer needs it
-    Loading --> Unavailable: no source is named and none has it
-    Loading --> Waiting: refused, failed, or no source had it
+    Loading --> Unavailable: NO source is named, and the embedded tiles do not hold it — nothing was tried that could fail
+    Loading --> Waiting: a NAMED source refused, failed, or answered that it has no such tile
     Waiting --> Queued: its not-before time has passed and it is still wanted
     Waiting --> Dropped: no longer wanted
     Unavailable --> Wanted: a source is named, or the assets are registered
@@ -38,15 +38,15 @@ stateDiagram-v2
 
 ## 2 · Borrowed geometry (FR-11, D-74, D-86)
 
-The one dangerous part of the contract: the host's memory, read by the library. **Every reader runs inside a call the host itself made** — `Work` (simplifying, describing) or `Render` (drawing a very large shape directly) — so the end of a borrow is **reported to the host, never waited for** (D-86).
+The one dangerous part of the contract: the host's memory, read by the library. **Every reader runs inside a call the host itself made** — `Work` (simplifying, describing) or `Render` (drawing a very large shape directly) — so the end of a borrow is **reported to the host, never waited for** (D-86). `Render`, `Set` and `Remove` are owner calls, one at a time (contract, section 6), so a `Render` is never still reading when a `Set` arrives: only a `Work` can be the last reader.
 
 ```mermaid
 stateDiagram-v2
     [*] --> Borrowed: Set(features) accepted
     Borrowed --> Borrowed: read inside the host's own Work and Render calls
     Borrowed --> ReleasedAtOnce: Set(same id) or Remove(id) with no reader in flight
-    Borrowed --> Draining: Set(same id) or Remove(id) while a Work or Render on another goroutine is reading
-    Draining --> Released: that Work or Render call returns and says so
+    Borrowed --> Draining: Set(same id) or Remove(id) while a Work on another goroutine is reading
+    Draining --> Released: that Work call — or the Settle running it — returns and says so
     ReleasedAtOnce --> [*]: the host may reuse the memory
     Released --> [*]: the host may reuse the memory
     note right of ReleasedAtOnce

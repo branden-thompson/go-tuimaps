@@ -6,15 +6,15 @@ A separate module (D-75). It is the library's first host: it writes its own pump
 
 ```mermaid
 flowchart TB
-    ARGS["Flags: --headless · --describe --place · --offline · --no-cache · --purge · --verify ·<br/>--safe-ramps · --reduce-motion · --no-colour · --lang · --scenario (loads an M1 scenario's overlays)"] --> MODE{"Mode"}
+    ARGS["Flags: --headless · --describe --place · --offline · --no-cache · --purge · --verify ·<br/>--safe-ramps · --reduce-motion · --no-colour · --lang · --size COLSxROWS · --scenario (loads an M1 scenario's places and overlays)"] --> MODE{"Mode"}
     MODE -- "--describe" --> D["New · SetPlaces · Set(overlays) · Settle · Describe → plain text, no map, no terminal control<br/>a screen-reader user's path (D-52)"]
-    MODE -- "--headless" --> HL["New · Settle · Render → one complete frame to standard output"]
+    MODE -- "--headless" --> HL["New(WithSize from --size, else the terminal's) · Settle · Render → one complete frame to standard output"]
     MODE -- "interactive" --> TUI
 
     subgraph TUI["Interactive"]
       direction TB
       TERM["Terminal: raw mode, restored on EVERY exit path, including a panic (L-16)"]
-      KEYS["Keys → intents: pan · zoom · fit world · labels · water ·<br/>safe ramps · reduce motion · no colour · layers (P-68a)<br/>every state reachable by keys alone (NFR-15)"]
+      KEYS["Keys → intents: pan · zoom — about the focused place when one is focused, the keyboard equivalent of zoom-toward-the-pointer (FR-5) · fit world · labels · water ·<br/>safe ramps · reduce motion · no colour · layers (P-68a)<br/>every state reachable by keys alone (NFR-15)"]
       LOOP["Draw loop: Render on a tick and whenever the pump says 'changed';<br/>sleeps until NextCall when nothing is due"]
       PUMP["Its own pump: two goroutines calling Work, woken by OnPending —<br/>the same ten lines the examples show"]
       FOOT["Footer and help (P-72a): states that maps need a font with braille,<br/>that the network is ON by default here, and lists every accessibility switch"]

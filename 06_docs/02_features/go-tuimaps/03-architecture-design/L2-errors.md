@@ -18,7 +18,7 @@ flowchart TB
     REF -- "no, but something is off" --> WARN
     W -- "a job failed or met something odd" --> WARN["Warning: kind · the overlay or tile it concerns · a count<br/>at most 64 kept · duplicates counted, not repeated"]
     W -- "Work itself cannot proceed" --> ERR
-    R -- "a panic, recovered at the call's edge" --> FAILF["Frame with status 'failed', last good rows kept<br/>and an 'internal' warning"]
+    R -- "a panic, recovered at the call's edge" --> FAILF["Frame with status 'failed', last good rows kept<br/>and a 'render-failed' warning"]
     ERR --> SAFE
     WARN --> SAFE
     ALSO --> WARN
@@ -29,7 +29,7 @@ flowchart TB
 
 | Error kinds (closed) | Warning kinds (closed) |
 |---|---|
-| invalid-coordinates · size-mismatch · unsorted-breaks · malformed-ramp · missing-table · malformed-table · unknown-preset · invalid-id · over-vertex-cap · over-image-cap · image-refused · ring-too-short · bad-currency · unsupported-schema · unsupported-tile · over-limit · fetch-refused · fetch-failed · cache-refused · closed · internal | ramp-rule-broken · unmatched-image-colours · stale-overlay · future-valid-time · implausible-unit · near-duplicate-id · set-refused · borrow-changed · no-work-called · tile-failed · cache-write-failed |
+| invalid-coordinates · size-mismatch · unsorted-breaks · malformed-ramp · missing-table · malformed-table · unknown-preset · invalid-id · over-vertex-cap · over-image-cap · image-refused · ring-too-short · bad-currency · unsupported-schema · unsupported-tile · over-limit · fetch-refused · fetch-failed · cache-refused · no-size · reentrant-call · cancelled · closed · internal | ramp-rule-broken · unmatched-image-colours · stale-overlay · future-valid-time · implausible-unit · near-duplicate-id · set-refused · borrow-changed · no-work-called · tile-failed · cache-write-failed · render-failed |
 
 ## What can change this diagram
 
