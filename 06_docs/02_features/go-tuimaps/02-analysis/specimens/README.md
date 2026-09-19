@@ -156,6 +156,23 @@ The last two unrendered scenarios. The place is Great Falls, Montana. **Scenario
 | S19-3 | **A dashed stroke settles S19-1.** Redrawn with five dots on and four off, a little heavier than a road, the track reads as a different kind of line from the unbroken river beside it at both sizes, before the label is read (`19c-*`, no colour). No basemap line is dashed, so the family is free. | The no-colour stroke for line features is a dashed one (FR-18a); the dash lengths are a style value, fixed in the implementation plan. Not yet seen by HUM LEAD. |
 | S19-2 | Which side the track passes, and roughly how far, reads from the frame at both sizes (about 12 columns west of the place at 69×12; the scale mark gives 20 km for 8). | Scenario 7 is answerable from the frame (M1a) once S19-1 is dealt with. |
 
+### Specimen 20 — a painted ground, light and dark (PLAN, 2026-09-19)
+
+Owed by ruling D-64: HUM LEAD had never seen a painted ground. The same view as specimen 4 (Fort Wayne, live alert areas), four ways. Every drawn cell's contrast was **measured** from the colour files with the WCAG formula, not judged by eye.
+
+| File | Ground | Drawn cells under 3:1 |
+|---|---|---|
+| `20c-unpainted-ground-149x38` | Not painted — as every earlier specimen | **84.7% on a white terminal** · 0.3% on a black one |
+| `20b-painted-ground-dark-149x38` | Painted dark (16·22·28), dark style | 0.3% (four park cells on an alert tint) |
+| `20a-painted-ground-light-*` | Painted light (245·245·240), a first bright style with coloured lines | 16.2% — white labels left over from the dark style, water lines on water, coloured lines crossing an alert tint |
+| `20d-painted-ground-light-best-contrast-149x38` | Painted light, every line and label drawn black or white by the higher contrast (FR-16) | **0%** |
+
+| ID | Finding (coordinator's assessment; not yet seen by HUM LEAD; the colour files were measured, not viewed) | Consequence |
+|---|---|---|
+| S20-1 | **The number behind D-64:** drawn as every earlier specimen was, 85 cells in 100 fall below 3:1 on a white terminal. Painted, the same map holds on either ground. | The painted default is justified by measurement, not only by argument. |
+| S20-2 | A bright style with **coloured** lines is not automatically safe: one cell in six failed, mostly where a coloured line crosses a tint or sits on water. Applying FR-16's rule — compute both, take the higher — to every line and label brought it to zero, at the price of all line work being black or white. | The bright style needs the per-cell rule everywhere, or coloured lines checked against every background they can cross. A choice for the style work in the implementation plan; how it looks is for HUM LEAD. |
+| S20-3 | At 256 and 16 colours the painted ground cannot match a host's truecolor background exactly, so the map may sit as a visible panel. Not rendered here. | Still owed with the 16-colour specimen (D-59). |
+
 ### Cross-cutting
 
 1. **One rendering core carried every specimen.** A cell is a glyph, a foreground and a background; features, grids, vector grids and images all reduce to writing those three. The five input shapes of D-14 do not need five renderers.
