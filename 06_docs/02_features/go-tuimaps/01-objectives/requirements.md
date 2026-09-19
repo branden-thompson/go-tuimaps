@@ -86,6 +86,7 @@ Every requirement traces to a ruling, a finding, a brief item or a red-team find
 | FR-30 ✚ | **Who runs background work is explicit, bounded and leak-free.** Whatever model PLAN chooses (PLAN proposes at least two: host-scheduled blocking calls; a small library-owned pool), it meets all of these: every goroutine has a stated owner and none outlives the map instance (leak-tested); in-flight fetches and the simplification backlog are capped, newest view wins; every job takes a context and is cancelled when its tile or shape leaves the view; one render may run while one fetch runs, shown under the race detector; completion moves the change counter and keeps the next-change deadline (FR-25) current so an idle host still redraws; an optional callback lets a host be told rather than poll; a *settle* call waits for pending work, which is how the headless render (FR-4) produces a complete frame without breaking FR-23. No panic escapes a public call or a library goroutine. | CQ-1, P-2, S-3 |
 | FR-31 ✚ | The tile cache never serves a tile parsed for a different style profile or label language: either the key includes them, or tiles are decoded without reference to style. | CQ-8 |
 | **Safety of what is shown** | | |
+| FR-37 ✚ | An image overlay may carry a **sequence of timed frames**, played on the host's clock (FR-25), with the frame count held inside the image cache's byte cap. *In v1; designed with the contract in PLAN; built after v0.1.0 (D-47). v0.1.0 shows the latest frame.* | D-47, PM-6 |
 | FR-32 ✚ | **Every overlay carries a valid time, and the map can show when data is old.** The host states when each overlay's data was valid and how long it stays current; the library exposes that beside the legend data (FR-13) and can mark an overlay stale on the frame. Weather freshness is the one kind that matters (D-18). | PM-6 |
 | FR-33 ✚ | **A distance reference.** The library exposes the ground distance a cell spans at the view's centre, and can draw a scale mark, so "roughly how far" (M1) has an answer. | PM-2 |
 | FR-34 ✚ | Text that reaches a frame is made safe **at the point it is written to a cell**, whatever its source — tile names, source metadata, style text, host labels, credits, legend and error text: invalid UTF-8 becomes U+FFFD; control characters (C0, DEL, C1), line and paragraph separators, bidirectional controls and zero-width characters are dropped; one printable character per cell. The library emits colour sequences and nothing else. Fuzzed so that no input produces an escape byte outside the library's own colour sequences. | S-1, CQ-3 |
@@ -122,6 +123,7 @@ Every requirement in this file is in **v1**. This table says which are in the **
 | Deferred past v0.1.0 — still v1 | Requirements |
 |---|---|
 | Wind | FR-8 |
+| Radar and other image loops | FR-37 |
 | Tile-image providers | FR-10 |
 | Local and remote single-file archives | the PMTiles part of FR-21 |
 | Block renderer | the block part of FR-3 (opt-in, D-42) |
@@ -146,7 +148,7 @@ Every requirement in this file is in **v1**. This table says which are in the **
 
 | ID | Assumption | Validated by |
 |---|---|---|
-| A-1 | 8 MB is achievable for the fixture HUM LEAD rules in Q7. *Whether radar animation is in v1 at all is Q6; nothing requires it today.* | A measured prototype at PLAN exit (D-29). |
+| A-1 | 8 MB is achievable for the fixture HUM LEAD rules in Q7 — a **single-frame** image in v0.1.0 (D-47); a loop's frames must fit the image cache's byte cap when built. | A measured prototype at PLAN exit (D-29). |
 | A-2 | Every non-braille character the renderer emits — quadrant blocks, box-drawing, shades, arrows — is one column wide in the supported terminals. | A terminal matrix check **at PLAN entry** (NFR-8). |
 | A-3 | The rendering rules hold on a light-background terminal. | A specimen in PLAN; untested so far. |
 | A-4 | The standard HTTP client returns 206 reliably for range reads of a very large file. | A test in BUILD; one anomalous 200 was seen from another client (AI-9 §8). |
