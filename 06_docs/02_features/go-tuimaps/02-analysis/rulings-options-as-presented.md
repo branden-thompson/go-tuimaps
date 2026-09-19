@@ -60,6 +60,7 @@ Each question was presented one at a time with: what was being decided, the evid
 | D-68 | D-62's flat day against M1 scenario 4 | **A. Accept flat days; the frame is judged to the scale's resolution ("no visible change" inside one band) and the description carries the gradient** · B. Absolute colour bands plus labelled isotherms at a finer fixed interval, specimen owed, A as the fall-back · C. Reopen D-62 | B ◇ |
 | D-69 | Whether the library guards certain overlay types' colours — raised by HUM LEAD in place of confirming D-62's common part | **X. Presets, no locks: four fully defined presets; a host may override any of them or define its own type; overrides checked and reported; safe-ramps returns to the presets; D-55 withdrawn** · Y. The same presets, with temperature still locked (D-55 stands) — *the question as first put (confirm the common part: A, B or C) was set aside by HUM LEAD's reply* | X |
 | D-70 | Hygiene, three parts | (a) **A. D-66 covers both messages** · B. Reword now. (b) **A. Records of decisions are exempt from the wording rule; it binds everything that describes the project** · B. No exemption. (c) **A. Remove the unreachable object now** · B. Leave it | A, A, A |
+| D-72 | The order of work for PLAN, and the medium for diagrams | The order as proposed; **Mermaid in the tracked documents as the source of truth (recommended)** or FigJam first — *answered "Approved"; read as covering the recommendation, and said so* | Mermaid-first |
 
 ## Where HUM LEAD chose against the recommendation ◇
 
