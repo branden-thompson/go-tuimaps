@@ -224,6 +224,20 @@ Owed by ruling D-59, which HUM LEAD made without ever having seen a coloured bas
 | S23-2 | With that palette the frame carries seven distinct colour codes and the radar's grey shades sit among coloured map lines without borrowing their colours. Whether the mix reads well, or whether a plain no-colour frame would be calmer, is a judgement of looks. | Seen and found good (D-79); the fall-back is not needed. |
 | S23-3 | At this depth the terminal decides what "bright cyan" really looks like, and it cannot be asked. Any contrast figure here would be against an assumed palette, so none is given. | As FR-20 now says: checks at 16 colours are indicative only. |
 
+### Specimen 24 — how a cell's colour is chosen: line priority against upstream's majority vote (PLAN, 2026-09-19)
+
+Made because HUM LEAD, asked to rule between the two (PLAN red-team PL-Q3), answered "C" — decide from a specimen. Parity row P-08 says a cell takes the majority colour among its lit dots, ties broken by the eight neighbouring cells; every earlier specimen was drawn by a different rule — the highest-priority line in the cell wins — which the coordinator had used without reading the row. The same two views of Fort Wayne, a regional one and a city one, drawn both ways on a painted dark ground. Files: `24a-priority-*`, `24b-vote-*`.
+
+| Measured | Regional view | City view |
+|---|---|---|
+| Braille cells drawn | 1,290 | 1,220 |
+| Cells whose colour differs under the vote | 41 (3.2%) | 62 (5.1%) |
+
+| ID | Finding (coordinator's assessment; the difference was counted, the frames were not viewed by the coordinator; not yet seen by HUM LEAD) | Consequence |
+|---|---|---|
+| S24-1 | The two rules agree on about 95 to 97 cells in 100. They differ only where two kinds of line share a cell — a river under a road, a border along a highway. | Whichever is ruled, the map's overall look barely moves; the choice is about those crossings. |
+| S24-2 | Overlays are untouched by either rule: they sit above the basemap in the compositing order (FR-12). | The ruling concerns basemap lines only. |
+
 ### Cross-cutting
 
 1. **One rendering core carried every specimen.** A cell is a glyph, a foreground and a background; features, grids, vector grids and images all reduce to writing those three. The five input shapes of D-14 do not need five renderers.
