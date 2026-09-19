@@ -130,6 +130,18 @@ Measured with the same test the accessibility review used (relative luminance; c
 | S16-2 | It needs a **meaningful midpoint**. In this specimen the midpoint is simply the middle of the data's range (about 21 °C); a real default needs a stated one — freezing, a seasonal normal, or a host-supplied value — and a legend that labels it. | A contract question for scalar grids: the midpoint is data the host supplies. *[Overtaken by D-62: for temperature the midpoint is freezing and the breaks are the library's; the host supplies neither.]* |
 | S16-3 | The pale middle bands are the brightest cells on a dark terminal, and line work there is black, not white. HUM LEAD saw group L and found it fine (D-54). *The legends in specimens 14 and 16 as first filed showed the previous ramp's colours, not the ramp drawn (red-team round 2); regenerated, with legend text chosen black or white per swatch. HUM LEAD's D-54 look was at the uncorrected legends.* | Re-review of the corrected files is asked for in round 2. |
 
+### Specimen 17 — M1 scenario 2: an alert defined by a zone shape, the place close to the edge (PLAN, 2026-09-19)
+
+Made in PLAN, because the scenario HUM LEAD called "the one to watch" had never been rendered (red-team round 2, R2-BZ-A3). A live Heat Advisory from the saved feed carried no polygon of its own, as about nine alerts in ten do not; its shape is its forecast zone — Grayson County, Kentucky, 527 vertices, much of it a river boundary — fetched from the weather service. The place was put 0.9 km inside the wiggliest stretch of that edge. Files: `17a-*` (truecolor, both sizes), `17b-*` (no colour, both sizes), `17-scenario2-answer-key.json`.
+
+**The answer key**, computed by a separate script that shares no code with the renderer (D-43, D-67): **inside**; nearest edge **0.9 km to the north** (bearing 342°). Distance from the edge in cells: **0.56 at 149×38, 0.26 at 69×12** — so by D-67 the correct reading of the frame is **"on the edge" at both sizes**, and the description (M1b) must say "inside, 0.9 km, north".
+
+| ID | Finding (coordinator's assessment; not yet seen by HUM LEAD; the colour files were not viewed by the coordinator) | Consequence |
+|---|---|---|
+| S17-1 | In the no-colour frames the zone draws as a hatched area with a plain-word label, its river edge follows the basemap's river, and the marker sits on the area's top edge at both sizes — which is what the key says a frame can show here. | M1a for this scenario is "on the edge", and the frame does not contradict the key. |
+| S17-2 | **A cell is twice as tall as it is wide, so an edge to the north or south is resolved only half as well as one to the east or west**: 1.6 km a row against 0.8 km a column at 149×38. A place 0.9 km from a northern edge is under one cell away even at the large size. Nobody had stated this before; D-67's "under one cell" must name which dimension, and the key does — by the bearing to the edge. | The description (M1b) matters at the large size too, not only at 69×12. Carried into the implementation plan's definition of the key. |
+| S17-3 | Of fourteen real zones sampled for this specimen, the largest had 527 vertices and most had 50 to 400. The scenario table's "900 to 14,000" describes the hard cases DISCOVER measured, not the usual one. | The 14,000-vertex case — where simplifying could flip "inside" (risk RS-19) — is **still unrendered**; it belongs to the worst-case test (NFR-3), and a specimen of it is still owed. |
+
 ### Cross-cutting
 
 1. **One rendering core carried every specimen.** A cell is a glyph, a foreground and a background; features, grids, vector grids and images all reduce to writing those three. The five input shapes of D-14 do not need five renderers.
