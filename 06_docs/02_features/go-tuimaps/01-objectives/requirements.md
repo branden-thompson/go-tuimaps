@@ -25,7 +25,7 @@ Every requirement traces to a ruling, a finding, a brief item or a red-team find
 | **Basemap** | | |
 | FR-1 ◆ | Meet every row in the M3 denominator of the frozen parity matrix according to its disposition: reproduce the *Match* and *Replicate* rows; do the intended thing for the *Fix* rows; keep and add to the *Extended* rows. | R-1, D-11, D-37, BQ-5 |
 | FR-2 | Draw waterways, parks, airport runways and airport labels. | D-12, S8-1 |
-| FR-3 | Provide two first-class renderers, braille and block, each with reference-frame tests and approved specimens. | D-23, S2-1 |
+| FR-3 ◆ | Provide two renderers, each with reference-frame tests and approved specimens. **Braille is the default.** The block renderer is one a user opts into, with its own sparser profile (no roads unless asked for); the renderer can be switched at runtime in both directions. | D-23, D-42, S2-1 |
 | FR-20 | Ship its own `dark` and `bright` styles written against OpenMapTiles; accept a user's style in the same JSON format, honouring every zoom stop. | D-24, L-9 |
 | FR-19 | Thin the basemap by renderer, map size and what is drawn on top; let water own its cells when a field or image is active. | S1-2, S2-1, S3-4, S5-1 |
 | **Overlays** | | |
@@ -90,6 +90,7 @@ Every requirement traces to a ruling, a finding, a brief item or a red-team find
 | FR-33 ✚ | **A distance reference.** The library exposes the ground distance a cell spans at the view's centre, and can draw a scale mark, so "roughly how far" (M1) has an answer. | PM-2 |
 | FR-34 ✚ | Text that reaches a frame is made safe **at the point it is written to a cell**, whatever its source — tile names, source metadata, style text, host labels, credits, legend and error text: invalid UTF-8 becomes U+FFFD; control characters (C0, DEL, C1), line and paragraph separators, bidirectional controls and zero-width characters are dropped; one printable character per cell. The library emits colour sequences and nothing else. Fuzzed so that no input produces an escape byte outside the library's own colour sequences. | S-1, CQ-3 |
 | FR-18a ✚ | With no colour, **feature overlays** remain distinguishable from the basemap and from each other by non-colour means: a distinct stroke family plus interior hatch or an edge label for polygons; a glyph or label difference for severity and for wind-speed class. Acceptance: from the 69×12 no-colour reference frame alone, a reviewer says whether the marker is inside the polygon and ranks two wind speeds. *Specimen owed.* | A-2 |
+| FR-36 ✚ | Basemap layers — roads at least, and labels as upstream already allows — can be switched off and on by intent, in either renderer. | D-42 |
 | FR-24a ✚ | Intents include focus-next, focus-previous and zoom-around-the-focused-target. The focused target carries a non-colour indicator, and its label and id are exposed as data. *The mechanism remains a PLAN decision (D-17).* | A-6 |
 | **Tiles and the network** | | |
 | FR-21a ✚ | The disk cache has a host-set byte cap (proposed default 256 MB) and evicts by least-recently-read, never by age — consistent with "no expiry" (D-18). Pruning runs off the drawing path. | P-6, CQ-3 |

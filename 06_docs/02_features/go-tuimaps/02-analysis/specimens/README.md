@@ -93,7 +93,7 @@ View: US Midwest centred on Fort Wayne, Indiana. Field: live 2 m temperature, a 
 
 ### Specimens 12–15 — owed after red-team round 1
 
-Produced because the round found claims resting on renderings that did not exist. **None of these has been reviewed by HUM LEAD yet.** The assessments below are the coordinator's, from text output and one browser look at 15a.
+Produced because the round found claims resting on renderings that did not exist. **Reviewed by HUM LEAD on the review page (D-42):** 13, 14 and 15 seen and fine; 12 — "Better; but the motorways only still looks a bit too much", acceptable as a renderer the user opts into, provided they can switch back to braille or remove roads.
 
 | # | Files | What it shows | From |
 |---|---|---|---|
@@ -108,7 +108,7 @@ Produced because the round found claims resting on renderings that did not exist
 | S13-2 | Arrow plus speed (`←14`, `↙29`) carries wind strength with no colour, like a station plot. It needs the road net removed to stay readable. | `13b` |
 | S15-1 | Re-coloured radar reads well in the one browser look taken: a teal light-rain shield, green moderate, amber heavy cores with line work switched to black; white map lines read cleanly on the teal. Intensity was read back **by hue**, a rough method; no exact colour table for this provider has been built. | `15a-149x38` |
 | S15-2 | Known defect: the note line in the 15-series headers still says the image was "placed as-is"; the title line is correct — the image is re-coloured. | `15*` headers |
-| — | 12 and 14 have not been looked at by anyone. | — |
+| S12-1 | Thinning helps the block renderer but does not make it braille's equal. Braille is the default; the block renderer is opt-in with no roads by default (D-42). | `12a`, `12b` |
 
 ### Cross-cutting
 
