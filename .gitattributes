@@ -6,3 +6,6 @@
 *.go text eol=lf
 go.mod text eol=lf
 go.sum text eol=lf
+
+# Test fixture: vector tiles are binary
+*.pbf binary
