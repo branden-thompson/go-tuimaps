@@ -64,7 +64,7 @@ sequenceDiagram
 | `Work(ctx)` does at most one job and says whether it did one. Call it until it says no | A blocking call, cancellable; never call it from the interface goroutine — a fetch can take seconds |
 | Two pump goroutines is the width the memory line is measured at. Each further one can add about 1 MB while a tile decodes, more at the input limits | D-84: the width and its memory are the host's |
 | If renders keep finding work pending and no `Work` has been called for a while, a warning says so, once | The silent failure a newcomer would otherwise meet (PL-NC-2) |
-| `Settle(ctx)` is the same loop run on the caller's goroutine. It returns when nothing is pending or the context ends, with how much work failed, and with **why nothing could be fetched** if no source is named and no assets are imported | One-shot renders and tests. Work that failed and is waiting to retry is not pending, so `Settle` always ends. `Settle` never waits on a `Work` running elsewhere: if jobs are in flight on other goroutines when the queue empties, it returns and says how many. Its result also carries every id released while it ran (D-86). Called on a map that has no size yet, it is refused with the `no-size` kind |
+| `Settle(ctx)` is the same loop run on the caller's goroutine. It returns when nothing is pending or the context ends, with how much work failed, and with **why nothing could be fetched** if no source is named and no embedded tiles were passed | One-shot renders and tests. Work that failed and is waiting to retry is not pending, so `Settle` always ends. `Settle` never waits on a `Work` running elsewhere: if jobs are in flight on other goroutines when the queue empties, it returns and says how many. Its result also carries every id released while it ran (D-86). Called on a map that has no size yet, it is refused with the `no-size` kind |
 
 ## 3 · The three-call path, corrected
 
@@ -72,8 +72,8 @@ As first drawn, tiles became wanted only when `Render` noticed them missing, yet
 
 | # | Call | What it does |
 |---|---|---|
-| 1 | `New(WithSize(cols, rows), …)` with the assets package imported | Creates the map. Starts nothing |
-| 2 | `Settle(ctx)` | Notes what the current view and size need, then works until nothing is pending. With no source and no assets it says so in its result |
+| 1 | `New(WithSize(cols, rows), …)` with the assets package's tiles passed as an option (importing the package changes nothing by itself) | Creates the map. Starts nothing |
+| 2 | `Settle(ctx)` | Notes what the current view and size need, then works until nothing is pending. With no source and no embedded tiles it says so in its result |
 | 3 | `Render(size, now)` | A complete frame; its status says complete, still sharpening, or no tiles |
 
 ## 4 · Overlays: set, replace, remove, and the end of a borrow (D-74, D-86)

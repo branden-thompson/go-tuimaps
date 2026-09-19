@@ -50,6 +50,21 @@ func tooLarge() error {
 // Fetch fetches one request from the source. The transport's own error is
 // never returned or wrapped: it holds the address.
 func (f *Fetcher) Fetch(ctx context.Context, r Request) ([]byte, error) {
+	if f == nil || ctx == nil {
+		return nil, refusedSource()
+	}
+	resp, err := f.send(ctx, r)
+	if err != nil {
+		return nil, err
+	}
+	data, err := f.readReply(ctx, resp, r)
+	_ = resp.Body.Close() // the body was read through its limit or is being abandoned; a close error changes nothing
+	return data, err
+}
+
+// send checks a request against the source's policy and makes it. The caller
+// closes the reply's body.
+func (f *Fetcher) send(ctx context.Context, r Request) (*http.Response, error) {
 	if r.MaxBytes <= 0 || r.RangeStart < 0 || r.RangeLen < 0 {
 		return nil, refusedSource()
 	}
@@ -79,9 +94,7 @@ func (f *Fetcher) Fetch(ctx context.Context, r Request) ([]byte, error) {
 	if err != nil {
 		return nil, f.transportError(ctx, err)
 	}
-	data, err := f.readReply(ctx, resp, r)
-	_ = resp.Body.Close() // the body was read through its limit or is being abandoned; a close error changes nothing
-	return data, err
+	return resp, nil
 }
 
 // transportError turns the client's error into one of the library's own,

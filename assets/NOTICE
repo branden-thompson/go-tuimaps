@@ -1,0 +1,33 @@
+go-tuiMaps embedded tiles: data notice
+
+The files under tiles/ are map data, not software. The licence of the
+go-tuiMaps code does not cover them.
+
+Map data (c) OpenStreetMap contributors, made available under the
+Open Database License (ODbL) 1.0:
+  https://www.openstreetmap.org/copyright
+  https://opendatacommons.org/licenses/odbl/
+
+The tiles follow the OpenMapTiles schema ((c) OpenMapTiles,
+https://www.openmaptiles.org/, schema under CC-BY 4.0) and were cut from a
+planet file published by OpenFreeMap (https://openfreemap.org/).
+
+A program that shows a map drawn from these tiles must credit the data where
+the person looking at the map can see it without asking:
+
+  OpenFreeMap (c) OpenMapTiles Data from OpenStreetMap
+
+What was changed. Zoom 0 to 3 of the planet file named in PIN was decoded and
+written again with only what go-tuiMaps reads: the layers it draws, each
+feature's class and rank, and its name in the local language and in English.
+Nothing was added, moved or corrected. tools/gen-assets is the program that
+did it, and running it again on the same planet file writes the same bytes.
+The tiles are offered under the same Open Database License as the data they
+were made from, and the planet file they were cut from is offered to anyone
+by its publisher.
+
+What the hash list proves. HASHES holds the SHA-256 of every tile as it was
+read and as it was written, and names the PIN it was made for. It shows
+that the tiles here are unchanged since they were generated,
+not that the source was authentic: the planet file was taken from its publisher over a secure
+connection and was not checked against anything else.

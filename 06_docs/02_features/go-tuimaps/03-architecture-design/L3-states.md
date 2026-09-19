@@ -16,7 +16,7 @@ stateDiagram-v2
     Loading --> Waiting: a NAMED source refused, failed, or answered that it has no such tile
     Waiting --> Queued: its not-before time has passed and it is still wanted
     Waiting --> Dropped: no longer wanted
-    Unavailable --> Wanted: a source is named, or the assets are registered
+    Unavailable --> Wanted: a source is named, or embedded tiles are passed
     OnHand --> Evicted: NO live view of any map draws it, and the cache is over its cap (D-90)
     Evicted --> Wanted: wanted again
     Dropped --> [*]

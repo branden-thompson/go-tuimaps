@@ -18,7 +18,7 @@ flowchart LR
       direction TB
       S1["1 Disk cache<br/>only if the host set a root (FR-21b)"]
       S2["2 The host's named network source<br/>only if one was named (D-65)"]
-      S3["3 Embedded tiles z0–3<br/>only if the assets package is imported"]
+      S3["3 Embedded tiles z0–3<br/>only if the host passes them as an option"]
       S1 -- miss --> S2 -- "fail or none" --> S3
     end
 
@@ -76,7 +76,7 @@ flowchart TB
 flowchart LR
     PLANET[("Pinned planet archive<br/>version · length · entity tag")] -- "range requests, 206 only" --> GEN["tools/gen-assets (separate module)<br/>uses the minimal archive reader (D-58)"]
     GEN --> STRIP["Decode with the library's own decoder<br/>strip every translation but English (D-33, D-82)"]
-    STRIP --> OUT1["85 tiles, zoom 0–3, at most 2.5 MB (task 04.11 measures it)"]
+    STRIP --> OUT1["85 tiles, zoom 0–3: 1.02 MB measured,<br/>held under 2.5 MB by a test"]
     STRIP --> HASH["SHA-256 list: every source tile, every output tile"]
     OUT1 --> PKG["tuimaps/assets (opt-in import)"]
     HASH --> CI["Continuous integration:<br/>re-hash the asset · decode every tile through the gate"]
