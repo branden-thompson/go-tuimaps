@@ -383,7 +383,7 @@ Put one at a time, as in round 1. Rulings are recorded in `rulings-discover.md` 
 | Q | Question | From |
 |---|---|---|
 | R2-Q1 | A braille-only first release against the first host's block-character glyph floor → **D-57: stands; the host states the need; the text description is the fallback** | R2-BZ-A1 |
-| R2-Q2 | How the tile generator reads the planet file when the archive reader is deferred | R2-BZ-B2, R2-IS-B9 |
+| R2-Q2 | How the tile generator reads the planet file when the archive reader is deferred → **D-58: a minimal internal reader in v0.1.0, hardened and fuzzed** | R2-BZ-B2, R2-IS-B9 |
 | R2-Q3 | What the first release does with a 16-colour hint | R2-BZ-B3 |
 | R2-Q4 | The compatibility promise before v1, and whether integration findings return to HUM LEAD before the remaining shapes are built | R2-BZ-A6, R2-NC-6 |
 | R2-Q5 | The first release's parity denominator, given five split rows | R2-BZ-B1 |
