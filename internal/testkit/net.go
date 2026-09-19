@@ -79,3 +79,20 @@ func (BlockingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	<-ctx.Done()
 	return nil, context.Cause(ctx)
 }
+
+// Main runs a test binary's tests with the loopback-only dialer under the
+// default HTTP transport, and returns the exit code. Every test package of
+// the library calls it from TestMain, so the guard is on by default and
+// never opted into; a static rule fails a test package that does not.
+func Main(m interface{ Run() int }) int {
+	const failed = 2
+	if m == nil {
+		return failed
+	}
+	restore, err := InstallLoopbackOnly()
+	if err != nil {
+		return failed
+	}
+	defer restore()
+	return m.Run()
+}
