@@ -1,11 +1,12 @@
-SPECIMEN 13a — alert areas with NO colour: hatched interior plus a label; roads removed
+SPECIMEN 13a (corrected) — alert areas with NO colour: hatched interior plus a short label; place marker; scale mark; roads removed
 149x38 cells · braille renderer · no colour · centre 40.88,-85.12 · zoom 8.3 · 4 basemap tile(s) at z8 © OpenMapTiles © OpenStreetMap
-alerts: 4 live NWS alert polygon(s) in view (api.weather.gov, fetched 2026-09-18); outline + tint, colour by severity
+alerts: 4 live NWS alert polygon(s) in view (api.weather.gov, fetched 2026-09-18); no colour: hatched interior (severe ╱, lesser ╲) plus a short label
+scale: one column is 0.8 km east-west at the centre latitude; one row is 1.5 km north-south (a cell is twice as tall as it is wide)
                                                                            ⢰⠓                  ⠔⠛⠿⠉           ⡇                       ·Paulding      
                                                                           ⢀⡞                                  ⡇                                      
                                                                         ⢀⠞⠉              ⢀⠴⠴⠉                 ⡇                                      
                                                                       ⡤╱⠬⣵⣤⡀      ⢀⣀ ⣀⣀⠠⠖⠚                    ⡇                                      
-                                                                     ⢸╱ ╱⠉⡇⠉⠙⠒⠲⠴⠶⠖⠉ ⠙⠃·New Haven              ⡇                                      
+                                                                     ⢸╱ ◉ Fort Wayne⠙⠃·New Haven              ⡇                                      
                                                                      ╱ ╱ ⢸                                    ⡇                                      
                                                                     ╱ ╱ ╱⡇                                    ⡇                                      
                                                                     ⠣╱ ╱⠘⢄                                    ⡇                                      
@@ -38,4 +39,4 @@ alerts: 4 live NWS alert polygon(s) in view (api.weather.gov, fetched 2026-09-18
 ⡄                                                                           FLOOD WARNING                     ⡇                                      
                                                                                ⠈⢆╱ ⠈⢢╱⠑⢄                      ⡇                                      
                                                                                  ⠱╱ ⢸ ╱ ╱⡀                    ⡇                                      
-                                                                                  ⠈╱ ⠉⠒⢄⣮⢀⡀⡀                  ⡇                                      
+ ├─────────────────────────┤ 20 km                                                ⠈╱ ⠉⠒⢄⣮⢀⡀⡀                  ⡇                                      

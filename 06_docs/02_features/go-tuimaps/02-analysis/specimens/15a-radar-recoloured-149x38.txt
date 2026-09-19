@@ -1,6 +1,7 @@
-SPECIMEN 15a — radar RE-COLOURED by the library: intensity read back from the image, drawn with a brightness-ordered ramp (D-36)
+SPECIMEN 15a (corrected note) — radar RE-COLOURED by the library from intensity classes; scale mark
 149x38 cells · braille renderer · truecolor · centre 33.80,-86.50 · zoom 5.4 · 4 basemap tile(s) at z5 © OpenMapTiles © OpenStreetMap
-radar: Iowa Environmental Mesonet NEXRAD base-reflectivity mosaic, 4 XYZ tile(s) at z5, pre-coloured PNG placed as-is x1.00 brightness (public domain; attribution appreciated) — 3164 cells painted
+radar: Iowa Environmental Mesonet NEXRAD base-reflectivity mosaic, 4 XYZ tile(s) at z5, intensity classes read back from the pre-coloured PNG by hue (a rough method; no exact colour table exists yet), then drawn by the library x1.00 brightness (public domain; attribution appreciated) — 3164 cells painted
+scale: one column is 6.2 km east-west at the centre latitude; one row is 12.3 km north-south (a cell is twice as tall as it is wide)
       ⢠⣃⣀⣀⠑⣄⣶⠧⠤⠤⠚⠉⠉⠙⠒⠊⢡⠃⢀⣸⡤⠉ ⢀⠜  ⠈⢆⡀  ⢱ ⡰⠁    ⣇⣀⠤⠤⢼⠊⡹⠒⠉⠉⠉⠁     ⠣⢄⠈⠦⠤⠤⣼⠤⠴⠒TENNESSEE⡀     ⢀⠔⡇        ⠈⠉⡱⣁⡠⢪⠉⠊⣫⣏⢀⡠⠟⣺·Knoxville ⠸⣄⣀⢀⠜  ⠣⣀ ⡗⠃     ⢠⠒⠁     
     ⢀⡠⠃  ⢠⠋⠁ ⢹       ⡰⢡⡺⠛⠁  ⡰⠁     ⠑⢦⣀⡀⡝⢀⣀⠤⠶⣊⠉⠁   ⡰⢁⠇            ⢇⡀⠐⢲⠇     ⢠⡏⢆    ⠈⠑⢢⣀⡤⠜⠁ ⡇        ⡠⠊⡜   ⢉⠞⠒⠉⠓⢒⡲⠓⠊⠉⡆⣀⠬⠃⡧   ⡤⠜⠉⢳⠁    ⠈⢧⠃      ⢸ ⣀⣀⡠⠤⠤⠒
    ⡸⠁   ⢠⠃   ⠈⢲     ⡰⠁⢀⡯⠃  ⢰⠁      ⣀⠤⠔⠚⠹⡏    ⠉⠓⠒⠒⠒⡏⠺⡔⠢⠢⠒⠢⡀ ⢀⣀⡀⣀⡠⠤⡔⠓⠒⢺      ⢸  ⢳    ⡠⠚⠁    ⡇       ⡰⠁⡜   ⢠⠊  ⣀⠎⠁    ⠈⢀⣀⡀⠑⡦⣖⡉   ⠈⣇     ⢸⣄⣀⡠⠤⠴⠒⠒⠒⢻      
@@ -38,4 +39,4 @@ radar: Iowa Environmental Mesonet NEXRAD base-reflectivity mosaic, 4 XYZ tile(s)
     ⢨⣽⡛⢁⠇        ⡜   ⠑⢄               ⢰⠁ ⠹⡄  ⢸         ⡜    ⡠⠊⠑⠚          ⢠⠞     ⢇            ⢘⡆⡿  ⠈⡇⠈⡗⠢⢄⣀⣀⠤⡽⢄     ⢸         ⠉⠒⣒⣢⢗⠁     ⠰⡅ ⠑⠔⠉     ⠉⠉
    ⢀⡔⠓⠁⡜        ⡼      ⠑⢦⡀           ⣴⠃  ⣞   ⡏         ⠘⡄   ⢣⠄           ⣠⠎      ⠸⡀           ⠈⣷⡏   ⡇ ⠘⢄⡀   ⡜ ⠑⠤⠤⠴⢤⣬⡦⠤⠤⠤⠤⠔⠒⠉⠊⠉⠉ ⡜⠈⠙⠦⡀   ⢘⠅           
  ⢀⣴⡫⠁ ⡠⠃       ⢠⡇        ⠙⢆         ⡾⠁   ⢺   ⡇         ⢰⠃  ⠘⢅           ⡴⠁        ⣇           ⢰⡟    ⢳   ⠉⢦  ⠙⡄  ⢀⡜⠉ ⢱          ⢰⠁   ⠉⠱⠤⣀⡸⡀          ⡔
- ⡜⠚⠂ ⢀⡇        ⡸           ⢳  ⢀⣀⡀⢀⣀⣠⣃⣀⣀⣀⣀⣈⣧⡤⠞⡏⠉⠉⠉⠒⠒⠒⠤⠤⣀⣸   ⡠⠃          ⡰⠁         ⠈⠑⢢        ⡴⢊⡿⡊  ⢀⠞    ⠘⠤⡀ ⢸  ⡞    ⢣         ⠸⡀       ⡹⠑⠲⠤⣀    ⣀⠤⠒⠁
+ ├──────────────────────────────┤ 200 km⣀⣈⣧⡤⠞⡏⠉⠉⠉⠒⠒⠒⠤⠤⣀⣸   ⡠⠃          ⡰⠁         ⠈⠑⢢        ⡴⢊⡿⡊  ⢀⠞    ⠘⠤⡀ ⢸  ⡞    ⢣         ⠸⡀       ⡹⠑⠲⠤⣀    ⣀⠤⠒⠁

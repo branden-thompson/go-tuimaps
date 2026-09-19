@@ -1,6 +1,7 @@
-SPECIMEN 16 — temperature on a DIVERGING ramp: blue through pale to red, brightness falling away from the middle on both sides; line work black or white per cell
+SPECIMEN 16 (corrected legend) — temperature on a DIVERGING ramp: blue through pale to red; line work black or white per cell; scale mark
 149x38 cells · braille renderer · truecolor · centre 41.08,-85.14 · zoom 5.4 · 4 basemap tile(s) at z5 © OpenMapTiles © OpenStreetMap
 field: Open-Meteo current temperature_2m, 12x8 lattice, one request (CC BY 4.0)
+scale: one column is 5.6 km east-west at the centre latitude; one row is 11.2 km north-south (a cell is twice as tall as it is wide)
 ⠋⠁      ⠈  ⠇   ⢣ ⠈⢱⢇       ⢀⠤⠒⠋⠉·Milwaukee   ⢸            ⢸⢹⠉⠉⠉⠉⠉⡝⢻⠉⠣⣀⣀⡀⣀⣀⣀⣀⣀⡀      ⡇     ⡠⠴⠉⠉⠉⢩⠻⣄        ⡇   ⠈⠉⠉⠈⣯⡎            ⠈⠳⣀⣀⣠⡤⠛⠓⠉⠁           
                 ⢣⢰⠃⠘⠤⠤⣀⡀ ⢀⡰⠁    ⢸ ⠑⡄         ⠘⡄           ⢸ ⢇⢀⡤⠒⠙⠊⢹⠊⠙⠁ ⠈⠁    ⠉⠉⠒⢤⣄⡠⠤⣧⣀⣀⠤⠒⠉     ⢸⠄⠈⢇       ⢸    ⢀⡠⠊⢸⠇               ⣀⠎⠡⣀             ⢀
                 ⠸⡎     ⢱⣠⣋⣀ ⢀⣀⣀⣀⣸  ⡇          ⡇           ⢸⡰⠛⡅    ⢸              ⢸⠤·Lansing    ⢇   ⠑⠒⠢⣄⡀  ⢸   ⣰⣁⡀ ⡼              ⢀⠎               ⣀⠔⠁
@@ -38,5 +39,5 @@ field: Open-Meteo current temperature_2m, 12x8 lattice, one request (CC BY 4.0)
        ⡇    ⠉   ⡇          ⡇          ⢸ ⣿     ⣀⠤⠔⠒⠒⠊⠉   ⣠⠔⠁  ⢇   ⠓⢄            ⢸⠣⡀⠱⢄  ⢠⠎ ⢀⠔⠁⣀⡠⠔⠊   ⠙⠤⠤⣀    ⡏      ⠙⠒⠢⣀⡀           ⡇    ⡠⠊⠁        ⠘⠢⠤
        ⡇       ⢀⡇        ⢠⠊⠁      ⣀⠤⠒⠒⢺⠟⢻⡶⣎⣉⣉⣉⣀⡀      ⢠⠴⠃     ⢣    ⠙⢢          ⢸ ⠸⡄⢼⣴⣋⡹ ⣰⠧⠔⠉ ⠈⠉⠁       ⠉⠒⣤⣀⡇          ⠘⢤⡀        ⣠⣷ ⢀⣤⠚⠁            ⢰
        ⡇       ⡼        ⢠⠎    ⣀⡠⠒⠉   ⢰⠋  ⡇     ⠈⠱⠤⠤⣀  ⡎       ⢜   ⡠⠤⠤⠋⠑⠒⠒⠢⢄⣀⠤⣄⣀⣸  ⢣⡤⠷⣖⢅⠜                  ⠈⢹⢄          ⢠⡝⠒⢤⡀  ⣀⣀⡾⣷⠋⠛⠉ ⢀⢀⣀⣀⣀⣀⣤⣀⡠⠤⢤⣄⢄⣠⠞
-      ⣠⠃       ⡇        ⡜⢀⣀⠤⠒⠉       ⣸⠃ ⢠⠃          ⠑⣼⣄⣀⢀⢀⠤⠤⠤⠤⡼⠤⣀⡎⠁            ⢸⠗⠴⢾⣒⣲⣓⠇⢱                   ⡇ ⠣⢄     ⢀⣀⠞⠁⠘⡄ ⠘⡖⢫⠟⠉⢈⠏⠉⠉⠉⠉⠉⠁          ⢠⠎ 
+ ├──────────────────────────────────┤ 200 km        ⠑⣼⣄⣀⢀⢀⠤⠤⠤⠤⡼⠤⣀⡎⠁            ⢸⠗⠴⢾⣒⣲⣓⠇⢱                   ⡇ ⠣⢄     ⢀⣀⠞⠁⠘⡄ ⠘⡖⢫⠟⠉⢈⠏⠉⠉⠉⠉⠉⠁          ⢠⠎ 
 temp °C  14.0  16.1  18.3  20.4  22.6  24.7  26.9  →29.0

@@ -1,4 +1,4 @@
-SPECIMEN 14 — temperature on a brightness-ordered, colour-vision-safe ramp; line work black or white per cell
+SPECIMEN 14 (corrected legend) — temperature on a brightness-ordered, colour-vision-safe ramp; line work black or white per cell
 149x38 cells · braille renderer · truecolor · centre 41.08,-85.14 · zoom 5.4 · 4 basemap tile(s) at z5 © OpenMapTiles © OpenStreetMap
 field: Open-Meteo current temperature_2m, 12x8 lattice, one request (CC BY 4.0)
 ⠋⠁      ⠈  ⠇   ⢣ ⠈⢱⢇       ⢀⠤⠒⠋⠉·Milwaukee   ⢸            ⢸⢹⠉⠉⠉⠉⠉⡝⢻⠉⠣⣀⣀⡀⣀⣀⣀⣀⣀⡀      ⡇     ⡠⠴⠉⠉⠉⢩⠻⣄        ⡇   ⠈⠉⠉⠈⣯⡎            ⠈⠳⣀⣀⣠⡤⠛⠓⠉⠁           

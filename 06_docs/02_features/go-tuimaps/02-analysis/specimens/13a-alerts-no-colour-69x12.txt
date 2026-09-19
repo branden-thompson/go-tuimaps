@@ -1,15 +1,16 @@
-SPECIMEN 13a — alert areas with no colour, smallest Watchpost window
+SPECIMEN 13a (corrected) — alert areas with no colour, smallest Watchpost window
 69x12 cells · braille renderer · no colour · centre 40.88,-85.12 · zoom 7.2 · 2 basemap tile(s) at z7 © OpenMapTiles © OpenStreetMap
-alerts: 4 live NWS alert polygon(s) in view (api.weather.gov, fetched 2026-09-18); outline + tint, colour by severity
-                               ⠰╱⠰⡁                ⡇                 
-                                ⠘[FW]              ⡇                 
+alerts: 4 live NWS alert polygon(s) in view (api.weather.gov, fetched 2026-09-18); no colour: hatched interior (severe ╱, lesser ╲) plus a short label
+scale: one column is 1.6 km east-west at the centre latitude; one row is 3.2 km north-south (a cell is twice as tall as it is wide)
+                               ⠰╱◉ Fort Wayne      ⡇                 
+                                [FLOOD]            ⡇                 
                                   ╱⡈╱              ⡇                 
                                    ⠈⢢╱⡄            ⡇                 
                                      ⠑╱⠢⡀          ⡇                 
-                                       [FW]        ⡇                 
+                                      [FLOOD]      ⡇                 
         ⣀⠴⠉⠊⠉⢲⡀⡀                        ⠈⠢╱⠢⡀      ⡇                 
   ⡠⢄⣀⠤⠴⠉⠁     ⠈⠘⠚⠷⠶⣤⣀⡀ ⢀⡀                 ⠘╱⢈⡢     ⡇                 
 ⠚⠉   ⣠⣄              ⠈⠊⢹⠋⠯⣒⡢⢤⣀⣀             ⠁      ⡇                 
      ⠈⢿⣷⢦⣴⣦⣄            ⠉╱⢄╱ ⠈⢱╱⠑╱⠤⡀               ⡇                 
-      ⠈⠃ ⠘⢷⣤⣤⡀             ⠉[FW]⡀ ╱⠱⡀              ⡇                 
-                              ⠈╱⢌⡒⢆⣀⣱⡀             ⡇                 
+      ⠈⠃ ⠘⢷⣤⣤⡀             [FLOOD]╱⠱⡀              ⡇                 
+ ├──────────┤ 20 km           ⠈╱⢌⡒⢆⣀⣱⡀             ⡇                 
