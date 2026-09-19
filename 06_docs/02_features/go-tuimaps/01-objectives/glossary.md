@@ -102,8 +102,8 @@ One plain sentence per term. Added after the DISCOVER red-team found that the do
 | **Planet file** | One very large file holding every tile for the whole world. |
 | **Race detector** | A Go tool that finds two parts of a program touching the same data at once. |
 | **Discovery Report** | The document that closes this phase, for HUM LEAD's approval. |
-| **Kind (of a grid)** | What a grid of numbers measures, from a short list the library owns: *generic*, or *temperature* with its unit. The kind decides who chooses the colours. |
-| **Absolute scale** | A colour scale pinned to fixed values, so one colour means one temperature on every map, every day (D-62). |
+| **Preset** | A ready-made overlay type that works with no further input — its values, class breaks and colours already defined: temperature, radar and precipitation, alert areas, wind. A host may use one as it is, override its colours, or define a type of its own (D-69). |
+| **Absolute scale** | A colour scale pinned to fixed values, so one colour means one temperature on every map, every day — how the temperature preset is defined (D-62, D-69). |
 | **Semantic token** | A stable name for a colour's job — "heavy rain", "severe alert outline", "ground" — so a host can re-theme by meaning without knowing how the map is drawn (D-63). |
 | **Ground** | The colour painted behind the whole map, so it reads the same on a dark or a light terminal (D-64). |
 | **Safe ramps** | A setting that swaps a theme's overlay colours for the library's own colour-blind-safe ones (D-63). |

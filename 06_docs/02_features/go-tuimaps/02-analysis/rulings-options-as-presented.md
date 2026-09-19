@@ -58,6 +58,7 @@ Each question was presented one at a time with: what was being decided, the evid
 | D-66 | One commit message that says more than D-50's ruled sentence | **A. Accept it as it stands; commit messages from here on describe the change only** · B. Reword it now, rewriting the commits above it · C. Decide at SHIP | A, with a SHIP checklist line |
 | D-67 | What M1 may use at the smallest map size | A. Frame plus description, everywhere · **B. Two parts, both must pass: the frame alone, judged to its own resolution with "on the edge" under one cell; and the description, exact** · C. Frame alone, with scenarios kept at least two cells from an edge at the small size | B |
 | D-68 | D-62's flat day against M1 scenario 4 | **A. Accept flat days; the frame is judged to the scale's resolution ("no visible change" inside one band) and the description carries the gradient** · B. Absolute colour bands plus labelled isotherms at a finer fixed interval, specimen owed, A as the fall-back · C. Reopen D-62 | B ◇ |
+| D-69 | Whether the library guards certain overlay types' colours — raised by HUM LEAD in place of confirming D-62's common part | **X. Presets, no locks: four fully defined presets; a host may override any of them or define its own type; overrides checked and reported; safe-ramps returns to the presets; D-55 withdrawn** · Y. The same presets, with temperature still locked (D-55 stands) — *the question as first put (confirm the common part: A, B or C) was set aside by his reply* | X |
 
 ## Where HUM LEAD chose against the recommendation ◇
 

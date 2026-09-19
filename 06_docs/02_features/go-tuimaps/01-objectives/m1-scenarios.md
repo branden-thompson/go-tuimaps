@@ -19,7 +19,7 @@ Each is rendered at both of the first host's map sizes — 69×12 and 149×38 ce
 | 1 | An alert with its own polygon (5–21 vertices — about one alert in ten), the place inside it | Inside or outside |
 | 2 | An alert defined by a **zone shape** (900–14,000 vertices — about nine alerts in ten), the place close to the edge | Inside or outside; which way the nearest edge lies |
 | 3 | **Radar**, with rain near but not over the place — the most common view (D-35) | Direction and rough distance to the nearest rain; how heavy |
-| 4 | A temperature field | The band at the place; which way it gets warmer — or, where the whole view sits inside one band of the absolute scale, "no visible change" (D-68) |
+| 4 | A temperature field | The band at the place; which way it gets warmer — or, where the whole view sits inside one band of the absolute scale, "no visible change" (D-68). Judged using the temperature preset (D-69) |
 | 5 | Wind | Direction and rough speed at the place |
 | 6 | Point hazards: an earthquake and a fire detection | Direction and rough distance from the place |
 | 7 | A storm track passing the place | Which side it passes; roughly how close |

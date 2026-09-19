@@ -478,7 +478,7 @@ Also asked of HUM LEAD, not as rulings, **both before PLAN exit**: a second look
 | Q | Question | From |
 |---|---|---|
 | R3-Q1 | Whether M1 at the smallest map size may use the text description, or must be answerable from the frame alone → **D-67: two parts, both must pass — the frame alone to its own resolution, and the description, exact** | R3-PRD-1 |
-| R3-Q2 | D-62: (a) the flat-day consequence for M1 scenario 4 → **D-68: flat days accepted; the frame judged to the scale's resolution; the description carries the gradient**; (b) the common part, in his own words — *not answered with (a); put again on its own* | R3-PRD-3, R3-PRD-2 |
+| R3-Q2 | D-62: (a) the flat-day consequence for M1 scenario 4 → **D-68: flat days accepted; the frame judged to the scale's resolution; the description carries the gradient**; (b) the common part, in his own words — put again on its own, where HUM LEAD questioned the premise instead → **D-69: presets, not locks; D-55 withdrawn; the common part replaced** | R3-PRD-3, R3-PRD-2 |
 | R3-Q3 | Hygiene: (a) the second commit message; (b) whether D-50 exempts the review record and change logs; (c) one unreachable object | R3-HYG-1, -2, -3 |
 
 **A fourth round:** not proposed. The find-rate has converged — no Critical, and every finding a wording or record defect — and two reviewers independently judged that a fourth round would mostly review its own fixes. The round-3 rulings and their edits are checked by the coordinator's recount and by HUM LEAD's reading of the Discovery Report.
