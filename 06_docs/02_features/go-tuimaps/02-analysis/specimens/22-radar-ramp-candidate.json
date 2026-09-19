@@ -1,5 +1,5 @@
 {
- "what": "Candidate for the radar and precipitation preset (D-69): six intensity classes by reflectivity, lighter meaning heavier on a dark ground.",
+ "what": "Candidate for the radar and precipitation preset (D-69): six intensity classes by reflectivity. TWO ramps, chosen by the ground's luminance: lighter means heavier on a dark ground; darker means heavier on a light ground.",
  "class_floor_dbz": [
   10,
   20,
@@ -79,5 +79,77 @@
   "palette_256_worst_pair": 23.8,
   "ordered": true
  },
- "replaces": "the ramp of specimens 15a to 15d, which failed at 256 colours (S15-3)"
+ "replaces": "the ramp of specimens 15a to 15d, which failed at 256 colours (S15-3)",
+ "on_a_light_ground": {
+  "truecolor": [
+   [
+    150,
+    205,
+    215
+   ],
+   [
+    60,
+    160,
+    175
+   ],
+   [
+    70,
+    140,
+    70
+   ],
+   [
+    190,
+    125,
+    0
+   ],
+   [
+    190,
+    40,
+    30
+   ],
+   [
+    80,
+    0,
+    70
+   ]
+  ],
+  "colours_256_palette": [
+   [
+    175,
+    215,
+    175
+   ],
+   [
+    135,
+    175,
+    175
+   ],
+   [
+    95,
+    175,
+    95
+   ],
+   [
+    215,
+    135,
+    0
+   ],
+   [
+    175,
+    0,
+    0
+   ],
+   [
+    95,
+    0,
+    95
+   ]
+  ],
+  "checker": {
+   "worst_of_all_pairs": 16.0,
+   "worst_of_all_pairs_256": 12.6,
+   "closest_class_to_the_ground": 18.7
+  }
+ },
+ "history": "As first filed there was one ramp, valid on a dark ground only: on a light ground its heaviest class was 3.1 from the ground. Found by the PLAN red-team (PL-AX-1)."
 }

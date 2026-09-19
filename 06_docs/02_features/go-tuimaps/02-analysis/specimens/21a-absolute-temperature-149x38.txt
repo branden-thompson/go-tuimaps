@@ -1,6 +1,7 @@
-SPECIMEN 21a — temperature PRESET candidate (D-62): an ABSOLUTE scale, 17 classes of 5 C from -30 to +45, the pale break at freezing; line work black or white per cell
+SPECIMEN 21a — temperature preset (D-62), retuned after the PLAN red-team so EVERY pair of classes passes, not only neighbours
 149x38 cells · braille renderer · truecolor · centre 41.08,-85.14 · zoom 5.4 · 4 basemap tile(s) at z5 © OpenMapTiles © OpenStreetMap
 field: Open-Meteo current temperature_2m, 12x8 lattice, one request (CC BY 4.0)
+cell colour: the HIGHEST-PRIORITY line in the cell wins (the rule every earlier specimen used)
 scale: one column is 5.6 km east-west at the centre latitude; one row is 11.2 km north-south (a cell is twice as tall as it is wide)
 ⠋⠁      ⠈  ⠇   ⢣ ⠈⢱⢇       ⢀⠤⠒⠋⠉·Milwaukee   ⢸            ⢸⢹⠉⠉⠉⠉⠉⡝⢻⠉⠣⣀⣀⡀⣀⣀⣀⣀⣀⡀      ⡇     ⡠⠴⠉⠉⠉⢩⠻⣄        ⡇   ⠈⠉⠉⠈⣯⡎            ⠈⠳⣀⣀⣠⡤⠛⠓⠉⠁           
                 ⢣⢰⠃⠘⠤⠤⣀⡀ ⢀⡰⠁    ⢸ ⠑⡄         ⠘⡄           ⢸ ⢇⢀⡤⠒⠙⠊⢹⠊⠙⠁ ⠈⠁    ⠉⠉⠒⢤⣄⡠⠤⣧⣀⣀⠤⠒⠉     ⢸⠄⠈⢇       ⢸    ⢀⡠⠊⢸⠇               ⣀⠎⠡⣀             ⢀

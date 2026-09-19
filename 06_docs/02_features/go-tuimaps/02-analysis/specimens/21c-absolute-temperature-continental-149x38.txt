@@ -1,6 +1,7 @@
-SPECIMEN 21c — the absolute scale over a CONTINENTAL view, where the range is wide
+SPECIMEN 21c — the retuned absolute scale over a continental view
 149x38 cells · braille renderer · truecolor · centre 44.00,-96.00 · zoom 3.2 · 4 basemap tile(s) at z3 © OpenMapTiles © OpenStreetMap
 field: Open-Meteo current temperature_2m, 12x8 lattice, one request (CC BY 4.0)
+cell colour: the HIGHEST-PRIORITY line in the cell wins (the rule every earlier specimen used)
 scale: one column is 24.5 km east-west at the centre latitude; one row is 49.0 km north-south (a cell is twice as tall as it is wide)
       ⠛⠳⡄                    ⡇                          ⢣    ⠙⠽⡯⣷⣶    ⢸⡖⡯⡀   ⢸                                              ⠘⡄  ⢠⢄⡫⡄                 
         ⠑⣄⡀                  ⡇                          ⢸       ⢑⣍⡆   ⠈⠰⣵⡱   ⢸    ⠠⡒⡆     ⡀⢀⣄                               ⡰⠚⠒⢢⢻ ⠹     ⠐⠛⠃        ⣀⠤

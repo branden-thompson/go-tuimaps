@@ -1,6 +1,7 @@
-SPECIMEN 21a — absolute temperature scale, smallest Watchpost window
+SPECIMEN 21a — retuned absolute temperature scale, smallest Watchpost window
 69x12 cells · braille renderer · truecolor · centre 41.08,-85.14 · zoom 4.3 · 4 basemap tile(s) at z4 © OpenMapTiles © OpenStreetMap
 field: Open-Meteo current temperature_2m, 12x8 lattice, one request (CC BY 4.0)
+cell colour: the HIGHEST-PRIORITY line in the cell wins (the rule every earlier specimen used)
        ⢸⠤⣀⡀    ⢟⡄    ⡇   ⢀⣟⣀⣀⣀⠤⠶⠤⠤⠶⢺⠤⠦⠤⠤⠴⠒⠒⠒⠦⣠⣸⡭⣽·Detroit⠶⠃  ⢀⣀⠤⠤⠔⠒⡖⠉
        ⢸  ⠉⠑⠲⠤⢬⣼⣗⡄  ⢰⠁  ⢠⡷⠉        ⢸           ⣧⣿⠤⣀⠤⢄⡔⠁   ⣀⠔⠊⠁    ⢀⣇⢤
  ⢀⣀⣀⡠⠤⠔⢺⠒⠒⠒⠤⣀⣠⡿⣟⡾·Chicago⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣸⣀⡀        ⣰⡫⠊⢆⡀  ⠁ ⡠⠔⠊    ⣀⣤⣒⠮⠓⡏⠁
