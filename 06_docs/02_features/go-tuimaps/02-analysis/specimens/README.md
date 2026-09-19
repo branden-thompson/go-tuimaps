@@ -197,6 +197,23 @@ A search for the ceiling found ordered, safe scales of up to **21 classes** in t
 | S21-4 | The 256-colour version passes narrowly (11.1) and its hues zig-zag in two places, because that palette is coarse. | It needs HUM LEAD's eyes. If it reads badly, the 256-colour preset can use fewer, wider classes — a preset may differ by depth (FR-17). |
 | S21-5 | This measures whether **neighbouring** bands can be told apart on the map. Matching one band to its swatch in a 17-entry legend is a harder task that this measure does not test. | The legend states values, and the description gives the value at the place; the map is not the only way to read a number. |
 
+### Specimen 22 — radar by the first release's own path (PLAN, 2026-09-19)
+
+Every earlier radar specimen fetched radar as tiles, a shape deferred past v0.1.0 (S15-2, risk RS-23). This one uses the shape v0.1.0 has: **one image for one bounding box**, fetched from the Iowa Environmental Mesonet with one keyless request, read through the provider's **published 256-entry colour table** into six classes by reflectivity (10, 20, 30, 40, 50, 60 dBZ), and re-coloured by a new six-class ramp. The weather is real: a rain shield over Indiana on 2026-09-19 with Fort Wayne at its edge. Files: `22a-*` (truecolor on a painted dark ground, both sizes), `22b-*` (256-colour palette only), `22c-*` (no colour), `22-radar-ramp-candidate.json`.
+
+| Measured | Result |
+|---|---|
+| Pixels of a national image checked against the published table | 20,959 visible, **0 unmatched** |
+| Samples unmatched while drawing this view | 0 |
+| The new ramp, worst pair under any kind of colour blindness (threshold 10) | **21.5** in truecolor · **23.8** within the 256-colour palette · ordered by brightness at both |
+| Drawn cells under 3:1 | 0% in `22a` and in `22b` |
+
+| ID | Finding (coordinator's assessment, measured from the files; not yet seen by HUM LEAD) | Consequence |
+|---|---|---|
+| S22-1 | **The first release can get radar in, and exactly.** One request, one image, the provider's own table, no guessing by hue. | Risk RS-23 is closed. The example (NFR-17) is this path. |
+| S22-2 | The ramp that failed at 256 colours (S15-3) is replaced by one that passes at both depths with a wide margin. | The radar preset's colours are settled as a candidate, for HUM LEAD's eyes. |
+| S22-3 | Each cell takes the **heaviest** of eight samples inside it, so a small heavy core is not averaged away at coarse sizes. With no colour, the rain shield, its heavier bands (▓) and the dry slot around Fort Wayne all read from block shades alone. | This is a first answer to the "radar resampling rule" carried from DISCOVER: **the heaviest in the cell, not the mean** — a safety choice, since under-stating rain is the worse error. Stated in the implementation plan. |
+
 ### Cross-cutting
 
 1. **One rendering core carried every specimen.** A cell is a glyph, a foreground and a background; features, grids, vector grids and images all reduce to writing those three. The five input shapes of D-14 do not need five renderers.

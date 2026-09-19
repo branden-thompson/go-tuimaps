@@ -51,7 +51,7 @@ flowchart LR
         I1["Header read first: PNG only ·<br/>≤ 1,048,576 pixels · 8-bit (FR-9)"] --> I2["Decode directly (never via a format registry)"]
         I2 --> I3["Colour → class by the required table (D-45)<br/>nearest within tolerance; unmatched = no data, counted"]
         I3 --> I4["Keep ONE byte per pixel: the class index (D-36)<br/>the provider's colours are never shown"]
-        I4 --> I5["Resample to cell centres for the view,<br/>from the projection the host stated"]
+        I4 --> I5["Resample for the view, from the projection the host stated:<br/>each cell takes the HEAVIEST class inside it, never the mean (S22-3)"]
       end
     end
     subgraph LATER["After the integration (D-44, D-60)"]
@@ -80,6 +80,6 @@ flowchart LR
 | If this changes… | …this part moves |
 |---|---|
 | The integration review (D-60) finds the contract lacking | The struct fields behind `Set`, and the "later" box |
-| The radar resampling rule is settled (owed in PLAN) | Step I5 |
+| The radar resampling rule changes (now: the heaviest class in the cell, S22-3) | Step I5 |
 | A proper contouring pass is proven by specimen (A-5) | Step S4 |
 | The zoom buckets are defined (owed in PLAN) | Step F2 |

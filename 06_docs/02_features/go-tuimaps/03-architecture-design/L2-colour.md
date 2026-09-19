@@ -69,7 +69,7 @@ A host can run the same checker in its own tests (`CheckRamp`).
 | Item | Why | Due |
 |---|---|---|
 | The temperature preset's actual scale | D-62; PQ-5 | **A candidate exists (specimen 21):** 17 classes of 5 °C from −30 to +45, pale at freezing, worst adjacent pair 13.7 under colour blindness in truecolor and 11.1 within the 256-colour palette. Seen by HUM LEAD and found good (D-77) |
-| A radar preset ramp that passes at 256 colours | S15-3: the specimen ramp failed | Specimen in PLAN |
+| A radar preset ramp that passes at 256 colours | S15-3 | **A candidate exists (specimen 22):** six classes, worst pair 21.5 in truecolor and 23.8 within the 256-colour palette. Awaits HUM LEAD's eyes |
 | A specimen of step D16 — a coloured basemap with a colourless overlay | D-59: never rendered; fall-back is all no-colour | Before PLAN exit |
 | Specimens of a painted light and a painted dark ground | D-64 | **Done (specimen 20), measured:** unpainted, 85% of drawn cells fall under 3:1 on a white terminal; painted, none do once the higher-contrast rule is applied to every line. Seen by HUM LEAD and found good (D-77). The bright style keeps a line's colour where it passes 3:1 on the cell and falls back to black or white where it does not |
 | The list of tokens | D-63; a named PLAN artefact | With the contract |
