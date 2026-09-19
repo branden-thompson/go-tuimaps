@@ -14,6 +14,7 @@ import (
 	"go/parser"
 	"go/token"
 	"io/fs"
+	"os"
 	"path"
 	"path/filepath"
 	"slices"
@@ -120,31 +121,62 @@ func (c *checker) visit(full string, d fs.DirEntry, err error) error {
 	return c.checkFile(full, rel)
 }
 
-// checkFile parses one file and applies the rules that fit it.
+// checkFile reads one file, refuses it if it hides anything from a reader,
+// parses it, and applies the rules that fit it.
 func (c *checker) checkFile(full, rel string) error {
 	if full == "" || rel == "" {
 		return errors.New("rules: empty file name")
 	}
-	file, err := parser.ParseFile(c.fset, full, nil, parser.SkipObjectResolution|parser.ParseComments)
+	src, err := os.ReadFile(full)
+	if err != nil {
+		return fmt.Errorf("rules: %w", err)
+	}
+	hidden, err := c.checkInvisible(src, rel)
+	if err != nil {
+		return err
+	}
+	if hidden > 0 {
+		return nil // already failing; what it says to a reader cannot be trusted, so it is not read further
+	}
+	file, err := parser.ParseFile(c.fset, full, src, parser.SkipObjectResolution|parser.ParseComments)
 	if err != nil {
 		return fmt.Errorf("rules: %s does not parse: %w", rel, err)
 	}
-	dir := path.Dir(rel)
 	names, err := importNames(file)
 	if err != nil {
 		return fmt.Errorf("rules: %s: %w", rel, err)
 	}
 	if strings.HasSuffix(rel, "_test.go") {
-		c.tested[dir] = 1
-		hooked, err := callsHook(file, names, c.module, dir)
-		if err != nil {
-			return err
-		}
-		if hooked {
-			c.hooked[dir] = true
-		}
-		return nil
+		return c.noteTestFile(file, names, path.Dir(rel))
 	}
+	return c.checkLibraryFile(file, names, rel)
+}
+
+// noteTestFile records that a package has tests, and whether this test file
+// puts them under the loopback-only guard.
+func (c *checker) noteTestFile(file *ast.File, names map[string]string, dir string) error {
+	if dir == "" {
+		return errors.New("rules: noteTestFile needs the package directory")
+	}
+	c.tested[dir] = 1
+	hooked, err := callsHook(file, names, c.module, dir)
+	if err != nil {
+		return err
+	}
+	if hooked {
+		c.hooked[dir] = true
+	}
+	return nil
+}
+
+// checkLibraryFile applies the rules for non-test files: documentation to
+// every package; imports, goroutines, clocks and output to every package
+// but the test-only tooling, which may start goroutines, sleep and print.
+func (c *checker) checkLibraryFile(file *ast.File, names map[string]string, rel string) error {
+	if file == nil || rel == "" {
+		return errors.New("rules: checkLibraryFile needs a parsed file and its name")
+	}
+	dir := path.Dir(rel)
 	if file.Doc != nil {
 		c.commented[dir] = true
 	}
@@ -152,8 +184,6 @@ func (c *checker) checkFile(full, rel string) error {
 	if err := c.checkDocs(file, rel); err != nil {
 		return err
 	}
-	// The test kit and these rules are test-only tooling: they may start
-	// goroutines, sleep and print.
 	for _, tool := range []string{"internal/testkit", "internal/rules"} {
 		if dir == tool || strings.HasPrefix(dir, tool+"/") {
 			return nil
