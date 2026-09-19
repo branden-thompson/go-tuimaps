@@ -91,6 +91,25 @@ View: US Midwest centred on Fort Wayne, Indiana. Field: live 2 m temperature, a 
 | S11-4 | **Why shades failed for temperature (S3-1) and work for radar.** Temperature covers every cell, was drawn over a full road net, and used dot-like light glyphs (`·` `:`). Radar is absent over much of the map, was drawn over a thinned basemap, and uses only block shades. | `03a` against `11b` | Refines S3-1: the failure was the glyph choice and the clutter, not shading as such. |
 | S11-5 | The very lightest returns (blue and cyan) were dropped as clutter; light rain is drawn `▒`. A lighter `░` for light rain would make the heavy cores stand out more. | `11b` | A tuning choice for PLAN, from a further specimen. |
 
+### Specimens 12–15 — owed after red-team round 1
+
+Produced because the round found claims resting on renderings that did not exist. **None of these has been reviewed by HUM LEAD yet.** The assessments below are the coordinator's, from text output and one browser look at 15a.
+
+| # | Files | What it shows | From |
+|---|---|---|---|
+| 12 | `12a-block-motorways-only-*`, `12b-block-no-roads-*` | The block renderer with the road net thinned: motorways only; no roads at all. Both map sizes. | HUM LEAD's concern on group D (D-41); RS-22 |
+| 13 | `13a-alerts-no-colour-*`, `13b-wind-no-colour-149x38`, `03b-no-colour-digits-69x12` | Feature overlays with no colour: alert areas hatched (`╱`) and labelled; wind as arrow plus speed in km/h. The value lattice at the small size, which a ruling had claimed and nobody had rendered. | Accessibility A-2; phase lens PM-1 |
+| 14 | `14-safe-ramp-*` | Temperature on a brightness-ordered, colour-vision-safe ramp (the viridis family), with line work chosen black or white per cell. | Accessibility A-3, A-4 |
+| 15 | `15a-radar-recoloured-*`, `15b-radar-themed-amber-149x38`, `15c-…256-colour…`, `15d-…16-colour…` | Radar re-coloured by the library from intensity classes (ruling D-36): a brightness-ordered default; a single-hue amber ramp as a host theme might supply; the same at 256 and 16 colours. | Phase lens PM-5; ruling D-36 had been ratified from prose |
+
+| ID | Finding (coordinator's assessment — unreviewed) | Evidence |
+|---|---|---|
+| S13-1 | With no colour, a hatched interior plus a label makes an alert area distinct from braille roads and rivers at both sizes; the place marker's position inside or outside is readable. The abbreviated label at the small size (`[FW]`) is cryptic and needs a key or a better short form. | `13a-*` |
+| S13-2 | Arrow plus speed (`←14`, `↙29`) carries wind strength with no colour, like a station plot. It needs the road net removed to stay readable. | `13b` |
+| S15-1 | Re-coloured radar reads well in the one browser look taken: a teal light-rain shield, green moderate, amber heavy cores with line work switched to black; white map lines read cleanly on the teal. Intensity was read back **by hue**, a rough method; no exact colour table for this provider has been built. | `15a-149x38` |
+| S15-2 | Known defect: the note line in the 15-series headers still says the image was "placed as-is"; the title line is correct — the image is re-coloured. | `15*` headers |
+| — | 12 and 14 have not been looked at by anyone. | — |
+
 ### Cross-cutting
 
 1. **One rendering core carried every specimen.** A cell is a glyph, a foreground and a background; features, grids, vector grids and images all reduce to writing those three. The five input shapes of D-14 do not need five renderers.
