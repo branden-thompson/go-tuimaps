@@ -5,7 +5,7 @@
 | Phase | PLAN |
 | Date | 2026-09-19 |
 | Decides | The design note FR-30 requires: at least two models for running slow work, compared against FR-30's constraints. Risk RS-4 (High). |
-| Status | Put to HUM LEAD. Not yet ruled. |
+| Status | **Ruled 2026-09-19 (D-73): Model B — the host runs the work.** Chosen against the recommendation (C). Models A and C are kept below as the record of what was considered. |
 
 ## The problem in one paragraph
 
