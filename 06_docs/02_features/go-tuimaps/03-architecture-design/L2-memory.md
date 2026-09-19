@@ -1,6 +1,6 @@
 # Level 2 — The memory budget map
 
-Up: [architecture](architecture.md) · Carries: NFR-3, NFR-4, NFR-10, FR-11, FR-21a, FR-27, FR-37, D-29, D-48, D-73, D-75 · Risk RS-7 (High)
+Up: [architecture](architecture.md) · Carries: NFR-3, NFR-4, NFR-10, FR-11, FR-21a, FR-27, FR-37, D-29, D-48, D-73, D-75 · Risk RS-7 (Medium since the PLAN measurement)
 
 ## The target, as ruled
 
@@ -17,12 +17,12 @@ flowchart TB
 
     subgraph LIVE["Library, live after a collection — the 4 MB line"]
       direction TB
-      FIX["<b>Fixed buffers</b> ≈ 0.5 MB<br/>cell grid × 2 frames · dot mask · output lines (149×38)"]
-      TC["<b>Tile cache</b> — byte-capped ≈ 1.6 MB for the fixture<br/>only if data is dropped while decoding and coordinates stay small integers (D-75)"]
-      SC["<b>Shape cache</b> — byte-capped ≈ 0.02 MB<br/>simplified forms and bounding boxes · a form over ¼ of the cap is not cached"]
-      IC["<b>Image cache</b> — byte-capped ≈ 0.4 MB<br/>one byte per pixel (D-36) · a loop's frames must fit inside this cap (FR-37)"]
+      FIX["<b>Fixed buffers</b> — measured 0.44 MB<br/>cell grid × 2 frames · dot mask · output lines (149×38)"]
+      TC["<b>Tile cache</b> — byte-capped · one view measured 0.33 to 0.80 MB<br/>with data dropped while decoding and coordinates as 16-bit integers (D-75)"]
+      SC["<b>Shape cache</b> — byte-capped · measured 0.01 MB for 56,827 borrowed vertices<br/>simplified forms and bounding boxes · a form over ¼ of the cap is not cached"]
+      IC["<b>Image cache</b> — byte-capped · measured 0.25 MB for a 600×400 image<br/>one byte per pixel (D-36) · a loop's frames must fit inside this cap (FR-37)"]
       GC2["<b>Grids, contours, ramps, legend</b> ≈ 0.05 MB"]
-      ST["<b>Styles, tokens, pools</b> ≈ 0.6 MB (the softest estimate)"]
+      ST["<b>Styles, tokens, pools</b> ≈ 0.6 MB (an estimate; NOT measured)"]
       CAPS["Rule: default caps + fixed buffers ≤ 3 MB, leaving 1 MB for everything else (NFR-3)"]
     end
 
@@ -37,9 +37,9 @@ flowchart TB
       EMB["Embedded tiles: 1.7 MB of program data —<br/>invisible to heap metrics, present in the host's resident memory"]
     end
 
-    LIVE --> SUM["Fixture, summed ≈ 3.6 MB live — passes with about 10% slack"]
+    LIVE --> SUM["Fixture, MEASURED: 1.0 to 1.5 MB live · 2.8 to 4.8 MB peak (upper bound)<br/>the earlier arithmetic said 3.6 MB"]
     TRANS --> PEAK["Peak ≈ live + one decode + garbage"]
-    SUM --> T1["<b>Tension (NFR-3):</b> at live = 4 MB the 8 MB peak is reached by garbage alone.<br/>In practice live must sit nearer 3 MB. The PLAN-exit measurement reports both."]
+    SUM --> T1["<b>Tension (NFR-3):</b> at live = 4 MB the 8 MB peak is reached by garbage alone.<br/>In practice live must sit nearer 3 MB — and measured, it sits near 1 to 1.5."]
     PEAK --> T1
 ```
 
@@ -62,5 +62,5 @@ flowchart TB
 | If this changes… | …this part moves |
 |---|---|
 | The library's own benchmark in BUILD against the pinned fixture | Every figure; possibly the ruled lines, by ruling only |
-| The pinned fixture's exact contents (owed in PLAN) | The tile and shape figures |
+| The pinned fixture changes (pinned 2026-09-19, see the measurement) | The tile and shape figures |
 | Image loops are built (FR-37) | The image cache's cap and what fits in it |
