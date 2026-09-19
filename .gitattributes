@@ -1,0 +1,8 @@
+# Specimens are byte-exact terminal output: never convert line endings or diff as text.
+*.ans -text
+*.png binary
+*.txt text eol=lf
+*.md text eol=lf
+*.go text eol=lf
+go.mod text eol=lf
+go.sum text eol=lf
