@@ -1,0 +1,23 @@
+# Build output — every binary goes to ./dist/
+dist/
+
+# Logs, except a run's record filed in the docs tree
+*.log
+!06_docs/**/*.log
+
+# Go test and profiling output
+coverage.out
+*.test
+*.prof
+
+# OS and editor
+.DS_Store
+
+# Local development harness — not part of the public project
+.claude/
+.a2dh/
+_a2dh/
+.a2dh*
+AGENTS.md
+CLAUDE.md
+.github/copilot-instructions.md
