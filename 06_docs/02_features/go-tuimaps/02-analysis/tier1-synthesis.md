@@ -6,7 +6,7 @@
 | Date | 2026-09-18 |
 | Inputs | [`research/AI-1`](research/AI-1-upstream-module-read.md) · [`research/AI-2 / AI-7`](research/AI-2-AI-7-mapscii-delta-licensing-tile-terms.md) · [`research/AI-3`](research/AI-3-go-ecosystem.md) · [`research/AI-4 / AI-8`](research/AI-4-AI-8-watchpost-host-model.md) · [`research/AI-5`](research/AI-5-weather-overlay-sources.md) |
 | Baselines | TerminalMap `3b96072` (v0.1.0) · MAPSCII `4fe9a60` · Watchpost as checked out 2026-09-18 |
-| Status | Research input. Every recommendation here is a proposal until HUM LEAD rules. |
+| Status | Research input, **as it stood before the rulings**. Every open question in §5 has since been ruled (D-11..D-37 in `rulings-discover.md`), and the risk statuses in §4 are superseded by `risk-assessment.md`. Kept unchanged as the record of what Tier 1 found. Two corrections: "MBTiles" as the local-file format became **PMTiles** by ruling D-18; and of AI-2's five MAPSCII additions marked worth adding, three were taken up (pointer input, D-17; headless render, D-13; local file source, D-18) and two — per-layer label margin and clustering, and loading a style by file path — have **no disposition yet** and are carried to PLAN. |
 
 Each report's headline claims were re-checked against the primary source before it was accepted (see the Verification row in each file). One row in AI-2 was wrong and was corrected on the record (X-1).
 

@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Report | project-brief v1.0.0 |
+| Report | project-brief v1.0.1 |
 | Phase | pre-DISCOVER (collect-brief handoff) |
 | Date | 2026-09-18 |
 | Author of record | Branden Thompson (HUM LEAD) |
 | Branch | `feature/go-tuimaps` |
-| Status | APPROVED — HUM LEAD, 2026-09-18 |
+| Status | APPROVED — HUM LEAD, 2026-09-18. **Amended 2026-09-18 (v1.0.1)** after the DISCOVER red-team: two factual corrections and one token removed, each marked in place; nothing else changed. The open questions below were all ruled later — see `02-analysis/rulings-discover.md`. |
 
 ---
 
@@ -81,7 +81,7 @@ Verbatim from HUM LEAD intake, numbered for traceability.
 
 - **SH-1 (R-1 / M3):** "Parity" becomes testable through a pinned upstream commit and a feature-by-feature matrix. Baseline inventory from a light read of upstream:
   - MVT/protobuf parsing
-  - 2×8 braille and ASCII-block rendering
+  - braille (2×4 dots per cell — *corrected; upstream's README says "2x8", its code is 2×4*) and ASCII-block rendering
   - Mapbox GL style JSON (`bright`, `dark`)
   - label collision detection
   - polygon triangulation and fill
@@ -102,7 +102,7 @@ Verbatim from HUM LEAD intake, numbered for traceability.
 
   The v1 set and who fetches the data are open (OQ-3, OQ-4). The draft recommendation is that the library defines the overlay contract and the host owns the APIs.
 - **SH-4 (R-3):** Upstream's default tile source is OpenFreeMap (`tiles.openfreemap.org/planet`), which serves OpenStreetMap data. "OpenMaps" is read as that (OQ-2).
-- **SH-5 (R-3 / M1):** Gridded data at braille resolution (2×8 sub-pixels per cell) may not be legible. Any overlay rendering approach is approved from an actual rendered specimen at representative terminal widths, never from a prose description.
+- **SH-5 (R-3 / M1):** Gridded data at braille resolution (2×4 dots per cell — *corrected*) may not be legible. Any overlay rendering approach is approved from an actual rendered specimen at representative terminal widths, never from a prose description.
 
 ## Technical Constraints
 
@@ -118,7 +118,7 @@ HUM LEAD stated "none known". These standing project rules apply:
 
 ## Other Considerations
 
-- **Lineage:** MAPSCII (rastapasta), then TerminalMap (psmux; Rust, MIT, app plus SDK, about 15 source files), then go-tuiMaps. Two prior implementations mean the basemap problem is well understood. The overlay contract is new.
+- **Lineage:** MAPSCII (rastapasta), then TerminalMap (psmux; Rust, MIT, app plus SDK, 16 source files — *corrected*), then go-tuiMaps. Two prior implementations mean the basemap problem is well understood. The overlay contract is new.
 - **First consumer:** Watchpost, a terminal weather station using Bubble Tea v2, Go 1.25, a domain-first layout and SEV-0 process. Its alert, wind, precipitation, fire and seismic data are the first overlay sources.
 - **Design system:** Watchpost renders through go-studs. Whether go-tuiMaps takes theme tokens from go-studs or stays independent of any design system is open (OQ-7).
 - **Process reference:** Watchpost's docs tree, brief format, no-watermark calibration and PR protocol are the working examples for this project.
@@ -229,7 +229,7 @@ BRIEF SUFFICIENCY CHECK
 
 | # | Date | Decision | By | Rationale (verbatim where given) |
 |---|---|---|---|---|
-| D-1 | 2026-09-18 | Thin A2DH install | HUM LEAD | "li A2DH STARTUP + THIN INSTALL" |
+| D-1 | 2026-09-18 | Thin A2DH install | HUM LEAD | "[…] A2DH STARTUP + THIN INSTALL" |
 | D-2 | 2026-09-18 | LEVEL-1, SEV-0, five FULL directives | HUM LEAD | "LEVEL-1; SEV-0; FULL GIT; FULL DOCS; FULL REPORTS; FULL DIAGRAMS; FULL TDD" |
 | D-3 | 2026-09-18 | FULL RCC and FULL PLAN added | HUM LEAD | "FULL RCC; FULL PLAN approved" |
 | D-4 | 2026-09-18 | FULL TDD bound to the framework's test-driven-development skill | HUM LEAD | "FULL TDD should have some skills in the skillfamily" |
@@ -238,6 +238,7 @@ BRIEF SUFFICIENCY CHECK
 | D-7 | 2026-09-18 | No AI attribution or watermarks | HUM LEAD | "NO AI ATTRIBUTION / WATERMARKS rule is in effect". A trailer on the first commit was amended out before any push. |
 | D-8 | 2026-09-18 | Personal git identity | HUM LEAD | "this is a personal project so git identity must be branden-thompson". Verified: the personal address. |
 | D-9 | 2026-09-18 | Watchpost is the working example; harness untracked; root commit rewritten to a `.gitignore` only | Agent under D-7/D-9; ratified by HUM LEAD at G-7 (D-10) | "use watchpost as an example if needed" |
+| D-10a | 2026-09-18 | Brief amended to v1.0.1: braille dots corrected to 2×4; source file count corrected to 16; one token removed from the D-1 quotation. Found by the DISCOVER red-team (docs DQ-4, hygiene PH-4). | Agent; for ratification with the Discovery Report | Approved documents are amended with a version bump and a log entry, never silently. |
 | D-10 | 2026-09-18 | G-1..G-7 approved: problem statement ratified; metrics M1–M6 ratified; brief approved; branch renamed `feature/go-tuimaps`; project config set (SEV-0, Go, BRTOPS); Watchpost's no-watermark calibration copied verbatim into the local harness (diff-verified identical); D-9 ratified. GO for DISCOVER. | HUM LEAD | "G-1 thru G-7 Approved; Approved; GO 4 DISCOVER" |
 
 ## Next Steps
