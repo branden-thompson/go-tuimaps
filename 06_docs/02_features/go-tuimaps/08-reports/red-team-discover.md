@@ -389,7 +389,7 @@ Put one at a time, as in round 1. Rulings are recorded in `rulings-discover.md` 
 | R2-Q5 | The first release's parity denominator, given five split rows → **D-61: the five rows are split; 62 of 75** | R2-BZ-B1 |
 | R2-Q6 | The closed set of scalar kinds, temperature's midpoint per unit, and default breaks → **D-62: a fully absolute, library-owned temperature scale; a closed set of kinds; a convention, not a control** | R2-CQ-10, R2-BZ-A7 |
 | R2-Q7 | A user-level "safe ramps" switch → **D-63: a switch in v0.1.0, and the palette as a documented semantic-token contract** | R2-AX-7 |
-| R2-Q8 | Who owns the ground colour on a light terminal | R2-AX-11 |
+| R2-Q8 | Who owns the ground colour on a light terminal → **D-64: painted by default from a `ground` token; a host may opt out by declaring the ground** | R2-AX-11 |
 | R2-Q9 | Whether the library reaches the network without being told to | R2-IS-B2, R2-NC-3 |
 | R2-Q10 | One commit message that narrates hygiene work | R2-PH-4 |
 
