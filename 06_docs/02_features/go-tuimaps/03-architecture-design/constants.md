@@ -44,6 +44,8 @@ Measured on real tiles across the whole range the map uses. **Zoom 0 to 4:** all
 | Pixels an image | 1,048,576, read from the header before decoding | Set in DISCOVER round 2 |
 | Pump width the peak line is measured at | 2 `Work` calls | Ruled (D-84) |
 | Warnings kept | 64, de-duplicated | Set in DISCOVER round 3 |
+| The longest id of an overlay or a place | 256 bytes | Set in BUILD (task 02.8). Ids are validated and never cleaned (FR-34) |
+| Untrusted text quoted in an error or a warning | 64 grapheme clusters, then three dots | FR-34; the dots set in BUILD (task 02.7) |
 | Disk cache | 256 MB; prune to 90%; recency written at most hourly | Set in DISCOVER round 2 |
 
 ## 3 · Shapes (FR-11)
