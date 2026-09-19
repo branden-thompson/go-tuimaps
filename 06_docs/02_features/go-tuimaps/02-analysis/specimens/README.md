@@ -214,6 +214,16 @@ Every earlier radar specimen fetched radar as tiles, a shape deferred past v0.1.
 | S22-2 | The ramp that failed at 256 colours (S15-3) is replaced by one that passes at both depths with a wide margin. | The radar preset's colours are settled as a candidate, for HUM LEAD's eyes. |
 | S22-3 | Each cell takes the **heaviest** of eight samples inside it, so a small heavy core is not averaged away at coarse sizes. With no colour, the rain shield, its heavier bands (▓) and the dry slot around Fort Wayne all read from block shades alone. | This is a first answer to the "radar resampling rule" carried from DISCOVER: **the heaviest in the cell, not the mean** — a safety choice, since under-stating rain is the worse error. Stated in the implementation plan. |
 
+### Specimen 23 — a 16-colour hint (PLAN, 2026-09-19)
+
+Owed by ruling D-59, which HUM LEAD made without ever having seen a coloured basemap beside a colourless overlay. The radar view of specimen 22 with a 16-colour hint: line work, labels, the marker and a painted black ground use the 16-colour palette; the radar, which needs a ramp, is drawn in its no-colour form — block shades. Files: `23a-*`, both sizes.
+
+| ID | Finding (coordinator's assessment; the colour files were checked by their colour codes, not viewed; not yet seen by HUM LEAD) | Consequence |
+|---|---|---|
+| S23-1 | **Converting the style's colours to 16 does to the basemap what it does to a ramp** (S10-1): the first attempt came out in white and grey only, because the dark style's pale blues and greys all land on "white". Choosing the basemap's colours *from* the sixteen — bright cyan rivers, bright blue water, green parks, white roads, bright white borders and labels, a bright yellow marker — restored the distinctions. | The 16-colour depth needs its own small basemap palette, picked by hand, as the ramps do. It is a handful of tokens (D-63). |
+| S23-2 | With that palette the frame carries seven distinct colour codes and the radar's grey shades sit among coloured map lines without borrowing their colours. Whether the mix reads well, or whether a plain no-colour frame would be calmer, is a judgement of looks. | For HUM LEAD's eyes. The fall-back ruled with D-59 stands: treat 16 colours as no colour. |
+| S23-3 | At this depth the terminal decides what "bright cyan" really looks like, and it cannot be asked. Any contrast figure here would be against an assumed palette, so none is given. | As FR-20 now says: checks at 16 colours are indicative only. |
+
 ### Cross-cutting
 
 1. **One rendering core carried every specimen.** A cell is a glyph, a foreground and a background; features, grids, vector grids and images all reduce to writing those three. The five input shapes of D-14 do not need five renderers.

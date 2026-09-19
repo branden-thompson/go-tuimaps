@@ -31,7 +31,7 @@ flowchart TB
       direction LR
       D24["Truecolor<br/>the colour as given"]
       D256["256 colours<br/>the library's own ramp for this depth — never an automatic downgrade (S10-1)<br/>indices 16–255 only, so contrast is exact"]
-      D16["16 colours (D-59)<br/>line work, labels, markers, outlines: 16-colour palette<br/>anything needing a ramp: its no-colour form<br/>(until the 16-colour ramps are built)"]
+      D16["16 colours (D-59)<br/>line work, labels, markers, outlines: a palette CHOSEN from the 16 (S23-1)<br/>anything needing a ramp: its no-colour form<br/>(until the 16-colour ramps are built)"]
       D0["No colour (D-35)<br/>smooth fields: contours with value labels<br/>patchy data: block shades ░▒▓<br/>areas: hatch ╱ ╲ plus a plain-word label (FR-18a)"]
     end
 
@@ -70,7 +70,7 @@ A host can run the same checker in its own tests (`CheckRamp`).
 |---|---|---|
 | The temperature preset's actual scale | D-62; PQ-5 | **A candidate exists (specimen 21):** 17 classes of 5 °C from −30 to +45, pale at freezing, worst adjacent pair 13.7 under colour blindness in truecolor and 11.1 within the 256-colour palette. Seen by HUM LEAD and found good (D-77) |
 | A radar preset ramp that passes at 256 colours | S15-3 | **A candidate exists (specimen 22):** six classes, worst pair 21.5 in truecolor and 23.8 within the 256-colour palette. Awaits HUM LEAD's eyes |
-| A specimen of step D16 — a coloured basemap with a colourless overlay | D-59: never rendered; fall-back is all no-colour | Before PLAN exit |
+| A specimen of step D16 — a coloured basemap with a colourless overlay | D-59 | **Done (specimen 23).** Finding: the basemap needs its own palette chosen from the sixteen; converted colours collapse to white and grey. Awaits HUM LEAD's eyes; the fall-back is all no-colour |
 | Specimens of a painted light and a painted dark ground | D-64 | **Done (specimen 20), measured:** unpainted, 85% of drawn cells fall under 3:1 on a white terminal; painted, none do once the higher-contrast rule is applied to every line. Seen by HUM LEAD and found good (D-77). The bright style keeps a line's colour where it passes 3:1 on the cell and falls back to black or white where it does not |
 | The list of tokens | D-63; a named PLAN artefact | With the contract |
 | The colour-vision threshold | FR-16 | With the ramps |
