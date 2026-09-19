@@ -28,12 +28,14 @@ The first release accepts radar as **one image for one bounding box** (FR-9); fe
 4. **Still true:** both sources are US-only (NFR-17 says so), and no rate limit is published — the example fetches on demand, never in a loop, and tests use a recorded image (NFR-11).
 5. **Carried into the design:** the image arrives in either projection the host asks for. The contract must let the host say which; resampling to the view is the library's job (the "radar resampling rule" carried from DISCOVER).
 
-## 2. Terminal matrix — AWAITING HUM LEAD
+## 2. Terminal matrix — ONE TERMINAL PASSES
 
 [`terminal-matrix/test-card.txt`](terminal-matrix/test-card.txt) is a plain-text card. Shown with `cat` in a terminal, each row is a bar, twenty copies of one character, and a closing bar that must land under a marked column. It tests, for every character the first release's renderer can emit (NFR-8's closed list) and those the later renderers need: **width** — does the bar land in column 22 — and **coverage** — is it the character, or an empty box.
 
 | Terminal and font | Braille | Quadrants | Shades | Box | Hatch | Arrows | Markers | U+FFFD | Picture reads | Colour specimens read |
 |---|---|---|---|---|---|---|---|---|---|---|
-| *to be filled from HUM LEAD's terminals* | | | | | | | | | | |
+| HUM LEAD's terminal on macOS, 2026-09-19 — application and font not yet stated | pass | pass | pass | pass | pass | pass | pass | pass | pass | not yet reported |
+
+**As reported:** "passed on my terminal" — HUM LEAD ran the card and pasted its output. The result is HUM LEAD's reading of the screen; a paste of text cannot show widths or missing glyphs, so the coordinator has not verified it independently. In the pasted text three sections (box drawing, hatch, arrows) showed some lines joined by long runs of spaces; with the card reported as passing, that is taken to be an artefact of copying from the terminal, and is noted here in case it recurs. **What this does and does not settle:** the closed list of characters (NFR-8) is one column wide and present in one real terminal and font, including braille (risk RS-25) — one data point, not a survey.
 
 This look also serves as the terminal look at the specimens that DISCOVER still owes (risk RS-3). Terminals the first host supports but HUM LEAD does not use are listed in PLAN as untested, not assumed.

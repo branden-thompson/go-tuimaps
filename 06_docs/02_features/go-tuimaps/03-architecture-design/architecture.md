@@ -7,6 +7,10 @@
 | Status | Draft for HUM LEAD's review. Built on rulings D-11 to D-75. |
 | How to use this | These diagrams are **living references** (D-71). Point at one when asking a question; when a decision changes, the diagram changes in the same commit. Every diagram names the rulings and requirements it carries, so a change to one of those says which diagram to open. |
 
+## Start here
+
+Twenty-four diagrams is a lot to hold. **[A guided tour](architecture-tour.md)** follows one story — a flood warning and a radar picture, from the first host to the cells on the screen and the sentence it can speak — through almost every diagram once, in 29 steps, each naming the diagram to look at and the ruling behind it. It ends with the three diagrams to read if you read no others.
+
 ## The diagram set
 
 Four levels of detail. Read down for more detail, up for context.
