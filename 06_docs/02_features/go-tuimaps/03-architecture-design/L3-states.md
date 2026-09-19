@@ -1,6 +1,6 @@
 # Level 3 — State machines
 
-Up: [architecture](architecture.md) · Carries: FR-11, FR-23, FR-25, FR-26, FR-32, FR-37, NFR-10, NFR-21, D-30, D-56, D-73, D-74, D-86, P-59a
+Up: [architecture](architecture.md) · Carries: FR-11, FR-23, FR-25, FR-26, FR-32, FR-37, NFR-10, NFR-21, D-30, D-56, D-73, D-74, D-86, D-90, D-92, P-59a
 
 ## 1 · A tile
 

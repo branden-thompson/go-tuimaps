@@ -1,6 +1,6 @@
 # The contract — what a host can rely on
 
-Up: [architecture](architecture.md) · Carries: FR-11, FR-24, FR-25, FR-26, FR-27, FR-29, FR-32, FR-37, NFR-22, D-17, D-44, D-47, D-52, D-58, D-65, D-71, D-73, D-74, D-82, D-84, D-85, D-86
+Up: [architecture](architecture.md) · Carries: FR-11, FR-22a, FR-24, FR-25, FR-26, FR-27, FR-29, FR-32, FR-37, NFR-22, D-17, D-44, D-47, D-52, D-58, D-65, D-71, D-73, D-74, D-82, D-84, D-85, D-86, D-90, D-92, P-57, P-61
 
 | Field | Value |
 |---|---|

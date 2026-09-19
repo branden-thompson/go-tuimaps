@@ -139,11 +139,11 @@ flowchart LR
 | WP-10 overlay | 26 | L | 4 |
 | WP-11 describe · answer key | 17 | M | 2 to 3 |
 | WP-12 public package · examples | 26 | M | 3 to 4 |
-| WP-13 app | 14 | M | 2 |
+| WP-13 app | 15 | M | 2 |
 | WP-14 parity · reference frames · benchmarks | 20 | L | 3 to 4 |
-| **Total** | **271** | | **33 to 41, or 43 to 53 with the 30% allowance** |
+| **Total** | **272** | | **33 to 41, or 43 to 53 with the 30% allowance** |
 
-The count rose from 210 to 264 when the PLAN red-team found requirements with no task, and to 271 after its second round found parity rows with an owner and nothing to build them, and D-92 added one; the parity tests are counted inside the work packages that own them ([parity mapping](parity-mapping.md)). Tasks 14.15 to 14.19 are HUM LEAD's sessions or manual passes, not code. Cross-check against the Discovery Report's size estimate (about 6,700 to 7,300 lines): 271 cycles at 25 to 30 lines of production code a cycle is 6,775 to 8,130 lines — agreement that says only that the two share assumptions.
+The count rose from 210 to 264 when the PLAN red-team found requirements with no task, and to 272 after its second round found parity rows with an owner and nothing to build them, and D-92 and D-94 added one each; the parity tests are counted inside the work packages that own them ([parity mapping](parity-mapping.md)). Tasks 14.15 to 14.19 are HUM LEAD's sessions or manual passes, not code. Cross-check against the Discovery Report's size estimate (about 6,700 to 7,300 lines): 272 cycles at 25 to 30 lines of production code a cycle is 6,800 to 8,160 lines — agreement that says only that the two share assumptions.
 
 ## The work packages
 
@@ -318,7 +318,7 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 08.7 | `TestCheckerOrdered`, `…Distinct`, `…Readable`, `…VisionSafe`, each with a passing and a failing ramp (the broadcast-style ramp of specimen 21 must fail three ways) | `CheckRamp` (D-53) | same |
 | 08.8 | `TestTemperaturePresetPasses` at truecolor and 256, **on a dark ground and on a light one**: every pair of classes, and every class against its ground, at least 10; luminance rises to freezing and falls from it; the light-ground colours differ from the dark in three bands only (D-91). `TestBreaksExactInFahrenheit` | Temperature preset: 17 classes, specimen 21's colours, two sets by ground (D-62, D-91) | same |
 | 08.9 | `TestRadarPresetPasses` at truecolor and 256 **on a dark ground and on a light one**: lighter-is-heavier on dark, darker-is-heavier on light, chosen by the luminance of the ground **in effect — painted, or the host's declared colour** (`TestRadarRampFollowsDeclaredGround`); on both grounds heavier is further from the ground at every step, under every kind of colour vision; every class at least 10 from its ground (D-88, PL-AX-1) | Radar preset: six classes, two ramps by ground | same |
-| 08.10 | `TestAlertPreset`: severity → outline and tint tokens; outline ≥ 3:1 on both grounds | Alert preset | same |
+| 08.10 | `TestAlertPreset`: five severities → outline and tint tokens, **two sets by ground**; outlines ≥ 3:1 on their ground and on their own tint; D-88 between every pair of outlines, every pair of tints, and each against its ground. The colours are designed here — PLAN checked only the two pairs its specimens drew, on a dark ground — and are shown to HUM LEAD before any reference frame is frozen (14.16) | Alert preset | same |
 | 08.11 | `TestOverrideIsWarnedNotRefused` | Overrides (D-69, D-53) | same |
 | 08.12 | `TestSafeRampsForcesPreset` | Safe ramps (D-63) | same |
 | 08.13 | `Test256UsesOnlyFixedIndices` (16–255) | 256 depth | same |
@@ -447,7 +447,7 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 12.21 | `TestErrorKindsClosed`, `TestWarningKindsClosed`: the lists equal the contract's | Contract, section 7 | same |
 | 12.22 | `TestCallsSafeTogether`: a race test for every owner call — `Render` first among them — beside `Work` and `Settle`, and for the any-goroutine calls beside everything; `TestCloseWhileWorking`: the map closes at once, the `Work` inside returns `closed` and publishes nothing, `Close` reports one call inside, `InUse` says yes until it returns; `TestRenderBesideBlockedWork`: with `Work` stuck in a transport that blocks for ever, `Render` returns at once — no lock is held across I/O | Contract, section 6 (PL-CQ-3) | same, race detector |
 | 12.23 | `TestPanicRecoveredAtEveryPublicCall`: a planted panic in each becomes an internal error, or a failed frame, and the map stays usable | Contract, section 6, rule 4 (PL-PM-7) | same |
-| 12.24 | `TestLocalOverrideRecipe`: a throw-away host module builds against this tree by the documented recipe (no remote exists until SHIP — CD-4) | The first host can start integrating (PL-BZ-4) | same |
+| 12.24 | `TestLocalOverrideRecipe`: a throw-away host module builds against this tree by [the documented recipe](first-host-start.md) (no remote exists until SHIP — CD-4) | The first host can start integrating (PL-BZ-4) | same |
 | 12.25 | `TestParityP52_ConfigDefaults`: the defaults table of the parity matrix, value by value; `TestParityP54_MinZoom`; `TestParityP55_ZoomByInitialZoom` | Options and their defaults; zoom limits | same |
 | 12.26 | `TestSetPlaces`: places draw as markers, are what `Describe` answers for and what `FitTo` fits; `TestParityP61_MarkerId`: an empty id defaults to the position to six decimals, and `RemovePlace` removes every place with that id; `TestParityP57_Footer`: `Footer()` gives centre and zoom in upstream's wording, cut with floor | Places by id; the footer as data | same |
 
@@ -469,6 +469,7 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 13.12 | `TestScenarioFlag`: `--scenario N` loads an M1 scenario's places and overlays, so HUM LEAD can judge M1a live and `--describe` has something to describe | M1 in the app (PL-BZ-3) | same |
 | 13.13 | `TestHelpListsAccessibilitySwitches`: safe ramps, reduce motion, no colour, describe mode, `NO_COLOR`; each also has a key and a flag | PL-AX-5 | same |
 | 13.14 | `TestSizeFlag`: `--size 149x38` and `--size 69x12` set the map's size in headless, describe and scenario modes, so M1's two sizes can be produced exactly; `TestZoomAroundFocusKey`: the keyboard equivalent of zoom-toward-the-pointer — `+` and `-` zoom about the focused place when one is focused, about the centre otherwise | Size flag; PQ-7's keyboard equivalent (FR-5) | same |
+| 13.15 | `TestStyleFlag`: `--style PATH` reads a style file and hands its bytes to the library; a missing or malformed file is a clear error and the terminal is left as it was found | A user's style from the app (FR-20, D-94) | same |
 
 ### WP-14 — parity · reference frames · benchmarks · builds: the evidence for M1 to M5
 
@@ -492,7 +493,7 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 14.16 | — | **Golden frames are approved by HUM LEAD before they become goldens** (RS-15) | record |
 | 14.17 | — | Describe-mode output for every M1 scenario is played through a speech engine and a screen reader; what is misread is fixed or recorded (PL-AX-3) | record |
 | 14.18 | — | NFR-15's reviewer session: the M1 questions answered from the no-colour frames alone | record |
-| 14.19 | — | **Before the tag:** a spike in the first host using the local-override recipe — one map, one overlay, its pump in the host's idiom (RS-2, RS-4). **After the integration:** the written review D-60 requires, from a template committed here: what the host needed that the contract lacked; memory and timing in the real host; contract changes proposed; whether the plan for the rest holds | the review, to HUM LEAD |
+| 14.19 | — | **Before the tag:** a spike in the first host using the local-override recipe — one map, one overlay, its pump in the host's idiom (RS-2, RS-4). **After the integration:** the written review D-60 requires, from [the template](../07-readiness/integration-review-template.md): what the host needed that the contract lacked; memory and timing in the real host; contract changes proposed; whether the plan for the rest holds | the review, to HUM LEAD |
 | 14.20 | `TestFixtureAtZoomNine`: the fixture's alert overlay at zoom 9 (87 KB simplified) is cached and drawn from the library's own copy, not from the host's memory — the case the withdrawn quarter rule would have sent down the fallback (P2-ENG-2). *(The city tiles this task was to add were committed in PLAN.)* | The ordinary path stays ordinary | same |
 
 ## Risks this plan carries, and where each is met

@@ -7,7 +7,7 @@
 | Tree reviewed | `9d4cbd0`, frozen for the whole round — no tracked file changed while reviewers ran |
 | Reviewers | Five, fresh, covering the nine lenses HUM LEAD confirmed (D-38, D-80): code quality · performance and security · accessibility and newcomer · phase lens and business · docs and hygiene |
 | Subject | The architecture and its diagrams, the three approach notes, the implementation plan, the PLAN specimens (17 to 23), the memory measurement |
-| Status | Round 1: **NO-GO as written**, 74 findings; all eight questions ruled (D-81 to D-88); remediation listed below. **Round 2, on the remediation only: NO-GO as written, narrowly — 60 findings, 2 Critical, five questions for HUM LEAD.** Recorded at the foot of this file. |
+| Status | Round 1: **NO-GO as written**, 74 findings; all eight questions ruled (D-81 to D-88); remediation listed below. **Round 2, on the remediation only: NO-GO as written, narrowly — 60 findings, 2 Critical; all five questions ruled (D-90 to D-94); remediation listed at the foot of this file.** **A third, narrow round follows.** |
 
 ## Verdicts
 
@@ -178,7 +178,7 @@ Every finding marked **Fix** above, and where it was done. A finding is listed h
 | Tree reviewed | `a96d09c`, frozen for the whole round |
 | Scope | Narrow: the remediation of round 1 and rulings D-81 to D-89 — commits `f2264f4..a96d09c` |
 | Reviewers | Three, fresh: **engineering** (code quality, performance, security) · **product** (accessibility, newcomer, phase lens, business) · **docs and hygiene**. Each was told to check every round-1 "Fix" against the files, to attack what the remediation introduced, and to recount every number |
-| Status | **NO-GO as written, narrowly**: 2 Critical, both a rule PLAN never stated. 60 findings. Five questions for HUM LEAD, below |
+| Status | **NO-GO as written, narrowly**: 2 Critical, both a rule PLAN never stated. 60 findings. Five questions for HUM LEAD, all ruled (D-90 to D-94); remediation below |
 
 ### Verdicts, round 2
 
@@ -250,7 +250,7 @@ The product reviewer's seven rows under this heading are its findings P2-PRD-1, 
 | P2-PRD-15 | The simplification algorithm is never named, though FR-11 requires it | Minor | Verified | **Fix** |
 | P2-PRD-16 | The allocation "measurement" is arithmetic | Minor | True, and labelled so in constants section 7 | **Accepted** — only the library can measure it (task 14.7) |
 | P2-PRD-17 | The local-override recipe and the integration-review template are cited and not written | Minor | Verified | **Fix** — both written |
-| P2-PRD-18 | The alert preset's colours have no checker results | Minor | Verified | **Fix** |
+| P2-PRD-18 | The alert preset's colours have no checker results | Minor | Verified | **Partly.** The two pairs the specimens drew were checked: they pass on a dark ground, and **both outlines fail 3:1 on a light ground**. Five severities on two grounds are designed in BUILD (task 08.10) and shown to HUM LEAD before reference frames are frozen. *A new gap, found by doing the check* |
 | P2-PRD-19 | The keyboard equivalent of zoom-toward-the-pointer is only a call name | Minor | Verified | **Fix** |
 | P2-PRD-20 | Two MAPSCII additions — per-layer label margin and clustering; loading a style by file path — still have no disposition, carried since DISCOVER round 1 | Minor | Verified | **Question P2-Q5** |
 
@@ -299,4 +299,27 @@ Put one at a time; each ruling is recorded in HUM LEAD's words in the rulings fi
 | P2-Q2 | The temperature preset beside a light ground | P2-PRD-1 | **D-91: "A"** — a light-ground variant; three bands change, no margin lost (specimen 21d) |
 | P2-Q3 | A very large borrowed shape, replaced: keep drawing the old, or stop until the new is ready | P2-PRD-12, P2-DOC-3 | **D-92: "C"** ◇ — `Set` builds the index; both rulings hold as written |
 | P2-Q4 | A look at the retuned light-ground radar ramp | P2-PRD-2 | **D-93: "22f is fine / 21d is fine"** |
-| P2-Q5 | The two MAPSCII additions carried since DISCOVER | P2-PRD-20 | @@Q5@@ |
+| P2-Q5 | The two MAPSCII additions carried since DISCOVER | P2-PRD-20 | **D-94: "A"** — the app gains `--style PATH`; label margin and clustering not taken up for v1 |
+
+### Remediation after round 2
+
+| Commit | What it did | Findings answered |
+|---|---|---|
+| `76e69cc` | Round 2 recorded as returned, every disposition written before any fix; a pronoun for HUM LEAD removed from D-86's record | — |
+| `83cbc49` | **Fixture:** the 600×400 radar image over the fixture's own view; the four city tiles, each matching its pinned hash; rings and polygons counted separately; the temperature grid stated as built from a rule | P2-PRD-9, P2-DOC-1, P2-DOC-12, P2-ENG-H8, P2-HYG-2 |
+| `dc33c12` | **The fixes that needed no ruling.** Contract: how `wake` is written, the re-queued job's wake, `Pending` defined, `Settle`'s result, `Close`, the three classes of call, places by id, the footer, four new kinds, the error type's home. Constants: maxima across zoom 0 to 4, caps in bytes, the queue cap, timeouts, two warning rules, the algorithm, the projection's functions, corrected sums. Diagrams: L1's edges, resampling at draw time, the tile machine's exits, only `Work` ends a borrow, sequence 4, the reuse key, label language, the count of diagrams. Requirements: FR-7, FR-11, FR-16, FR-19, FR-30. Plan: new tasks, edges, the assets-order test moved, the encoder before its user, allocation assertions off the race leg. Parity mapping: four rows re-owned | P2-ENG-3 to -11, -H2 to -H7; P2-PRD-3 to -8, -10, -14, -15, -19; P2-DOC-2, -3, -4, -6 to -11, -13, -H1 to -H4 |
+| `503fbdc` | **D-90:** need first, cap second; the quarter rule withdrawn everywhere; the memory note says which fixture each figure came from; L2-memory corrected | P2-ENG-1, -2, -H1; P2-DOC-5, -H5 |
+| `6c1484f` | **D-91:** the temperature preset's light-ground variant; the light radar ramp corrected as 22f; specimens 21d, 21e, 22f; both ramp files updated with the old colours kept and the defects named | P2-PRD-1, -2, -13 (the 256-colour figure) |
+| `510b22b` | **D-92:** `Set` indexes a very large shape itself; the unruled vanishing-shape text replaced; task 10.26 | P2-PRD-12, P2-DOC-3 |
+| `4c7112c` | **D-93:** both light-ground corrections seen and found fine; the options file's D-89 row corrected | P2-PRD-2, -11 (part) |
+| The commit that carries this section | **D-94:** the app's style-path flag; label margin and clustering not taken up. Glosses in the records of D-83 and D-84 labelled as the coordinator's; where the against-the-recommendation mark lives; the rulings summary extended; the local-override recipe and the integration-review template written; the alert colours checked; every "Carries" header regenerated from its file's text; all 41 diagrams parse | P2-PRD-11, -13, -17, -18, -20; P2-HYG-3; P2-DOC-H3 |
+
+**Counts after remediation, recounted from the rows:** 272 plan tasks (13, 12, 11, 18, 15, 12, 20, 15, 22, 30, 26, 17, 26, 15, 20); 62 parity rows by owner 4, 5, 1, 4, 6, 31, 7, 4; rulings D-11 to D-94, fourteen against the recommendation; error kinds 24, warning kinds 13, identical in the contract and L2-errors; 34 diagrams in the architecture set, 41 in all; fixture 25 files, 6.6 MB.
+
+**Not fixed, and why.** P2-PRD-16: the allocation figures are arithmetic and labelled so; only the library can measure them (task 14.7). P2-HYG-1: a commit body's inaccuracy is recorded, not rewritten (D-70). P2-PRD-18: **partly** — and doing the check found a new gap: the alert outlines PLAN's specimens used fail 3:1 on a light ground, and three of five severities have never been drawn. The alert preset's colours are designed in BUILD task 08.10 and shown to HUM LEAD before any reference frame is frozen. P2-ENG-10's claim about a processor-feature branch was not re-checked; the design no longer depends on it.
+
+**Found by the coordinator while remediating, not by a reviewer.** The heaviest tile is a zoom-2 world tile, not the city tile first recorded (1.56 MB decompressed against 1.10). The "quarter of the cache" rule had been written into FR-11 and NFR-3 in DISCOVER; the coordinator first told HUM LEAD it had never been written down as ruled, and corrected that in D-90's record. A first retune of the temperature variant put a warm colour on the below-freezing band; caught before it was shown. The question P2-Q2 said two bands would change with a thin margin; three changed with none lost, and D-91's record says so. The vertex count in D-92 (31,250) is the coordinator's, labelled as not ruled.
+
+**The coordinator's errors this round exposed:** two rules never stated (what a cache may evict; a preset against its ground); a checker that tested differences and never order, after round 1 had already caught it testing neighbours only; a measurement reported without saying which fixture it was; an unruled exception written into the contract to keep a ruling literally true; parity owners assigned by upstream's file layout and never checked against who builds the behaviour; frozen parity rows designed against without reading them — for the second round running.
+
+**A third round follows**, narrow: whether round 2's fixes hold, and rulings D-90 to D-94. Both earlier rounds found fixes that did not hold, so this remediation gets the same check.

@@ -1,6 +1,6 @@
 # Level 2 — The view: zoom buckets and fit-to
 
-Up: [architecture](architecture.md) · [constants, section 3](constants.md) · Carries: D-76
+Up: [architecture](architecture.md) · [constants, section 3](constants.md) · Carries: D-76, D-90
 
 ## Zoom buckets — one simplified copy of a shape per whole zoom level
 

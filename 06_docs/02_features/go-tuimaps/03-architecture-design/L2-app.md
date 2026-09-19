@@ -1,12 +1,12 @@
 # Level 2 — The standalone app
 
-Up: [architecture](architecture.md) · Carries: FR-34, NFR-15, D-17, D-52, D-65, D-73, D-75, P-68a, P-68b, P-72a, P-72b, L-16
+Up: [architecture](architecture.md) · Carries: FR-5, FR-34, NFR-15, D-17, D-52, D-65, D-73, D-75, D-94, P-68a, P-68b, P-72a, P-72b, L-16
 
 A separate module (D-75). It is the library's first host: it writes its own pump, as any host must (D-73), and it is what HUM LEAD judges M1a in.
 
 ```mermaid
 flowchart TB
-    ARGS["Flags: --headless · --describe --place · --offline · --no-cache · --purge · --verify ·<br/>--safe-ramps · --reduce-motion · --no-colour · --lang · --size COLSxROWS · --scenario (loads an M1 scenario's places and overlays)"] --> MODE{"Mode"}
+    ARGS["Flags: --headless · --describe --place · --offline · --no-cache · --purge · --verify ·<br/>--safe-ramps · --reduce-motion · --no-colour · --lang · --style PATH (D-94) · --size COLSxROWS · --scenario (loads an M1 scenario's places and overlays)"] --> MODE{"Mode"}
     MODE -- "--describe" --> D["New · SetPlaces · Set(overlays) · Settle · Describe → plain text, no map, no terminal control<br/>a screen-reader user's path (D-52)"]
     MODE -- "--headless" --> HL["New(WithSize from --size, else the terminal's) · Settle · Render → one complete frame to standard output"]
     MODE -- "interactive" --> TUI

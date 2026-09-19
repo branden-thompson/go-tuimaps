@@ -1,6 +1,6 @@
 # Level 2 — Colour resolution
 
-Up: [architecture](architecture.md) · Carries: FR-13, FR-16, FR-17, FR-18a, FR-20, NFR-15, D-35, D-53, D-59, D-62, D-63, D-64, D-69, D-77, D-79, D-88
+Up: [architecture](architecture.md) · Carries: FR-13, FR-16, FR-17, FR-18a, FR-20, NFR-15, D-35, D-53, D-59, D-62, D-63, D-64, D-69, D-77, D-78, D-79, D-88, D-89, D-91, D-93
 
 ## How a value becomes a cell colour
 

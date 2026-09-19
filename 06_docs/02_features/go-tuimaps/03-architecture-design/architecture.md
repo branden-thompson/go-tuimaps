@@ -4,7 +4,7 @@
 |---|---|
 | Phase | PLAN |
 | Date | 2026-09-19 |
-| Status | Draft for HUM LEAD's review, revised after the PLAN red-team. Built on rulings D-11 to D-89. HUM LEAD's first read, 2026-09-19: "These look good so far" — a basic understanding, not yet a deep one; formal approval comes with the Plan of Record. |
+| Status | Draft for HUM LEAD's review, revised after the PLAN red-team. Built on rulings D-11 to D-94. HUM LEAD's first read, 2026-09-19: "These look good so far" — a basic understanding, not yet a deep one; formal approval comes with the Plan of Record. |
 | How to use this | These diagrams are **living references** (D-71). Point at one when asking a question; when a decision changes, the diagram changes in the same commit. Every diagram file names the rulings and requirements it carries on its first lines, so a change to one of those says which file to open; for the three diagrams in this file, the ids are in the text beside each. |
 
 ## Start here
@@ -39,6 +39,7 @@ Read down for more detail, up for context. Each file's first lines say which rul
 | — | The three approach notes, kept as the record of what was considered; their diagrams show the options, not the design (6) | [`approach-1`](approach-1-background-work.md) · [`approach-2`](approach-2-overlay-contract.md) · [`approach-3`](approach-3-dependencies-and-layout.md) |
 | — | PLAN entry checks: the radar image source; the terminal matrix | [`plan-entry-checks.md`](plan-entry-checks.md) |
 | — | The implementation plan, with the work packages' dependency diagram (1) | [`../04-development/implementation-plan.md`](../04-development/implementation-plan.md) |
+| — | How the first host starts before a remote exists, and the integration-review template (D-60) | [`../04-development/first-host-start.md`](../04-development/first-host-start.md) · [`../07-readiness/integration-review-template.md`](../07-readiness/integration-review-template.md) |
 | — | The parity mapping: each of this release's 62 parity rows, the work package that builds it, the test that proves it | [`../04-development/parity-mapping.md`](../04-development/parity-mapping.md) |
 
 **Counted:** 3 in this file, 2 in the contract, 21 at level 2, 8 at level 3 — **34**; with the approach notes' 6 and the plan's 1, **41**.
