@@ -1,0 +1,42 @@
+SPECIMEN 19c — M1 scenario 7 with NO colour, the track drawn as a dashed stroke
+149x38 cells · braille renderer · no colour · centre 47.50,-111.30 · zoom 7.5 · 1 basemap tile(s) at z7 © OpenMapTiles © OpenStreetMap
+features: storm track: a SYNTHETIC line placed for this specimen, passing north-west of the place; drawn as a DASHED stroke, thicker than a road - a stroke no basemap line uses
+scale: one column is 1.2 km east-west at the centre latitude; one row is 2.3 km north-south (a cell is twice as tall as it is wide)
+                                                                          ⢠⠞⠁                                                 ⡀⣠⡼⠃                   
+                                                                       ⢀⡤                                               ⣿⠖⢤⣀ ⢐⡏⠉                     
+                                                                      ⡴⠋                                              ⣠⢶⣬⠿ ⠉⠉⠉                       
+                                                                   ⣠⠄                                              ⢀⡤⠖⠁                              
+                                                                 ⢠⠞⠁                                            ⠿⡷⠤⠎                                 
+                                                              ⣠⠄                                            ⢀⣀⡤⠾⠓⠃                                   
+                                                            ⢠⠞⠁                                     ⢰⠲⠴⠛⠢⣀⣠⠔⠉⠉                                       
+                                                         ⢀⣀                                       ⣀⡞⠉                                                
+                                                        ⡴⠋⠁                                     ⢀⡿⠈                                                  
+⡀                        ⡰⡀                          ⢀⡀                                        ⡠⠊                                 ⣀⡄                 
+⡼                        ⣷⢷⡀                       ⢠⠞⠋                                        ⡴⠃                                  ⠣⡇                 
+                         ⢣⠈⡦⣤                    ⣀                                          ⢠⠞                                     ⢀                 
+                          ⢑⣜⡜                  ⡴⠞⠁                                         ⢀⡼                                      ⢸⠣⢄               
+                           ⠉                ⢀⡤track                                       ⢀⡾                                       ⠘⠒⠁               
+                                           ⡴⠋                                             ⣰⠃                                                         
+                                        ⢀⡀                                           ⢀⣀⢀⣰⠒⠃                                          ⢀⣔⡱⡀            
+                                       ⣰⠏                                         ⢀⣀⠴⠁ ⠁                                             ⠈⠁⠣⠃            
+                                       ⠁                                      ⡠⠒⠢⠜⠁                                                                  
+                                   ⣠⠞⠁                                   ⢠◉ Great Falls                                                              
+                                  ⠘⠁                                     ⢰⡃                                                                          
+                               ⢀⡤                                        ⢼⣁                                                                          
+                              ⡴⠋                                          ⢸                                                                          
+                           ⢀⡀                                ⢰⢢⣶⢄  ⣞⢫⣆⢰⡟⡆  ⢱                                                                         
+                         ⢀⡴⠋                                ⣖⡾⠋⠋⠘⠷⠋⠛ ⠹⠛⢸⠃⢰⠚⠋                                                                         
+                         ⠈                                ⢀⣤⣬⣳         ⠘⠲⠚                                                                           
+                      ⣠⠞⠁                               ⢀⣠⡟⠿                                                                                         
+                     ⠘⠁                                ⡤⠼⠁                                                                                           
+                  ⣠⠖                                  ⣰⡁                                                                                             
+                 ⠞⠁                               ⢠⢄⢹⠉⠁                                                                                              
+              ⣠⠖                                 ⢰⠊⠈⠊                                                                                                
+             ⠞⠁                                 ⢠⠃                                                                                                   
+         ⢀⡴⠂                                  ⠠⡴⠚                                                                                                    
+        ⠰⠋                                  ⢸⠉⠉                                                                                                      
+     ⢀⡤                                   ⢠⠔⠊                                                                                                        
+    ⡴⠋                                  ⢠⡔⠁                                                                                                          
+ ⣠⠄                                    ⡔⠽⠁                                                                                                           
+⠞⠁                                ⢀⣀⡀⡶⠼⠉                                                                                                             
+ ├───────────────┤ 20 km        ⢰⠏⠁ ⠈⠁                                                                                                               
