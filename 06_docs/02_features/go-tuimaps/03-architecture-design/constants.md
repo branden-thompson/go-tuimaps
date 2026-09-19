@@ -20,10 +20,14 @@ Measured on real tiles across the whole range the map uses. **Zoom 0 to 4:** all
 | Layers a tile | 64 | 13 | 5× |
 | Features a tile | 100,000 | 16,952 — Paris | 6× |
 | Geometry integers a tile | 2,000,000 | about 200,000 (96,027 vertices) — Paris | 10× |
+| Attribute keys in one kept layer | 4,096 | Set in BUILD (task 03.6) | — |
+| Attribute values in one kept layer | 400,000 — four times the feature limit | Set in BUILD (task 03.6). A value is not read until a kept key points at it; the table that finds it costs 8 bytes a value while a layer is decoded | — |
 | Vertices in one feature | — (bounded by the above) | 20,441 | — |
 | Retained after decode, one tile | 4 MiB | **0.24 MB — world tile 2/2/1.** Others: 0.19 to 0.20 MB a tile for New York at zoom 10 and the Midwest at zoom 5; 0.06 to 0.13 MB for the four city tiles at zoom 14; 0.08 MB a tile on the Gulf coast at zoom 6 | 17× |
 | Tile zoom the library will address | **Set in BUILD (task 00.10): 0 to 22.** Sources in the schema the library reads stop at 14 and the view at 18; 22 is the deepest a web-map tile source goes, and keeps a column or row inside 32 bits | 14 in every source measured | — |
 | **Tile extent** | **Set here: 1 to 8,192** *(was "1 to 65,536")* | 4,096 in every tile | 2× |
+
+**What the library's own decoder keeps, measured in BUILD (task 03.12)** on the fixture's twelve tiles: the Gulf view's four tiles 326 KB together (PLAN's throwaway program said 0.33 MB), the Midwest view's four 863 KB (PLAN said 0.80 MB), the four city tiles 159 to 217 KB each. Decoding the heaviest Midwest tile — 347 KB of bytes, 297 KB kept — allocates 393 KB in all: each layer's slabs are allocated once, at their exact size, so the decoder's own peak is about 1.3 times what it keeps. **A host may lower any limit and may raise none** (`Limits.Validate`).
 
 **Why the extent changed (PL-IS-2).** Coordinates are kept as 16-bit integers (D-75), which hold −32,768 to 32,767. An extent of 65,536 does not fit. With an extent of at most 8,192, a coordinate may run a full extent outside the tile on every side — far more than any buffer — and still fit. **A cursor that leaves the 16-bit range is an error**, never a wrap.
 

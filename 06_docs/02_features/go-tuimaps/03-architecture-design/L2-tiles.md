@@ -28,7 +28,7 @@ flowchart LR
       G1["Body ≤ 2 MiB · gzip or none · decompressed ≤ 8 MiB"]
       G2["Own decoder (D-75): layers ≤ 64 · features ≤ 100,000 · geometry integers ≤ 2,000,000"]
       G3["Drop while decoding: layers the schema mapping does not use (FR-35) · every place-name language but the configured one (D-82)"]
-      G4["Keep coordinates as small integers · retained ≤ 4 MiB"]
+      G4["Count first, then allocate once: each kept layer's geometry is counted without decoding it,<br/>and its slabs are made at their exact size · coordinates as 16-bit integers ·<br/>keys ≤ 4,096 · values ≤ 400,000 · retained ≤ 4 MiB · a host may lower any limit, never raise one"]
       G1 --> G2 --> G3 --> G4
     end
     GATE -- "ok" --> STORE["Memory cache (byte-capped)<br/>what a live view draws is never evicted · spares only in the room left (D-90)"]
