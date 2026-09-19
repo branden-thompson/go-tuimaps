@@ -81,6 +81,15 @@ if [ -z "${tracked:-}" ]; then
   rm -f go.work go.work.sum
   if GOFLAGS= go work init $modules >/dev/null 2>&1; then
     made_work=1
+    # A workspace alone does not resolve a version that was never published:
+    # once the library imports third-party code, a separate module that
+    # requires the library at v0.0.0 sends the toolchain looking for that
+    # version. A replace for exactly that version, in this throw-away file,
+    # points it at the tree. Tracked module files still carry no replace.
+    if [ -f go.mod ]; then
+      root_module="$(GOWORK=off GOFLAGS= go list -m 2>/dev/null)"
+      [ -n "$root_module" ] && GOFLAGS= go work edit -replace="${root_module}@v0.0.0=./" >/dev/null 2>&1
+    fi
   else
     fail "could not write the workspace file"
   fi

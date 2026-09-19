@@ -13,17 +13,20 @@ import (
 func plantTree(t *testing.T, nestedPasses bool) string {
 	t.Helper()
 	root := t.TempDir()
-	body := "t.Log(\"ok\")"
+	// The nested module requires the root at a version that was never
+	// published, and imports it: what every separate module of this
+	// repository does before a remote exists.
+	body := "if lib.Answer() != 42 { t.Fatal(\"the nested module did not reach the root module\") }"
 	if !nestedPasses {
-		body = "t.Fatal(\"planted failure\")"
+		body = "t.Fatal(\"planted failure\", lib.Answer())"
 	}
 	files := map[string]string{
 		"go.mod":               "module example.com/lib\n\ngo 1.25.0\n",
-		"lib.go":               "// Package lib is planted.\npackage lib\n",
+		"lib.go":               "// Package lib is planted.\npackage lib\n\n// Answer is planted.\nfunc Answer() int { return 42 }\n",
 		"lib_test.go":          "package lib\n\nimport \"testing\"\n\nfunc TestRoot(t *testing.T) { t.Log(\"ok\") }\n",
-		"tools/t/go.mod":       "module example.com/lib/tools/t\n\ngo 1.25.0\n",
+		"tools/t/go.mod":       "module example.com/lib/tools/t\n\ngo 1.25.0\n\nrequire example.com/lib v0.0.0\n",
 		"tools/t/t.go":         "// Package t is planted.\npackage t\n",
-		"tools/t/t_test.go":    "package t\n\nimport \"testing\"\n\nfunc TestNested(t *testing.T) { " + body + " }\n",
+		"tools/t/t_test.go":    "package t\n\nimport (\n\t\"testing\"\n\n\t\"example.com/lib\"\n)\n\nfunc TestNested(t *testing.T) { " + body + " }\n",
 		"cmd/later/go.mod":     "module example.com/lib/cmd/later\n\ngo 1.25.0\n",
 		"testdata/x/go.mod":    "module example.com/ignored\n\ngo 1.25.0\n",
 		"testdata/x/x_test.go": "package x\n\nimport \"testing\"\n\nfunc TestIgnored(t *testing.T) { t.Fatal(\"test data is not a module of the repository\") }\n",
@@ -48,7 +51,7 @@ func runGate(t *testing.T, root string) (string, error) {
 		t.Fatal(err)
 	}
 	cmd := exec.Command(gate, "--quick")
-	cmd.Env = append(os.Environ(), "GATE_ROOT="+root)
+	cmd.Env = append(os.Environ(), "GATE_ROOT="+root, "GOPROXY=off") // the gate must not need the network to find the root module
 	out, err := cmd.CombinedOutput()
 	return string(out), err
 }

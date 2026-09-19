@@ -10,7 +10,7 @@ flowchart TB
       direction LR
       M0["library"] --- M1["cmd/tuimaps"] --- M2["examples"] --- M3["tools/gen-assets"] --- M4["tools/answer-key"] --- M5["tools/oracle"]
     end
-    GATE["The gate script<br/>writes a throw-away workspace file so the nested modules resolve the library from this tree —<br/>the tracked module files carry no replace line"] --> MODS
+    GATE["The gate script<br/>writes a throw-away workspace file so the nested modules resolve the library from this tree —<br/>with a replace for the library at exactly v0.0.0 inside that throw-away file —<br/>the tracked module files carry no replace line"] --> MODS
     MODS --> T0["A module with no packages yet is named and called EMPTY — not failed, not hidden"]
     MODS --> T1["Tests under the race detector, on the floor toolchain"]
     MODS --> T2["A second leg WITHOUT the race detector: the zero-allocation and allocation-count tests live here"]
