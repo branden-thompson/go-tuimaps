@@ -90,6 +90,7 @@ Each question was presented one at a time with: what was being decided, the evid
 | D-98 | Ratify a code-quality exemption for `internal/work` | **A. Ratify as written** · B. Ratify with changes · C. Refuse; reshape the code until the counter passes and report what that cost | A |
 | D-99 | Ratify a code-quality exemption for `assets` | **A. Exempt as written** · B. Reshape to one `Text(which)` call · C. Split checks to reach the count | A |
 | D-100 | Ratify a code-quality exemption for `internal/tiles` | **A. Exempt as written** · B. Reshape: fold some 25 helpers into their callers · C. Add checks that can never fire | A |
+| D-101 | Ratify a code-quality exemption for `internal/colour` | **A. Exempt as written** · B. Make the arithmetic return errors no input can produce · C. Add checks that can never fire | A |
 
 ## Where HUM LEAD chose against the recommendation ◇
 
