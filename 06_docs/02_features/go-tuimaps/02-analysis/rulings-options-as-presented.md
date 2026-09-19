@@ -46,6 +46,7 @@ Each question was presented one at a time with: what was being decided, the evid
 | D-53 | Must ramps be safe for colour-blind users | **A. Required for the defaults; themed ramps checked and reported** · B. Required for everything; unsafe themes refused or repaired · C. A selectable safe palette, not the default — *HUM LEAD added: a diverging-ramp specimen, and that some scalars may be made non-themeable* | A |
 | D-55 | Should any scalars be non-themeable | A. Everything stays themeable; the checker reports · **B. Temperature is fixed; the rest is themeable** · C. Themeable within a family, enforced | B |
 | D-56 | The flashing marker, and reduce-motion | **A. Slow the flash, add reduce-motion, never hide on a timer** · B. Match upstream; add reduce-motion only · C. Drop flash entirely | A |
+| D-57 | A braille-only first release against the first host's glyph floor | **A. Keep braille-only; the host states the requirement**, with a way for the host to decide whether the map is drawn and the text description as the fallback · B. Pull the block renderer into v0.1.0 · C. As A, plus a 7-bit renderer later | A |
 
 ## Where HUM LEAD chose against the recommendation ◇
 
