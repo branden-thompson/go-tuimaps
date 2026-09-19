@@ -18,7 +18,7 @@ const (
 	// MaxCells bounds a view's width and height, in cells.
 	MaxCells = 10000
 	// MinViewZoom is the furthest a view zooms out: a whole world a few dots
-	// wide. The closest is scene.MaxTileZoom.
+	// wide. The closest is MaxViewZoom.
 	MinViewZoom = -8
 	// maxTilesForView bounds the tiles one view may ask for.
 	maxTilesForView = 4096
@@ -37,7 +37,7 @@ type View struct {
 func badView() error {
 	return fault.New(fault.InvalidCoordinates,
 		textsafe.Const("the view cannot be drawn"),
-		textsafe.Const("its size is not between 1 and 10000 cells each way, its zoom is not between -8 and 22, or its centre is not a position on the map"),
+		textsafe.Const("its size is not between 1 and 10000 cells each way, its zoom is not between -8 and 18, or its centre is not a position on the map"),
 		textsafe.Const("check the size, the zoom and the centre"))
 }
 
@@ -49,7 +49,7 @@ func (v View) Validate() error {
 	if v.Rows < 1 || v.Rows > MaxCells {
 		return badView()
 	}
-	if !(v.Zoom >= MinViewZoom && v.Zoom <= scene.MaxTileZoom) { // NaN fails this too
+	if !(v.Zoom >= MinViewZoom && v.Zoom <= MaxViewZoom) { // NaN fails this too
 		return badView()
 	}
 	if !(v.Centre.Lon >= -math.MaxFloat64 && v.Centre.Lon <= math.MaxFloat64) {
