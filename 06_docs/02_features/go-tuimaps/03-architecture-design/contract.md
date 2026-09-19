@@ -61,7 +61,7 @@ sequenceDiagram
 | `Work(ctx)` does at most one job and says whether it did one. Call it until it says no | A blocking call, cancellable; never call it from the interface goroutine — a fetch can take seconds |
 | Two pump goroutines is the width the memory line is measured at. Each further one can add about 1 MB while a tile decodes, more at the input limits | D-84: the width and its memory are the host's |
 | If renders keep finding work pending and no `Work` has been called for a while, a warning says so, once | The silent failure a newcomer would otherwise meet (PL-NC-2) |
-| `Settle(ctx)` is the same loop run on the caller's goroutine. It returns when nothing is pending or the context ends, with how much work failed, and with **why nothing could be fetched** if no source is named and no assets are imported | One-shot renders and tests. Work that failed and is waiting to retry is not pending, so `Settle` always ends |
+| `Settle(ctx)` is the same loop run on the caller's goroutine. It returns when nothing is pending or the context ends, with how much work failed, and with **why nothing could be fetched** if no source is named and no assets are imported | One-shot renders and tests. Work that failed and is waiting to retry is not pending, so `Settle` always ends. `Settle` never waits on a `Work` running elsewhere: if jobs are in flight on other goroutines when the queue empties, it returns and says how many |
 
 ## 3 · The three-call path, corrected
 

@@ -121,7 +121,7 @@ flowchart LR
 |---|---|---|---|
 | WP-00 Scaffold and gates | 13 | S | 1 to 2 |
 | WP-01 project | 12 | S | 1 |
-| WP-02 textsafe | 10 | S | 1 |
+| WP-02 textsafe | 11 | S | 1 |
 | WP-03 mvt decoder | 18 | L | 2 to 3 |
 | WP-04 archive · generator · assets | 16 | M | 2 |
 | WP-05 fetch | 12 | M | 1 to 2 |
@@ -134,9 +134,9 @@ flowchart LR
 | WP-12 public package · examples | 24 | M | 3 to 4 |
 | WP-13 app | 13 | M | 2 |
 | WP-14 parity · reference frames · benchmarks | 20 | L | 3 to 4 |
-| **Total** | **263** | | **33 to 41, or 43 to 53 with the 30% allowance** |
+| **Total** | **264** | | **33 to 41, or 43 to 53 with the 30% allowance** |
 
-The count rose from 210 to 263 when the PLAN red-team found requirements with no task; the parity tests are counted inside the work packages that own them ([parity mapping](parity-mapping.md)). Tasks 14.15 to 14.19 are HUM LEAD's sessions or manual passes, not code. Cross-check against the Discovery Report's size estimate (about 6,700 to 7,300 lines): 263 cycles at 25 to 30 lines of production code a cycle is 6,600 to 7,900 lines — agreement that says only that the two share assumptions.
+The count rose from 210 to 264 when the PLAN red-team found requirements with no task; the parity tests are counted inside the work packages that own them ([parity mapping](parity-mapping.md)). Tasks 14.15 to 14.19 are HUM LEAD's sessions or manual passes, not code. Cross-check against the Discovery Report's size estimate (about 6,700 to 7,300 lines): 264 cycles at 25 to 30 lines of production code a cycle is 6,600 to 7,900 lines — agreement that says only that the two share assumptions.
 
 ## The work packages
 
@@ -191,6 +191,7 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 02.8 | `TestIDValidation`: an id that would need cleaning is refused; a clean id is returned byte-for-byte | Id rule (FR-34, NFR-20) | same |
 | 02.9 | `FuzzClean`: output never contains an escape byte or a control | Fuzz target | `go test -fuzz FuzzClean -fuzztime 60s` |
 | 02.10 | `TestClosedGlyphList`: every character the renderer may emit is in the list, and each measures one cell | The closed list of NFR-8 as data | same |
+| 02.11 | `TestSafeOnlyBuiltHere`: the cleaned-text type has no exported constructor and no conversion from a plain string outside this package; `TestNoForeignErrorWrapped`: no library error unwraps to a standard-library or third-party error | One enforced way out (PL-IS-5) | same, plus a static check |
 
 ### WP-03 — mvt decoder · builds: L2 Tiles "Untrusted-input gate"
 
@@ -426,7 +427,7 @@ Each table lists tasks in order. "Test first" names the test and what it must as
 | 12.12 | `TestCloseReleasesEverything` | `Close` | same |
 | 12.13 | Example tests: features, grid, image with the radar table, a pump, a pump in the first host's idiom | `examples/` module | `go test` in `examples/` |
 | 12.14 | `TestExampleTermsRecorded`: the radar example cites the provider's terms and credit | Compliance | same |
-| 12.15 | README quick-start extracted and built by a test | README, with the deferred list, the compatibility promise, the braille need, the safe-ramps ask, what is sent and stored | the test |
+| 12.15 | README quick-start extracted and built by a test | README, with the deferred list, the compatibility promise, the braille need, the safe-ramps ask, what is sent and stored | the test; the README also gives the clone-and-run path for the examples, which are a separate module |
 | 12.16 | Contract snapshot committed | Contract check baseline (NFR-22) | the job |
 | 12.17 | Public-surface tests, look: `SetPalette`, `SafeRamps`, `Ground`, `ColourDepth`, `ReduceMotion`, `Layers`, `LabelLanguage` each change the next frame as documented | Contract group "Look" (PL-NC-6) | same |
 | 12.18 | Public-surface tests, tiles: `Source`, `CacheRoot`, a replacement fetcher, shared caches | Contract group "Tiles" | same |
