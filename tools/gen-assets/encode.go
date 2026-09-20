@@ -147,8 +147,8 @@ func encodeFeature(l *scene.Layer, f scene.Feature, vals *values) ([]byte, error
 	if f.Class != "" {
 		tags = putVarint(putVarint(tags, keyClass), vals.text(f.Class))
 	}
-	if f.Name != "" {
-		tags = putVarint(putVarint(tags, keyName), vals.text(f.Name))
+	if f.Name.String() != "" {
+		tags = putVarint(putVarint(tags, keyName), vals.text(f.Name.String()))
 	}
 	if f.Rank != 0 {
 		tags = putVarint(putVarint(tags, keyRank), vals.rank(f.Rank))

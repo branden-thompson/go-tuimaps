@@ -100,7 +100,7 @@ func TestGeneratorStripsTranslations(t *testing.T) {
 		}
 		for _, l := range tile.Layers {
 			for _, ft := range l.Features {
-				if ft.Name != "" {
+				if ft.Name.String() != "" {
 					named++
 				}
 			}
