@@ -139,6 +139,7 @@ type Map struct {
 	motion    render.Motion
 	changed   uint64
 	driven    bool      // the host drives the animation clock itself (D-114)
+	footer    bool      // the footer is drawn inside the map (P-57)
 	animation time.Time // and this is the moment it has driven it to
 	places    []Place
 	drawn     []render.Drawn
@@ -309,8 +310,11 @@ func (m *Map) Render(size Size, now time.Time) (Frame, error) {
 	if err != nil {
 		return Frame{}, err
 	}
-	in := render.Input{View: m.view, Style: m.style, Labels: true,
-		Credit: textsafe.Const("OpenFreeMap (c) OpenMapTiles Data from OpenStreetMap")}
+	in := render.Input{View: m.view, Style: m.style, Labels: true, Scale: true,
+		Credit: textsafe.Const(basemapCredit)}
+	if m.footer {
+		in.Footer = textsafe.Clean(footerOf(m.view.Centre.Lat, m.view.Centre.Lon, m.view.Zoom))
+	}
 	m.paint(&in)
 	in.MarkerPhase = m.motion.Phase(m.animationAt(now))
 	in.Stale = m.stale(now)

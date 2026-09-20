@@ -567,12 +567,10 @@ func (r *Renderer) furniture(in Input, status Status) {
 // longer current: a plain word, not a colour alone (FR-32, NFR-15).
 const staleMark = "stale"
 
-// scaleMark is a bar of whole cells and the round distance it spans.
-func scaleMark(v project.View, room int) textsafe.Text {
-	perCol, _, err := v.CellSpanKm()
-	if err != nil || !(perCol > 0) || room < 8 {
-		return textsafe.Text{}
-	}
+// RoundBar is the round distance a bar of at most a given width stands for,
+// and how many cells long it is: the one rule the mark on the frame and the
+// scale a host asks for are both drawn by, so that they never disagree.
+func RoundBar(perCol float64, room int) (float64, int) {
 	km := 1.0
 	for _, step := range []float64{5000, 2000, 1000, 500, 200, 100, 50, 20, 10, 5, 2, 1} {
 		if step/perCol <= float64(room-8) {
@@ -580,7 +578,16 @@ func scaleMark(v project.View, room int) textsafe.Text {
 			break
 		}
 	}
-	cells := max(int(math.Round(km/perCol)), 2)
+	return km, max(int(math.Round(km/perCol)), 2)
+}
+
+// scaleMark is a bar of whole cells and the round distance it spans.
+func scaleMark(v project.View, room int) textsafe.Text {
+	perCol, _, err := v.CellSpanKm()
+	if err != nil || !(perCol > 0) || room < 8 {
+		return textsafe.Text{}
+	}
+	km, cells := RoundBar(perCol, room)
 	return textsafe.Clean("\u251C" + strings.Repeat("\u2500", cells-2) + "\u2524 " + strconv.Itoa(int(km)) + " km")
 }
 
