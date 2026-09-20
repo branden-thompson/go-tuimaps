@@ -40,9 +40,11 @@ type Shape struct {
 
 // Scenario is what a key is worked out from.
 type Scenario struct {
-	Name   string  `json:"name"`
-	Places []Place `json:"places"`
-	Shapes []Shape `json:"shapes"`
+	Name     string    `json:"name"`
+	Places   []Place   `json:"places"`
+	Shapes   []Shape   `json:"shapes"`
+	Fields   []Field   `json:"fields"`
+	Pictures []Picture `json:"images"`
 	// Views are the map sizes the scenario is drawn at, so that the key can
 	// say how many cells from the edge a place is at each of them.
 	Views []View `json:"views"`
@@ -85,7 +87,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "answer-key:", err)
 		os.Exit(1)
 	}
-	key, err := json.MarshalIndent(Key(scenario), "", " ")
+	key, err := json.MarshalIndent(WholeKey(scenario), "", " ")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "answer-key:", err)
 		os.Exit(1)
@@ -99,6 +101,30 @@ func main() {
 		fmt.Fprintln(os.Stderr, "answer-key:", err)
 		os.Exit(1)
 	}
+}
+
+// Keys is a whole key: the shapes, the fields and the images.
+type Keys struct {
+	Shapes   []Answer        `json:"shapes,omitempty"`
+	Fields   []FieldAnswer   `json:"fields,omitempty"`
+	Pictures []PictureAnswer `json:"images,omitempty"`
+}
+
+// WholeKey is every answer a scenario has: shapes, fields and images.
+func WholeKey(s Scenario) Keys {
+	out := Keys{Shapes: Key(s)}
+	for _, p := range s.Places {
+		if !onGlobe(p) {
+			continue
+		}
+		for _, f := range s.Fields {
+			out.Fields = append(out.Fields, atField(p, f))
+		}
+		for _, pic := range s.Pictures {
+			out.Pictures = append(out.Pictures, atPicture(p, pic))
+		}
+	}
+	return out
 }
 
 // Key is the whole key for a scenario: every place against every shape. A

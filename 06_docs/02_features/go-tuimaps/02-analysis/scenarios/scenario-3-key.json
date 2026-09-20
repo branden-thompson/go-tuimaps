@@ -1,0 +1,12 @@
+{
+ "images": [
+  {
+   "place": "Home",
+   "image": "radar",
+   "class": 0,
+   "heavier_km": 293.5,
+   "heavier_way": "east",
+   "heavier_class": 1
+  }
+ ]
+}

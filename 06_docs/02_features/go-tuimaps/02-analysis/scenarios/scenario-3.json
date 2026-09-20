@@ -1,0 +1,60 @@
+{
+ "name": "M1 scenario 3: radar, rain near but not over the place",
+ "note": "A hand-made radar picture: six pixels across, four down, over the Gulf coast. The western half is clear and the rain thickens eastward. Classes are the library's radar classes, 0 for none.",
+ "places": [
+  {
+   "name": "Home",
+   "lon": -86.0,
+   "lat": 30.0
+  }
+ ],
+ "images": [
+  {
+   "id": "radar",
+   "west": -90,
+   "south": 28,
+   "east": -78,
+   "north": 32,
+   "width": 6,
+   "height": 4,
+   "classes": [
+    0,
+    0,
+    0,
+    1,
+    2,
+    3,
+    0,
+    0,
+    0,
+    1,
+    2,
+    3,
+    0,
+    0,
+    0,
+    1,
+    2,
+    3,
+    0,
+    0,
+    0,
+    1,
+    2,
+    3
+   ]
+  }
+ ],
+ "views": [
+  {
+   "name": "149x38",
+   "cell_km": 1.6,
+   "cell_row_km": 3.2
+  },
+  {
+   "name": "69x12",
+   "cell_km": 3.5,
+   "cell_row_km": 7.0
+  }
+ ]
+}

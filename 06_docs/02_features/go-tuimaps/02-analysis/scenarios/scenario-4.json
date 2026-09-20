@@ -1,0 +1,70 @@
+{
+ "name": "M1 scenario 4: a temperature field",
+ "note": "A hand-made temperature field over the Gulf coast, four samples by four, rising east and south. The breaks are the temperature preset's own, every five degrees Celsius from -30 to 45, written out here so that this key owes the library nothing.",
+ "places": [
+  {
+   "name": "Home",
+   "lon": -86.0,
+   "lat": 30.0
+  },
+  {
+   "name": "Warmer",
+   "lon": -80.0,
+   "lat": 27.0
+  }
+ ],
+ "fields": [
+  {
+   "id": "temperature",
+   "west": -90,
+   "south": 26,
+   "east": -78,
+   "north": 34,
+   "cols": 4,
+   "rows": 4,
+   "values": [
+    8,
+    11,
+    14,
+    17,
+    10,
+    13,
+    16,
+    19,
+    12,
+    15,
+    18,
+    21,
+    14,
+    17,
+    20,
+    23
+   ],
+   "breaks": [
+    -30,
+    -25,
+    -20,
+    -15,
+    -10,
+    -5,
+    0,
+    5,
+    10,
+    15,
+    20,
+    25,
+    30,
+    35,
+    40,
+    45
+   ]
+  }
+ ],
+ "views": [
+  {
+   "name": "149x38",
+   "cell_km": 1.6,
+   "cell_row_km": 3.2
+  }
+ ]
+}

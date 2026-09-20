@@ -26,6 +26,33 @@ type scenario struct {
 		Kind  string        `json:"kind"`
 		Rings [][][]float64 `json:"rings"`
 	} `json:"shapes"`
+	Fields []struct {
+		ID     string    `json:"id"`
+		West   float64   `json:"west"`
+		South  float64   `json:"south"`
+		East   float64   `json:"east"`
+		North  float64   `json:"north"`
+		Cols   int       `json:"cols"`
+		Rows   int       `json:"rows"`
+		Values []float64 `json:"values"`
+	} `json:"fields"`
+	Images []struct {
+		ID string `json:"id"`
+	} `json:"images"`
+}
+
+// wholeKey is the key as the tool writes it: the shapes, the fields and
+// the images.
+type wholeKey struct {
+	Shapes []keyed `json:"shapes"`
+	Fields []struct {
+		Place string  `json:"place"`
+		Field string  `json:"field"`
+		Value float64 `json:"value"`
+		Band  int     `json:"band"`
+		Rises string  `json:"rises"`
+		Flat  bool    `json:"flat"`
+	} `json:"fields"`
 }
 
 // keyed is one answer of the independent key.
@@ -42,7 +69,7 @@ type keyed struct {
 // itself (D-67): the library's own description must equal a key worked out
 // by a separate program, over the same data, sharing no code with it.
 func TestM1bAgreesWithTheIndependentKey(t *testing.T) {
-	for _, name := range []string{"hand-made", "scenario-1"} {
+	for _, name := range []string{"hand-made", "scenario-1", "scenario-3", "scenario-4"} {
 		t.Run(name, func(t *testing.T) { againstKey(t, name) })
 	}
 }
@@ -52,9 +79,17 @@ func againstKey(t *testing.T, name string) {
 	dir := filepath.Join("06_docs", "02_features", "go-tuimaps", "02-analysis", "scenarios")
 	var s scenario
 	read(t, filepath.Join(dir, name+".json"), &s)
-	var key []keyed
-	read(t, filepath.Join(dir, name+"-key.json"), &key)
-	if len(key) == 0 {
+	var whole wholeKey
+	read(t, filepath.Join(dir, name+"-key.json"), &whole)
+	key := whole.Shapes
+	if len(s.Images) > 0 {
+		// The library takes an image as a picture and a table and classifies
+		// it; this key takes the classes themselves. Comparing them would
+		// compare two different inputs, so an image scenario is not compared
+		// here, and says so rather than passing quietly.
+		t.Skip("an image scenario: the library classifies a picture, the key is given classes")
+	}
+	if len(key)+len(whole.Fields) == 0 {
 		t.Fatal("the key is empty")
 	}
 
@@ -71,10 +106,44 @@ func againstKey(t *testing.T, name string) {
 			t.Fatalf("%s: %v", shape.ID, err)
 		}
 	}
+	for _, f := range s.Fields {
+		grid := tuimaps.Grid{West: f.West, South: f.South, East: f.East, North: f.North,
+			Cols: f.Cols, Rows: f.Rows, Values: f.Values}
+		if _, err := m.Set(tuimaps.TemperatureGrid(f.ID, grid, tuimaps.Celsius, noon)); err != nil {
+			t.Fatalf("%s: %v", f.ID, err)
+		}
+	}
 	got, err := m.Describe(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+	// The fields: the value, the band and which way it rises.
+	byPlace := map[string][]tuimaps.Answer{}
+	for _, one := range got {
+		byPlace[one.Place] = one.Answers
+	}
+	for _, want := range whole.Fields {
+		var mine tuimaps.Answer
+		for _, a := range byPlace[want.Place] {
+			if a.Overlay == want.Field {
+				mine = a
+			}
+		}
+		if mine.Overlay == "" {
+			t.Errorf("the library says nothing about %s and %s", want.Place, want.Field)
+			continue
+		}
+		if math.Abs(mine.Value-want.Value) > 0.001 {
+			t.Errorf("%s in %s: the library reads %v, the key reads %v", want.Place, want.Field, mine.Value, want.Value)
+		}
+		if mine.Band != want.Band {
+			t.Errorf("%s in %s: the library says band %d, the key says %d", want.Place, want.Field, mine.Band, want.Band)
+		}
+		if mine.Rises != want.Rises {
+			t.Errorf("%s in %s: the library says it rises %q, the key says %q", want.Place, want.Field, mine.Rises, want.Rises)
+		}
+	}
+
 	// Every answer of the key has one of the library's, and they agree.
 	answers := map[[2]string]tuimaps.Answer{}
 	for _, one := range got {
