@@ -158,17 +158,12 @@ func TestFixtureMemory(t *testing.T) {
 	if live > liveLine {
 		t.Errorf("live is %.2f MB; NFR-3's line is 4 MB", asMB(live))
 	}
-	// **The peak is over NFR-3's line, and that is recorded rather than
-	// gated while HUM LEAD rules on it.** It is 8.54 MB against 8 MB, and
-	// the cost is located: with the radar image left out the same tour
-	// peaks at 5.21 MB, so the image accounts for about 3.3 MB across three
-	// maps - each map decodes its own copy of the same picture before
-	// reducing it to one class a pixel. Loosening a requirement to get past
-	// it is what D-67's note calls out, so nothing here is loosened: the
-	// figure is measured, reported, and owed a decision.
+	// The peak was 8.54 MB when this was first measured, over NFR-3's line
+	// by 7%, and the cost was located rather than guessed at: each map
+	// decoded its own copy of the same picture. Under D-116 the maps of a
+	// shared set now read a picture once between them.
 	if peak > peakLine {
-		t.Logf("PEAK IS OVER THE LINE: %.2f MB against NFR-3's 8 MB. Awaiting HUM LEAD's ruling; "+
-			"set %s to see where it goes", asMB(peak), withoutRadar)
+		t.Errorf("peak is %.2f MB; NFR-3's line is 8 MB. Set %s to see what the images cost", asMB(peak), withoutRadar)
 	}
 
 	// One map, for the same reason the line covers one: a host with a

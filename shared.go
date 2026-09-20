@@ -2,6 +2,7 @@ package tuimaps
 
 import (
 	"github.com/branden-thompson/go-tuimaps/internal/fault"
+	"github.com/branden-thompson/go-tuimaps/internal/overlay"
 	"github.com/branden-thompson/go-tuimaps/internal/textsafe"
 	"github.com/branden-thompson/go-tuimaps/internal/tiles"
 )
@@ -15,6 +16,10 @@ import (
 // anything else of.
 type Shared struct {
 	tiles *tiles.Cache
+	// pictures are the images the maps of this set have already read: a
+	// picture is reduced to one class a pixel once between them, not once
+	// each (D-116).
+	pictures *overlay.Classified
 }
 
 // NewShared makes a set of caches for maps to share. The cap is the bytes
@@ -28,7 +33,7 @@ func NewShared(tileBytes int64) (*Shared, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Shared{tiles: cache}, nil
+	return &Shared{tiles: cache, pictures: overlay.NewClassified(0)}, nil
 }
 
 // Use is what the shared caches need, hold and may hold. Need over cap is

@@ -283,3 +283,69 @@ func TestBrokenImageIsRefusedByTheJob(t *testing.T) {
 		t.Error("a raster was kept from an image that could not be decoded")
 	}
 }
+
+// TestClassifiedSharesOneReading is D-116: the maps of a shared set read a
+// picture once between them. A reading is keyed by what it depends on and
+// nothing else - the picture, the table it is matched against, how closely,
+// and where it is laid - so two maps that hand in the same picture get the
+// same answer, and that is the only reason sharing one is safe.
+func TestClassifiedSharesOneReading(t *testing.T) {
+	shared := NewClassified(0)
+	img := radar(t, fixtureFile(t, "radar/gulf-2026-09-19.png")).Image
+	kind, err := ResolveType(img.Type)
+	if err != nil {
+		t.Fatal(err)
+	}
+	key, ok := ImageKey(img, kind)
+	if !ok {
+		t.Fatal("a picture with bytes in it has no key")
+	}
+	if _, _, held := shared.Read(key); held {
+		t.Error("an empty set already holds the picture")
+	}
+	raster, report, err := rasterise(img, kind)
+	if err != nil {
+		t.Fatal(err)
+	}
+	shared.Keep(key, raster, report)
+	back, _, held := shared.Read(key)
+	if !held {
+		t.Fatal("the reading was not kept")
+	}
+	if back.Width != raster.Width || back.Height != raster.Height || len(back.Classes) != len(raster.Classes) {
+		t.Error("what came back is not what was kept")
+	}
+	if bytes, limit := shared.Bytes(); bytes != int64(len(raster.Classes)) || limit <= 0 {
+		t.Errorf("the set holds %d bytes of %d", bytes, limit)
+	}
+
+	// The key is what the reading depends on: change any of it and the
+	// answer is a different one, which must not be served from the set.
+	other := *img
+	other.Tolerance = img.Tolerance + 3
+	if changed, _ := ImageKey(&other, kind); changed == key {
+		t.Error("a different tolerance has the same key")
+	}
+	other = *img
+	other.Table = append(append([]TableEntry(nil), img.Table...), TableEntry{Value: 99})
+	if changed, _ := ImageKey(&other, kind); changed == key {
+		t.Error("a different table has the same key")
+	}
+	other = *img
+	other.West = img.West - 1
+	if changed, _ := ImageKey(&other, kind); changed == key {
+		t.Error("a picture laid somewhere else has the same key")
+	}
+	// And the same picture, handed in again, is the same key.
+	again := *img
+	if changed, _ := ImageKey(&again, kind); changed != key {
+		t.Error("the same picture has two keys")
+	}
+	// A reading larger than the whole set is not kept, and nothing is
+	// evicted to make room for something that cannot fit.
+	small := NewClassified(16)
+	small.Keep(key, raster, report)
+	if bytes, _ := small.Bytes(); bytes != 0 {
+		t.Errorf("a reading of %d bytes was kept in a set of 16", bytes)
+	}
+}

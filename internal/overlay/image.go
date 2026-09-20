@@ -266,6 +266,27 @@ func rasterise(img *Image, kind Kind) (scene.Raster, Report, error) {
 	return raster, m.report, nil
 }
 
+// readPicture is the reading of one picture: the set every map of a shared
+// group draws from, where there is one, and the work itself where there is
+// not. Two maps showing the same radar frame then decode it once between
+// them rather than once each (D-116).
+func (s *Store) readPicture(img *Image, kind Kind) (scene.Raster, Report, error) {
+	if s == nil {
+		return scene.Raster{}, Report{}, imageRefused(textsafe.Const("there is no store to read a picture into"), textsafe.Const("this is a defect in the library; report it"))
+	}
+	key, keyed := ImageKey(img, kind)
+	if keyed {
+		if raster, report, ok := s.caps.Classified.Read(key); ok {
+			return raster, report, nil
+		}
+	}
+	raster, report, err := rasterise(img, kind)
+	if err == nil && keyed {
+		s.caps.Classified.Keep(key, raster, report)
+	}
+	return raster, report, err
+}
+
 // Raster is an overlay's prepared image and what matching its colours found,
 // once a job has decoded it.
 func (s *Store) Raster(id string) (scene.Raster, Report, bool) {

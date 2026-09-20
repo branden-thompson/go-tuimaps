@@ -196,7 +196,11 @@ func New(options ...Option) (*Map, error) {
 	if err != nil {
 		return nil, err
 	}
-	store, err := overlay.NewStore(overlay.Caps{})
+	caps := overlay.Caps{}
+	if c.shared != nil {
+		caps.Classified = c.shared.pictures
+	}
+	store, err := overlay.NewStore(caps)
 	if err != nil {
 		return nil, err
 	}

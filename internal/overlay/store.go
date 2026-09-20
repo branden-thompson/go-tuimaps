@@ -65,6 +65,10 @@ type Caps struct {
 	ShapeBytes      int  // the shape cache's cap; zero means 250,000
 	ImageBytes      int  // the image cap, at one byte a pixel; zero means 250,000
 	BorrowCheck     bool // fingerprint borrowed geometry at hand-in, and re-check what is read
+	// Classified is the pictures the maps of a shared set have already
+	// read. Nil means this store reads its own and shares them with nobody
+	// (D-116).
+	Classified *Classified
 }
 
 // SetResult is what Set returns at once (D-74, D-86).

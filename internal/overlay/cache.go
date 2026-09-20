@@ -348,7 +348,7 @@ func (j *prepareJob) Run(ctx context.Context) error {
 		return nil // removed meanwhile: nothing to do
 	}
 	if img := reader.Overlay().Image; img != nil {
-		raster, report, err := rasterise(img, reader.h.kind)
+		raster, report, err := j.store.readPicture(img, reader.h.kind)
 		if err == nil {
 			j.store.keepRaster(reader, raster, report)
 		}
