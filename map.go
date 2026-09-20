@@ -6,6 +6,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/branden-thompson/go-tuimaps/internal/describe"
 	"github.com/branden-thompson/go-tuimaps/internal/fault"
 	"github.com/branden-thompson/go-tuimaps/internal/fetch"
 	"github.com/branden-thompson/go-tuimaps/internal/overlay"
@@ -127,32 +128,38 @@ func Embed(tile func(z uint8, x, y uint32) ([]byte, bool), maxZoom uint8) Option
 // Map is one map. Its calls are the host's to make from one goroutine, except
 // those the documentation says may be made from any.
 type Map struct {
-	mu        sync.Mutex
-	shut      bool
-	inside    atomic.Int32
-	sized     bool
-	view      project.View
-	noted     project.View // the view whose tiles were last asked for
-	pipe      *tiles.Pipeline
-	member    *work.Member
-	renderer  *render.Renderer
-	style     *style.Style
-	look      look
-	motion    render.Motion
-	changed   uint64
-	driven    bool            // the host drives the animation clock itself (D-114)
-	footer    bool            // the footer is drawn inside the map (P-57)
-	own       []fault.Warning // what the map itself noticed, for the next Warnings call
-	planted   func(string)    // set only by the library's own tests, to plant a panic
-	remote    *tiles.Remote   // the source named, if any: nothing is reached until one is (D-65)
-	disk      *tiles.Disk     // the disk cache, if the host named a directory
-	fetcher   fetch.Func      // a replacement for the library's own way of reaching a source
-	animation time.Time       // and this is the moment it has driven it to
-	places    []Place
-	drawn     []render.Drawn
-	store     *overlay.Store
-	view4     *overlay.ShapeView
-	overlays  uint64
+	mu            sync.Mutex
+	shut          bool
+	inside        atomic.Int32
+	sized         bool
+	view          project.View
+	noted         project.View // the view whose tiles were last asked for
+	pipe          *tiles.Pipeline
+	member        *work.Member
+	renderer      *render.Renderer
+	style         *style.Style
+	look          look
+	motion        render.Motion
+	changed       uint64
+	driven        bool            // the host drives the animation clock itself (D-114)
+	footer        bool            // the footer is drawn inside the map (P-57)
+	own           []fault.Warning // what the map itself noticed, for the next Warnings call
+	planted       func(string)    // set only by the library's own tests, to plant a panic
+	units         describe.Units  // the units descriptions come back in
+	placesVersion uint64          // raised whenever the places change
+	wallClock     time.Time       // the clock of the last frame, which staleness is judged by
+	staleNow      bool
+	described     []Description
+	describedKey  describeKey
+	remote        *tiles.Remote // the source named, if any: nothing is reached until one is (D-65)
+	disk          *tiles.Disk   // the disk cache, if the host named a directory
+	fetcher       fetch.Func    // a replacement for the library's own way of reaching a source
+	animation     time.Time     // and this is the moment it has driven it to
+	places        []Place
+	drawn         []render.Drawn
+	store         *overlay.Store
+	view4         *overlay.ShapeView
+	overlays      uint64
 
 	drawnPlaces []render.Marker
 	shapes      []scene.Shape
@@ -346,7 +353,8 @@ func (m *Map) Render(size Size, now time.Time) (frame Frame, err error) {
 	}
 	m.paint(&in)
 	in.MarkerPhase = m.motion.Phase(m.animationAt(now))
-	in.Stale = m.stale(now)
+	m.noteWallClock(now)
+	in.Stale = m.staleNow
 	in.Markers = m.markers()
 	m.draw(&in)
 	in.Tiles, in.Missing = m.onHand()

@@ -100,6 +100,7 @@ method Map.Changed
 method Map.Close
 method Map.ColourDepth
 method Map.Credits
+method Map.Describe
 method Map.Fetcher
 method Map.FitTo
 method Map.FitWorld
@@ -133,6 +134,7 @@ method Map.Settle
 method Map.ShowFooter
 method Map.Source
 method Map.SourceCredit
+method Map.Units
 method Map.Verify
 method Map.Warnings
 method Map.Work
@@ -140,10 +142,12 @@ method Map.Zoom
 method Map.ZoomBy
 method Shared.Use
 method Status.String
+type Answer
 type CacheUse
 type Caches
 type Class
 type Depth
+type Description
 type Feature
 type FeatureKind
 type Fetcher

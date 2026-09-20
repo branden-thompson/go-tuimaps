@@ -1,0 +1,183 @@
+package tuimaps_test
+
+import (
+	"context"
+	"strings"
+	"testing"
+	"time"
+
+	tuimaps "github.com/branden-thompson/go-tuimaps"
+)
+
+// TestDescribeReadyOrPending is plan task 11.16 (FR-29, contract section 1):
+// the call answers at once, from the host's own data, with nothing left to
+// work out later.
+func TestDescribeReadyOrPending(t *testing.T) {
+	m := gulfMap(t, 149, 38)
+	if _, err := m.SetPlaces([]tuimaps.Place{{Name: "Home", At: tuimaps.LonLat{Lon: -84.39, Lat: 33.75}}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Set(warning("alerts")); err != nil {
+		t.Fatal(err)
+	}
+	// No Settle, no Work: the answer is there.
+	got, err := m.Describe(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0].Place != "Home" {
+		t.Fatalf("%+v", got)
+	}
+	if got[0].Pending {
+		t.Error("a description is waiting for work that the host's own data made unnecessary")
+	}
+	if len(got[0].Answers) != 1 {
+		t.Fatalf("%d answers for one overlay", len(got[0].Answers))
+	}
+	one := got[0].Answers[0]
+	if one.Overlay != "alerts" || one.Form != "area" {
+		t.Errorf("%+v", one)
+	}
+	if one.Relation.String() != "outside" {
+		t.Errorf("Atlanta is %v the Gulf alert area", one.Relation)
+	}
+	if one.Distance <= 0 || one.Unit != "kilometres" || one.Compass == "" {
+		t.Errorf("%+v", one)
+	}
+	if one.Valid.IsZero() {
+		t.Error("the answer does not say when the data was valid")
+	}
+}
+
+// TestDescribeEveryForm: each shape a host can hand in is described in its
+// own terms, and the words are the host's units.
+func TestDescribeEveryForm(t *testing.T) {
+	m := gulfMap(t, 149, 38)
+	home := tuimaps.Place{Name: "Home", At: tuimaps.LonLat{Lon: -84.39, Lat: 33.75}}
+	if _, err := m.Set(warning("alerts")); err != nil {
+		t.Fatal(err)
+	}
+	track := tuimaps.Overlay{ID: "track", Valid: noon, Keeps: time.Hour, Credit: "A survey",
+		Features: []tuimaps.Feature{{Kind: tuimaps.Line, Label: "storm track", Role: tuimaps.Track,
+			Rings: [][]tuimaps.LonLat{{{Lon: -90, Lat: 33}, {Lon: -80, Lat: 34}}}}}}
+	if _, err := m.Set(track); err != nil {
+		t.Fatal(err)
+	}
+	grid := tuimaps.Grid{West: -100, South: 20, East: -70, North: 40, Cols: 2, Rows: 2, Values: []float64{10, 20, 12, 22}}
+	if _, err := m.Set(tuimaps.TemperatureGrid("temperature", grid, tuimaps.Celsius, noon)); err != nil {
+		t.Fatal(err)
+	}
+	m.Units(true, true) // miles and Fahrenheit
+	got, err := m.Describe([]tuimaps.Place{home})
+	if err != nil {
+		t.Fatal(err)
+	}
+	forms := map[string]tuimaps.Answer{}
+	for _, a := range got[0].Answers {
+		forms[a.Overlay] = a
+	}
+	if forms["alerts"].Form != "area" || forms["alerts"].Unit != "miles" {
+		t.Errorf("the alert answer is %+v", forms["alerts"])
+	}
+	if forms["track"].Form != "line" || forms["track"].Label != "storm track" {
+		t.Errorf("the track answer is %+v", forms["track"])
+	}
+	field := forms["temperature"]
+	if field.Form != "field" || field.ValueUnit != "degrees Fahrenheit" {
+		t.Errorf("the field answer is %+v", field)
+	}
+	if field.NoData {
+		t.Error("a field that covers the place says it has no data")
+	}
+	// Everything said is speakable: no braille, no glyphs, no escapes.
+	for _, a := range got[0].Answers {
+		for _, said := range a.Said() {
+			if strings.ContainsAny(said, "\x1b⠀░") {
+				t.Errorf("an answer carries %q", said)
+			}
+		}
+	}
+}
+
+// TestDescribeMemoised is plan task 11.11 (FR-29): asking twice with
+// nothing changed costs nothing, and anything that would change the answer
+// makes it be worked out again.
+func TestDescribeMemoised(t *testing.T) {
+	m := gulfMap(t, 149, 38)
+	if _, err := m.SetPlaces([]tuimaps.Place{{Name: "Home", At: tuimaps.LonLat{Lon: -84.39, Lat: 33.75}}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Set(warning("alerts")); err != nil {
+		t.Fatal(err)
+	}
+	first, err := m.Describe(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	again, err := m.Describe(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if &first[0].Answers[0] != &again[0].Answers[0] {
+		t.Error("asking twice with nothing changed worked the answer out again")
+	}
+	if allocs := testing.AllocsPerRun(20, func() { m.Describe(nil) }); allocs > 0 {
+		t.Errorf("repeating an unchanged description allocates %v times", allocs)
+	}
+	// A change to the overlays, the places or the units is worked out again.
+	if _, err := m.Set(warning("more")); err != nil {
+		t.Fatal(err)
+	}
+	third, err := m.Describe(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(third[0].Answers) != 2 {
+		t.Errorf("after a second overlay there are %d answers", len(third[0].Answers))
+	}
+	m.Units(true, false)
+	fourth, _ := m.Describe(nil)
+	if fourth[0].Answers[0].Unit != "miles" {
+		t.Error("changing the units did not work the description out again")
+	}
+	if _, err := m.AddPlace(tuimaps.Place{Name: "Away", At: tuimaps.LonLat{Lon: 0, Lat: 0}}); err != nil {
+		t.Fatal(err)
+	}
+	fifth, _ := m.Describe(nil)
+	if len(fifth) != 2 {
+		t.Errorf("after a second place there are %d descriptions", len(fifth))
+	}
+}
+
+// TestDescribeNeverInsideRender is plan task 11.12: drawing does not
+// describe, and describing does not draw. A host pays for what it asks for.
+func TestDescribeNeverInsideRender(t *testing.T) {
+	m := gulfMap(t, 80, 24)
+	if _, err := m.SetPlaces([]tuimaps.Place{{Name: "Home", At: tuimaps.LonLat{Lon: -84.39, Lat: 33.75}}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Set(warning("alerts")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Settle(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	frameAtTime(t, m, 80, 24, noon)
+	// Drawing again allocates what drawing allocates; if it described as
+	// well, the count would carry the description's own work.
+	drawing := testing.AllocsPerRun(10, func() { m.Render(tuimaps.Size{Cols: 80, Rows: 24}, noon) })
+	m.Describe(nil)
+	describing := testing.AllocsPerRun(10, func() { m.Render(tuimaps.Size{Cols: 80, Rows: 24}, noon) })
+	if describing > drawing {
+		t.Errorf("drawing allocates %v before a description and %v after it", drawing, describing)
+	}
+}
+
+// TestDescribeOnAClosedMap: a closed map describes nothing and says why.
+func TestDescribeOnAClosedMap(t *testing.T) {
+	m := world(t, 40, 12)
+	m.Close()
+	if _, err := m.Describe(nil); err == nil {
+		t.Error("a closed map described something")
+	}
+}
