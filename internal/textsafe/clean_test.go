@@ -4,6 +4,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/branden-thompson/go-tuimaps/internal/testkit"
@@ -113,5 +114,31 @@ func TestCleanIsIdempotent(t *testing.T) {
 		if twice := Clean(once).String(); twice != once {
 			t.Errorf("Clean(Clean(%q)) = %q, but Clean gave %q", in, twice, once)
 		}
+	}
+}
+
+// TestNoHeadlessMark: a cleaned text never begins with a combining mark. One
+// would attach itself to whatever came before it in a row, which would make
+// the row one cell narrower than its characters say (NFR-8). Found by the
+// renderer's own fuzz target, which drew a credit line of one such mark.
+func TestNoHeadlessMark(t *testing.T) {
+	for _, s := range []string{"\u0301", "\ua9c0", "\u0301abc", "\u20e3", "\u0e31 x"} {
+		got := Clean(s)
+		if got.String() == "" {
+			continue
+		}
+		first, _ := utf8.DecodeRuneInString(got.String())
+		if unicode.In(first, unicode.Mn, unicode.Mc, unicode.Me) {
+			t.Errorf("Clean(%q) begins with the mark %U", s, first)
+		}
+		// Measured after anything else, it still takes the cells it says.
+		before := Width(Clean("x"))
+		if joined := Width(Clean("x" + got.String())); joined != before+Width(got) {
+			t.Errorf("Clean(%q) is %d cells alone and %d after another character", s, Width(got), joined-before)
+		}
+	}
+	// A mark after its own base is kept: it is part of that cluster.
+	if got := Clean("e\u0301"); got.String() != "e\u0301" {
+		t.Errorf("Clean of a letter with its accent gave %q", got.String())
 	}
 }

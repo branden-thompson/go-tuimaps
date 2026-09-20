@@ -26,7 +26,8 @@ type Label struct {
 	Name       string
 	Rank       int32
 	Ink        uint8
-	first, end int // its vertices, among the painter's: each is tried in turn (P-32)
+	fromPoint  bool // placed from its point, not centred on it: a marker's label (P-60)
+	first, end int  // its vertices, among the painter's: each is tried in turn (P-32)
 }
 
 // Painter paints the basemap of one frame: line work as dots, areas as the
@@ -37,11 +38,14 @@ type Painter struct {
 	literals      []colour.RGB
 	labels        []Label
 	overlayLabels []Label
+	markerLabels  []Label
+	glyphs        []Label
 	labelPts      []Point
 	ring          []Point
 	edge          []bool // for each point of ring: the segment that ends there lies along the tile's border
 	rings         [][]Point
 	profile       style.Profile
+	depth         colour.Depth
 	culled        int
 	lastPoints    int
 }
@@ -68,8 +72,9 @@ func (p *Painter) Reset() {
 	p.areas.Wipe()
 	p.literals, p.labels, p.labelPts = p.literals[:0], p.labels[:0], p.labelPts[:0]
 	p.overlayLabels = p.overlayLabels[:0]
+	p.markerLabels, p.glyphs = p.markerLabels[:0], p.glyphs[:0]
 	p.culled, p.lastPoints = 0, 0
-	p.profile = style.Profile{}
+	p.profile, p.depth = style.Profile{}, 0
 }
 
 // SetProfile says how much of the basemap this frame draws (FR-19, FR-36).
@@ -79,6 +84,15 @@ func (p *Painter) SetProfile(profile style.Profile) {
 		return
 	}
 	p.profile = profile
+}
+
+// SetDepth says what colour the frame has to draw with. With none, an
+// overlay's line is dashed, so that it is not the basemap's own (FR-18a).
+func (p *Painter) SetDepth(d colour.Depth) {
+	if p == nil {
+		return
+	}
+	p.depth = d
 }
 
 // Lines is the canvas of line work.
@@ -204,6 +218,10 @@ func (p *Painter) mark(ring []Point, s scene.Shape) {
 				p.lines.Set(ring[0].X+dx, ring[0].Y+dy, s.Role)
 			}
 		}
+		return
+	}
+	if s.Kind == scene.ShapeLine && colourless(p.depth) {
+		p.dash(ring, s.Role) // five dots on, four off, two thick (D-77)
 		return
 	}
 	for i := 0; i+1 < len(ring); i++ {

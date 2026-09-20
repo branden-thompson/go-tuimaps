@@ -57,7 +57,7 @@ func Clean(s string) Text {
 			break
 		}
 		cluster := stripStrayTags(clusters.Value())
-		if onlyZeroWidth(cluster) || clusterWidth(cluster) == 0 {
+		if onlyZeroWidth(cluster) || clusterWidth(cluster) == 0 || headlessMark(cluster) {
 			continue
 		}
 		out.WriteString(cluster)
@@ -110,6 +110,16 @@ func onlyZeroWidth(cluster string) bool {
 		}
 	}
 	return true
+}
+
+// headlessMark reports whether a cluster begins with a combining mark, which
+// means it has no base character of its own. Such a cluster attaches itself
+// to whatever character comes before it wherever it is put, so a row holding
+// one is one cell narrower than its characters say (NFR-8): the mark is not
+// the text's to place. A mark inside a cluster, after its base, is kept.
+func headlessMark(cluster string) bool {
+	first, _ := utf8.DecodeRuneInString(cluster)
+	return unicode.In(first, unicode.Mn, unicode.Mc, unicode.Me)
 }
 
 // stripStrayTags removes tag characters from a cluster that does not begin

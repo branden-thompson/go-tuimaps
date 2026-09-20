@@ -25,9 +25,9 @@ flowchart TB
       L3["4 Area tints<br/>alert polygons' interior; hatch when there is no colour (FR-18a)"]
       L4["5 Basemap lines<br/>braille dots, 2×4 per cell: coast, borders, roads, rivers, parks"]
       L5["6 Overlay lines and outlines<br/>polygon outlines always drawn (FR-16), contours (D-35), tracks"]
-      L6["7 Glyphs<br/>markers over everything beneath — never under a hatch (FR-18a); focus indicator (FR-24a)"]
-      L7["8 Labels<br/>place names, value labels, edge labels — collision-checked, cleaned, by grapheme cluster (FR-34)"]
-      L8["9 Furniture<br/>scale mark (FR-33) · stale mark (FR-32) · credit line (FR-14) · the no-tiles notice (FR-23)"]
+      L6["7 Labels<br/>place names, value labels, edge labels — collision-checked, cleaned, by grapheme cluster (FR-34)"]
+      L7["8 Glyphs<br/>markers over everything beneath — never under a hatch or a name (FR-18a); focus indicator (FR-24a)"]
+      L8["9 Furniture<br/>scale mark (FR-33) · stale mark (FR-32) · credit line (FR-14) · footer, off by default (P-57) · the no-tiles notice (FR-23)"]
       L0 --> L1 --> L2 --> L3 --> L4 --> L5 --> L6 --> L7 --> L8
     end
 
@@ -48,6 +48,8 @@ flowchart LR
     CELL --> COLR["Per cell: one foreground colour<br/>the MAJORITY colour among its lit dots;<br/>a tie goes to the colour commoner in the 8 neighbouring cells (P-08, D-83)"]
 ```
 
+**The three parts of a cell.** A cell has one background, one set of dots and one piece of text, and the order above is read within each: the later layer is what that part of the cell shows, and across the three all of them are seen at once. **The text is a contest, not a painting**: the first layer to claim a cell keeps it, so for text the order above is the order in which cells are claimed - the frame's own furniture first, then a marker, then an overlay's label, then a place name, and a marker's own label last of all, which is where P-60 puts it. A hatch (FR-18a) is laid last over the cells nothing else has taken, so a marker or a name inside an alert area always shows.
+
 **Why one colour per cell matters.** A terminal cell has one foreground and one background. Two lines of different colours crossing one cell cannot both keep their colour; within the basemap upstream's majority vote decides (P-08, D-83), and across layers the compositing order does. This is the reason the basemap thins under overlays (FR-19) rather than competing with them.
 
 ## What can change this diagram
@@ -59,3 +61,4 @@ flowchart LR
 | The block renderer is built (after v0.1.0, D-42) | A second canvas beside the braille one; steps 5 to 7 use it; its own sparser profile |
 | The ground ruling (D-64) | Step 1 |
 | A new kind of furniture | Step 9, and NFR-8's closed list of characters |
+| The precedence of text in a cell | The paragraph under the diagram, and the order the renderer claims cells in |

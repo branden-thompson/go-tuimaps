@@ -83,6 +83,11 @@ type Input struct {
 	// FieldLabels are a field's values as text, by class: what its contour
 	// lines carry when there is no colour (D-35).
 	FieldLabels []string
+	// Markers are the host's places, drawn over everything beneath them
+	// (FR-26); MarkerPhase is which half of the blink this frame draws, and
+	// Motion works it out from the host's clock.
+	Markers     []Marker
+	MarkerPhase bool
 	Missing     int            // tiles the view wants with nothing on hand to draw for them
 	Layers      style.Switches // the basemap layers the host has switched off (FR-36)
 	Style       *style.Style
@@ -95,6 +100,11 @@ type Input struct {
 	Depth  Depth
 	Labels bool
 	Scale  bool
+	// Stale says that the data of an overlay on the frame is no longer
+	// current, which the frame marks in a word (FR-32); Footer is the
+	// host's own line of text, drawn only when it is given (P-57).
+	Stale  bool
+	Footer textsafe.Text
 	Credit textsafe.Text
 }
 
@@ -179,8 +189,10 @@ func (g *grid) write(col, row int, text textsafe.Text, ink uint8) bool {
 // label places one name: centred on its point by its width in cells (L-7),
 // skipped whole if it would leave the rectangle (P-33) or if its box - the
 // text grown by upstream's margin - meets one already placed (P-34).
-func (g *grid) label(l Label) bool {
-	return g.labelAt(l, []Point{{X: l.X, Y: l.Y}})
+func (g *grid) label(l Label) {
+	// Whether it was placed is nobody's business here: a name that does not
+	// fit is skipped whole, and the frame is right either way.
+	_ = g.labelAt(l, []Point{{X: l.X, Y: l.Y}})
 }
 
 // labelAt tries each of a name's vertices in turn until one takes it (P-32).
@@ -209,7 +221,10 @@ func (g *grid) anchor(l Label, at Point) bool {
 	if !g.world.holds(at) {
 		return false // beyond the world's edge: a tile's buffer repeats places a world away (P-33)
 	}
-	col, row := at.X/2-width/2, at.Y/4
+	col, row := at.X/2, at.Y/4
+	if !l.fromPoint {
+		col -= width / 2 // a name is centred on its place; a marker's label begins at its point
+	}
 	mine := box{left: col - labelMargin, right: col + labelMargin + width, top: row - labelMargin/2, bottom: row + labelMargin/2}
 	for _, b := range g.boxes {
 		if mine.left <= b.right && b.left <= mine.right && mine.top <= b.bottom && b.top <= mine.bottom {
@@ -268,6 +283,14 @@ func (r *Renderer) sameOverlays(in Input) bool {
 	if in.FieldsOverWater != l.FieldsOverWater || in.ImagesMaskedByWater != l.ImagesMaskedByWater {
 		return false
 	}
+	if in.MarkerPhase != l.MarkerPhase || len(in.Markers) != len(l.Markers) {
+		return false
+	}
+	for i, m := range in.Markers {
+		if m != l.Markers[i] {
+			return false
+		}
+	}
 	return in.OverlaysVersion == l.OverlaysVersion && len(in.Shapes) == len(l.Shapes) && len(in.Fields) == len(l.Fields) && len(in.Rasters) == len(l.Rasters)
 }
 
@@ -276,6 +299,9 @@ func (r *Renderer) sameOverlays(in Input) bool {
 func (r *Renderer) sameLook(in Input) bool {
 	l := r.last
 	if in.View != l.View || in.Look != l.Look || in.Ground != l.Ground || in.Depth != l.Depth || in.Style != l.Style {
+		return false
+	}
+	if in.Stale != l.Stale || in.Footer != l.Footer {
 		return false
 	}
 	return in.Labels == l.Labels && in.Scale == l.Scale && in.Credit == l.Credit && in.Missing == l.Missing && in.Layers == l.Layers
@@ -361,6 +387,7 @@ func (r *Renderer) paint(in Input) (Status, error) {
 		return a.Y < b.Y
 	})
 	r.painter.SetProfile(style.NewProfile(load(in), in.View.Cols, in.View.Rows, in.Layers))
+	r.painter.SetDepth(in.Depth)
 	status := Complete
 	if len(r.order) == 0 {
 		status = NoTiles
@@ -394,7 +421,20 @@ func (r *Renderer) paint(in Input) (Status, error) {
 			return status, err
 		}
 	}
-	return status, nil
+	// Markers are over everything beneath them, a hatch included (FR-18a).
+	err := r.marks(in)
+	return status, err
+}
+
+// marks draws the host's places over everything already drawn.
+func (r *Renderer) marks(in Input) error {
+	for _, m := range in.Markers {
+		err := r.painter.Mark(in.View, m, in.MarkerPhase)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // load is what is drawn over the basemap this frame, which decides how much
@@ -422,7 +462,14 @@ func (r *Renderer) compose(in Input, status Status) {
 			}
 		}
 	}
+	// The text of a cell is a contest, not a painting: the first to claim a
+	// cell keeps it, so the order below is the order of precedence. The
+	// frame's own furniture is never overdrawn; a marker keeps its cell
+	// against any name (FR-18a); a marker's own label is checked last (P-60).
 	r.furniture(in, status)
+	for _, g := range r.painter.Glyphs() {
+		_ = r.grid.anchor(g, Point{X: g.X, Y: g.Y}) // a marker outside the rectangle is simply not drawn
+	}
 	// An overlay's labels are placed before any name of the basemap's, so that
 	// a place name never hides a warning's word; they are not the basemap's
 	// labels and do not go when those are turned off.
@@ -431,6 +478,10 @@ func (r *Renderer) compose(in Input, status Status) {
 		g.label(l)
 	}
 	if !in.Labels {
+		r.markerNames() // the host's own places are not the basemap's names
+		if colourless(in.Depth) {
+			r.hatch()
+		}
 		return
 	}
 	if x, y, side, err := in.View.TilePlace(scene.TileID{}); err == nil {
@@ -444,11 +495,24 @@ func (r *Renderer) compose(in Input, status Status) {
 	placed := 0
 	for _, l := range r.labels {
 		if budget > 0 && placed >= budget {
-			return // the profile's label budget: fewer names under an overlay, or on a small map
+			break // the profile's label budget: fewer names under an overlay, or on a small map
 		}
 		if g.labelAt(l, r.painter.Points(l)) {
 			placed++
 		}
+	}
+	r.markerNames()
+	if colourless(in.Depth) {
+		r.hatch() // last of all: it fills what nothing else has taken (FR-18a)
+	}
+}
+
+// markerNames places the markers' labels, which are checked against the
+// map's own names and so are placed after them (P-60).
+func (r *Renderer) markerNames() {
+	r.grid.world = box{}
+	for _, l := range r.painter.MarkerLabels() {
+		r.grid.label(l)
 	}
 }
 
@@ -461,6 +525,10 @@ func (r *Renderer) furniture(in Input, status Status) {
 		fit := textsafe.Fit(notice, g.cols)
 		g.write((g.cols-textsafe.Width(fit))/2, g.rows/2, fit, uint8(colour.Notice))
 	}
+	if in.Stale {
+		mark := textsafe.Fit(textsafe.Const(staleMark), g.cols)
+		g.write(g.cols-textsafe.Width(mark), 0, mark, uint8(colour.Stale))
+	}
 	credit := textsafe.Fit(in.Credit, g.cols)
 	if w := textsafe.Width(credit); w > 0 {
 		g.write(g.cols-w, g.rows-1, credit, uint8(colour.Credit))
@@ -468,7 +536,14 @@ func (r *Renderer) furniture(in Input, status Status) {
 	if in.Scale {
 		g.write(0, g.rows-1, scaleMark(in.View, g.cols/3), uint8(colour.Scale))
 	}
+	if footer := textsafe.Fit(in.Footer, g.cols); textsafe.Width(footer) > 0 && g.rows > 1 {
+		g.write(0, g.rows-2, footer, uint8(colour.Credit))
+	}
 }
+
+// staleMark is what a frame says when the data of an overlay on it is no
+// longer current: a plain word, not a colour alone (FR-32, NFR-15).
+const staleMark = "stale"
 
 // scaleMark is a bar of whole cells and the round distance it spans.
 func scaleMark(v project.View, room int) textsafe.Text {

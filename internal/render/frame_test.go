@@ -256,23 +256,23 @@ func testCollision(t *testing.T) {
 		t.Fatal(err)
 	}
 	ink := uint8(colour.LabelPlace)
-	if !g.label(Label{X: 40, Y: 40, Name: "Paris", Rank: 1, Ink: ink}) {
+	if !placed(g, Label{X: 40, Y: 40, Name: "Paris", Rank: 1, Ink: ink}) {
 		t.Fatal("the first label was not placed")
 	}
 	// Paris occupies cells 18 to 22 of row 10; its box is 13..28 by 8..12.
-	if g.label(Label{X: 2 * 28, Y: 40, Name: "Orly", Rank: 2, Ink: ink}) {
+	if placed(g, Label{X: 2 * 28, Y: 40, Name: "Orly", Rank: 2, Ink: ink}) {
 		t.Error("a label whose box touches the first was placed; the overlap is inclusive")
 	}
-	if g.label(Label{X: 40, Y: 4 * 12, Name: "Ivry", Rank: 2, Ink: ink}) {
+	if placed(g, Label{X: 40, Y: 4 * 12, Name: "Ivry", Rank: 2, Ink: ink}) {
 		t.Error("a label two rows below was placed; the margin is two rows")
 	}
-	if !g.label(Label{X: 40, Y: 4 * 15, Name: "Evry", Rank: 2, Ink: ink}) {
+	if !placed(g, Label{X: 40, Y: 4 * 15, Name: "Evry", Rank: 2, Ink: ink}) {
 		t.Error("a label five rows below was refused")
 	}
-	if g.label(Label{X: 2, Y: 40, Name: "Brest", Rank: 2, Ink: ink}) {
+	if placed(g, Label{X: 2, Y: 40, Name: "Brest", Rank: 2, Ink: ink}) {
 		t.Error("a label that would start left of the rectangle was placed; it is skipped whole (P-33)")
 	}
-	if g.label(Label{X: 118, Y: 4, Name: "Strasbourg", Rank: 2, Ink: ink}) {
+	if placed(g, Label{X: 118, Y: 4, Name: "Strasbourg", Rank: 2, Ink: ink}) {
 		t.Error("a label that would run off the right was placed")
 	}
 }
@@ -286,7 +286,7 @@ func TestParityP12_TextPlacement(t *testing.T) { testClusters(t) }
 func testClusters(t *testing.T) {
 	g, _ := newGrid(40, 5)
 	name := "\xe6\x9d\xb1\xe4\xba\xac" // two wide characters: four cells
-	if !g.label(Label{X: 40, Y: 8, Name: name, Rank: 1, Ink: uint8(colour.LabelPlace)}) {
+	if !placed(g, Label{X: 40, Y: 8, Name: name, Rank: 1, Ink: uint8(colour.LabelPlace)}) {
 		t.Fatal("not placed")
 	}
 	row := g.cells[2*40 : 3*40]
@@ -301,7 +301,7 @@ func testClusters(t *testing.T) {
 		t.Error("a text cell's ink is its label's")
 	}
 	empty, _ := newGrid(40, 5)
-	if !empty.label(Label{X: 40, Y: 8, Ink: 1}) || empty.cells[2*40+20].text != "\u25C9" {
+	if !placed(empty, Label{X: 40, Y: 8, Ink: 1}) || empty.cells[2*40+20].text != "\u25C9" {
 		t.Errorf("a symbol with no name draws the place glyph (P-35): %q", empty.cells[2*40+20].text)
 	}
 }
@@ -337,4 +337,9 @@ func TestRenderRefusals(t *testing.T) {
 		t.Error("no renderer must be an error")
 	}
 	_ = scene.TileID{}
+}
+
+// placed puts one name at its own point and says whether it took the cells.
+func placed(g *grid, l Label) bool {
+	return g.labelAt(l, []Point{{X: l.X, Y: l.Y}})
 }
