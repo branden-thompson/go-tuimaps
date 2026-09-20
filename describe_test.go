@@ -7,6 +7,7 @@ import (
 	"time"
 
 	tuimaps "github.com/branden-thompson/go-tuimaps"
+	"github.com/branden-thompson/go-tuimaps/assets"
 )
 
 // TestDescribeReadyOrPending is plan task 11.16 (FR-29, contract section 1):
@@ -180,4 +181,58 @@ func TestDescribeOnAClosedMap(t *testing.T) {
 	if _, err := m.Describe(nil); err == nil {
 		t.Error("a closed map described something")
 	}
+}
+
+// BenchmarkDescribeSixtyPlaces is plan task 11.15 (FR-29's cost): sixty
+// places against a handful of overlays, which is the fixture the target of
+// fifty milliseconds was set against. The figure is recorded, not gated.
+func BenchmarkDescribeSixtyPlaces(b *testing.B) {
+	m, err := tuimaps.New(tuimaps.WithSize(149, 38), tuimaps.Embed(assets.Tile, assets.MaxZoom))
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer m.Close()
+	places := make([]tuimaps.Place, 0, 60)
+	for i := range 60 {
+		places = append(places, tuimaps.Place{
+			Name: "place " + string(rune('a'+i%26)),
+			At:   tuimaps.LonLat{Lon: -90 + float64(i)/4, Lat: 25 + float64(i)/8},
+		})
+	}
+	if _, err := m.SetPlaces(places); err != nil {
+		b.Fatal(err)
+	}
+	if _, err := m.Set(warningAt("alerts", -86, 24, -82, 28)); err != nil {
+		b.Fatal(err)
+	}
+	if _, err := m.Set(warningAt("more-alerts", -95, 30, -88, 36)); err != nil {
+		b.Fatal(err)
+	}
+	grid := tuimaps.Grid{West: -100, South: 20, East: -70, North: 40, Cols: 8, Rows: 8, Values: make([]float64, 64)}
+	for i := range grid.Values {
+		grid.Values[i] = float64(i % 30)
+	}
+	if _, err := m.Set(tuimaps.TemperatureGrid("temperature", grid, tuimaps.Celsius, noon)); err != nil {
+		b.Fatal(err)
+	}
+	version := uint64(0)
+	b.ResetTimer()
+	for b.Loop() {
+		// A place added and removed each round, so that nothing is answered
+		// from the memo: this measures the work, not the remembering.
+		version++
+		if _, err := m.AddPlace(tuimaps.Place{ID: "moving", Name: "moving", At: tuimaps.LonLat{Lon: -84, Lat: 33 + float64(version%7)/100}}); err != nil {
+			b.Fatal(err)
+		}
+		if _, err := m.Describe(nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// warningAt is an alert area over a box, for the benchmark.
+func warningAt(id string, west, south, east, north float64) tuimaps.Overlay {
+	return tuimaps.Overlay{ID: id, Valid: noon, Keeps: time.Hour, Credit: "National Weather Service",
+		Features: []tuimaps.Feature{{Kind: tuimaps.Polygon, Role: tuimaps.AlertSevere, Label: "Warning",
+			Rings: [][]tuimaps.LonLat{{{Lon: west, Lat: south}, {Lon: east, Lat: south}, {Lon: east, Lat: north}, {Lon: west, Lat: north}, {Lon: west, Lat: south}}}}}}
 }

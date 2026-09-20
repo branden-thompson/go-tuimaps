@@ -42,11 +42,18 @@ type keyed struct {
 // itself (D-67): the library's own description must equal a key worked out
 // by a separate program, over the same data, sharing no code with it.
 func TestM1bAgreesWithTheIndependentKey(t *testing.T) {
+	for _, name := range []string{"hand-made", "scenario-1"} {
+		t.Run(name, func(t *testing.T) { againstKey(t, name) })
+	}
+}
+
+// againstKey runs one scenario against its own key.
+func againstKey(t *testing.T, name string) {
 	dir := filepath.Join("06_docs", "02_features", "go-tuimaps", "02-analysis", "scenarios")
 	var s scenario
-	read(t, filepath.Join(dir, "hand-made.json"), &s)
+	read(t, filepath.Join(dir, name+".json"), &s)
 	var key []keyed
-	read(t, filepath.Join(dir, "hand-made-key.json"), &key)
+	read(t, filepath.Join(dir, name+"-key.json"), &key)
 	if len(key) == 0 {
 		t.Fatal("the key is empty")
 	}
