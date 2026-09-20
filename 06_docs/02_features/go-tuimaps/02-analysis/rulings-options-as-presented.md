@@ -100,6 +100,7 @@ Each question was presented one at a time with: what was being decided, the evid
 | D-108 | M-A: the data notice's licence sentence | Flagged for HUM LEAD's eye | Fine; consuming applications also credit in their About |
 | D-109 | The terminal's and font's name | Asked for, not put as options | cmux with zsh, JetBrains Mono (macOS); fish, JetBrains Mono (Linux) |
 | D-110 | The Linux machine's terminal application | Asked for, not put as options | Ghostty |
+| D-111 | Running the test card on the Linux machine | Asked for, not put as options | Not until the repository can be pulled there; clear to proceed meanwhile |
 
 ## Where HUM LEAD chose against the recommendation ◇
 

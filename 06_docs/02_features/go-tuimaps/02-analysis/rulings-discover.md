@@ -104,10 +104,11 @@ Rulings on the open questions carried out of Tier 1 ([`tier1-synthesis.md`](tier
 | D-108 | 2026-09-19 | BUILD, M-A, matter 5: the data notice's sentence offering the embedded tiles under the same Open Database License as their source, flagged in WP-04 as a licence statement made in HUM LEAD's name; and the `landcover` layer, kept and undrawn | "5. License is fine - we'll also add a credit in Watchpost's about - which is what consuming apps should also do" | **The data notice stands as written.** A consuming application also credits the data in its About, as the first host will; the documents for hosts say so. The credit line drawn on the map stays: an About alone is outside what the data's attribution guidelines allow, because a person must go looking for it (research AI-2, section 4). **The reply does not speak to `landcover`; that is not an answer (D-39) and stays open for REVIEW.** |
 | D-109 | 2026-09-19 | BUILD, after M-A: the name of HUM LEAD's terminal and font, owed since the terminal test card was run in PLAN and asked for again at the M-A look | "Terminal name is cmux running zsh / font is Jetbrains Mono \| Linux terminal is fish with JetBrains Mono" | **Recorded on the terminal matrix.** The macOS row that passed the card is cmux, with zsh as its shell, in JetBrains Mono. A second row is added for HUM LEAD's Linux machine: JetBrains Mono, with fish as its shell. **Two things are said plainly and not assumed:** fish and zsh are shells, and for Linux the terminal application itself is not named; and the card has not been reported as run on the Linux machine, so that row reads NOT RUN. |
 | D-110 | 2026-09-19 | BUILD, after M-A: D-109 named a shell for the Linux machine and not a terminal; HUM LEAD was asked which terminal application it is | "Linux terminal is Ghostty" | **The Linux row of the terminal matrix is Ghostty, with fish as its shell, in JetBrains Mono.** The test card has still not been reported as run there, so every column of that row still reads NOT RUN; HUM LEAD was asked to run it and has not yet said. |
+| D-111 | 2026-09-19 | BUILD, after M-A: HUM LEAD was asked to run the terminal test card on the Linux machine | "wont be able to do this until we push the repo to a place where the linux box can pull stuff down - in the meantime you are clear to proceed" | **The Linux row stays NOT RUN until the repository has a remote, which by D-19 is at SHIP; it is carried as owed, not assumed.** BUILD proceeds to milestone M-B. |
 
 ## Summary of rulings D-11 to D-37
 
-*This table was written at D-37 and is kept as written. Rulings D-38 to D-110 are summarised in the table that follows it; where a later ruling changed a line here, the line says so.*
+*This table was written at D-37 and is kept as written. Rulings D-38 to D-111 are summarised in the table that follows it; where a later ruling changed a line here, the line says so.*
 
 | Area | Settled |
 |---|---|
@@ -123,7 +124,7 @@ Rulings on the open questions carried out of Tier 1 ([`tier1-synthesis.md`](tier
 | Metrics | M4 ≤ 8 MB added, byte-capped caches, near-zero cost for unchanged frames, flat heap — a target, confirmed by measurement at PLAN exit (D-29). M2 ≤ 1 s warm / ≤ 3 s cold, never blank — likewise (D-30). |
 | Still open, by design | keyboard zoom-target mechanism, dependency posture (PLAN) · *colour output depth was listed here; FR-17, D-44 and D-59 have since settled it* · every visual approach, from specimens (D-31). |
 
-### Rulings D-38 to D-110
+### Rulings D-38 to D-111
 
 | Area | Settled |
 |---|---|

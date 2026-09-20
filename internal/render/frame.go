@@ -21,14 +21,20 @@ const (
 	placeGlyph = "\u25C9"
 )
 
-// Depth is the colour depth a frame is emitted at.
-type Depth uint8
+// Depth is the colour depth a frame is emitted at: the colour package's.
+type Depth = colour.Depth
 
-// The depths built so far. Truecolor is the zero value.
+// The depths, by their short names here.
 const (
-	Truecolor Depth = iota
-	NoColour
+	Truecolor = colour.Truecolor
+	NoColour  = colour.NoColour
 )
+
+// colourless reports whether a frame at this depth carries no colour sequence: no
+// colour was asked for, or 16 colours, whose palette is not built yet (D-59).
+func colourless(d Depth) bool {
+	return d == colour.NoColour || d == colour.Colours16
+}
 
 // Status says how finished a frame is.
 type Status uint8
@@ -420,11 +426,28 @@ func (r *Renderer) colours(c cell, in Input, groundColour colour.RGB, kind colou
 	if c.strict {
 		need = colour.TextContrast
 	}
+	if in.Depth == colour.Colours256 {
+		// The rule is applied to what the palette will show, so that the
+		// contrast on the screen is the contrast that was checked (FR-16).
+		_, own = colour.To256(own)
+		_, bg = colour.To256(bg)
+	}
 	return colour.Foreground(own, bg, need), bg
 }
 
-func sgrColour(b *strings.Builder, lead string, c colour.RGB) {
-	b.WriteString(lead)
+// sgrColour writes one colour: "38" for the foreground or "48" for the
+// background, as truecolor, or at 256 colours as the nearest fixed entry.
+func sgrColour(b *strings.Builder, which string, c colour.RGB, depth Depth) {
+	b.WriteString("\x1b[")
+	b.WriteString(which)
+	if depth == colour.Colours256 {
+		index, _ := colour.To256(c)
+		b.WriteString(";5;")
+		b.WriteString(strconv.Itoa(int(index)))
+		b.WriteByte('m')
+		return
+	}
+	b.WriteString(";2;")
 	b.WriteString(strconv.Itoa(int(c.R)))
 	b.WriteByte(';')
 	b.WriteString(strconv.Itoa(int(c.G)))
@@ -518,7 +541,7 @@ func (r *Renderer) emit(in Input) []string {
 			if c.taken && c.text == "" {
 				continue // the second half of a wide character
 			}
-			if in.Depth != NoColour {
+			if !colourless(in.Depth) {
 				r.colourCell(c, in, under, &p)
 			}
 			if c.text != "" {
@@ -527,7 +550,7 @@ func (r *Renderer) emit(in Input) []string {
 			}
 			r.line.WriteRune(c.glyph)
 		}
-		if in.Depth != NoColour {
+		if !colourless(in.Depth) {
 			r.line.WriteString("\x1b[0m")
 		}
 		lines[row] = r.line.String()
@@ -545,11 +568,11 @@ func (r *Renderer) colourCell(c cell, in Input, under ground, p *pen) {
 		fg = p.fg // an empty cell shows no foreground: nothing to change
 	}
 	if p.fresh || fg != p.fg {
-		sgrColour(&r.line, "\x1b[38;2;", fg)
+		sgrColour(&r.line, "38", fg, in.Depth)
 	}
 	shown := under.painted || c.area != 0
 	if shown && (p.fresh || bg != p.bg) {
-		sgrColour(&r.line, "\x1b[48;2;", bg)
+		sgrColour(&r.line, "48", bg, in.Depth)
 	}
 	if !shown && !p.fresh && p.bg != under.colour {
 		r.line.WriteString("\x1b[49m") // back to the terminal's own, which the host declared

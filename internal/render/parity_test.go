@@ -1,12 +1,15 @@
 package render
 
 import (
+	"regexp"
+	"strconv"
 	"testing"
 
 	"github.com/branden-thompson/go-tuimaps/internal/colour"
 	"github.com/branden-thompson/go-tuimaps/internal/project"
 	"github.com/branden-thompson/go-tuimaps/internal/scene"
 	"github.com/branden-thompson/go-tuimaps/internal/style"
+	"github.com/mattn/go-runewidth"
 )
 
 // TestParityP19_VisibleTiles: tiles outside the grid are dropped, so the
@@ -207,5 +210,82 @@ func testAnchors(t *testing.T) {
 	}
 	if wide.labelAt(Label{Name: "Nowhere", Ink: ink}, []Point{{10, 22}, {120, 22}}) {
 		t.Error("a name was placed in the ocean beyond the world's edge")
+	}
+}
+
+// TestParityP05a_ColourDepth: truecolor, 256 colours and no colour. Upstream
+// had 256 only, and used index 0 to mean "unset"; here 256 uses only the
+// entries every terminal agrees on, 16 to 255.
+func TestParityP05a_ColourDepth(t *testing.T) {
+	v := fitted(60, 16)
+	for depth, want := range map[colour.Depth]string{colour.Truecolor: "38;2;", colour.Colours256: "38;5;"} {
+		in := input(t, v)
+		in.Depth = depth
+		f := render(t, in)
+		joined := ""
+		for _, l := range f.Lines {
+			joined += l
+		}
+		if !contains(joined, want) {
+			t.Errorf("%v: no %q sequence in the frame", depth, want)
+		}
+		if depth == colour.Colours256 && (contains(joined, "38;2;") || contains(joined, "48;2;")) {
+			t.Error("a 256-colour frame holds a truecolor sequence")
+		}
+		for _, m := range regexp.MustCompile(`[34]8;5;(\d+)`).FindAllStringSubmatch(joined, -1) {
+			if n, _ := strconv.Atoi(m[1]); n < 16 || n > 255 {
+				t.Fatalf("palette entry %d is used; only 16 to 255 are fixed", n)
+			}
+		}
+		for i, line := range f.Lines {
+			if got := runewidth.StringWidth(plain(line)); got != 60 {
+				t.Fatalf("%v: line %d is %d cells", depth, i, got)
+			}
+		}
+	}
+	// At 16 colours the ramps are not built yet, and the basemap's palette is
+	// task 08.14's: until then a 16-colour hint draws with no colour, which
+	// is always safe (D-59).
+	in := input(t, v)
+	in.Depth = colour.Colours16
+	for _, l := range render(t, in).Lines {
+		if contains(l, "\x1b") {
+			t.Fatal("a 16-colour frame holds a colour sequence before its palette exists")
+		}
+	}
+}
+
+// TestContrastIsExactAt256: at 256 colours the foreground rule is applied to
+// the colours the palette will really show, so 3:1 on the screen is 3:1.
+func TestContrastIsExactAt256(t *testing.T) {
+	v := fitted(60, 16)
+	r, _ := NewRenderer(v.Cols, v.Rows)
+	in := input(t, v)
+	in.Depth = colour.Colours256
+	if _, err := r.Draw(in); err != nil {
+		t.Fatal(err)
+	}
+	checked := 0
+	for _, c := range r.grid.cells {
+		if c.ink == 0 {
+			continue
+		}
+		fg, bg := r.colours(c, in, colour.RGB{R: 16, G: 22, B: 28}, colour.Dark)
+		_, shownFG := colour.To256(fg)
+		_, shownBG := colour.To256(bg)
+		if fg != shownFG || bg != shownBG {
+			t.Fatalf("colours %v on %v are not palette colours; the rule was applied before the palette", fg, bg)
+		}
+		need := colour.LineContrast
+		if c.strict {
+			need = colour.TextContrast
+		}
+		if got := colour.Contrast(fg, bg); got < need {
+			t.Fatalf("%v on %v is %.2f:1 as shown, under %.1f", fg, bg, got, need)
+		}
+		checked++
+	}
+	if checked == 0 {
+		t.Fatal("no cell was checked")
 	}
 }
