@@ -264,6 +264,9 @@ func (s *Store) dropPreparedLocked(id string) {
 	}
 	delete(s.prepared, id)
 	delete(s.fromMemory, id)
+	delete(s.fields, id)
+	delete(s.rasters, id)
+	delete(s.reports, id)
 }
 
 // Drawn is what is drawn for an overlay at a bucket now: its prepared form at
@@ -343,12 +346,38 @@ func (j *prepareJob) Run(ctx context.Context) error {
 	if !ok {
 		return nil // removed meanwhile: nothing to do
 	}
+	if img := reader.Overlay().Image; img != nil {
+		raster, report, err := rasterise(img, reader.h.kind)
+		if err == nil {
+			j.store.keepRaster(reader, raster, report)
+		}
+		reader.Done()
+		return err
+	}
+	if grid := reader.Overlay().Grid; grid != nil {
+		j.store.keepField(reader, classify(grid, reader.h.kind))
+		reader.Done()
+		return nil
+	}
 	shapes, err := Prepare(reader.Overlay(), j.bucket)
 	if err == nil {
 		j.store.keep(reader, j.bucket, shapes)
 	}
 	reader.Done()
 	return err
+}
+
+// keepField stores a prepared grid, if the grid it was made from is still the
+// overlay's.
+func (s *Store) keepField(r *Reader, field scene.Field) {
+	if r == nil || r.h == nil {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if !r.h.retired {
+		s.fields[r.id] = field
+	}
 }
 
 // keep stores a prepared form, if the geometry it was made from is still the

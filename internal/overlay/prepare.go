@@ -81,7 +81,7 @@ func prepareRing(ring []project.LonLat, kind scene.ShapeKind, tolerance float64)
 // own copy of each shape, simplified to the bucket's tolerance and unclipped.
 // It is the slow step, and runs inside a Work call, never while drawing.
 func Prepare(o Overlay, bucket int) ([]scene.Shape, error) {
-	if o.ID == "" || len(o.Features) == 0 {
+	if o.ID == "" || len(o.Features) == 0 || o.Grid != nil || o.Image != nil {
 		return nil, fault.Make(fault.Internal, textsafe.Const("an overlay could not be prepared"),
 			textsafe.Const("it was never accepted: it has no id or no features"), textsafe.Const("this is a defect in the library; report it"))
 	}

@@ -30,7 +30,8 @@ func (v Vision) String() string {
 // Lab is a colour in the 1976 CIE L*a*b* space, under the D65 white.
 type Lab struct{ L, A, B float64 }
 
-func (p Lab) distance(q Lab) float64 {
+// Distance is how far apart two colours are in Lab: the 1976 difference.
+func (p Lab) Distance(q Lab) float64 {
 	return math.Sqrt((p.L-q.L)*(p.L-q.L) + (p.A-q.A)*(p.A-q.A) + (p.B-q.B)*(p.B-q.B))
 }
 
@@ -102,7 +103,7 @@ func Difference(a, b RGB) float64 {
 	}
 	least := math.Inf(1)
 	for v := Normal; v <= Tritanopia; v++ {
-		least = math.Min(least, InLab(a, v).distance(InLab(b, v)))
+		least = math.Min(least, InLab(a, v).Distance(InLab(b, v)))
 	}
 	return least
 }

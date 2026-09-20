@@ -117,3 +117,27 @@ type Shape struct {
 	Role  uint8
 	Label string
 }
+
+// Field is a prepared scalar grid: each value classified once, on the host's
+// own regular longitude and latitude grid, rows from the north. The renderer
+// samples it into cells at draw time. A class of -1 is no data.
+type Field struct {
+	West, South, East, North float64
+	Cols, Rows               int
+	Classes                  []int8
+	Preset                   uint8 // the colour preset, or 0 for a host's own type
+	ClassCount               int
+}
+
+// Raster is a prepared image: one class a pixel, one byte each, in the
+// projection the host stated, rows from the north. The provider's own
+// colours are gone; the renderer colours the classes with the library's
+// ramp and resamples them into cells at draw time. A class of -1 is no data.
+type Raster struct {
+	West, South, East, North float64
+	Projection               uint8
+	Width, Height            int
+	Classes                  []int8
+	Preset                   uint8
+	ClassCount               int
+}

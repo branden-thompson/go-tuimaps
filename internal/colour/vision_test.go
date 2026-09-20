@@ -31,7 +31,7 @@ func TestSimulation(t *testing.T) {
 	for _, c := range cases {
 		worst := math.Inf(1)
 		for i, v := range []Vision{Normal, Protanopia, Deuteranopia, Tritanopia} {
-			got := InLab(c.a, v).distance(InLab(c.b, v))
+			got := InLab(c.a, v).Distance(InLab(c.b, v))
 			if !near(got, c.want[i], 0.001) {
 				t.Errorf("%v and %v under %v: %.4f, want %.4f", c.a, c.b, v, got, c.want[i])
 			}
@@ -65,7 +65,7 @@ func TestSimulationIsInLinearLight(t *testing.T) {
 	}
 	gamma := math.Inf(1)
 	for _, v := range []Vision{Normal, Protanopia, Deuteranopia, Tritanopia} {
-		gamma = math.Min(gamma, inLabGammaSpace(a, v).distance(inLabGammaSpace(b, v)))
+		gamma = math.Min(gamma, inLabGammaSpace(a, v).Distance(inLabGammaSpace(b, v)))
 	}
 	if !near(gamma, 6.8087, 0.001) {
 		t.Errorf("the wrong way round gives %.4f here; the test no longer shows the trap", gamma)

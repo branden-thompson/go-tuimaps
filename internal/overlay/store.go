@@ -9,6 +9,7 @@ import (
 	"github.com/branden-thompson/go-tuimaps/internal/colour"
 	"github.com/branden-thompson/go-tuimaps/internal/fault"
 	"github.com/branden-thompson/go-tuimaps/internal/project"
+	"github.com/branden-thompson/go-tuimaps/internal/scene"
 	"github.com/branden-thompson/go-tuimaps/internal/textsafe"
 )
 
@@ -53,6 +54,8 @@ type Overlay struct {
 	Keeps    time.Duration
 	Credit   string
 	Features []Feature
+	Grid     *Grid  // a scalar grid; an overlay is features, or a grid, or an image, and one only
+	Image    *Image // a georeferenced image with its colour table
 }
 
 // Caps are a store's limits, fixed when it is made.
@@ -60,6 +63,7 @@ type Caps struct {
 	OverlayVertices int  // zero means 2,000,000
 	StoreVertices   int  // zero means 4,000,000
 	ShapeBytes      int  // the shape cache's cap; zero means 250,000
+	ImageBytes      int  // the image cap, at one byte a pixel; zero means 250,000
 	BorrowCheck     bool // fingerprint borrowed geometry at hand-in, and re-check what is read
 }
 
@@ -81,6 +85,7 @@ type held struct {
 	vertices int
 	readers  int
 	retired  bool                // replaced or removed: released when its last reader leaves
+	kind     Kind                // a grid's type, resolved at hand-in
 	index    []Box               // built inside Set for a shape that may be drawn from memory (D-92)
 	prints   map[[2]int][]uint64 // fingerprints by feature, ring and run, if the borrow check is on
 }
@@ -98,6 +103,9 @@ type Store struct {
 	warnings []fault.Warning
 
 	prepared   map[string]map[int]*prepared // by overlay id, then bucket
+	fields     map[string]scene.Field       // prepared grids, by overlay id
+	rasters    map[string]scene.Raster      // prepared images, by overlay id
+	reports    map[string]Report            // what matching each image's colours found
 	fromMemory map[string]bool              // overlays whose prepared form is larger than the whole cap
 	views      map[*ShapeView]int           // live views, and the bucket each draws at
 	released   []string
@@ -109,7 +117,7 @@ type Store struct {
 
 // NewStore makes a store. Caps may be lowered, never raised.
 func NewStore(c Caps) (*Store, error) {
-	if c.OverlayVertices < 0 || c.StoreVertices < 0 || c.OverlayVertices > defaultOverlayVertices || c.StoreVertices > defaultStoreVertices || c.ShapeBytes < 0 || c.ShapeBytes > defaultShapeBytes {
+	if c.OverlayVertices < 0 || c.StoreVertices < 0 || c.OverlayVertices > defaultOverlayVertices || c.StoreVertices > defaultStoreVertices || c.ShapeBytes < 0 || c.ShapeBytes > defaultShapeBytes || c.ImageBytes < 0 || c.ImageBytes > defaultImageBytes {
 		return nil, fault.Make(fault.OverVertexCap, textsafe.Const("the overlay limits were refused"),
 			textsafe.Const("a cap may be lowered, never raised: the memory the library promises is stated against it"),
 			textsafe.Const("give a cap between 1 and the default, or none"))
@@ -123,7 +131,10 @@ func NewStore(c Caps) (*Store, error) {
 	if c.ShapeBytes == 0 {
 		c.ShapeBytes = defaultShapeBytes
 	}
-	return &Store{caps: c, current: map[string]*held{}, retiring: map[string]int{}, prepared: map[string]map[int]*prepared{}, fromMemory: map[string]bool{}, views: map[*ShapeView]int{}}, nil
+	if c.ImageBytes == 0 {
+		c.ImageBytes = defaultImageBytes
+	}
+	return &Store{caps: c, current: map[string]*held{}, retiring: map[string]int{}, prepared: map[string]map[int]*prepared{}, fields: map[string]scene.Field{}, rasters: map[string]scene.Raster{}, reports: map[string]Report{}, fromMemory: map[string]bool{}, views: map[*ShapeView]int{}}, nil
 }
 
 func refused(kind fault.Kind, why, todo textsafe.Text) error {
@@ -203,6 +214,24 @@ func (s *Store) check(o Overlay) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+	kinds := 0
+	for _, has := range []bool{len(o.Features) != 0, o.Grid != nil, o.Image != nil} {
+		if has {
+			kinds++
+		}
+	}
+	if kinds > 1 {
+		return 0, refused(fault.SizeMismatch, textsafe.Const("it has more than one of features, a grid and an image: an overlay is one kind of thing"),
+			textsafe.Const("hand them in as separate overlays, each with an id of its own"))
+	}
+	if o.Image != nil {
+		_, err := checkImage(o.Image, s.caps.ImageBytes)
+		return 0, err
+	}
+	if o.Grid != nil {
+		_, err := checkGrid(o.Grid)
+		return 0, err
+	}
 	if len(o.Features) == 0 {
 		return 0, refused(fault.SizeMismatch, textsafe.Const("there is nothing in it: no feature at all"),
 			textsafe.Const("to take an overlay away, remove it by its id"))
@@ -233,6 +262,23 @@ func (s *Store) warnLocked(kind fault.WarningKind, subject textsafe.Text) {
 	}
 	if len(s.warnings) < maxWarnings {
 		s.warnings = append(s.warnings, fault.Warning{Kind: kind, Subject: subject, Count: 1})
+	}
+}
+
+// warnCountLocked records a warning that counts something other than how
+// often it was raised: the pixels of an image that matched nothing.
+func (s *Store) warnCountLocked(kind fault.WarningKind, subject textsafe.Text, count int) {
+	if count <= 0 {
+		return
+	}
+	for i := range s.warnings {
+		if s.warnings[i].Kind == kind && s.warnings[i].Subject == subject {
+			s.warnings[i].Count = count
+			return
+		}
+	}
+	if len(s.warnings) < maxWarnings {
+		s.warnings = append(s.warnings, fault.Warning{Kind: kind, Subject: subject, Count: count})
 	}
 }
 
@@ -322,6 +368,15 @@ func (s *Store) Set(o Overlay) (SetResult, error) {
 		}
 	}
 	next := &held{overlay: o, vertices: vertices}
+	if o.Image != nil {
+		next.kind, _ = ResolveType(o.Image.Type) // it resolved a moment ago, in check
+	}
+	if o.Grid != nil {
+		next.kind, _ = ResolveType(o.Grid.Type) // it resolved a moment ago, in check
+		if implausible(o.Grid) {
+			s.warnLocked(fault.ImplausibleUnit, textsafe.Quote(o.ID))
+		}
+	}
 	if vertices > s.IndexFrom() {
 		next.index = buildIndex(o) // one linear pass, inside Set, so the shape draws next frame (D-92)
 	}
@@ -392,6 +447,12 @@ func (s *Store) OwnedBytes() int {
 	defer s.mu.Unlock()
 	total := 0
 	total += int(s.shapeHeld)
+	for _, f := range s.fields {
+		total += len(f.Classes)
+	}
+	for _, r := range s.rasters {
+		total += len(r.Classes) // one byte a pixel (D-36)
+	}
 	for id, h := range s.current {
 		total += 160 + len(id) + len(h.overlay.Credit) + 96*len(h.overlay.Features) + 16*len(h.index)
 		for _, f := range h.overlay.Features {
