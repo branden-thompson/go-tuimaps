@@ -50,7 +50,7 @@ type Rule struct {
 	ID      string
 	Layer   string // the tile layer it reads
 	Kind    Kind
-	MinZoom float64 // the rule applies from this zoom...
+	MinZoom float64 // the rule applies from this zoom; zero means no lower bound...
 	MaxZoom float64 // ...up to and including this one, as upstream has it (P-27); zero means no upper bound
 	// Token is the role a built-in rule draws in. A user's rule has none: it
 	// gives literal colours, read with Colour.
@@ -67,8 +67,8 @@ type Style struct {
 }
 
 func (r *Rule) inZoom(zoom float64) bool {
-	if zoom < r.MinZoom {
-		return false
+	if r.MinZoom != 0 && zoom < r.MinZoom {
+		return false // a rule from zoom 0 has no lower bound: a small world map is below it
 	}
 	return r.MaxZoom == 0 || zoom <= r.MaxZoom
 }

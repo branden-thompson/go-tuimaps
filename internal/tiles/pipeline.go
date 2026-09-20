@@ -109,7 +109,7 @@ type Pipeline struct {
 }
 
 func refusedOptions(why textsafe.Text) error {
-	return fault.New(fault.Internal, textsafe.Const("the tile pipeline could not be made"), why, textsafe.Const("this is a defect in the library; report it"))
+	return fault.Make(fault.Internal, textsafe.Const("the tile pipeline could not be made"), why, textsafe.Const("this is a defect in the library; report it"))
 }
 
 func checkNetwork(n *Network) error {
@@ -153,8 +153,8 @@ func NewPipeline(o Options) (*Pipeline, error) {
 	return &Pipeline{opts: o, pins: o.Cache.Register(), tracks: map[Key]*track{}, wanted: map[string]bool{}}, nil
 }
 
-// Close ends the pipeline's live view: what only it needed becomes spare.
-func (p *Pipeline) Close() {
+// Release ends the pipeline's live view: what only it needed becomes spare.
+func (p *Pipeline) Release() {
 	if p == nil {
 		return
 	}
@@ -478,21 +478,21 @@ func (j *tileJob) Key() string {
 }
 
 func noSource() error {
-	return fault.New(fault.FetchRefused,
+	return fault.Make(fault.FetchRefused,
 		textsafe.Const("no tile could be fetched"),
 		textsafe.Const("no source is named, and the embedded tiles do not hold this tile or were not passed"),
 		textsafe.Const("name a source, or pass the assets package's tiles as an option"))
 }
 
 func cancelled() error {
-	return fault.New(fault.Cancelled,
+	return fault.Make(fault.Cancelled,
 		textsafe.Const("a tile was abandoned"),
 		textsafe.Const("it left the view, or the work it was part of ran out of time"),
 		textsafe.Const("nothing; it is asked for again if it is still wanted"))
 }
 
 func sourceFailed() error {
-	return fault.New(fault.FetchFailed,
+	return fault.Make(fault.FetchFailed,
 		textsafe.Const("a tile could not be fetched"),
 		textsafe.Const("the source's fetcher failed without saying why in the library's own terms"),
 		textsafe.Const("check the network and the source; the tile is tried again later"))

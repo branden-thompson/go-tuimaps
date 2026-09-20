@@ -53,7 +53,7 @@ func (t Template) URL(tile scene.TileID) string {
 
 // refusedAddress never repeats the address: it may hold a key.
 func refusedAddress(why textsafe.Text) error {
-	return fault.New(fault.FetchRefused, textsafe.Const("the tile source was refused"), why,
+	return fault.Make(fault.FetchRefused, textsafe.Const("the tile source was refused"), why,
 		textsafe.Const("name a secure source whose tiles come from its own host, or allow the other host explicitly"))
 }
 
@@ -133,7 +133,7 @@ type TileJSON struct {
 }
 
 func overLimit() error {
-	return fault.New(fault.OverLimit, textsafe.Const("the tile source was refused"),
+	return fault.Make(fault.OverLimit, textsafe.Const("the tile source was refused"),
 		textsafe.Const("its TileJSON is larger than 1 MiB or nested deeper than 64"),
 		textsafe.Const("check the source; the limits protect the host's memory"))
 }

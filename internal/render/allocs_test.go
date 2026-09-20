@@ -13,11 +13,11 @@ func TestUnchangedFrameZeroAllocs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.Render(in); err != nil {
+	if _, err := r.Draw(in); err != nil {
 		t.Fatal(err)
 	}
 	allocs := testing.AllocsPerRun(100, func() {
-		if _, err := r.Render(in); err != nil {
+		if _, err := r.Draw(in); err != nil {
 			t.Fatal(err)
 		}
 	})

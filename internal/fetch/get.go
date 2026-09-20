@@ -15,7 +15,7 @@ import (
 // refusedSource is the error for a source, a token or a request the policy
 // does not permit. It names nothing, because nothing has been validated.
 func refusedSource() error {
-	return fault.New(fault.FetchRefused,
+	return fault.Make(fault.FetchRefused,
 		textsafe.Const("the tile source was refused"),
 		textsafe.Const("it is not a secure address with a host, it carries a user name, its token holds characters a header cannot, or the request gave no size limit"),
 		textsafe.Const("name an https source, or allow plain http explicitly; give every request a maximum size"))
@@ -28,20 +28,20 @@ func (f *Fetcher) problem(kind fault.Kind, why textsafe.Text) error {
 	about := textsafe.Join(textsafe.Const("a request to "), textsafe.Quote(f.scheme+"://"+f.host))
 	switch kind {
 	case fault.FetchRefused:
-		return fault.New(kind, textsafe.Join(about, textsafe.Const(" was refused")),
+		return fault.Make(kind, textsafe.Join(about, textsafe.Const(" was refused")),
 			textsafe.Const("it would have left the named source: another scheme or host, a fourth redirect, a redirect from secure to plain, or a connection landing in private address space"),
 			textsafe.Const("check the source; a host a redirect may go to can be allowed explicitly"))
 	case fault.Cancelled:
-		return fault.New(kind, textsafe.Join(about, textsafe.Const(" was abandoned")),
+		return fault.Make(kind, textsafe.Join(about, textsafe.Const(" was abandoned")),
 			textsafe.Const("the work it was part of was cancelled or ran out of time"),
 			textsafe.Const("nothing; it is asked for again if it is still wanted"))
 	}
-	return fault.New(fault.FetchFailed, textsafe.Join(about, textsafe.Const(" failed")), why,
+	return fault.Make(fault.FetchFailed, textsafe.Join(about, textsafe.Const(" failed")), why,
 		textsafe.Const("the tile will be tried again later; check the network and the source"))
 }
 
 func tooLarge() error {
-	return fault.New(fault.OverLimit,
+	return fault.Make(fault.OverLimit,
 		textsafe.Const("a reply was refused"),
 		textsafe.Const("its body is larger than the request allowed"),
 		textsafe.Const("check the source; the limits protect the host's memory"))
@@ -156,16 +156,16 @@ func Checked(replacement Func) Func {
 		}
 		data, err := replacement(ctx, r)
 		if ctx.Err() != nil {
-			return nil, fault.New(fault.Cancelled, textsafe.Const("a request was abandoned"), textsafe.Const("the work it was part of was cancelled or ran out of time"), textsafe.Const("nothing; it is asked for again if it is still wanted"))
+			return nil, fault.Make(fault.Cancelled, textsafe.Const("a request was abandoned"), textsafe.Const("the work it was part of was cancelled or ran out of time"), textsafe.Const("nothing; it is asked for again if it is still wanted"))
 		}
 		if err != nil {
-			return nil, fault.New(fault.FetchFailed, textsafe.Const("the host's own fetcher failed"), textsafe.Const("it returned an error, which is not repeated here because it may hold the tile's address"), textsafe.Const("check the host's fetcher"))
+			return nil, fault.Make(fault.FetchFailed, textsafe.Const("the host's own fetcher failed"), textsafe.Const("it returned an error, which is not repeated here because it may hold the tile's address"), textsafe.Const("check the host's fetcher"))
 		}
 		if int64(len(data)) > r.MaxBytes {
 			return nil, tooLarge()
 		}
 		if r.RangeLen > 0 && int64(len(data)) != r.RangeLen {
-			return nil, fault.New(fault.FetchFailed, textsafe.Const("the host's own fetcher failed"), textsafe.Const("it returned a different number of bytes than the range that was asked for"), textsafe.Const("check the host's fetcher"))
+			return nil, fault.Make(fault.FetchFailed, textsafe.Const("the host's own fetcher failed"), textsafe.Const("it returned a different number of bytes than the range that was asked for"), textsafe.Const("check the host's fetcher"))
 		}
 		return data, nil
 	}

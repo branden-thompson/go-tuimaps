@@ -51,7 +51,7 @@ type Disk struct {
 }
 
 func cacheRefused(why textsafe.Text) error {
-	return fault.New(fault.CacheRefused, textsafe.Const("the disk cache was refused"), why,
+	return fault.Make(fault.CacheRefused, textsafe.Const("the disk cache was refused"), why,
 		textsafe.Const("name a directory that only this user can write to, and a cap above zero; or set no root, and nothing is kept on disk"))
 }
 

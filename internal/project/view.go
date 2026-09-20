@@ -35,7 +35,7 @@ type View struct {
 
 // badView is the error for a view that cannot be drawn.
 func badView() error {
-	return fault.New(fault.InvalidCoordinates,
+	return fault.Make(fault.InvalidCoordinates,
 		textsafe.Const("the view cannot be drawn"),
 		textsafe.Const("its size is not between 1 and 10000 cells each way, its zoom is not between -8 and 18, or its centre is not a position on the map"),
 		textsafe.Const("check the size, the zoom and the centre"))

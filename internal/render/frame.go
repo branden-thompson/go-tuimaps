@@ -98,16 +98,26 @@ type cell struct {
 
 type box struct{ left, right, top, bottom int }
 
+// holds reports whether a point is inside the box, its right and bottom edges
+// excluded. The zero box bounds nothing.
+func (b box) holds(p Point) bool {
+	if b == (box{}) {
+		return true
+	}
+	return p.X >= b.left && p.X < b.right && p.Y >= b.top && p.Y < b.bottom
+}
+
 // grid is the frame's cells and the boxes of the labels placed so far.
 type grid struct {
 	cols, rows int
 	cells      []cell
 	boxes      []box
+	world      box // the world's edges in dots; the zero box means no bound is known
 }
 
 func newGrid(cols, rows int) (*grid, error) {
 	if cols <= 0 || rows <= 0 || cols > maxCells || rows > maxCells || cols*rows > maxCells {
-		return nil, fault.New(fault.NoSize, textsafe.Const("the map has no size to draw at"),
+		return nil, fault.Make(fault.NoSize, textsafe.Const("the map has no size to draw at"),
 			textsafe.Const("its width and height in cells must each be at least 1"), textsafe.Const("give the map a size before drawing"))
 	}
 	return &grid{cols: cols, rows: rows, cells: make([]cell, cols*rows)}, nil
@@ -175,6 +185,9 @@ func (g *grid) anchor(l Label, at Point) bool {
 	width := textsafe.Width(text)
 	if width == 0 || at.X < 0 || at.Y < 0 {
 		return false // above or left of the rectangle: never a negative row (P-33, L-8)
+	}
+	if !g.world.holds(at) {
+		return false // beyond the world's edge: a tile's buffer repeats places a world away (P-33)
 	}
 	col, row := at.X/2-width/2, at.Y/4
 	mine := box{left: col - labelMargin, right: col + labelMargin + width, top: row - labelMargin/2, bottom: row + labelMargin/2}
@@ -258,11 +271,11 @@ func NewRenderer(cols, rows int) (*Renderer, error) {
 }
 
 func badInput(why textsafe.Text) error {
-	return fault.New(fault.Internal, textsafe.Const("the frame could not be drawn"), why, textsafe.Const("this is a defect in the library; report it"))
+	return fault.Make(fault.Internal, textsafe.Const("the frame could not be drawn"), why, textsafe.Const("this is a defect in the library; report it"))
 }
 
-// Render draws one frame. It reads only what it is given and never waits.
-func (r *Renderer) Render(in Input) (Frame, error) {
+// Draw draws one frame. It reads only what it is given and never waits.
+func (r *Renderer) Draw(in Input) (Frame, error) {
 	if r == nil || in.Style == nil {
 		return Frame{}, badInput(textsafe.Const("it was given no renderer or no style"))
 	}
@@ -343,6 +356,9 @@ func (r *Renderer) compose(in Input, status Status) {
 	r.furniture(in, status)
 	if !in.Labels {
 		return
+	}
+	if x, y, side, err := in.View.TilePlace(scene.TileID{}); err == nil {
+		g.world = box{left: toDot(x), top: toDot(y), right: toDot(x + side), bottom: toDot(y + side)}
 	}
 	// Names last, most important first; the order among equals is the order
 	// the tiles gave them, and the tiles were sorted (P-25).

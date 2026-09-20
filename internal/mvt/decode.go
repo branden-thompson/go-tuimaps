@@ -95,7 +95,7 @@ type Want struct {
 
 // overLimit is the error for a tile that is larger than a limit allows.
 func overLimit() error {
-	return fault.New(fault.OverLimit,
+	return fault.Make(fault.OverLimit,
 		textsafe.Const("the tile was refused"),
 		textsafe.Const("it is larger than a limit allows: its size, its layers, its features or its geometry"),
 		textsafe.Const("check the tile source; the limits can be lowered by a host, not raised past what the library can hold"))
@@ -103,7 +103,7 @@ func overLimit() error {
 
 // unsupported is the error for bytes that are some other format.
 func unsupported() error {
-	return fault.New(fault.UnsupportedTile,
+	return fault.Make(fault.UnsupportedTile,
 		textsafe.Const("the tile is not a vector tile"),
 		textsafe.Const("it is an image, a page of text, or compressed in a way other than gzip"),
 		textsafe.Const("name a source of vector tiles in the supported schema"))

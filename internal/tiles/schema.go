@@ -33,7 +33,7 @@ func ResolveSchema(declared []string) (Schema, error) {
 			}
 		}
 	}
-	return Schema{}, fault.New(fault.UnsupportedSchema,
+	return Schema{}, fault.Make(fault.UnsupportedSchema,
 		textsafe.Const("the tile source was refused"),
 		textsafe.Const("none of the layers it declares is one the map knows how to draw; this release reads the OpenMapTiles schema"),
 		textsafe.Const("name a source that serves the OpenMapTiles schema"))

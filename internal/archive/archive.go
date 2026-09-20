@@ -70,7 +70,7 @@ type Archive struct {
 // bad is the error for bytes that are not a well-formed archive of vector
 // tiles.
 func bad() error {
-	return fault.New(fault.UnsupportedTile,
+	return fault.Make(fault.UnsupportedTile,
 		textsafe.Const("the tile archive could not be read"),
 		textsafe.Const("it is not a well-formed version 3 archive of vector tiles with gzip directories"),
 		textsafe.Const("check the archive; if it is another format or version, it is not supported"))
@@ -78,7 +78,7 @@ func bad() error {
 
 // tooLarge is the error for a directory or a tile over its limit.
 func tooLarge() error {
-	return fault.New(fault.OverLimit,
+	return fault.Make(fault.OverLimit,
 		textsafe.Const("the tile archive was refused"),
 		textsafe.Const("a directory or a tile in it is larger than a limit allows"),
 		textsafe.Const("check the archive; the limits protect the host's memory"))
@@ -87,7 +87,7 @@ func tooLarge() error {
 // unread is the error for a range that could not be read. The reader's own
 // error is not passed on: over a network it may hold the archive's address.
 func unread() error {
-	return fault.New(fault.FetchFailed,
+	return fault.Make(fault.FetchFailed,
 		textsafe.Const("part of the tile archive could not be read"),
 		textsafe.Const("the read failed, or returned a different number of bytes than was asked for"),
 		textsafe.Const("check the archive and the network; the read is tried again later"))
@@ -170,7 +170,7 @@ func (a *Archive) exactly(ctx context.Context, offset, length uint64) ([]byte, e
 	b, err := a.read(ctx, int64(offset), int64(length))
 	if err != nil {
 		if ctx.Err() != nil {
-			return nil, fault.New(fault.Cancelled, textsafe.Const("reading the tile archive was abandoned"), textsafe.Const("the work it was part of was cancelled or ran out of time"), textsafe.Const("nothing; it is asked for again if it is still wanted"))
+			return nil, fault.Make(fault.Cancelled, textsafe.Const("reading the tile archive was abandoned"), textsafe.Const("the work it was part of was cancelled or ran out of time"), textsafe.Const("nothing; it is asked for again if it is still wanted"))
 		}
 		return nil, unread()
 	}

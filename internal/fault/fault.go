@@ -106,10 +106,10 @@ type Error struct {
 	todo  textsafe.Text
 }
 
-// New makes an Error. Each sentence is Text, so it was cleaned or is a
+// Make makes an Error. Each sentence is Text, so it was cleaned or is a
 // constant of the library's own. A kind outside the list is a fault of the
 // library's, and becomes Internal.
-func New(kind Kind, what, why, todo textsafe.Text) *Error {
+func Make(kind Kind, what, why, todo textsafe.Text) *Error {
 	if kind == 0 || kind > lastKind {
 		kind = Internal
 	}

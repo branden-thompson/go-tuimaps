@@ -19,7 +19,7 @@ func TestOnPendingFiresOnceInsideOwnerCall(t *testing.T) {
 	m := member(t)
 	fired := 0
 	var pendingSeen int
-	if err := m.OnPending(func() { fired++; pendingSeen = m.Pending() }); err != nil {
+	if err := m.OnPending(func() { fired++; pendingSeen = m.Backlog() }); err != nil {
 		t.Fatal(err)
 	}
 	add(t, m, tile("t/1"))
@@ -68,8 +68,8 @@ func TestOwnerCallFromHookRefused(t *testing.T) {
 			t.Errorf("owner call %d from inside the hook: %v; want the reentrant-call kind", i, err)
 		}
 	}
-	if m.Pending() != 1 {
-		t.Errorf("%d pending; the refused Add must not have queued anything", m.Pending())
+	if m.Backlog() != 1 {
+		t.Errorf("%d pending; the refused Add must not have queued anything", m.Backlog())
 	}
 	if err := m.Add(tile("t/2")); err != nil {
 		t.Errorf("after the hook returned, owner calls must work again: %v", err)
@@ -158,28 +158,28 @@ func TestSharedJobReturnsToQueue(t *testing.T) {
 	}}
 	add(t, a, shared)
 	add(t, b, shared) // both maps want the same tile: one job
-	if a.Pending() != 1 || b.Pending() != 1 || q.Waiting() != 1 {
-		t.Fatalf("a=%d b=%d waiting=%d; two maps wanting one tile is one job, pending for both", a.Pending(), b.Pending(), q.Waiting())
+	if a.Backlog() != 1 || b.Backlog() != 1 || q.Waiting() != 1 {
+		t.Fatalf("a=%d b=%d waiting=%d; two maps wanting one tile is one job, pending for both", a.Backlog(), b.Backlog(), q.Waiting())
 	}
 	woken := bWoken.Load()
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
 	go func() { _, err := a.Work(ctx); done <- err }()
 	<-started
-	if b.Pending() != 0 {
+	if b.Backlog() != 0 {
 		t.Error("a job inside a Work call is not pending, for any map")
 	}
 	cancel()
 	if err := <-done; !isKind(err, fault.Cancelled) {
 		t.Errorf("%v", err)
 	}
-	if q.Waiting() != 1 || b.Pending() != 1 {
-		t.Errorf("waiting=%d, b pending=%d; the other map still wants the tile, so the job returns to the queue", q.Waiting(), b.Pending())
+	if q.Waiting() != 1 || b.Backlog() != 1 {
+		t.Errorf("waiting=%d, b pending=%d; the other map still wants the tile, so the job returns to the queue", q.Waiting(), b.Backlog())
 	}
 	if bWoken.Load() != woken+1 {
 		t.Errorf("the other map's hook fired %d times; it must fire from inside the cancelled call, or its sleeping pump never wakes", bWoken.Load()-woken)
 	}
-	if a.Pending() != 0 {
+	if a.Backlog() != 0 {
 		t.Error("the map whose Work was cancelled gave the job up; it does not want it back")
 	}
 }
@@ -191,7 +191,7 @@ func TestLeavingAQueue(t *testing.T) {
 	add(t, a, tile("only/a"), tile("both"))
 	add(t, b, tile("both"))
 	a.Leave()
-	if q.Waiting() != 1 || b.Pending() != 1 {
+	if q.Waiting() != 1 || b.Backlog() != 1 {
 		t.Errorf("waiting=%d; a map that closes takes with it only the work nobody else wants", q.Waiting())
 	}
 	if err := a.Add(tile("x")); !isKind(err, fault.Closed) {

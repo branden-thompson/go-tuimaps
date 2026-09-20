@@ -144,7 +144,7 @@ func own(failure error) error {
 // nothing is pending or the context ends. Work that failed and waits for
 // its retry time is not pending, so Settle always ends; and it never waits
 // on a Work running elsewhere - it returns and says how many there are.
-func (m *Member) Settle(ctx context.Context) (SettleResult, error) {
+func (m *Member) Drain(ctx context.Context) (SettleResult, error) {
 	var res SettleResult
 	if m == nil || m.q == nil || ctx == nil {
 		return res, internal()

@@ -88,7 +88,7 @@ func FuzzPaint(f *testing.F) {
 		for _, s := range []*style.Style{style.BuiltIn(), user} {
 			in := Input{View: v, Tiles: []Drawn{{Tile: tile, At: at, Exact: y&1 == 0}}, Style: s, Labels: true, Scale: x&1 == 0,
 				Credit: textsafe.Clean(string(data[:min(len(data), 40)]))}
-			frame, err := r.Render(in)
+			frame, err := r.Draw(in)
 			if err != nil {
 				continue // a tile whose parts run past its coordinates is refused, not drawn
 			}

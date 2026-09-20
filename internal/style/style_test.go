@@ -82,6 +82,17 @@ func TestBuiltInStylesCoverEveryRole(t *testing.T) {
 		}
 	}
 
+	// A small map of the whole world is below zoom 0, and is still drawn: a
+	// rule that starts at zoom 0 has no lower bound.
+	for _, zoom := range []float64{-3, -0.6, 0} {
+		if _, ok := s.Match("water", Attrs{Kind: scene.GeomPolygon, Class: "ocean"}, zoom); !ok {
+			t.Errorf("the coast is not drawn at zoom %v", zoom)
+		}
+		if _, ok := s.Match("place", Attrs{Kind: scene.GeomPoint, Class: "continent", Name: "Africa"}, zoom); !ok {
+			t.Errorf("a continent's name is not drawn at zoom %v", zoom)
+		}
+	}
+
 	// The finer roles wait for a zoom at which they can be read: at world
 	// scale a region's border and a river are clutter, a country's is not.
 	for _, c := range []struct {

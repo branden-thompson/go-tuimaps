@@ -37,7 +37,7 @@ type field struct {
 // malformed is the error for bytes that are not a well-formed vector tile.
 // It names no address and quotes nothing from the tile.
 func malformed() error {
-	return fault.New(fault.UnsupportedTile,
+	return fault.Make(fault.UnsupportedTile,
 		textsafe.Const("the tile could not be decoded"),
 		textsafe.Const("its bytes are not a well-formed vector tile"),
 		textsafe.Const("check the tile source; if it serves another format, it is not supported"))

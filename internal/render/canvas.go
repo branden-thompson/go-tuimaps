@@ -43,7 +43,7 @@ func dotMask(x, y int) uint8 {
 // NewCanvas makes a canvas of cols by rows cells.
 func NewCanvas(cols, rows int) (*Canvas, error) {
 	if cols <= 0 || rows <= 0 || cols > maxCells || rows > maxCells || cols*rows > maxCells {
-		return nil, fault.New(fault.NoSize,
+		return nil, fault.Make(fault.NoSize,
 			textsafe.Const("the map has no size to draw at"),
 			textsafe.Const("its width and height in cells must each be at least 1, and together no more than a million cells"),
 			textsafe.Const("give the map a size before drawing"))

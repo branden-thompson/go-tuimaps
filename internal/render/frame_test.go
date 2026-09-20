@@ -53,7 +53,7 @@ func render(t *testing.T, in Input) Frame {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f, err := r.Render(in)
+	f, err := r.Draw(in)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -184,7 +184,7 @@ func TestDeterministicAcrossMapOrder(t *testing.T) {
 	}
 	r, _ := NewRenderer(v.Cols, v.Rows)
 	for range 3 {
-		f, err := r.Render(in)
+		f, err := r.Draw(in)
 		if err != nil || strings.Join(f.Lines, "\n") != want {
 			t.Fatal("the same renderer gave other bytes the second time")
 		}
@@ -326,14 +326,14 @@ func TestRenderRefusals(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.Render(Input{View: fitted(20, 4), Style: style.BuiltIn()}); err == nil {
+	if _, err := r.Draw(Input{View: fitted(20, 4), Style: style.BuiltIn()}); err == nil {
 		t.Error("a view of another size than the renderer's must be an error")
 	}
-	if _, err := r.Render(Input{View: fitted(10, 4)}); err == nil {
+	if _, err := r.Draw(Input{View: fitted(10, 4)}); err == nil {
 		t.Error("no style must be an error")
 	}
 	var none *Renderer
-	if _, err := none.Render(Input{}); err == nil {
+	if _, err := none.Draw(Input{}); err == nil {
 		t.Error("no renderer must be an error")
 	}
 	_ = scene.TileID{}

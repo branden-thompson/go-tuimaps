@@ -226,7 +226,7 @@ func TestParityP50_Http(t *testing.T) {
 	if f.requests[0].MaxBytes != 1<<20 || f.requests[1].MaxBytes != 2<<20 {
 		t.Errorf("limits %d and %d; want 1 MiB for the TileJSON and 2 MiB for a tile", f.requests[0].MaxBytes, f.requests[1].MaxBytes)
 	}
-	status := fault.New(fault.FetchFailed, textsafe.Const("a request failed"), textsafe.Const("the source answered with status 503"), textsafe.Const("it is tried again later"))
+	status := fault.Make(fault.FetchFailed, textsafe.Const("a request failed"), textsafe.Const("the source answered with status 503"), textsafe.Const("it is tried again later"))
 	f.fail = status
 	if _, err := r.Get(context.Background(), id(1, 0, 0)); !isKind(err, fault.FetchFailed) {
 		t.Errorf("%v; the fetcher's own error is passed on", err)

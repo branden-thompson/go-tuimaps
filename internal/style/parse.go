@@ -23,12 +23,12 @@ const (
 )
 
 func malformed(why textsafe.Text) error {
-	return fault.New(fault.MalformedStyle, textsafe.Const("the style was refused"), why,
+	return fault.Make(fault.MalformedStyle, textsafe.Const("the style was refused"), why,
 		textsafe.Const("check the style; this release reads the legacy filter format, and a style that needs expressions cannot be used yet"))
 }
 
 func tooLarge() error {
-	return fault.New(fault.OverLimit, textsafe.Const("the style was refused"),
+	return fault.Make(fault.OverLimit, textsafe.Const("the style was refused"),
 		textsafe.Const("it is larger than 1 MiB or nested deeper than 64"),
 		textsafe.Const("check the style; the limits protect the host's memory"))
 }

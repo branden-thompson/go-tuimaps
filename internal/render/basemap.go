@@ -191,7 +191,7 @@ func place(corner float64, coord int16, scale float64) int {
 }
 
 func badTile() error {
-	return fault.New(fault.Internal, textsafe.Const("a tile could not be drawn"),
+	return fault.Make(fault.Internal, textsafe.Const("a tile could not be drawn"),
 		textsafe.Const("the painter was given no tile or no style, or the tile's parts run past its coordinates"),
 		textsafe.Const("this is a defect in the library; report it"))
 }

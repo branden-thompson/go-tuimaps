@@ -17,10 +17,10 @@ func TestReuseKey(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.Render(base); err != nil {
+	if _, err := r.Draw(base); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.Render(base); err != nil || r.Redraws() != 1 {
+	if _, err := r.Draw(base); err != nil || r.Redraws() != 1 {
 		t.Fatalf("%d redraws for two calls with nothing changed, %v", r.Redraws(), err)
 	}
 	changes := map[string]func(in *Input){
@@ -39,13 +39,13 @@ func TestReuseKey(t *testing.T) {
 		before := r.Redraws()
 		changed := base
 		change(&changed)
-		if _, err := r.Render(changed); err != nil {
+		if _, err := r.Draw(changed); err != nil {
 			t.Fatalf("%s: %v", name, err)
 		}
 		if r.Redraws() != before+1 {
 			t.Errorf("%s changed and the frame was not redrawn", name)
 		}
-		if _, err := r.Render(base); err != nil || r.Redraws() != before+2 {
+		if _, err := r.Draw(base); err != nil || r.Redraws() != before+2 {
 			t.Errorf("%s changed back and the frame was not redrawn", name)
 		}
 	}
@@ -57,7 +57,7 @@ func TestOnlyChangedRowsRebuilt(t *testing.T) {
 	v := fitted(120, 16) // wide enough for the scale mark beside the credit line, which comes first (FR-14)
 	base := input(t, v)
 	r, _ := NewRenderer(v.Cols, v.Rows)
-	if _, err := r.Render(base); err != nil {
+	if _, err := r.Draw(base); err != nil {
 		t.Fatal(err)
 	}
 	first := r.RowsBuilt()
@@ -66,7 +66,7 @@ func TestOnlyChangedRowsRebuilt(t *testing.T) {
 	}
 	withScale := base
 	withScale.Scale = true
-	f, err := r.Render(withScale)
+	f, err := r.Draw(withScale)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,15 +82,15 @@ func TestFrameValidUntilNextRender(t *testing.T) {
 	v := fitted(60, 16)
 	base := input(t, v)
 	r, _ := NewRenderer(v.Cols, v.Rows)
-	a, _ := r.Render(base)
+	a, _ := r.Draw(base)
 	kept := strings.Join(a.Lines, "\n")
-	b, _ := r.Render(base)
+	b, _ := r.Draw(base)
 	if strings.Join(b.Lines, "\n") != kept {
 		t.Error("the frame reused is not the frame drawn")
 	}
 	other := base
 	other.Labels = false
-	if _, err := r.Render(other); err != nil {
+	if _, err := r.Draw(other); err != nil {
 		t.Fatal(err)
 	}
 	if strings.Join(a.Lines, "\n") == kept {

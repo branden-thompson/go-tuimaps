@@ -193,4 +193,19 @@ func testAnchors(t *testing.T) {
 	if g.labelAt(Label{Name: "Nothing", Ink: ink}, nil) {
 		t.Error("a name with no vertex was placed")
 	}
+
+	// The anchor must be inside the world as well as the rectangle (P-33). A
+	// zoom-0 tile carries each place three times, a world apart, in its
+	// buffer; on a map wider than the world only the middle one is a place.
+	wide, _ := newGrid(69, 12)
+	wide.world = box{left: 32, right: 105, top: -2, bottom: 71} // in dots: the world sits in the middle of the view
+	if !wide.labelAt(Label{Name: "Asia", Ink: ink}, []Point{{160, 22}, {87, 22}, {14, 22}}) {
+		t.Fatal("Asia was not placed")
+	}
+	if wide.cells[5*69+41].text != "A" {
+		t.Errorf("Asia is not at its middle vertex, the one inside the world")
+	}
+	if wide.labelAt(Label{Name: "Nowhere", Ink: ink}, []Point{{10, 22}, {120, 22}}) {
+		t.Error("a name was placed in the ocean beyond the world's edge")
+	}
 }

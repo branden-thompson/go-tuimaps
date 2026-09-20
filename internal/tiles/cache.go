@@ -65,7 +65,7 @@ type PinSet struct {
 // NewCache makes a cache with a cap in bytes, fixed for its life.
 func NewCache(capBytes int64) (*Cache, error) {
 	if capBytes <= 0 {
-		return nil, fault.New(fault.Internal,
+		return nil, fault.Make(fault.Internal,
 			textsafe.Const("a tile cache was given no room"),
 			textsafe.Const("its cap must be more than zero bytes"),
 			textsafe.Const("give a cap in bytes, or none for the default"))

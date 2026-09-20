@@ -16,7 +16,7 @@ import (
 func TestMain(m *testing.M) { os.Exit(testkit.Main(m)) }
 
 func sample(k Kind) *Error {
-	return New(k, textsafe.Const("the overlay was refused"), textsafe.Const("its breaks are not in rising order"), textsafe.Const("sort the breaks and set it again"))
+	return Make(k, textsafe.Const("the overlay was refused"), textsafe.Const("its breaks are not in rising order"), textsafe.Const("sort the breaks and set it again"))
 }
 
 // contractKinds reads the two closed lists from the contract's own text, so
@@ -98,7 +98,7 @@ func TestAnUnknownKindBecomesInternal(t *testing.T) {
 func TestAnErrorWithASentenceMissingIsTheLibrarysFault(t *testing.T) {
 	empty := textsafe.Text{}
 	full := textsafe.Const("something")
-	for _, err := range []*Error{New(OverLimit, empty, full, full), New(OverLimit, full, empty, full), New(OverLimit, full, full, empty)} {
+	for _, err := range []*Error{Make(OverLimit, empty, full, full), Make(OverLimit, full, empty, full), Make(OverLimit, full, full, empty)} {
 		if err.Kind() != Internal {
 			t.Errorf("kind %v; an error missing a sentence must be internal", err.Kind())
 		}
@@ -133,7 +133,7 @@ func TestNoForeignErrorWrapped(t *testing.T) {
 }
 
 func TestOutsideTextCanOnlyArriveCleaned(t *testing.T) {
-	err := New(InvalidID, textsafe.Quote("the id \x1b[2Jbad\u202E"), textsafe.Const("it holds characters that cannot be shown"), textsafe.Const("use plain text"))
+	err := Make(InvalidID, textsafe.Quote("the id \x1b[2Jbad\u202E"), textsafe.Const("it holds characters that cannot be shown"), textsafe.Const("use plain text"))
 	if strings.ContainsAny(err.Error(), "\x1b\u202E") {
 		t.Errorf("%q carries what cleaning should have removed", err.Error())
 	}

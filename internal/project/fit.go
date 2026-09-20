@@ -34,7 +34,7 @@ type arc struct {
 
 // badFit is the error for a fit-to that cannot be done.
 func badFit() error {
-	return fault.New(fault.InvalidCoordinates,
+	return fault.Make(fault.InvalidCoordinates,
 		textsafe.Const("fit-to cannot frame what was named"),
 		textsafe.Const("the margin is negative or leaves no room in the view, a box has its south above its north, or too many things were named"),
 		textsafe.Const("check the margin against the view's size, and the boxes"))
@@ -145,4 +145,30 @@ func shortestCover(arcs []arc) (west, width float64) {
 		return 0, 360 // everything is covered: the whole world
 	}
 	return after, 360 - gap
+}
+
+// FitWorld is upstream's view of the whole world (P-56): latitude 84 to -56,
+// longitude 0, centred on the Mercator midpoint of the two, at the smaller of
+// the zoom that fits that span's height and the zoom that fits the world's
+// width.
+func FitWorld(cols, rows int) (View, error) {
+	if cols <= 0 || rows <= 0 {
+		return View{}, badView()
+	}
+	_, top, err := ToTile(LonLat{Lat: 84}, 0)
+	if err != nil {
+		return View{}, err
+	}
+	_, bottom, err := ToTile(LonLat{Lat: -56}, 0)
+	if err != nil {
+		return View{}, err
+	}
+	centre, err := FromTile(0.5, (top+bottom)/2, 0)
+	if err != nil {
+		return View{}, err
+	}
+	w, h := float64(cols*DotsPerCol), float64(rows*DotsPerRow)
+	zoom := math.Min(math.Log2(h/((bottom-top)*TileSize)), math.Log2(w/TileSize))
+	v := View{Centre: LonLat{Lon: 0, Lat: centre.Lat}, Zoom: math.Max(MinViewZoom, math.Min(MaxViewZoom, zoom)), Cols: cols, Rows: rows}
+	return v, v.Validate()
 }

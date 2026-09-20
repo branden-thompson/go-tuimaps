@@ -46,7 +46,7 @@ func pipeline(t *testing.T, o Options) *Pipeline {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(p.Close)
+	t.Cleanup(p.Release)
 	return p
 }
 

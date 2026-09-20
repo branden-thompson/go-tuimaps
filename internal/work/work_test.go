@@ -78,12 +78,12 @@ func drain(t *testing.T, m *Member) (keys int) {
 // TestPendingCounts is plan task 07.1.
 func TestPendingCounts(t *testing.T) {
 	m := member(t)
-	if m.Pending() != 0 {
+	if m.Backlog() != 0 {
 		t.Fatal("a new queue has work pending")
 	}
 	add(t, m, tile("t/1"), tile("t/2"), job{kind: scene.KindOverlayPrepare, key: "o/alerts"}, job{kind: scene.KindDescribe, key: "d/1"})
 	add(t, m, tile("t/1")) // the same work is never queued twice
-	if got := m.Pending(); got != 4 {
+	if got := m.Backlog(); got != 4 {
 		t.Errorf("Pending() = %d, want 4", got)
 	}
 	if err := m.Add(job{kind: 0, key: "x"}); !isKind(err, fault.Internal) {
@@ -95,8 +95,8 @@ func TestPendingCounts(t *testing.T) {
 	if err := m.Add(nil); !isKind(err, fault.Internal) {
 		t.Errorf("no job: %v", err)
 	}
-	if drain(t, m) != 4 || m.Pending() != 0 {
-		t.Errorf("after draining, %d pending", m.Pending())
+	if drain(t, m) != 4 || m.Backlog() != 0 {
+		t.Errorf("after draining, %d pending", m.Backlog())
 	}
 }
 
@@ -107,7 +107,7 @@ func TestCapDropsOldest(t *testing.T) {
 	add(t, m, tile("old/1"), tile("old/2"))
 	m.NewView()
 	add(t, m, tile("new/1"), tile("new/2"))
-	if got := m.Pending(); got != 3 {
+	if got := m.Backlog(); got != 3 {
 		t.Fatalf("Pending() = %d with a cap of 3", got)
 	}
 	var ran []string
@@ -153,8 +153,8 @@ func TestWorkDoesOneJob(t *testing.T) {
 		}})
 	}
 	did, err := m.Work(context.Background())
-	if !did || err != nil || len(stacks) != 1 || m.Pending() != 1 {
-		t.Fatalf("one Work call: did=%v err=%v ran=%d pending=%d", did, err, len(stacks), m.Pending())
+	if !did || err != nil || len(stacks) != 1 || m.Backlog() != 1 {
+		t.Fatalf("one Work call: did=%v err=%v ran=%d pending=%d", did, err, len(stacks), m.Backlog())
 	}
 	if !strings.Contains(stacks[0], "TestWorkDoesOneJob") {
 		t.Errorf("the job did not run on the caller's goroutine:\n%s", stacks[0])
@@ -175,19 +175,19 @@ func TestWorkCancel(t *testing.T) {
 	done := make(chan error, 1)
 	go func() { _, err := m.Work(ctx); done <- err }()
 	<-started
-	if m.Pending() != 0 || m.InFlight() != 1 {
-		t.Errorf("while it runs: %d pending, %d in flight", m.Pending(), m.InFlight())
+	if m.Backlog() != 0 || m.InFlight() != 1 {
+		t.Errorf("while it runs: %d pending, %d in flight", m.Backlog(), m.InFlight())
 	}
 	cancel()
 	err := <-done
 	if !isKind(err, fault.Cancelled) || !errors.Is(err, context.Canceled) {
 		t.Errorf("%v; want the cancelled kind", err)
 	}
-	if m.Pending() != 0 || m.InFlight() != 0 {
-		t.Errorf("after a cancel: %d pending, %d in flight; an abandoned job that no other map wants is gone", m.Pending(), m.InFlight())
+	if m.Backlog() != 0 || m.InFlight() != 0 {
+		t.Errorf("after a cancel: %d pending, %d in flight; an abandoned job that no other map wants is gone", m.Backlog(), m.InFlight())
 	}
 	add(t, m, tile("slow")) // and can be asked for again
-	if m.Pending() != 1 {
+	if m.Backlog() != 1 {
 		t.Error("the abandoned job's key is still held")
 	}
 	already, stop := context.WithCancel(context.Background())
@@ -195,7 +195,7 @@ func TestWorkCancel(t *testing.T) {
 	if did, err := m.Work(already); did || !isKind(err, fault.Cancelled) {
 		t.Errorf("Work with a context that has already ended: did=%v, %v", did, err)
 	}
-	if m.Pending() != 1 {
+	if m.Backlog() != 1 {
 		t.Error("a Work call that never started took a job with it")
 	}
 }
@@ -255,8 +255,8 @@ func TestLeftViewCancelsJob(t *testing.T) {
 	case <-time.After(3 * time.Second):
 		t.Fatal("the in-flight job was not cancelled when its tile left the view")
 	}
-	if m.Pending() != 1 {
-		t.Errorf("%d pending; only the tile still in view should wait", m.Pending())
+	if m.Backlog() != 1 {
+		t.Errorf("%d pending; only the tile still in view should wait", m.Backlog())
 	}
 }
 
@@ -318,14 +318,14 @@ func TestPendingCountsWaitingOnly(t *testing.T) {
 	if err := m.Defer(tile("t/failed"), now.Add(30*time.Second)); err != nil {
 		t.Fatal(err)
 	}
-	if m.Pending() != 0 {
+	if m.Backlog() != 0 {
 		t.Error("a failed job waiting for its retry time is pending")
 	}
-	if n, _ := m.Promote(now.Add(29 * time.Second)); n != 0 || m.Pending() != 0 {
+	if n, _ := m.Promote(now.Add(29 * time.Second)); n != 0 || m.Backlog() != 0 {
 		t.Error("promoted before its time")
 	}
-	if n, _ := m.Promote(now.Add(30 * time.Second)); n != 1 || m.Pending() != 1 {
-		t.Errorf("at its time: promoted %d, pending %d", n, m.Pending())
+	if n, _ := m.Promote(now.Add(30 * time.Second)); n != 1 || m.Backlog() != 1 {
+		t.Errorf("at its time: promoted %d, pending %d", n, m.Backlog())
 	}
 	if _, due := m.NextCall(now); due {
 		t.Error("a promoted retry still counts as a deadline")
@@ -338,8 +338,8 @@ func TestSettleEndsWhenIdle(t *testing.T) {
 	now := time.Date(2026, 9, 19, 12, 0, 0, 0, time.UTC)
 	m.Defer(tile("t/backoff"), now.Add(time.Minute))
 	add(t, m, tile("ok/1"), tile("ok/2"), job{kind: scene.KindTile, key: "bad", run: func(context.Context) error { return errors.New("refused") }})
-	res, err := m.Settle(context.Background())
-	if err != nil || res.Ran != 3 || res.Failed != 1 || m.Pending() != 0 {
+	res, err := m.Drain(context.Background())
+	if err != nil || res.Ran != 3 || res.Failed != 1 || m.Backlog() != 0 {
 		t.Errorf("%+v, %v; work waiting for its retry time is not pending, so Settle ends", res, err)
 	}
 }
@@ -350,7 +350,7 @@ func TestSettleEndsOnContext(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 	start := time.Now()
-	_, err := m.Settle(ctx)
+	_, err := m.Drain(ctx)
 	if !isKind(err, fault.Cancelled) || time.Since(start) > 3*time.Second {
 		t.Errorf("%v after %v", err, time.Since(start))
 	}
@@ -358,9 +358,9 @@ func TestSettleEndsOnContext(t *testing.T) {
 
 func TestSettleSaysNoSource(t *testing.T) {
 	m := member(t)
-	noSource := fault.New(fault.FetchRefused, textConst("no tile could be fetched"), textConst("no source is named and no embedded tiles are imported"), textConst("name a source, or import the assets package"))
+	noSource := fault.Make(fault.FetchRefused, textConst("no tile could be fetched"), textConst("no source is named and no embedded tiles are imported"), textConst("name a source, or import the assets package"))
 	add(t, m, job{kind: scene.KindTile, key: "t/1", run: func(context.Context) error { return noSource }}, job{kind: scene.KindTile, key: "t/2", run: func(context.Context) error { return noSource }})
-	res, err := m.Settle(context.Background())
+	res, err := m.Drain(context.Background())
 	if err != nil || res.Failed != 2 || res.Why == nil || !strings.Contains(res.Why.Error(), "no source is named") {
 		t.Errorf("%+v, %v; the result must say why nothing was fetched", res, err)
 	}
@@ -372,7 +372,7 @@ func TestSettleReportsWorkInFlightElsewhere(t *testing.T) {
 	add(t, m, job{kind: scene.KindTile, key: "slow", run: func(context.Context) error { close(started); <-release; return nil }})
 	go m.Work(context.Background())
 	<-started
-	res, err := m.Settle(context.Background())
+	res, err := m.Drain(context.Background())
 	close(release)
 	if err != nil || res.InFlight != 1 {
 		t.Errorf("%+v, %v; Settle never waits on a Work running elsewhere: it returns and says how many", res, err)

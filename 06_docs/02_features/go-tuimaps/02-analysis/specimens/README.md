@@ -270,3 +270,20 @@ Found by the PLAN red-team (PL-DQ-15). The files are evidence and are left as ge
 **Known defects in the specimen files themselves** (found by red-team rounds 1 and 2; the files regenerated in round 2 — `13a`, `14`, `16`, `15a-149x38` — are corrected, the rest are not; **specimen 14 was corrected a second time after round 3**, which found its text colour still chosen by a brightness threshold — white on the teal band at 3.82:1 where black gives 5.49:1. Both contrasts are now compared and the higher taken; measured over every background and text pair in both files, the lowest is 5.49:1): header lines read "256-bit colour" and "16-bit colour" where they mean 256 colours and 16 colours, and the no-colour `.txt` files say "24-bit colour". The default temperature ramp used throughout is **not colour-vision-safe**: its brightness rises to the amber step and then falls, so under red-green colour blindness the 20 °C and 27 °C bands nearly coincide (red-team A-3). Upstream's marker flash rate (3.33 Hz, above the three-per-second accessibility threshold) was not exercised.
 
 Throwaway code; nothing here measures speed or memory. Browser approximations draw braille differently from a terminal. One region, one evening's weather, a dark terminal background; a light-background terminal was not tried. Line simplification and polygon clipping (D-16) were not exercised — the live alert polygons had 5 to 21 vertices. Radar resampling and the quadrant-glyph width question are open.
+
+## Specimen 26 — the first map the library drew (BUILD, milestone M-A)
+
+Unlike every specimen above, these were not drawn by the throwaway program of PLAN. They are what the library's own three public calls return - create, settle, render - from the embedded tiles alone, with no network.
+
+| File | What it is |
+|---|---|
+| `26-first-map-149x38` | The whole world at the first host's large size. `.ans` carries the colours; `.txt` is the same frame with the colour sequences taken out |
+| `26-first-map-69x12` | The same at the first host's small size: a map wider than the world, with ocean beyond the world's edge |
+
+| # | Finding | Consequence |
+|---|---|---|
+| S26-1 | **A zoom-0 tile carries every place three times, a world apart, in its buffer.** With upstream's rule of trying each vertex in turn, the first copy - a world to the east - took each name, and on the small map "Asia" was drawn west of the Americas. | Upstream's other rule, that an anchor must be inside the world as well as the canvas (P-33), had been built by halves. Now whole, with a test through the public calls |
+| S26-2 | A fitted world on a small rectangle sits **below zoom 0** (about -1.8 at 69 by 12). The style's rules "from zoom 0" drew nothing there, and the first frame through the public calls was blank but for the credit line. | A rule that starts at zoom 0 has no lower bound. The never-blank test now runs through the public calls as well |
+| S26-3 | Region borders, rivers and roads at world scale were clutter. | The built-in style's finer roles start at the zoom where they can be read (L2 Style). A first setting: HUM LEAD's to tune |
+| S26-4 | At the world's western edge a short vertical line is drawn near Antarctica: the polygon's own edge along the antimeridian, which lies just inside the tile and so is not taken for the tile's border. | Not fixed. For HUM LEAD's eye; the remedy is to treat the world's edge as a tile's border at zoom 0 |
+

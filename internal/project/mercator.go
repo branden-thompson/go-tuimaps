@@ -36,7 +36,7 @@ type LonLat struct {
 // number, is infinite or lies outside the world must never reach the
 // arithmetic, still less a conversion to an integer.
 func notFinite() error {
-	return fault.New(fault.InvalidCoordinates,
+	return fault.Make(fault.InvalidCoordinates,
 		textsafe.Const("a coordinate or a zoom is not a finite number"),
 		textsafe.Const("it is NaN or infinite, a latitude beyond the poles, or a zoom deeper than the library addresses"),
 		textsafe.Const("check the values handed in"))

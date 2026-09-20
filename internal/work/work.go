@@ -107,7 +107,7 @@ func (q *Queue) Join() (*Member, error) {
 // internal is the error for a defect inside the library. It repeats nothing
 // of what caused it, which may hold outside data.
 func internal() error {
-	return fault.New(fault.Internal,
+	return fault.Make(fault.Internal,
 		textsafe.Const("a piece of background work could not be queued or failed unexpectedly"),
 		textsafe.Const("the library handed itself a job it cannot run, or a job panicked"),
 		textsafe.Const("report this as a defect in the library; the map stays usable"))
@@ -117,11 +117,11 @@ func internal() error {
 func problem(kind fault.Kind) error {
 	switch kind {
 	case fault.Closed:
-		return fault.New(kind, textsafe.Const("the map is closed"), textsafe.Const("Close was called"), textsafe.Const("make a new map"))
+		return fault.Make(kind, textsafe.Const("the map is closed"), textsafe.Const("Close was called"), textsafe.Const("make a new map"))
 	case fault.ReentrantCall:
-		return fault.New(kind, textsafe.Const("the call was refused"), textsafe.Const("it was made from inside the pending-work hook, which must not call the map"), textsafe.Const("have the hook signal the pump and do nothing else"))
+		return fault.Make(kind, textsafe.Const("the call was refused"), textsafe.Const("it was made from inside the pending-work hook, which must not call the map"), textsafe.Const("have the hook signal the pump and do nothing else"))
 	}
-	return fault.New(fault.Cancelled, textsafe.Const("the work was abandoned"), textsafe.Const("its context was cancelled or ran out of time"), textsafe.Const("nothing; it is asked for again if it is still wanted"))
+	return fault.Make(fault.Cancelled, textsafe.Const("the work was abandoned"), textsafe.Const("its context was cancelled or ran out of time"), textsafe.Const("nothing; it is asked for again if it is still wanted"))
 }
 
 // owner is the check every owner call makes first. Owner calls are one at a
@@ -153,7 +153,7 @@ func (m *Member) pendingLocked() int {
 
 // Pending is how many of this map's jobs wait to be picked up. It may be
 // called from any goroutine.
-func (m *Member) Pending() int {
+func (m *Member) Backlog() int {
 	if m == nil || m.q == nil {
 		return 0
 	}
