@@ -296,3 +296,7 @@ Unlike every specimen above, these were not drawn by the throwaway program of PL
 | S27-1 | Pale tints on a light ground cannot be told apart under simulated colour vision: the first search ended below the threshold. | On a light ground the scheme turns over: dark outlines, mid-tone tints, black text |
 | S27-2 | The truecolor sets converted to the 256-colour palette fail on both grounds - one tint 4.6 from water, two tints 6.6 apart. | The preset has its own 256-colour sets, searched within that palette, as the ramps do (S10-1) |
 
+## Specimen 28 — alert areas on a map (BUILD, task 08.23)
+
+Four frames, 149 by 38, drawn by the library's own packages from the embedded tiles: five alert areas over the central United States, one of each severity - extreme, severe, moderate, minor, unknown - each its tint, its outline and its label. `28-alert-areas-dark-truecolor`, `-light-truecolor`, `-dark-256`, `-light-256`; the `.txt` beside the first is the same frame without colour. Show them with `cat`. **This is the look task 08.23 asks of HUM LEAD before any reference frame is frozen (RS-26).**
+

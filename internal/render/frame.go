@@ -68,11 +68,15 @@ type Drawn struct {
 
 // Input is everything a frame is a function of (NFR-6).
 type Input struct {
-	View    project.View
-	Tiles   []Drawn // in any order: the renderer draws them in one
-	Missing int     // tiles the view wants with nothing on hand to draw for them
-	Style   *style.Style
-	Palette colour.Palette
+	View  project.View
+	Tiles []Drawn // in any order: the renderer draws them in one
+	// Shapes are the overlays' prepared shapes, in the order they are drawn;
+	// ShapesVersion counts their changes, since they cannot be compared.
+	Shapes        []scene.Shape
+	ShapesVersion uint64
+	Missing       int // tiles the view wants with nothing on hand to draw for them
+	Style         *style.Style
+	Palette       colour.Palette
 	// Look counts changes to the palette, which cannot be compared: whoever
 	// changes the palette raises it, and a frame is reused only while it and
 	// everything else here stay the same (contract, section 5).
@@ -241,6 +245,15 @@ func (r *Renderer) RowsBuilt() int {
 	return r.rowsBuilt
 }
 
+// sameOverlays reports whether the overlays are those of the frame held. They
+// cannot be compared, so whoever changes them raises their version.
+func (r *Renderer) sameOverlays(in Input) bool {
+	if r == nil {
+		return false
+	}
+	return in.ShapesVersion == r.last.ShapesVersion && len(in.Shapes) == len(r.last.Shapes)
+}
+
 // unchanged reports whether nothing a frame is a function of has changed
 // since the frame held was drawn. It allocates nothing.
 func (r *Renderer) unchanged(in Input) bool {
@@ -248,6 +261,9 @@ func (r *Renderer) unchanged(in Input) bool {
 		return false
 	}
 	l := r.last
+	if !r.sameOverlays(in) {
+		return false
+	}
 	if in.View != l.View || in.Look != l.Look || in.Ground != l.Ground || in.Depth != l.Depth || in.Style != l.Style {
 		return false
 	}
@@ -302,6 +318,7 @@ func (r *Renderer) Draw(in Input) (Frame, error) {
 	r.lastTiles = append(r.lastTiles[:0], in.Tiles...)
 	r.last, r.drawn = in, true
 	r.last.Tiles = nil
+	r.last.Shapes = in.Shapes[:len(in.Shapes):len(in.Shapes)]
 	r.redraws++
 	return r.held, nil
 }
@@ -322,14 +339,16 @@ func (r *Renderer) paint(in Input) (Status, error) {
 	})
 	status := Complete
 	if len(r.order) == 0 {
-		return NoTiles, nil
+		status = NoTiles
 	}
-	err := r.painter.World(in.View)
-	if err != nil {
-		return status, err
-	}
-	if in.Missing > 0 {
+	if in.Missing > 0 && status == Complete {
 		status = Sharpening
+	}
+	if status != NoTiles {
+		err := r.painter.World(in.View)
+		if err != nil {
+			return status, err
+		}
 	}
 	for _, d := range r.order {
 		if d.Tile == nil {
@@ -338,7 +357,15 @@ func (r *Renderer) paint(in Input) (Status, error) {
 		if !d.Exact {
 			status = Sharpening
 		}
-		err = r.painter.Tile(in.View, d.Tile, d.At, in.Style)
+		err := r.painter.Tile(in.View, d.Tile, d.At, in.Style)
+		if err != nil {
+			return status, err
+		}
+	}
+	// Overlays are drawn over the basemap, and with no tile at all they are
+	// still drawn: the frame is never an empty rectangle (FR-23).
+	for _, s := range in.Shapes {
+		err := r.painter.Shape(in.View, s)
 		if err != nil {
 			return status, err
 		}
@@ -359,6 +386,13 @@ func (r *Renderer) compose(in Input, status Status) {
 		}
 	}
 	r.furniture(in, status)
+	// An overlay's labels are placed before any name of the basemap's, so that
+	// a place name never hides a warning's word; they are not the basemap's
+	// labels and do not go when those are turned off.
+	g.world = box{}
+	for _, l := range r.painter.OverlayLabels() {
+		g.label(l)
+	}
 	if !in.Labels {
 		return
 	}

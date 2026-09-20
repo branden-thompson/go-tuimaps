@@ -8,14 +8,16 @@ import (
 
 	"github.com/branden-thompson/go-tuimaps/internal/fault"
 	"github.com/branden-thompson/go-tuimaps/internal/project"
+	"github.com/branden-thompson/go-tuimaps/internal/scene"
 	"github.com/branden-thompson/go-tuimaps/internal/textsafe"
 )
 
 // Vertex is a position on the world as two 32-bit fractions of its side: 0
 // is the west or north edge, 2^32 the east or south. It is 8 bytes, as the
 // shape cache's arithmetic assumes, and fine enough for the deepest zoom: a
-// braille dot at zoom 18 is 64 of these units across.
-type Vertex struct{ X, Y uint32 }
+// braille dot at zoom 18 is 64 of these units across. A 32-bit float is not:
+// it has 24 bits, and that dot is a 26-bit fraction of the world.
+type Vertex = scene.Vertex
 
 const unit = 1 << 32
 

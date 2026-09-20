@@ -32,16 +32,17 @@ type Label struct {
 // Painter paints the basemap of one frame: line work as dots, areas as the
 // cells they own, and the names that want placing.
 type Painter struct {
-	lines      *Canvas
-	areas      *Canvas
-	literals   []colour.RGB
-	labels     []Label
-	labelPts   []Point
-	ring       []Point
-	edge       []bool // for each point of ring: the segment that ends there lies along the tile's border
-	rings      [][]Point
-	culled     int
-	lastPoints int
+	lines         *Canvas
+	areas         *Canvas
+	literals      []colour.RGB
+	labels        []Label
+	overlayLabels []Label
+	labelPts      []Point
+	ring          []Point
+	edge          []bool // for each point of ring: the segment that ends there lies along the tile's border
+	rings         [][]Point
+	culled        int
+	lastPoints    int
 }
 
 // NewPainter makes a painter for a map of cols by rows cells.
@@ -65,6 +66,7 @@ func (p *Painter) Reset() {
 	p.lines.Wipe()
 	p.areas.Wipe()
 	p.literals, p.labels, p.labelPts = p.literals[:0], p.labels[:0], p.labelPts[:0]
+	p.overlayLabels = p.overlayLabels[:0]
 	p.culled, p.lastPoints = 0, 0
 }
 
@@ -121,6 +123,89 @@ func (p *Painter) World(v project.View) error {
 		p.areas.Fill([][]Point{{{r[0], r[1]}, {r[2], r[1]}, {r[2], r[3]}, {r[0], r[3]}}}, ink)
 	}
 	return nil
+}
+
+// Shape paints one prepared overlay shape (L2 Render, steps 4, 6 and 8): an
+// area's tint as the cells it owns, its outline over everything beneath, and
+// its label kept for the label pass, where overlay labels are placed first.
+// A shape whose box misses the view costs nothing more than finding that out.
+func (p *Painter) Shape(v project.View, s scene.Shape) error {
+	if p == nil {
+		return badTile()
+	}
+	x, y, side, err := v.TilePlace(scene.TileID{})
+	if err != nil {
+		return err
+	}
+	box, visible := p.place(s.Rings, x, y, side)
+	if !visible {
+		p.culled++
+		return nil
+	}
+	role := colour.Token(s.Role)
+	if s.Kind == scene.ShapeArea && role >= colour.AlertExtremeOutline && role <= colour.AlertUnknownOutline {
+		p.areas.Fill(p.rings, s.Role+1) // an alert's tint is the token after its outline's
+	}
+	p.lines.Forcing(true)
+	for _, ring := range p.rings {
+		p.mark(ring, s)
+	}
+	p.lines.Forcing(false)
+	if s.Label != "" && len(p.overlayLabels) < maxLabels {
+		p.overlayLabels = append(p.overlayLabels, Label{X: (box[0] + box[2]) / 2, Y: (box[1] + box[3]) / 2, Name: s.Label, Ink: s.Role})
+	}
+	return nil
+}
+
+// place takes a shape's rings to dots, a point on one dot kept once, and
+// reports their box and whether it meets the view grown by the clip pad.
+func (p *Painter) place(rings [][]scene.Vertex, x, y, side float64) ([4]int, bool) {
+	w, h := p.lines.Dots()
+	p.rings, p.ring = p.rings[:0], p.ring[:0]
+	box := [4]int{math.MaxInt, math.MaxInt, math.MinInt, math.MinInt}
+	for _, ring := range rings {
+		start := len(p.ring)
+		for _, vtx := range ring {
+			pt := Point{X: toDot(x + float64(float64(vtx.X)/(1<<32)*side)), Y: toDot(y + float64(float64(vtx.Y)/(1<<32)*side))}
+			if len(p.ring) > start && p.ring[len(p.ring)-1] == pt {
+				continue
+			}
+			p.ring = append(p.ring, pt)
+			box = [4]int{min(box[0], pt.X), min(box[1], pt.Y), max(box[2], pt.X), max(box[3], pt.Y)}
+		}
+		p.rings = append(p.rings, p.ring[start:len(p.ring):len(p.ring)])
+	}
+	if len(p.ring) == 0 {
+		return box, false
+	}
+	return box, box[2] >= -clipMargin && box[0] < w+clipMargin && box[3] >= -clipMargin && box[1] < h+clipMargin
+}
+
+// mark draws one ring of a shape: a point as a small block of dots, a line or
+// an area's edge as a line.
+func (p *Painter) mark(ring []Point, s scene.Shape) {
+	if len(ring) == 0 {
+		return
+	}
+	if s.Kind == scene.ShapePoint {
+		for dy := -1; dy <= 1; dy++ {
+			for dx := -1; dx <= 1; dx++ {
+				p.lines.Set(ring[0].X+dx, ring[0].Y+dy, s.Role)
+			}
+		}
+		return
+	}
+	for i := 0; i+1 < len(ring); i++ {
+		p.lines.Line(ring[i].X, ring[i].Y, ring[i+1].X, ring[i+1].Y, 1, s.Role)
+	}
+}
+
+// OverlayLabels are the labels of the overlays' shapes, in the order drawn.
+func (p *Painter) OverlayLabels() []Label {
+	if p == nil {
+		return nil
+	}
+	return p.overlayLabels
 }
 
 // Area is the ink of the area that owns a cell: the area covering at least

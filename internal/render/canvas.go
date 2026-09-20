@@ -33,6 +33,7 @@ type Canvas struct {
 	last       []uint8   // the ink last drawn in a cell
 	locked     []bool    // a forced dot locks its cell's ink (P-09)
 	crossings  []float64 // the fill's scratch space, kept between fills
+	forcing    bool      // dots lit now lock their cell's ink: an overlay's line always shows
 }
 
 // dotMask is a dot's bit within its cell, by row and column (P-02).
@@ -73,6 +74,7 @@ func (c *Canvas) Wipe() {
 	clear(c.ink)
 	clear(c.last)
 	clear(c.locked)
+	c.forcing = false
 }
 
 // Set lights a dot in an ink. A dot outside the canvas is not drawn (FR-11).
@@ -87,6 +89,9 @@ func (c *Canvas) Set(x, y int, ink uint8) {
 	c.mask[cell] |= dotMask(x, y)
 	c.last[cell] = ink
 	c.ink[y*c.w+x] = ink
+	if c.forcing {
+		c.locked[cell] = true
+	}
 }
 
 // SetForced lights a dot and locks its whole cell to the dot's ink, past the
@@ -100,6 +105,16 @@ func (c *Canvas) SetForced(x, y int, ink uint8) {
 	}
 	c.Set(x, y, ink)
 	c.locked[(x>>1)+c.cols*(y>>2)] = true
+}
+
+// Forcing sets whether dots lit from now on lock their cell's ink, as a
+// forced dot does (P-09). An overlay's outline is drawn this way, so that it
+// shows whatever basemap lines share its cells (FR-16).
+func (c *Canvas) Forcing(on bool) {
+	if c == nil {
+		return
+	}
+	c.forcing = on
 }
 
 // Lit reports whether a dot is lit.

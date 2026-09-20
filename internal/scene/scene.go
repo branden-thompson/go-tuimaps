@@ -93,3 +93,27 @@ type Job interface {
 	// It holds no lock of the map's while it fetches, decodes or computes.
 	Run(ctx context.Context) error
 }
+
+// Vertex is a position on the world as two 32-bit fractions of its side: 0
+// is the west or north edge, 2^32 the east or south.
+type Vertex struct{ X, Y uint32 }
+
+// ShapeKind is how a prepared overlay shape is drawn.
+type ShapeKind uint8
+
+// The kinds of prepared shape.
+const (
+	ShapePoint ShapeKind = iota + 1
+	ShapeLine
+	ShapeArea
+)
+
+// Shape is one prepared overlay shape: the library's own simplified copy, in
+// the form the renderer draws. Role is the token it is drawn in; an area's
+// tint is the token after its outline's.
+type Shape struct {
+	Kind  ShapeKind
+	Rings [][]Vertex
+	Role  uint8
+	Label string
+}
