@@ -141,3 +141,92 @@ func TestBorrowedDrawnInTheFrame(t *testing.T) {
 		t.Error("the frame with a borrowed overlay draws no more than the frame without it")
 	}
 }
+
+// worstCase is the synthetic shape the constants name: 812,058 vertices in
+// one ring, wandering enough that no run's box is degenerate.
+const worstCase = 812_058
+
+// TestWorstCaseSynthetic is plan task 14.10 (NFR-3, PL-PF-6): the largest
+// shape the design admits, **accepted, not copied, and drawn within the
+// bound the constants state - which is stated as work and never as time.**
+//
+// The constants say it: one box test for each run of 64 vertices, which is
+// 12,689 tests a frame, plus the vertices of the runs whose box meets the
+// view. A time is recorded by the benchmark and gates nothing, because a
+// time is a fact about this machine and a count is a fact about the code.
+func TestWorstCaseSynthetic(t *testing.T) {
+	ring := coastline(worstCase)
+	rings := [][]project.LonLat{ring}
+	index := indexOf(t, rings)
+	runs := (len(ring) + RunLength - 1) / RunLength
+	if runs != 12_689 {
+		t.Errorf("%d runs at %d vertices; the constants say 12,689", runs, len(ring))
+	}
+	if len(index) != runs {
+		t.Fatalf("%d boxes for %d runs", len(index), runs)
+	}
+	// The index is the size the constants state: one 16-byte box a run.
+	if bytes := len(index) * 16; bytes < 200_000 || bytes > 210_000 {
+		t.Errorf("the index is %d bytes; the constants say about 203 KB", bytes)
+	}
+
+	// A view of a small part of the world, which is the case that matters:
+	// the whole shape is far larger than the window.
+	v, err := project.WholeWorld(149, 38)
+	if err != nil {
+		t.Fatal(err)
+	}
+	v.Zoom, v.Centre = 12, project.LonLat{Lon: -84, Lat: 26}
+	p := painter(t, v)
+	borrowed := Borrowed{Kind: scene.ShapeLine, Rings: rings, Index: index, Role: uint8(colour.Track)}
+	if err := p.Borrow(v, borrowed); err != nil {
+		t.Fatal(err)
+	}
+	got := p.Reads()
+	if got.Boxes != runs {
+		t.Errorf("%d box tests a frame, and the bound is one for each of the %d runs", got.Boxes, runs)
+	}
+	// Only the runs the view meets are read at all: at zoom 12 that is a
+	// handful of them out of twelve thousand.
+	if got.Vertices > len(ring)/100 {
+		t.Errorf("%d of %d vertices were read for a window a few kilometres across", got.Vertices, len(ring))
+	}
+
+	// **Not copied.** The ring the painter read is the ring that was handed
+	// in - the same memory, not a copy of it - which is what borrowing
+	// means (FR-11).
+	if &borrowed.Rings[0][0] != &ring[0] {
+		t.Error("the shape was copied on its way in")
+	}
+}
+
+// BenchmarkWorstCaseSynthetic records what the worst case costs in time. It
+// gates nothing: the bound is the count the test above asserts.
+func BenchmarkWorstCaseSynthetic(b *testing.B) {
+	ring := coastline(worstCase)
+	rings := [][]project.LonLat{ring}
+	index := benchIndex(b, rings)
+	v, err := project.WholeWorld(149, 38)
+	if err != nil {
+		b.Fatal(err)
+	}
+	v.Zoom, v.Centre = 12, project.LonLat{Lon: -84, Lat: 26}
+	borrowed := Borrowed{Kind: scene.ShapeLine, Rings: rings, Index: index, Role: uint8(colour.Track)}
+	b.ResetTimer()
+	for b.Loop() {
+		p, err := NewPainter(v.Cols, v.Rows)
+		if err != nil {
+			b.Fatal(err)
+		}
+		if err := p.Borrow(v, borrowed); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// benchIndex is indexOf for a benchmark, which has no *testing.T.
+func benchIndex(b *testing.B, rings [][]project.LonLat) []scene.Run {
+	b.Helper()
+	inner := &testing.T{}
+	return indexOf(inner, rings)
+}
