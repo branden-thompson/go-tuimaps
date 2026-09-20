@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"testing"
 
+	"github.com/branden-thompson/go-tuimaps/internal/colour"
 	"github.com/branden-thompson/go-tuimaps/internal/project"
 	"github.com/branden-thompson/go-tuimaps/internal/scene"
 	"github.com/branden-thompson/go-tuimaps/internal/style"
@@ -86,7 +87,7 @@ func FuzzPaint(f *testing.F) {
 		}
 		tile := fuzzTile(data)
 		for _, s := range []*style.Style{style.BuiltIn(), user} {
-			in := Input{View: v, Tiles: []Drawn{{Tile: tile, At: at, Exact: y&1 == 0}}, Style: s, Labels: true, Scale: x&1 == 0,
+			in := Input{View: v, Tiles: []Drawn{{Tile: tile, At: at, Exact: y&1 == 0}}, Style: s, Labels: true, Scale: x&1 == 0, Depth: colour.Depth(rows % 4),
 				Credit: textsafe.Clean(string(data[:min(len(data), 40)]))}
 			frame, err := r.Draw(in)
 			if err != nil {

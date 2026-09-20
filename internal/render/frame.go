@@ -30,10 +30,9 @@ const (
 	NoColour  = colour.NoColour
 )
 
-// colourless reports whether a frame at this depth carries no colour sequence: no
-// colour was asked for, or 16 colours, whose palette is not built yet (D-59).
+// colourless reports whether a frame at this depth carries no colour sequence.
 func colourless(d Depth) bool {
-	return d == colour.NoColour || d == colour.Colours16
+	return d == colour.NoColour
 }
 
 // Status says how finished a frame is.
@@ -415,10 +414,10 @@ func scaleMark(v project.View, room int) textsafe.Text {
 // (FR-16, D-77).
 func (r *Renderer) colours(c cell, in Input, groundColour colour.RGB, kind colour.GroundKind) (fg, bg colour.RGB) {
 	bg = groundColour
-	if area, ok := r.painter.Colour(c.area, in.Palette, kind); ok {
+	if area, ok := r.painter.Colour(c.area, in.Palette, kind, in.Depth); ok {
 		bg = area
 	}
-	own, ok := r.painter.Colour(c.ink, in.Palette, kind)
+	own, ok := r.painter.Colour(c.ink, in.Palette, kind, in.Depth)
 	if !ok {
 		own = bg
 	}
@@ -426,11 +425,16 @@ func (r *Renderer) colours(c cell, in Input, groundColour colour.RGB, kind colou
 	if c.strict {
 		need = colour.TextContrast
 	}
-	if in.Depth == colour.Colours256 {
-		// The rule is applied to what the palette will show, so that the
-		// contrast on the screen is the contrast that was checked (FR-16).
+	// The rule is applied to what the palette will show, so that the contrast
+	// on the screen is the contrast that was checked (FR-16). At 16 colours
+	// that is the reference table, and the figure is indicative only.
+	switch in.Depth {
+	case colour.Colours256:
 		_, own = colour.To256(own)
 		_, bg = colour.To256(bg)
+	case colour.Colours16:
+		_, own = colour.ToSixteen(own)
+		_, bg = colour.ToSixteen(bg)
 	}
 	return colour.Foreground(own, bg, need), bg
 }
@@ -439,6 +443,19 @@ func (r *Renderer) colours(c cell, in Input, groundColour colour.RGB, kind colou
 // background, as truecolor, or at 256 colours as the nearest fixed entry.
 func sgrColour(b *strings.Builder, which string, c colour.RGB, depth Depth) {
 	b.WriteString("\x1b[")
+	if depth == colour.Colours16 {
+		index, _ := colour.ToSixteen(c)
+		code := 30 + int(index) // 30 to 37, then 90 to 97 for the bright eight
+		if index >= 8 {
+			code = 90 + int(index) - 8
+		}
+		if which == "48" {
+			code += 10
+		}
+		b.WriteString(strconv.Itoa(code))
+		b.WriteByte('m')
+		return
+	}
 	b.WriteString(which)
 	if depth == colour.Colours256 {
 		index, _ := colour.To256(c)

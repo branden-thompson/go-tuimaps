@@ -243,14 +243,32 @@ func TestParityP05a_ColourDepth(t *testing.T) {
 			}
 		}
 	}
-	// At 16 colours the ramps are not built yet, and the basemap's palette is
-	// task 08.14's: until then a 16-colour hint draws with no colour, which
-	// is always safe (D-59).
+	// At 16 colours the basemap has its own palette, chosen from the sixteen
+	// (task 08.14): the sequences are the sixteen's own, 30 to 37 and 90 to 97
+	// for the foreground, 40 to 47 and 100 to 107 for the background.
 	in := input(t, v)
 	in.Depth = colour.Colours16
-	for _, l := range render(t, in).Lines {
-		if contains(l, "\x1b") {
-			t.Fatal("a 16-colour frame holds a colour sequence before its palette exists")
+	joined := ""
+	for i, l := range render(t, in).Lines {
+		joined += l
+		if got := runewidth.StringWidth(plain(l)); got != 60 {
+			t.Fatalf("16 colours: line %d is %d cells", i, got)
+		}
+	}
+	if contains(joined, "38;") || contains(joined, "48;") {
+		t.Error("a 16-colour frame holds a 256-colour or truecolor sequence")
+	}
+	if !contains(joined, "\x1b[96m") && !contains(joined, "\x1b[97m") {
+		t.Errorf("no bright cyan coast or bright white border in a 16-colour frame")
+	}
+	if !contains(joined, "\x1b[40m") {
+		t.Error("the ground is not painted black, entry 0")
+	}
+	for _, m := range regexp.MustCompile(`\x1b\[(\d+)m`).FindAllStringSubmatch(joined, -1) {
+		n, _ := strconv.Atoi(m[1])
+		ok := n == 0 || (n >= 30 && n <= 37) || (n >= 40 && n <= 47) || (n >= 90 && n <= 97) || (n >= 100 && n <= 107)
+		if !ok {
+			t.Fatalf("sequence %d is not one of the sixteen's", n)
 		}
 	}
 }

@@ -146,12 +146,12 @@ func (p *Painter) Water(col, row int) bool {
 
 // Colour is an ink's colour: a token's, through the palette and the ground in
 // effect, or a user's style's literal colour.
-func (p *Painter) Colour(ink uint8, palette colour.Palette, ground colour.GroundKind) (colour.RGB, bool) {
+func (p *Painter) Colour(ink uint8, palette colour.Palette, ground colour.GroundKind, depth colour.Depth) (colour.RGB, bool) {
 	if p == nil || ink == 0 {
 		return colour.RGB{}, false
 	}
 	if ink < firstLiteral {
-		return palette.Resolve(colour.Token(ink), ground)
+		return palette.ResolveAt(colour.Token(ink), ground, depth)
 	}
 	if int(ink-firstLiteral) >= len(p.literals) {
 		return colour.RGB{}, false
