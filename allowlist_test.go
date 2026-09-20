@@ -3,6 +3,8 @@ package tuimaps_test
 import (
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -47,4 +49,61 @@ func TestAllowList(t *testing.T) {
 	for _, m := range disallowedModules(string(out)) {
 		t.Errorf("module %s is in the library's graph; only go-runewidth and uax29/v2 are allowed (D-75, D-81)", m)
 	}
+}
+
+// TestHostIndependence is plan task 14.12, and metric M5: **the library is
+// no one's widget.** Its module graph names no terminal library, no
+// user-interface framework and no way of drawing; a host brings its own,
+// and the library hands it cells and facts (D-73, NFR-9).
+func TestHostIndependence(t *testing.T) {
+	out, err := exec.Command("go", "list", "-m", "all").Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The names of what a terminal application usually reaches for. A
+	// library that reached for any of them would be making the host's
+	// decisions for it.
+	for _, framework := range []string{
+		"bubbletea", "tcell", "termbox", "tview", "termui", "gocui", "pterm",
+		"lipgloss", "bubbles", "readline", "golang.org/x/term", "curses", "notcurses",
+	} {
+		if strings.Contains(string(out), framework) {
+			t.Errorf("the library's module graph names %s; the library draws no terminal of its own (M5)", framework)
+		}
+	}
+	// And the two it does name are the two that were ruled (D-75, D-81).
+	for _, m := range disallowedModules(string(out)) {
+		t.Errorf("module %s is in the library's graph", m)
+	}
+	// The library's own source imports nothing that owns a terminal, which
+	// is the same rule read from the code rather than from the graph.
+	for _, dir := range []string{".", "assets"} {
+		for _, file := range goFilesIn(t, dir) {
+			body, err := os.ReadFile(file)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, owned := range []string{`"os/exec"`, `"os/signal"`, `"syscall"`} {
+				if strings.Contains(string(body), owned) && !strings.HasSuffix(file, "_test.go") {
+					t.Errorf("%s imports %s; the terminal, its signals and its processes are the host's (D-73)", file, owned)
+				}
+			}
+		}
+	}
+}
+
+// goFilesIn is the Go files of one directory, not of the tree below it.
+func goFilesIn(t *testing.T, dir string) []string {
+	t.Helper()
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var found []string
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".go") {
+			found = append(found, filepath.Join(dir, entry.Name()))
+		}
+	}
+	return found
 }

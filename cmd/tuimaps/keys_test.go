@@ -366,3 +366,47 @@ func (s *shown) rows() int {
 }
 
 var _ io.Writer = (*shown)(nil)
+
+// TestKeysOnlySessionReachesEveryState is plan task 14.13 and NFR-15's own
+// acceptance: **a scripted session that uses nothing but keys reaches every
+// state of the map.** It is typed as a person would type it - one string of
+// characters, decoded the way the terminal's own bytes are - so that a key
+// that cannot be reached from a keyboard cannot pass this test.
+func TestKeysOnlySessionReachesEveryState(t *testing.T) {
+	home := tuimaps.Place{Name: "Home", At: tuimaps.LonLat{Lon: -84.5, Lat: 33.8}}
+	away := tuimaps.Place{Name: "Away", At: tuimaps.LonLat{Lon: -84.3, Lat: 33.7}}
+	a, out := upFor(t, home, away)
+
+	// Everything a person can do, typed: zoom in and out, pan four ways
+	// with the letters and again with the arrows, the three layer switches,
+	// fit the world, focus each place and back to none, the three
+	// accessibility switches, and both panels.
+	session := "a z hjkl\x1b[A\x1b[B\x1b[C\x1b[D n o m w \t\t\t s r C d d ? ?"
+	seen := map[string]bool{}
+	for _, key := range decode([]byte(session)) {
+		if _, done := a.act(key); done {
+			t.Fatalf("%s ended the session", key)
+		}
+		seen[key] = true
+		if err := a.drawn(noon); err != nil {
+			t.Fatalf("after %s: %v", key, err)
+		}
+	}
+	// Every key the app answers to was reached by typing, and none of them
+	// needed anything but a keyboard.
+	for _, key := range []string{keyZoomIn, keyZoomOut, keyLeft, keyRight, keyUp, keyDown,
+		keyNames, keyWater, keyMarkers, keyWorld, keyFocus, keySafeRamps, keyReduce, keyColour,
+		keyDescribe, keyHelp} {
+		if !seen[key] {
+			t.Errorf("%s was never reached by typing", key)
+		}
+	}
+	// The session left the map in a state it can be drawn in, and the way
+	// out is a key too.
+	if strings.TrimSpace(colourless(out.String())) == "" {
+		t.Error("the session drew nothing")
+	}
+	if _, done := a.act(keyQuit); !done {
+		t.Error("the session cannot be left from the keyboard")
+	}
+}
