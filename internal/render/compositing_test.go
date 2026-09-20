@@ -128,7 +128,7 @@ func layers() []composed {
 			v := worldView()
 			x := int16(float64(s.col*2) / float64(v.Cols*2) * 4096)
 			y := int16(float64(s.dotRow) / float64(v.Rows*4) * 4096)
-			in.Tiles = append(in.Tiles, Drawn{Tile: tileWith("place", scene.Feature{Kind: scene.GeomPoint, Class: "city", Name: "N", Rank: 1}, x, y), At: here, Exact: true})
+			in.Tiles = append(in.Tiles, Drawn{Tile: tileWith("place", scene.Feature{Kind: scene.GeomPoint, Class: "city", Name: textsafe.Clean("N"), Rank: 1}, x, y), At: here, Exact: true})
 			in.Labels = true
 		}, func(c cell) bool { return c.text == "N" }},
 		{"a marker", layerMarker, func(t *testing.T, in *Input, s spot) {

@@ -73,17 +73,18 @@ func (p *Painter) Mark(v project.View, m Marker, on bool) error {
 		p.strokeMarker(at, m)
 	}
 	if m.Label != "" && len(p.markerLabels) < maxLabels {
-		p.markerLabels = append(p.markerLabels, Label{X: at.X + labelGap, Y: at.Y, Name: m.Label, Ink: m.Ink, fromPoint: true})
+		p.markerLabels = append(p.markerLabels, Label{X: at.X + labelGap, Y: at.Y, Name: textsafe.Clean(m.Label), Ink: m.Ink, fromPoint: true})
 	}
 	return nil
 }
 
 // keepGlyph keeps a marker that is a character for the glyph pass.
 func (p *Painter) keepGlyph(at Point, m Marker) {
-	if textsafe.Width(textsafe.Clean(m.Text)) == 0 || len(p.glyphs) >= maxLabels {
+	text := textsafe.Clean(m.Text)
+	if textsafe.Width(text) == 0 || len(p.glyphs) >= maxLabels {
 		return
 	}
-	p.glyphs = append(p.glyphs, Label{X: at.X, Y: at.Y, Name: m.Text, Ink: m.Ink, fromPoint: true})
+	p.glyphs = append(p.glyphs, Label{X: at.X, Y: at.Y, Name: text, Ink: m.Ink, fromPoint: true})
 }
 
 // strokeMarker lights the dots of a marker's shape. Each is forced, so that

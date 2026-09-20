@@ -38,9 +38,16 @@ func TestSceneImportsNothingHere(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			// The standard library, and internal/textsafe alone among the
+			// library's own packages: the shared types carry cleaned text,
+			// and textsafe imports nothing here, so scene stays a leaf
+			// (D-121).
+			if path == "github.com/branden-thompson/go-tuimaps/internal/textsafe" {
+				continue
+			}
 			first, _, _ := strings.Cut(path, "/")
 			if strings.Contains(first, ".") {
-				t.Errorf("%s imports %s; scene may import the standard library only", f, path)
+				t.Errorf("%s imports %s; scene may import the standard library and internal/textsafe only", f, path)
 			}
 		}
 	}

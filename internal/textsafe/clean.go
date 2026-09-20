@@ -64,7 +64,14 @@ func Clean(s string) Text {
 			break
 		}
 		cluster := stripStrayTags(clusters.Value())
-		if onlyZeroWidth(cluster) || clusterWidth(cluster) == 0 || headlessMark(cluster) {
+		if onlyZeroWidth(cluster) || clusterWidth(cluster) == 0 {
+			continue
+		}
+		// Only a cluster with nothing before it needs asking: anywhere else
+		// the segmenter has already joined a headless cluster to the one in
+		// front of it, and a joined cluster measures the same here as it does
+		// in the row it is written into.
+		if out.Len() == 0 && headlessMark(cluster) {
 			continue
 		}
 		out.WriteString(cluster)
@@ -119,14 +126,43 @@ func onlyZeroWidth(cluster string) bool {
 	return true
 }
 
-// headlessMark reports whether a cluster begins with a combining mark, which
-// means it has no base character of its own. Such a cluster attaches itself
-// to whatever character comes before it wherever it is put, so a row holding
-// one is one cell narrower than its characters say (NFR-8): the mark is not
-// the text's to place. A mark inside a cluster, after its base, is kept.
+// firstJoiner is the lowest character that can attach itself to the one
+// before it. Every block below it - Basic Latin, Latin-1, both Latin
+// Extended blocks, the IPA extensions and the spacing modifiers - is
+// assigned in full and holds no mark, no joiner and no vowel sign, and
+// Unicode does not reassign an assigned character. So text in those
+// characters never needs the question asked, which is nearly all of it.
+const firstJoiner = 0x0300
+
+// headlessMark reports whether a cluster has no base character of its own:
+// one that attaches itself to whatever character comes before it wherever it
+// is put, so that a row holding one is one cell narrower than its characters
+// say (NFR-8). The mark is not the text's to place. A mark inside a cluster,
+// after its base, is kept.
+//
+// **The question is put to the pinned segmenter, not to the character
+// categories.** Whether one character joins the one before it is decided
+// where cluster boundaries are decided, and the library pins that table so
+// that a row measures the same on every machine. Go's own categories are a
+// different table, and it moves with the toolchain: a character the
+// segmenter joins but a given Go release does not yet call a mark was kept,
+// given a cell of its own, and then dissolved into the character before it -
+// a row a cell short, on one toolchain only.
 func headlessMark(cluster string) bool {
 	first, _ := utf8.DecodeRuneInString(cluster)
-	return unicode.In(first, unicode.Mn, unicode.Mc, unicode.Me)
+	if first < firstJoiner {
+		return false
+	}
+	// The buffer outlives the call - the segmenter's own bookkeeping reaches
+	// it - so these few bytes are allocated. They are affordable because
+	// this runs where text *enters* the library and not on any frame's path:
+	// a name is cleaned once per tile and a host's text once per hand-in
+	// (D-119, D-120).
+	var probe [1 + utf8.UTFMax]byte
+	probe[0] = 'a' // one byte, one cell, and nobody's mark
+	n := 1 + utf8.EncodeRune(probe[1:], first)
+	joined := graphemes.FromBytes(probe[:n])
+	return joined.Next() && len(joined.Value()) != 1 // the base swallowed it
 }
 
 // stripStrayTags removes tag characters from a cluster that does not begin
@@ -191,6 +227,7 @@ func alreadyClean(s string) bool {
 		}
 	}
 	clusters := graphemes.FromString(s)
+	leading := true
 	for range len(s) { // a cluster is at least one byte, so this bounds the walk
 		if !clusters.Next() {
 			return true
@@ -199,9 +236,13 @@ func alreadyClean(s string) bool {
 		if stripStrayTags(cluster) != cluster {
 			return false
 		}
-		if onlyZeroWidth(cluster) || clusterWidth(cluster) == 0 || headlessMark(cluster) {
+		if onlyZeroWidth(cluster) || clusterWidth(cluster) == 0 {
 			return false
 		}
+		if leading && headlessMark(cluster) {
+			return false
+		}
+		leading = false
 	}
 	return true
 }

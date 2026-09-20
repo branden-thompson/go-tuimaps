@@ -34,7 +34,9 @@ func fuzzTile(data []byte) *scene.Tile {
 				FirstPart: uint32(len(l.Parts)),
 			}
 			if data[2]&1 == 0 {
-				f.Name = string(data[:4]) // not cleaned: the renderer must clean it
+				// A name arrives cleaned, because a name is cleaned where it is
+				// read, once per tile (D-120), and the type is what says so.
+				f.Name = textsafe.Clean(string(data[:4]))
 			}
 			parts := int(data[0]>>4)%3 + 1
 			data = data[4:]

@@ -121,7 +121,7 @@ func TestKeysAndValues(t *testing.T) {
 			t.Fatal(err)
 		}
 		for i, f := range tile.Layers[0].Features {
-			if f.Name != c.names[i] {
+			if f.Name.String() != c.names[i] {
 				t.Errorf("language %s, feature %d: name %q, want %q", c.lang, i, f.Name, c.names[i])
 			}
 		}

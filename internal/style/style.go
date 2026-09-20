@@ -22,7 +22,7 @@ type Attrs struct {
 
 // AttrsOf is a kept feature's attributes.
 func AttrsOf(f scene.Feature) Attrs {
-	return Attrs{Kind: f.Kind, Class: f.Class, Name: f.Name, Rank: f.Rank, AdminLevel: f.AdminLevel, Maritime: f.Maritime}
+	return Attrs{Kind: f.Kind, Class: f.Class, Name: f.Name.String(), Rank: f.Rank, AdminLevel: f.AdminLevel, Maritime: f.Maritime}
 }
 
 // Kind is how a rule draws.

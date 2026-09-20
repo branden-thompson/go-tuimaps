@@ -302,8 +302,14 @@ func judgeInternalImport(name, pkg string) (rule, detail string, err error) {
 	switch {
 	case name == "testkit", name == "rules":
 		return RuleTestOnly, "internal/" + name + " is for test files only", nil
-	case pkg == "scene":
-		return RuleImport, "scene imports internal/" + name + "; it may import the standard library only", nil
+	case pkg == "scene" && name != "textsafe":
+		// **The one internal package the shared types may import** (D-121).
+		// The rule's purpose is an import graph without cycles, and textsafe
+		// imports no internal package, so it is a leaf exactly as scene is.
+		// It is here so that cleaned text can be carried in the type
+		// everything shares, which is what makes unsafe text impossible to
+		// hand on rather than merely cleaned again at each use.
+		return RuleImport, "scene imports internal/" + name + "; it may import the standard library and internal/textsafe only", nil
 	case slices.Contains(banned, name):
 		return RuleImport, pkg + " may never import " + name, nil
 	}

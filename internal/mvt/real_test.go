@@ -77,10 +77,10 @@ func TestRealTilesKeepOneLanguage(t *testing.T) {
 				continue
 			}
 			for _, f := range l.Features {
-				if f.Name != "" {
+				if f.Name.String() != "" {
 					names++
 				}
-				if lang == "en" && strings.ContainsAny(f.Name, "\u30B7\u30AB\u30B4") {
+				if lang == "en" && strings.ContainsAny(f.Name.String(), "\u30B7\u30AB\u30B4") {
 					t.Errorf("an English decode kept the Japanese name %q", f.Name)
 				}
 			}

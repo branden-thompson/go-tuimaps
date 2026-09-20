@@ -23,7 +23,7 @@ const (
 // how important it is - the lower the rank, the more.
 type Label struct {
 	X, Y       int // its first vertex
-	Name       string
+	Name       textsafe.Text
 	Rank       int32
 	Ink        uint8
 	fromPoint  bool // placed from its point, not centred on it: a marker's label (P-60)
@@ -190,7 +190,7 @@ func (p *Painter) Shape(v project.View, s scene.Shape) error {
 	}
 	p.lines.Forcing(false)
 	if s.Label != "" && len(p.overlayLabels) < maxLabels {
-		p.overlayLabels = append(p.overlayLabels, Label{X: (box[0] + box[2]) / 2, Y: (box[1] + box[3]) / 2, Name: s.Label, Ink: s.Role})
+		p.overlayLabels = append(p.overlayLabels, Label{X: (box[0] + box[2]) / 2, Y: (box[1] + box[3]) / 2, Name: textsafe.Clean(s.Label), Ink: s.Role})
 	}
 	return nil
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/branden-thompson/go-tuimaps/internal/colour"
 	"github.com/branden-thompson/go-tuimaps/internal/project"
 	"github.com/branden-thompson/go-tuimaps/internal/scene"
+	"github.com/branden-thompson/go-tuimaps/internal/textsafe"
 )
 
 const (
@@ -234,5 +235,5 @@ func (p *Painter) valueLabel(x, y int, labels []string, class int8, ink uint8) {
 	if class < 0 || int(class) >= len(labels) || labels[class] == "" || len(p.overlayLabels) >= maxLabels {
 		return
 	}
-	p.overlayLabels = append(p.overlayLabels, Label{X: x, Y: y, Name: labels[class], Ink: ink})
+	p.overlayLabels = append(p.overlayLabels, Label{X: x, Y: y, Name: textsafe.Clean(labels[class]), Ink: ink})
 }

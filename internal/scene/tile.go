@@ -1,6 +1,10 @@
 package scene
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/branden-thompson/go-tuimaps/internal/textsafe"
+)
 
 // What the kept form's own structures cost, in bytes, on a 64-bit machine.
 // A test holds each to the real size.
@@ -53,12 +57,12 @@ type Layer struct {
 // each carrying the same attributes.
 type Feature struct {
 	Kind       GeomKind
-	AdminLevel uint8  // a boundary's administrative level: 2 a country's, 4 a region's; 0 if it has none
-	Maritime   bool   // a boundary drawn across the sea
-	Rank       int32  // importance, lower first: the tile's local rank, else its scale rank, else its rank, else 0
-	Class      string // shared between the features of a tile that have the same class
-	Name       string // in the one configured language, else the local name, else the house number
-	FirstPart  uint32 // the feature's parts are its layer's Parts[FirstPart:EndPart]
+	AdminLevel uint8         // a boundary's administrative level: 2 a country's, 4 a region's; 0 if it has none
+	Maritime   bool          // a boundary drawn across the sea
+	Rank       int32         // importance, lower first: the tile's local rank, else its scale rank, else its rank, else 0
+	Class      string        // shared between the features of a tile that have the same class
+	Name       textsafe.Text // cleaned where it is read, once per tile, so that no frame cleans it again (D-120)
+	FirstPart  uint32        // the feature's parts are its layer's Parts[FirstPart:EndPart]
 	EndPart    uint32
 }
 
@@ -75,7 +79,7 @@ func (t *Tile) Bytes() int {
 		n += layerBytes + len(l.Name) + cap(l.Features)*featureBytes + cap(l.Coords)*2 + cap(l.Parts)*4
 		last := ""
 		for _, f := range l.Features {
-			n += len(f.Name)
+			n += len(f.Name.String())
 			if f.Class != last {
 				n += len(f.Class)
 				last = f.Class

@@ -42,7 +42,7 @@ func TestKeepsWhatTheRolesNeed(t *testing.T) {
 	if b[2].AdminLevel != 0 || b[2].Maritime {
 		t.Errorf("a boundary that says nothing: %+v", b[2])
 	}
-	if p := tile.Layers[1].Features[0]; p.Rank != 3 || p.Class != "city" || p.Name != "Chicago" {
+	if p := tile.Layers[1].Features[0]; p.Rank != 3 || p.Class != "city" || p.Name.String() != "Chicago" {
 		t.Errorf("a place: %+v; its rank is its importance", p)
 	}
 

@@ -22,20 +22,20 @@ const (
 // a cell is hatched when its column and row together are a multiple of the
 // stride. A graver alert is hatched more closely and in a different stroke,
 // so that two areas can be ranked with no colour at all (FR-18a).
-func hatchOf(ink uint8) (string, int) {
+func hatchOf(ink uint8) (textsafe.Text, int) {
 	switch colour.Token(ink) {
 	case colour.AlertExtremeTint:
-		return "╳", 2
+		return textsafe.Const("╳"), 2
 	case colour.AlertSevereTint:
-		return "╳", 3
+		return textsafe.Const("╳"), 3
 	case colour.AlertModerateTint:
-		return "╲", 4
+		return textsafe.Const("╲"), 4
 	case colour.AlertMinorTint:
-		return "╱", 5
+		return textsafe.Const("╱"), 5
 	case colour.AlertUnknownTint:
-		return "╱", 6
+		return textsafe.Const("╱"), 6
 	}
-	return "", 0
+	return textsafe.Text{}, 0
 }
 
 // hatch fills an alert area's empty cells with its stroke. It runs last of
@@ -51,7 +51,7 @@ func (r *Renderer) hatch() {
 			if stride == 0 || c.taken || c.glyph != blank || (col+row)%stride != 0 {
 				continue
 			}
-			g.write(col, row, textsafe.Clean(stroke), c.area)
+			g.write(col, row, stroke, c.area)
 		}
 	}
 }

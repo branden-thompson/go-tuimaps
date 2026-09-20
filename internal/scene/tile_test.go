@@ -1,6 +1,7 @@
 package scene
 
 import (
+	"github.com/branden-thompson/go-tuimaps/internal/textsafe"
 	"testing"
 	"unsafe"
 )
@@ -26,7 +27,7 @@ func TestTileBytes(t *testing.T) {
 		Name:     "water",
 		Coords:   make([]int16, 10),
 		Parts:    make([]uint32, 2),
-		Features: []Feature{{Class: "lake", Name: "Erie"}, {Class: "lake"}, {Class: "river", Name: "Maumee"}},
+		Features: []Feature{{Class: "lake", Name: textsafe.Clean("Erie")}, {Class: "lake"}, {Class: "river", Name: textsafe.Clean("Maumee")}},
 	}}}
 	want := tileBytes + 20 + 8 + layerBytes + len("water") + 3*featureBytes + len("Erie") + len("Maumee") + len("lake") + len("river")
 	if got := tile.Bytes(); got != want {

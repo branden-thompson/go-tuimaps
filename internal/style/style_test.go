@@ -2,6 +2,7 @@ package style
 
 import (
 	"errors"
+	"github.com/branden-thompson/go-tuimaps/internal/textsafe"
 	"os"
 	"strings"
 	"testing"
@@ -341,7 +342,7 @@ func TestParityP45_LineWidth(t *testing.T) {
 }
 
 func TestAttrsOf(t *testing.T) {
-	a := AttrsOf(scene.Feature{Kind: scene.GeomLine, Class: "river", Name: "Ohio", Rank: 3, AdminLevel: 2, Maritime: true})
+	a := AttrsOf(scene.Feature{Kind: scene.GeomLine, Class: "river", Name: textsafe.Clean("Ohio"), Rank: 3, AdminLevel: 2, Maritime: true})
 	if a != (Attrs{Kind: scene.GeomLine, Class: "river", Name: "Ohio", Rank: 3, AdminLevel: 2, Maritime: true}) {
 		t.Errorf("%+v", a)
 	}

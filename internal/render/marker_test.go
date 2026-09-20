@@ -7,6 +7,7 @@ import (
 
 	"github.com/branden-thompson/go-tuimaps/internal/colour"
 	"github.com/branden-thompson/go-tuimaps/internal/project"
+	"github.com/branden-thompson/go-tuimaps/internal/textsafe"
 )
 
 // centre is the place the marker tests draw at: the middle of the tile the
@@ -289,7 +290,7 @@ func TestParityP35_PoiGlyph(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !placed(named, Label{X: 40, Y: 8, Name: "Quay", Ink: uint8(colour.LabelPlace)}) {
+	if !placed(named, Label{X: 40, Y: 8, Name: textsafe.Clean("Quay"), Ink: uint8(colour.LabelPlace)}) {
 		t.Fatal("a symbol with a name was not placed")
 	}
 	if got := named.cells[2*named.cols+18].text; got != "Q" { // centred on its point

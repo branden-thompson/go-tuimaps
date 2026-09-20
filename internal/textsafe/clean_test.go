@@ -4,7 +4,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"unicode"
 	"unicode/utf8"
 
 	"github.com/branden-thompson/go-tuimaps/internal/testkit"
@@ -117,19 +116,26 @@ func TestCleanIsIdempotent(t *testing.T) {
 	}
 }
 
-// TestNoHeadlessMark: a cleaned text never begins with a combining mark. One
-// would attach itself to whatever came before it in a row, which would make
-// the row one cell narrower than its characters say (NFR-8). Found by the
-// renderer's own fuzz target, which drew a credit line of one such mark.
+// TestNoHeadlessMark: a cleaned text never begins with a character that
+// attaches itself to the one before it. Such a character would take a cell of
+// its own here and then dissolve into whatever came before it in a row, which
+// would make the row one cell narrower than its characters say (NFR-8). Found
+// by the renderer's own fuzz target, which drew a credit line of one such
+// mark - and found a second time, by the same target on the floor toolchain,
+// in U+113C2, a vowel sign the pinned segmenter joins and that release's
+// character categories had never heard of.
 func TestNoHeadlessMark(t *testing.T) {
-	for _, s := range []string{"\u0301", "\ua9c0", "\u0301abc", "\u20e3", "\u0e31 x"} {
+	for _, s := range []string{"\u0301", "\ua9c0", "\u0301abc", "\u20e3", "\u0e31 x", "\U000113c2"} {
 		got := Clean(s)
 		if got.String() == "" {
 			continue
 		}
-		first, _ := utf8.DecodeRuneInString(got.String())
-		if unicode.In(first, unicode.Mn, unicode.Mc, unicode.Me) {
-			t.Errorf("Clean(%q) begins with the mark %U", s, first)
+		// **Asked of the pinned segmenter, not of the character categories.**
+		// The categories move with the Go release; the segmenter is the table
+		// the library pins, and it is the one that decides what joins what.
+		if headlessMark(got.String()) {
+			first, _ := utf8.DecodeRuneInString(got.String())
+			t.Errorf("Clean(%q) begins with %U, which joins the character before it", s, first)
 		}
 		// Measured after anything else, it still takes the cells it says.
 		before := Width(Clean("x"))
@@ -144,10 +150,17 @@ func TestNoHeadlessMark(t *testing.T) {
 }
 
 // TestCleanKeepsCleanTextWithoutCopyingIt is D-115's half in this package:
-// **cleaning text that is already clean must cost nothing.** Every label of
-// every feature is cleaned on the way to the screen, so a copy made here is
-// a copy made for each of them, on every frame - which is how the cost of a
-// redraw came to grow with the number of features on the map.
+// **text that is already clean is handed back, never copied.** A copy costs
+// bytes in proportion to the text, so the rule is put as the thing a copy
+// could not satisfy: **the price does not move when the text grows.** The
+// same words a thousand times over clean for what one of them cost.
+//
+// The price itself may be one small fixed probe and never a second - the
+// question the leading character is put to, five bytes that do not leave
+// with the answer (D-119). It is a constant, so it cannot be the cost of a
+// copy, and it is paid where text *enters* the library rather than on any
+// frame's path: a name is cleaned once per tile and a host's text once per
+// hand-in (D-120). Latin text does not pay it at all.
 func TestCleanKeepsCleanTextWithoutCopyingIt(t *testing.T) {
 	for _, s := range []string{"", "Warning", "Tornado Warning", "Great Falls", "Ceuta y Melilla",
 		"149 km", "a name with an accent: Bogot\u00E1", "\u2800\u2801"} {
@@ -155,8 +168,14 @@ func TestCleanKeepsCleanTextWithoutCopyingIt(t *testing.T) {
 		if got.String() != s {
 			t.Errorf("%q came back as %q; it needed no cleaning", s, got.String())
 		}
-		if allocs := testing.AllocsPerRun(50, func() { Clean(s) }); allocs != 0 {
-			t.Errorf("cleaning %q, which is already clean, allocates %.0f times", s, allocs)
+		long := strings.Repeat(s, 1000)
+		if grown := Clean(long); grown.String() != long {
+			t.Errorf("a thousand of %q came back changed", s)
+		}
+		once := testing.AllocsPerRun(50, func() { Clean(s) })
+		thousand := testing.AllocsPerRun(50, func() { Clean(long) })
+		if once > 1 || thousand != once {
+			t.Errorf("cleaning %q allocates %.0f times, and a thousand of it %.0f: a cost that grows with the text is a copy", s, once, thousand)
 		}
 	}
 	// Text that does need cleaning is still cleaned, and the fast path has
@@ -169,6 +188,25 @@ func TestCleanKeepsCleanTextWithoutCopyingIt(t *testing.T) {
 	} {
 		if got := Clean(c.in).String(); got != c.want {
 			t.Errorf("Clean(%q) = %q, want %q", c.in, got, c.want)
+		}
+	}
+}
+
+// TestEveryCharacterTakesTheCellsItSaysAfterAnother is the same rule put to
+// every character there is, so that no future toolchain, width table or
+// segmenter can quietly reintroduce the defect in a character nobody thought
+// to list: whatever a cleaned character measures on its own, that is what it
+// adds to a row that already holds something (NFR-8).
+func TestEveryCharacterTakesTheCellsItSaysAfterAnother(t *testing.T) {
+	base := Clean("x")
+	for r := range rune(utf8.MaxRune + 1) {
+		if r >= 0xD800 && r <= 0xDFFF { // halves of a surrogate pair are not characters
+			continue
+		}
+		alone := Clean(string(r))
+		joined := Width(Clean("x" + string(r)))
+		if joined != Width(base)+Width(alone) {
+			t.Fatalf("%U is %d cells alone and %d after another character", r, Width(alone), joined-Width(base))
 		}
 	}
 }

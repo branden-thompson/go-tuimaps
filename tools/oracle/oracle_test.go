@@ -8,6 +8,7 @@ import (
 	"github.com/branden-thompson/go-tuimaps/internal/mvt"
 	"github.com/branden-thompson/go-tuimaps/internal/scene"
 	"github.com/branden-thompson/go-tuimaps/internal/testkit"
+	"github.com/branden-thompson/go-tuimaps/internal/textsafe"
 	"github.com/paulmach/orb"
 	orbmvt "github.com/paulmach/orb/encoding/mvt"
 	"github.com/paulmach/orb/geojson"
@@ -171,8 +172,19 @@ func compare(theirs orbmvt.Layers, ours *scene.Tile) (compared int, err error) {
 				next++
 				compared++
 				class, _ := f.Properties["class"].(string)
-				if got.Class != class || got.Name != label(f, "en") {
-					return compared, fmt.Errorf("layer %s feature %d: class %q name %q; they have class %q name %q", their.Name, n, got.Class, got.Name, class, label(f, "en"))
+				// **A name is compared with theirs put through the same
+				// cleaning** (D-120, which supersedes D-118 for this one
+				// case). This decoder cleans a name where it reads it, once
+				// per tile, so that no frame cleans it again; the proven
+				// decoder hands back the raw bytes. Comparing ours with
+				// theirs cleaned keeps the comparison exact on what was
+				// *read* - a name we read wrongly still fails here. What is
+				// given up, and it is the whole of it: two different raw
+				// names that clean to the same text are no longer told
+				// apart.
+				theirName := textsafe.Clean(label(f, "en")).String()
+				if got.Class != class || got.Name.String() != theirName {
+					return compared, fmt.Errorf("layer %s feature %d: class %q name %q; they have class %q name %q", their.Name, n, got.Class, got.Name.String(), class, theirName)
 				}
 				rank, level, sea := importance(f)
 				if got.Rank != rank || got.AdminLevel != level || got.Maritime != sea {

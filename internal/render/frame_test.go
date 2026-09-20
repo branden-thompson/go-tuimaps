@@ -256,23 +256,23 @@ func testCollision(t *testing.T) {
 		t.Fatal(err)
 	}
 	ink := uint8(colour.LabelPlace)
-	if !placed(g, Label{X: 40, Y: 40, Name: "Paris", Rank: 1, Ink: ink}) {
+	if !placed(g, Label{X: 40, Y: 40, Name: textsafe.Clean("Paris"), Rank: 1, Ink: ink}) {
 		t.Fatal("the first label was not placed")
 	}
 	// Paris occupies cells 18 to 22 of row 10; its box is 13..28 by 8..12.
-	if placed(g, Label{X: 2 * 28, Y: 40, Name: "Orly", Rank: 2, Ink: ink}) {
+	if placed(g, Label{X: 2 * 28, Y: 40, Name: textsafe.Clean("Orly"), Rank: 2, Ink: ink}) {
 		t.Error("a label whose box touches the first was placed; the overlap is inclusive")
 	}
-	if placed(g, Label{X: 40, Y: 4 * 12, Name: "Ivry", Rank: 2, Ink: ink}) {
+	if placed(g, Label{X: 40, Y: 4 * 12, Name: textsafe.Clean("Ivry"), Rank: 2, Ink: ink}) {
 		t.Error("a label two rows below was placed; the margin is two rows")
 	}
-	if !placed(g, Label{X: 40, Y: 4 * 15, Name: "Evry", Rank: 2, Ink: ink}) {
+	if !placed(g, Label{X: 40, Y: 4 * 15, Name: textsafe.Clean("Evry"), Rank: 2, Ink: ink}) {
 		t.Error("a label five rows below was refused")
 	}
-	if placed(g, Label{X: 2, Y: 40, Name: "Brest", Rank: 2, Ink: ink}) {
+	if placed(g, Label{X: 2, Y: 40, Name: textsafe.Clean("Brest"), Rank: 2, Ink: ink}) {
 		t.Error("a label that would start left of the rectangle was placed; it is skipped whole (P-33)")
 	}
-	if placed(g, Label{X: 118, Y: 4, Name: "Strasbourg", Rank: 2, Ink: ink}) {
+	if placed(g, Label{X: 118, Y: 4, Name: textsafe.Clean("Strasbourg"), Rank: 2, Ink: ink}) {
 		t.Error("a label that would run off the right was placed")
 	}
 }
@@ -286,7 +286,7 @@ func TestParityP12_TextPlacement(t *testing.T) { testClusters(t) }
 func testClusters(t *testing.T) {
 	g, _ := newGrid(40, 5)
 	name := "\xe6\x9d\xb1\xe4\xba\xac" // two wide characters: four cells
-	if !placed(g, Label{X: 40, Y: 8, Name: name, Rank: 1, Ink: uint8(colour.LabelPlace)}) {
+	if !placed(g, Label{X: 40, Y: 8, Name: textsafe.Clean(name), Rank: 1, Ink: uint8(colour.LabelPlace)}) {
 		t.Fatal("not placed")
 	}
 	row := g.cells[2*40 : 3*40]

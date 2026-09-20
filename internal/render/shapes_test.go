@@ -1,6 +1,7 @@
 package render
 
 import (
+	"github.com/branden-thompson/go-tuimaps/internal/textsafe"
 	"strings"
 	"testing"
 
@@ -77,7 +78,7 @@ func TestAlertAreaDrawn(t *testing.T) {
 // TestOverlayLabelBeforeBasemap: a place name never hides a warning's word.
 func TestOverlayLabelBeforeBasemap(t *testing.T) {
 	v := project.View{Centre: project.LonLat{Lon: -95, Lat: 38}, Zoom: 4, Cols: 120, Rows: 40}
-	places := scene.Layer{Name: "place", Extent: 4096, Features: []scene.Feature{{Kind: scene.GeomPoint, Class: "city", Name: "Centreville", Rank: 1, EndPart: 1}}, Coords: []int16{2048, 2048}, Parts: []uint32{2}}
+	places := scene.Layer{Name: "place", Extent: 4096, Features: []scene.Feature{{Kind: scene.GeomPoint, Class: "city", Name: textsafe.Clean("Centreville"), Rank: 1, EndPart: 1}}, Coords: []int16{2048, 2048}, Parts: []uint32{2}}
 	centre, _ := project.FromTile(0.5, 0.5, 0)
 	_ = centre
 	at := scene.TileID{Z: 4, X: 3, Y: 6}

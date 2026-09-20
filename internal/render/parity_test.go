@@ -9,6 +9,7 @@ import (
 	"github.com/branden-thompson/go-tuimaps/internal/project"
 	"github.com/branden-thompson/go-tuimaps/internal/scene"
 	"github.com/branden-thompson/go-tuimaps/internal/style"
+	"github.com/branden-thompson/go-tuimaps/internal/textsafe"
 	"github.com/mattn/go-runewidth"
 )
 
@@ -93,8 +94,8 @@ func TestParityP25_LabelDeferral(t *testing.T) {
 	v := worldView()
 	places := scene.Layer{Name: "place", Extent: 4096,
 		Features: []scene.Feature{
-			{Kind: scene.GeomPoint, Class: "city", Name: "Second", Rank: 5, FirstPart: 0, EndPart: 1},
-			{Kind: scene.GeomPoint, Class: "city", Name: "First", Rank: 2, FirstPart: 1, EndPart: 2},
+			{Kind: scene.GeomPoint, Class: "city", Name: textsafe.Clean("Second"), Rank: 5, FirstPart: 0, EndPart: 1},
+			{Kind: scene.GeomPoint, Class: "city", Name: textsafe.Clean("First"), Rank: 2, FirstPart: 1, EndPart: 2},
 		},
 		Coords: []int16{2048, 2048, 2060, 2048}, Parts: []uint32{2, 4}}
 	in := Input{View: v, Tiles: []Drawn{{Tile: &scene.Tile{Layers: []scene.Layer{places}}, At: here, Exact: true}}, Style: style.BuiltIn(), Labels: true}
@@ -183,17 +184,17 @@ func TestParityP33_LabelBounds(t *testing.T) { testAnchors(t) }
 func testAnchors(t *testing.T) {
 	g, _ := newGrid(40, 10)
 	ink := uint8(colour.LabelWater)
-	placed := g.labelAt(Label{Name: "Pacific Ocean", Ink: ink}, []Point{{-40, 12}, {30, -9}, {2, 12}, {40, 20}, {60, 28}})
+	placed := g.labelAt(Label{Name: textsafe.Clean("Pacific Ocean"), Ink: ink}, []Point{{-40, 12}, {30, -9}, {2, 12}, {40, 20}, {60, 28}})
 	if !placed {
 		t.Fatal("no vertex was accepted, though the fourth fits")
 	}
 	if g.cells[5*40+14].text != "P" {
 		t.Errorf("the name is not centred on the fourth vertex: row 5 reads %q at column 14", g.cells[5*40+14].text)
 	}
-	if g.labelAt(Label{Name: "Nowhere", Ink: ink}, []Point{{-40, -40}, {4000, 4000}}) {
+	if g.labelAt(Label{Name: textsafe.Clean("Nowhere"), Ink: ink}, []Point{{-40, -40}, {4000, 4000}}) {
 		t.Error("a name none of whose vertices is in the rectangle was placed")
 	}
-	if g.labelAt(Label{Name: "Nothing", Ink: ink}, nil) {
+	if g.labelAt(Label{Name: textsafe.Clean("Nothing"), Ink: ink}, nil) {
 		t.Error("a name with no vertex was placed")
 	}
 
@@ -202,13 +203,13 @@ func testAnchors(t *testing.T) {
 	// buffer; on a map wider than the world only the middle one is a place.
 	wide, _ := newGrid(69, 12)
 	wide.world = box{left: 32, right: 105, top: -2, bottom: 71} // in dots: the world sits in the middle of the view
-	if !wide.labelAt(Label{Name: "Asia", Ink: ink}, []Point{{160, 22}, {87, 22}, {14, 22}}) {
+	if !wide.labelAt(Label{Name: textsafe.Clean("Asia"), Ink: ink}, []Point{{160, 22}, {87, 22}, {14, 22}}) {
 		t.Fatal("Asia was not placed")
 	}
 	if wide.cells[5*69+41].text != "A" {
 		t.Errorf("Asia is not at its middle vertex, the one inside the world")
 	}
-	if wide.labelAt(Label{Name: "Nowhere", Ink: ink}, []Point{{10, 22}, {120, 22}}) {
+	if wide.labelAt(Label{Name: textsafe.Clean("Nowhere"), Ink: ink}, []Point{{10, 22}, {120, 22}}) {
 		t.Error("a name was placed in the ocean beyond the world's edge")
 	}
 }

@@ -138,7 +138,7 @@ flowchart TB
           REN["<b>render</b><br/>braille canvas · compositing order · labels · markers"]
           COL["<b>colour</b><br/>tokens · presets · ramps per depth · checker"]
         end
-        SCENE["<b>scene</b><br/>the prepared types everything shares: decoded tile, prepared overlay, job — imports nothing here"]
+        SCENE["<b>scene</b><br/>the prepared types everything shares: decoded tile, prepared overlay, job — imports only textsafe here (D-121)"]
         subgraph OUTP["what leaves"]
           direction LR
           DESC["<b>describe</b><br/>description as data (D-52)"]
@@ -169,6 +169,7 @@ flowchart TB
       REN --> SCENE
       DESC --> SCENE
       WORKQ --> SCENE
+      SCENE --> TXT
       PUB --> REN
       PUB --> OVR
       PUB --> DESC

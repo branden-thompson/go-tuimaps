@@ -216,9 +216,9 @@ func (g *grid) labelAt(l Label, anchors []Point) bool {
 
 // anchor places a name at one vertex.
 func (g *grid) anchor(l Label, at Point) bool {
-	text := textsafe.Clean(l.Name)
-	if l.Name == "" {
-		text = textsafe.Clean(placeGlyph)
+	text := l.Name
+	if text.String() == "" {
+		text = textsafe.Const(placeGlyph)
 	}
 	width := textsafe.Width(text)
 	if width == 0 || at.X < 0 || at.Y < 0 {

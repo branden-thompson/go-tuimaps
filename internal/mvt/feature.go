@@ -4,6 +4,7 @@ import (
 	"math"
 
 	"github.com/branden-thompson/go-tuimaps/internal/scene"
+	"github.com/branden-thompson/go-tuimaps/internal/textsafe"
 )
 
 // attrs is what is kept of one feature's attributes.
@@ -41,7 +42,7 @@ func (d *layerDecoder) readFeature(body []byte) error {
 	if err != nil {
 		return err
 	}
-	feature := scene.Feature{Kind: scene.GeomKind(kind), Class: a.class, Name: a.label(), Rank: a.rank(), AdminLevel: a.level, Maritime: a.maritime}
+	feature := scene.Feature{Kind: scene.GeomKind(kind), Class: a.class, Name: textsafe.Clean(a.label()), Rank: a.rank(), AdminLevel: a.level, Maritime: a.maritime}
 	return d.readGeometry(geometry, feature)
 }
 
