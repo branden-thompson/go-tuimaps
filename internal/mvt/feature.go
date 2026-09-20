@@ -1,6 +1,8 @@
 package mvt
 
 import (
+	"math"
+
 	"github.com/branden-thompson/go-tuimaps/internal/scene"
 )
 
@@ -21,29 +23,15 @@ type attrs struct {
 // and its geometry. A feature of unknown kind (0) is passed over, as the
 // format allows.
 func (d *layerDecoder) readFeature(body []byte) error {
-	var tags, geometry []byte
-	kind, rest := uint64(0), body
-	for range len(body) {
-		if len(rest) == 0 {
-			break
-		}
-		f, next, err := nextField(rest)
-		if err != nil {
-			return err
-		}
-		rest = next
-		switch {
-		case f.num == 2 && f.wire == wireBytes:
-			tags = f.body
-		case f.num == 3 && f.wire == wireVarint:
-			kind = f.value
-		case f.num == 4 && f.wire == wireBytes:
-			geometry = f.body
-		case f.num == 2 || f.num == 4:
-			return malformed() // tags and geometry must be packed
-		}
+	if d == nil || d.layer == nil {
+		return malformed() // a feature arrived with no layer to put it in
+	}
+	kind, tags, geometry, err := featureFields(body)
+	if err != nil {
+		return err
 	}
 	if kind == 0 {
+		d.passOver()
 		return nil
 	}
 	if kind > uint64(scene.GeomPolygon) {
@@ -55,6 +43,52 @@ func (d *layerDecoder) readFeature(body []byte) error {
 	}
 	feature := scene.Feature{Kind: scene.GeomKind(kind), Class: a.class, Name: a.label(), Rank: a.rank(), AdminLevel: a.level, Maritime: a.maritime}
 	return d.readGeometry(geometry, feature)
+}
+
+// featureFields walks one feature's bytes and answers what it says it is,
+// where its tags are and where its geometry is. Tags and geometry must be
+// packed, as the format requires; anything else is a feature this decoder
+// will not guess at.
+func featureFields(body []byte) (kind uint64, tags, geometry []byte, err error) {
+	if len(body) == 0 {
+		return 0, nil, nil, nil // a feature of no bytes says nothing, and is passed over
+	}
+	rest := body
+	for range len(body) {
+		if len(rest) == 0 {
+			break
+		}
+		f, next, err := nextField(rest)
+		if err != nil {
+			return 0, nil, nil, err
+		}
+		rest = next
+		switch {
+		case f.num == 3 && f.wire == wireVarint:
+			kind = f.value
+		case f.num == 2 && f.wire == wireBytes:
+			tags = f.body
+		case f.num == 4 && f.wire == wireBytes:
+			geometry = f.body
+		case f.num == 2 || f.num == 4:
+			return 0, nil, nil, malformed() // tags and geometry must be packed
+		}
+	}
+	return kind, tags, geometry, nil
+}
+
+// passOver counts a feature that does not say what it is. Such a feature
+// cannot be drawn - there is no telling whether to fill it or stroke it -
+// so it is dropped, and counted so that a reader can tell this from a
+// feature that was lost (D-118).
+func (d *layerDecoder) passOver() {
+	if d == nil || d.layer == nil {
+		return
+	}
+	if d.layer.Untyped == math.MaxUint16 {
+		return // a tile with sixty-five thousand untyped features says enough
+	}
+	d.layer.Untyped++
 }
 
 // readTags walks a feature's key and value indexes and keeps what the map

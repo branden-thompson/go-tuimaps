@@ -145,6 +145,8 @@ func compare(theirs orbmvt.Layers, ours *scene.Tile) (compared int, err error) {
 		}
 		delete(kept, their.Name)
 		next, part := 0, 0
+		untyped := int(our.Untyped)
+	features:
 		for n, f := range their.Features {
 			want := flat(f.Geometry)
 			if len(want) == 0 {
@@ -152,6 +154,17 @@ func compare(theirs orbmvt.Layers, ours *scene.Tile) (compared int, err error) {
 			}
 			for range polygons(f.Geometry) {
 				if next >= len(our.Features) {
+					// **The last exemption this oracle takes (D-118).** A
+					// feature that does not say what it is cannot be
+					// drawn, so this decoder passes it over and counts it;
+					// the proven decoder reads its geometry anyway. Only
+					// as many features as the decoder counted may be
+					// missing - a feature dropped for any other reason
+					// still fails here, and no further narrowing is taken.
+					if untyped > 0 {
+						untyped--
+						continue features
+					}
 					return compared, fmt.Errorf("layer %s: they have feature %d, we ran out after %d", their.Name, n, next)
 				}
 				got := our.Features[next]

@@ -30,8 +30,15 @@ type Tile struct {
 // Layer is one kept layer of a tile. Its geometry lives in two slabs of its
 // own, each allocated once at its exact size.
 type Layer struct {
-	Name     string
-	Extent   uint16 // the side of the layer's coordinate grid; 4096 unless the tile says otherwise
+	Name   string
+	Extent uint16 // the side of the layer's coordinate grid; 4096 unless the tile says otherwise
+	// Untyped counts the features passed over for want of a declared type.
+	// A feature with no type cannot be drawn - there is no telling whether
+	// to fill it or stroke it - so it is dropped; this says how many were,
+	// so that a reader can tell "dropped because it said nothing" from
+	// "lost" (D-118). It sits here, beside the extent, because the bytes
+	// either side of it are padding and the layer's size is accounted for.
+	Untyped  uint16
 	Features []Feature
 	// Coords holds every feature's coordinates as x, y pairs.
 	Coords []int16
