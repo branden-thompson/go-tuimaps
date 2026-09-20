@@ -2,6 +2,7 @@ package tuimaps_test
 
 import (
 	"context"
+	"math"
 	"regexp"
 	"strings"
 	"testing"
@@ -225,3 +226,20 @@ func TestNoColourFromTheEnvironment(t *testing.T) {
 		t.Error("a host that asked for truecolor was overruled by the environment")
 	}
 }
+
+// frameAt is a frame drawn at a moment of the host's animation clock, as its
+// own string.
+func frameAt(t *testing.T, m *tuimaps.Map, cols, rows, ms int) string {
+	t.Helper()
+	f, err := m.Render(tuimaps.Size{Cols: cols, Rows: rows}, start.Add(time.Duration(ms)*time.Millisecond))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return strings.Join(f.Lines, "\n")
+}
+
+// start is the moment the animation tests count from.
+var start = time.Date(2026, 9, 20, 9, 0, 0, 0, time.UTC)
+
+// notANumber is a latitude that is no number at all.
+func notANumber() float64 { return math.NaN() }

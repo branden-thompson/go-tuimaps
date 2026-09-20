@@ -3,7 +3,6 @@ package tuimaps
 import (
 	"maps"
 	"os"
-	"slices"
 
 	"github.com/branden-thompson/go-tuimaps/internal/colour"
 	"github.com/branden-thompson/go-tuimaps/internal/fault"
@@ -84,7 +83,14 @@ func (m *Map) SetPalette(tokens map[string]RGB) ([]string, error) {
 	m.look.palette = palette.KeepRamps(m.look.safeRamps)
 	m.look.version++
 	m.changed++
-	return slices.Clone(unknown), nil
+	// The names come back cleaned, since everything the library hands back is
+	// (FR-34). They are matched as they were written: a name with an escape in
+	// it is no token, and cleaning it first would make it one by accident.
+	out := make([]string, 0, len(unknown))
+	for _, name := range unknown {
+		out = append(out, textsafe.Clean(name).String())
+	}
+	return out, nil
 }
 
 // SafeRamps says whether a ramp's colours are the library's own whatever the

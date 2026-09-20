@@ -137,7 +137,10 @@ type Map struct {
 	look     look
 	motion   render.Motion
 	changed  uint64
+	places   []Place
 	drawn    []render.Drawn
+
+	drawnPlaces []render.Marker
 }
 
 // New creates a map. It starts nothing: no goroutine, no connection, no file.
@@ -294,6 +297,7 @@ func (m *Map) Render(size Size, now time.Time) (Frame, error) {
 		Credit: textsafe.Const("OpenFreeMap (c) OpenMapTiles Data from OpenStreetMap")}
 	m.paint(&in)
 	in.MarkerPhase = m.motion.Phase(now)
+	in.Markers = m.markers()
 	in.Tiles, in.Missing = m.onHand()
 	was := m.renderer.Redraws()
 	frame, err := m.renderer.Draw(in)
