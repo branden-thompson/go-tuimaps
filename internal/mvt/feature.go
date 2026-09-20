@@ -208,6 +208,7 @@ func stringOf(value []byte) ([]byte, error) {
 func intOf(value []byte) int32 {
 	const limit = 1 << 31
 	rest := value
+	found, fields := int32(0), 0
 	for range len(value) {
 		if len(rest) == 0 {
 			break
@@ -217,15 +218,24 @@ func intOf(value []byte) int32 {
 			return 0
 		}
 		rest = next
+		fields++
 		if f.wire != wireVarint || f.value >= limit {
 			continue
 		}
 		switch f.num {
 		case 4, 5:
-			return int32(f.value)
+			found = int32(f.value)
 		case 6:
-			return zigzag(uint32(f.value))
+			found = zigzag(uint32(f.value))
 		}
 	}
-	return 0
+	// **A value carries one field.** One with several is damaged, and
+	// taking the first number out of it is guessing: the proven decoder
+	// reads such a value as nothing, and so does this one now. Found by
+	// the differential fuzz target, which read an administrative level of
+	// 4 out of a value the other decoder read as none.
+	if fields != 1 {
+		return 0
+	}
+	return found
 }

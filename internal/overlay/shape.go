@@ -107,12 +107,20 @@ func distance(p, a, b Vertex) float64 {
 	ax, ay := float64(a.X)/unit, float64(a.Y)/unit
 	bx, by := float64(b.X)/unit, float64(b.Y)/unit
 	dx, dy := bx-ax, by-ay
-	length := dx*dx + dy*dy
+	// **Every product is converted before it is added**, so that no machine
+	// fuses the two: a fused multiply-add keeps more bits than the separate
+	// steps, and this number decides whether a vertex is kept. One
+	// architecture keeping a vertex another drops makes a different
+	// picture from the same data, which a reference frame cannot survive
+	// (NFR-6). The basemap's own projection was made safe this way in
+	// 09.28; this is the same rule, in the place the frames pointed at.
+	length := float64(dx*dx) + float64(dy*dy)
 	if length == 0 {
 		return math.Hypot(px-ax, py-ay)
 	}
-	t := math.Max(0, math.Min(1, ((px-ax)*dx+(py-ay)*dy)/length))
-	return math.Hypot(px-(ax+t*dx), py-(ay+t*dy))
+	along := (float64((px-ax)*dx) + float64((py-ay)*dy)) / length
+	t := math.Max(0, math.Min(1, along))
+	return math.Hypot(px-(ax+float64(t*dx)), py-(ay+float64(t*dy)))
 }
 
 type span struct{ from, to int }
