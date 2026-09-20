@@ -56,7 +56,14 @@ func TestAllowList(t *testing.T) {
 // user-interface framework and no way of drawing; a host brings its own,
 // and the library hands it cells and facts (D-73, NFR-9).
 func TestHostIndependence(t *testing.T) {
-	out, err := exec.Command("go", "list", "-m", "all").Output()
+	// **With the workspace switched off** (D-81): a workspace file names
+	// every module of this repository and pulls in the test tools' own
+	// dependencies, which are not the library's. The gate writes one, so a
+	// test that forgot this would read the oracle's decoder as the
+	// library's own - which is exactly what it did.
+	listing := exec.Command("go", "list", "-m", "all")
+	listing.Env = append(os.Environ(), "GOWORK=off")
+	out, err := listing.Output()
 	if err != nil {
 		t.Fatal(err)
 	}
