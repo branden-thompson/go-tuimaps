@@ -1,0 +1,431 @@
+package overlay
+
+import (
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/branden-thompson/go-tuimaps/internal/colour"
+	"github.com/branden-thompson/go-tuimaps/internal/fault"
+	"github.com/branden-thompson/go-tuimaps/internal/project"
+	"github.com/branden-thompson/go-tuimaps/internal/textsafe"
+)
+
+const (
+	// defaultOverlayVertices and defaultStoreVertices are the vertex caps: one
+	// overlay's, and all of a map's together (NFR-20). A host may lower them.
+	defaultOverlayVertices = 2_000_000
+	defaultStoreVertices   = 4_000_000
+	// maxWarnings is how many distinct warnings are kept until they are taken.
+	maxWarnings = 64
+)
+
+// FeatureKind is what a feature's geometry is.
+type FeatureKind uint8
+
+// The kinds of feature (FR-6).
+const (
+	Point FeatureKind = iota + 1
+	Line
+	Polygon
+	Circle
+)
+
+// Feature is one shape of a feature overlay. Its rings are the host's own
+// memory, borrowed and never copied (FR-11): a polygon's outer ring and its
+// holes, a line's one run of positions, a point's one position. A circle has
+// a centre and a radius and no rings.
+type Feature struct {
+	Kind     FeatureKind
+	Rings    [][]project.LonLat
+	Centre   project.LonLat
+	RadiusKm float64
+	Role     colour.Token // the token it is drawn in; for an alert, its outline's
+	Label    string
+}
+
+// Overlay is what a host hands in: an id, when its data was valid and how
+// long it stays current (FR-32), a credit, and its shapes.
+type Overlay struct {
+	ID       string
+	Valid    time.Time
+	Keeps    time.Duration
+	Credit   string
+	Features []Feature
+}
+
+// Caps are a store's limits, fixed when it is made.
+type Caps struct {
+	OverlayVertices int // zero means 2,000,000
+	StoreVertices   int // zero means 4,000,000
+}
+
+// SetResult is what Set returns at once (D-74, D-86).
+type SetResult struct {
+	Created  bool // false means an overlay of that id was replaced
+	Released bool // the old geometry is no longer read by anything
+}
+
+// RemoveResult is what Remove returns at once.
+type RemoveResult struct {
+	Found    bool
+	Released bool
+}
+
+// held is one version of an overlay's geometry, and who is reading it.
+type held struct {
+	overlay  Overlay
+	vertices int
+	readers  int
+	retired  bool // replaced or removed: released when its last reader leaves
+}
+
+// Store holds a map's overlays. Set and Remove never wait: a version that is
+// still being read is retired, and the reader's own return reports its
+// release. It has a lock of its own, never held across slow work.
+type Store struct {
+	mu       sync.Mutex
+	caps     Caps
+	current  map[string]*held
+	order    []string
+	retiring map[string]int // ids with a retired version still being read, and how many
+	vertices int
+	warnings []fault.Warning
+}
+
+// NewStore makes a store. Caps may be lowered, never raised.
+func NewStore(c Caps) (*Store, error) {
+	if c.OverlayVertices < 0 || c.StoreVertices < 0 || c.OverlayVertices > defaultOverlayVertices || c.StoreVertices > defaultStoreVertices {
+		return nil, fault.Make(fault.OverVertexCap, textsafe.Const("the overlay limits were refused"),
+			textsafe.Const("a vertex cap may be lowered, never raised: the memory the library promises is stated against it"),
+			textsafe.Const("give a cap between 1 and the default, or none"))
+	}
+	if c.OverlayVertices == 0 {
+		c.OverlayVertices = defaultOverlayVertices
+	}
+	if c.StoreVertices == 0 {
+		c.StoreVertices = defaultStoreVertices
+	}
+	return &Store{caps: c, current: map[string]*held{}, retiring: map[string]int{}}, nil
+}
+
+func refused(kind fault.Kind, why, todo textsafe.Text) error {
+	return fault.Make(kind, textsafe.Const("the overlay was refused"), why, todo)
+}
+
+func grouped(n int) string {
+	s := strconv.Itoa(n)
+	for i := len(s) - 3; i > 0; i -= 3 {
+		s = s[:i] + "," + s[i:]
+	}
+	return s
+}
+
+// checkRing holds one ring's positions to the globe. Positions with latitude
+// out of range and longitude in it are very likely the wrong way round, and
+// the message says so.
+func checkRing(ring []project.LonLat) error {
+	for _, p := range ring {
+		if !(p.Lon >= -180 && p.Lon <= 180) || !(p.Lat >= -90 && p.Lat <= 90) {
+			return refused(fault.InvalidCoordinates,
+				textsafe.Const("one of its coordinates is not a number, or is off the globe; longitude and latitude the wrong way round is the usual cause"),
+				textsafe.Const("give longitude from -180 to 180 first, then latitude from -90 to 90"))
+		}
+	}
+	return nil
+}
+
+// checkFeature validates one feature and counts its vertices.
+func checkFeature(f Feature) (int, error) {
+	if f.Kind < Point || f.Kind > Circle {
+		return 0, refused(fault.InvalidCoordinates, textsafe.Const("one of its features has no kind"),
+			textsafe.Const("say whether each feature is a point, a line, a polygon or a circle"))
+	}
+	if f.Role.Name() == "" {
+		return 0, refused(fault.UnknownPreset, textsafe.Const("one of its features names a role that is no token"),
+			textsafe.Const("give each feature one of the library's tokens, such as an alert's outline"))
+	}
+	if f.Kind == Circle && len(f.Rings) != 0 {
+		return 0, refused(fault.InvalidCoordinates, textsafe.Const("a circle has a centre and a radius and no rings, and this one has rings as well"),
+			textsafe.Const("hand a circle in with its centre and radius alone, or hand the rings in as a polygon"))
+	}
+	if f.Kind == Circle {
+		if !(f.RadiusKm > 0 && f.RadiusKm <= 20040) {
+			return 0, refused(fault.InvalidCoordinates, textsafe.Const("a circle's radius is not a distance on the globe"),
+				textsafe.Const("give the radius in kilometres, above zero"))
+		}
+		return 1, checkRing([]project.LonLat{f.Centre})
+	}
+	least := map[FeatureKind]int{Point: 1, Line: 2, Polygon: 3}[f.Kind]
+	if len(f.Rings) == 0 {
+		return 0, refused(fault.RingTooShort, textsafe.Const("one of its features has no ring of positions at all"),
+			textsafe.Const("give a polygon at least three positions, a line two, a point one"))
+	}
+	total := 0
+	for _, ring := range f.Rings {
+		if len(ring) < least {
+			return 0, refused(fault.RingTooShort, textsafe.Const("one of its rings is too short: a polygon needs three positions, a line two, a point one"),
+				textsafe.Const("check the geometry; a ring may repeat its first position to close, and need not"))
+		}
+		err := checkRing(ring)
+		if err != nil {
+			return 0, err
+		}
+		total += len(ring)
+	}
+	return total, nil
+}
+
+// check validates an overlay on hand-in (NFR-20) and counts its vertices.
+func (s *Store) check(o Overlay) (int, error) {
+	if _, err := textsafe.ID(o.ID); err != nil {
+		return 0, refused(fault.InvalidID, textsafe.Const("its id is empty, longer than 256 bytes, or holds characters that cannot be shown safely"),
+			textsafe.Const("give an id of plain text; ids are never altered, so one that would need it is refused"))
+	}
+	err := CheckCurrency(o.Valid, o.Keeps)
+	if err != nil {
+		return 0, err
+	}
+	if len(o.Features) == 0 {
+		return 0, refused(fault.SizeMismatch, textsafe.Const("there is nothing in it: no feature at all"),
+			textsafe.Const("to take an overlay away, remove it by its id"))
+	}
+	vertices := 0
+	for _, f := range o.Features {
+		n, err := checkFeature(f)
+		if err != nil {
+			return 0, err
+		}
+		vertices += n
+	}
+	if vertices > s.caps.OverlayVertices {
+		return 0, refused(fault.OverVertexCap,
+			textsafe.Join(textsafe.Const("it has "), textsafe.Clean(grouped(vertices)), textsafe.Const(" vertices, over the cap of "), textsafe.Clean(grouped(s.caps.OverlayVertices)), textsafe.Const(" for one overlay")),
+			textsafe.Const("simplify the geometry before handing it in, or split it between overlays"))
+	}
+	return vertices, nil
+}
+
+// warnLocked records a warning, counting a repeat and keeping at most 64.
+func (s *Store) warnLocked(kind fault.WarningKind, subject textsafe.Text) {
+	for i := range s.warnings {
+		if s.warnings[i].Kind == kind && s.warnings[i].Subject == subject {
+			s.warnings[i].Count++
+			return
+		}
+	}
+	if len(s.warnings) < maxWarnings {
+		s.warnings = append(s.warnings, fault.Warning{Kind: kind, Subject: subject, Count: 1})
+	}
+}
+
+// TakeWarnings returns what has gone wrong since it was last called.
+func (s *Store) TakeWarnings() []fault.Warning {
+	if s == nil {
+		return nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := s.warnings
+	s.warnings = nil
+	return out
+}
+
+// folded is an id with what a slip of the hand changes taken out of it.
+func folded(id string) string {
+	return strings.Map(func(r rune) rune {
+		if r == '-' || r == '_' || r == ' ' || r == '.' {
+			return -1
+		}
+		return r
+	}, strings.ToLower(id))
+}
+
+// near reports whether two different ids differ only slightly: by case or
+// punctuation, or by one character more or less at the end.
+func near(a, b string) bool {
+	if a == b {
+		return false
+	}
+	fa, fb := folded(a), folded(b)
+	if fa == fb {
+		return true
+	}
+	if len(fa) > len(fb) {
+		fa, fb = fb, fa
+	}
+	return len(fb)-len(fa) == 1 && strings.HasPrefix(fb, fa)
+}
+
+// retireLocked takes a version out of use. It is released at once unless
+// something is still reading it.
+func (s *Store) retireLocked(id string, h *held) bool {
+	s.vertices -= h.vertices
+	h.retired = true
+	if h.readers == 0 {
+		return true
+	}
+	s.retiring[id] += h.readers
+	return false
+}
+
+// Set adds an overlay, or replaces the one of the same id. It never waits.
+func (s *Store) Set(o Overlay) (SetResult, error) {
+	if s == nil {
+		return SetResult{}, refused(fault.Internal, textsafe.Const("there is no store to set it in"), textsafe.Const("this is a defect in the library; report it"))
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	vertices, err := s.check(o)
+	if err == nil {
+		replaced := 0
+		if old, ok := s.current[o.ID]; ok {
+			replaced = old.vertices
+		}
+		if s.vertices-replaced+vertices > s.caps.StoreVertices {
+			err = refused(fault.OverVertexCap,
+				textsafe.Join(textsafe.Const("with it the map's overlays would have more than "), textsafe.Clean(grouped(s.caps.StoreVertices)), textsafe.Const(" vertices in all")),
+				textsafe.Const("remove an overlay first, or simplify the geometry before handing it in"))
+		}
+	}
+	if err != nil {
+		s.warnLocked(fault.SetRefused, textsafe.Quote(o.ID)) // a discarded error still shows
+		return SetResult{}, err
+	}
+	res := SetResult{Created: true, Released: true}
+	if old, ok := s.current[o.ID]; ok {
+		res.Created, res.Released = false, s.retireLocked(o.ID, old)
+	} else {
+		s.order = append(s.order, o.ID)
+		for _, other := range s.order {
+			if near(other, o.ID) {
+				s.warnLocked(fault.NearDuplicateID, textsafe.Quote(o.ID))
+				break
+			}
+		}
+	}
+	s.current[o.ID] = &held{overlay: o, vertices: vertices}
+	s.vertices += vertices
+	return res, nil
+}
+
+// Remove takes an overlay away. It never waits, and an id that is not set is
+// not an error: the result says it was not found.
+func (s *Store) Remove(id string) (RemoveResult, error) {
+	if s == nil {
+		return RemoveResult{}, refused(fault.Internal, textsafe.Const("there is no store to remove it from"), textsafe.Const("this is a defect in the library; report it"))
+	}
+	if _, err := textsafe.ID(id); err != nil {
+		return RemoveResult{}, refused(fault.InvalidID, textsafe.Const("the id is empty, longer than 256 bytes, or holds characters that cannot be shown safely"),
+			textsafe.Const("give the id the overlay was set with"))
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	old, ok := s.current[id]
+	if !ok {
+		return RemoveResult{Released: true}, nil
+	}
+	delete(s.current, id)
+	for i, other := range s.order {
+		if other == id {
+			s.order = append(s.order[:i], s.order[i+1:]...)
+			break
+		}
+	}
+	return RemoveResult{Found: true, Released: s.retireLocked(id, old)}, nil
+}
+
+// InUse reports whether any call is still reading geometry of that id that
+// has been replaced or removed.
+func (s *Store) InUse(id string) bool {
+	if s == nil || id == "" {
+		return false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.retiring[id] > 0
+}
+
+// IDs lists the overlays set, in the order they were first set.
+func (s *Store) IDs() []string {
+	if s == nil {
+		return nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]string(nil), s.order...)
+}
+
+// OwnedBytes is what the store itself holds for its overlays. Borrowed
+// geometry is the host's memory and is not counted, because it is not held.
+func (s *Store) OwnedBytes() int {
+	if s == nil {
+		return 0
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	total := 0
+	for id, h := range s.current {
+		total += 160 + len(id) + len(h.overlay.Credit) + 96*len(h.overlay.Features)
+		for _, f := range h.overlay.Features {
+			total += len(f.Label) + 24*len(f.Rings)
+		}
+	}
+	return total
+}
+
+// Reader is one call's hold on a version of an overlay's geometry.
+type Reader struct {
+	store *Store
+	id    string
+	h     *held
+}
+
+// Read takes a hold on an overlay's current geometry, for a job that reads
+// it off the drawing path. Done must be called when the read is over.
+func (s *Store) Read(id string) (*Reader, bool) {
+	if s == nil || id == "" {
+		return nil, false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	h, ok := s.current[id]
+	if !ok {
+		return nil, false
+	}
+	h.readers++
+	return &Reader{store: s, id: id, h: h}, true
+}
+
+// Overlay is the version this reader holds.
+func (r *Reader) Overlay() Overlay {
+	if r == nil || r.h == nil {
+		return Overlay{}
+	}
+	return r.h.overlay
+}
+
+// Done ends the read. It returns the id if this was the last read of geometry
+// that has been replaced or removed: that is how a release that Set or Remove
+// could not report is reported, by the return of the call that ended it.
+func (r *Reader) Done() []string {
+	if r == nil || r.h == nil {
+		return nil
+	}
+	s := r.store
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	h := r.h
+	r.h = nil
+	h.readers--
+	if !h.retired {
+		return nil
+	}
+	s.retiring[r.id]--
+	if s.retiring[r.id] > 0 {
+		return nil
+	}
+	delete(s.retiring, r.id)
+	return []string{r.id}
+}
