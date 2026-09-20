@@ -32,11 +32,11 @@ func store(t *testing.T) *Store {
 // Plan task 10.1 (D-74, D-86).
 func TestSetReportsCreatedOrReplaced(t *testing.T) {
 	s := store(t)
-	res, err := s.Set(alert("warnings", square(-95, 38, 1)))
+	res, err := s.HandIn(alert("warnings", square(-95, 38, 1)))
 	if err != nil || !res.Created || !res.Released {
 		t.Errorf("a first set: %+v, %v; want created, and nothing old to hold", res, err)
 	}
-	res, err = s.Set(alert("warnings", square(-96, 38, 1)))
+	res, err = s.HandIn(alert("warnings", square(-96, 38, 1)))
 	if err != nil || res.Created || !res.Released {
 		t.Errorf("the same id again: %+v, %v; want replaced, the old geometry released at once", res, err)
 	}
@@ -47,14 +47,14 @@ func TestSetReportsCreatedOrReplaced(t *testing.T) {
 
 func TestRemoveReportsFound(t *testing.T) {
 	s := store(t)
-	s.Set(alert("warnings", square(-95, 38, 1)))
-	if res, err := s.Remove("warnings"); err != nil || !res.Found || !res.Released {
+	s.HandIn(alert("warnings", square(-95, 38, 1)))
+	if res, err := s.Drop("warnings"); err != nil || !res.Found || !res.Released {
 		t.Errorf("%+v, %v", res, err)
 	}
-	if res, err := s.Remove("warnings"); err != nil || res.Found {
+	if res, err := s.Drop("warnings"); err != nil || res.Found {
 		t.Errorf("removing what is not there: %+v, %v; want not found, and no error", res, err)
 	}
-	if len(s.IDs()) != 0 || s.InUse("warnings") {
+	if len(s.IDs()) != 0 || s.Reading("warnings") {
 		t.Error("the overlay outlived its removal")
 	}
 }
@@ -62,10 +62,10 @@ func TestRemoveReportsFound(t *testing.T) {
 // TestRemoveUnknownReportsNotFound, with the rest of 10.25 below.
 func TestRemoveUnknownReportsNotFound(t *testing.T) {
 	s := store(t)
-	if res, err := s.Remove("never-set"); err != nil || res.Found {
+	if res, err := s.Drop("never-set"); err != nil || res.Found {
 		t.Errorf("%+v, %v", res, err)
 	}
-	if _, err := s.Remove("bad\x1bid"); !isKind(err, fault.InvalidID) {
+	if _, err := s.Drop("bad\x1bid"); !isKind(err, fault.InvalidID) {
 		t.Errorf("an id that would need cleaning: %v", err)
 	}
 }
@@ -75,22 +75,22 @@ func TestRemoveUnknownReportsNotFound(t *testing.T) {
 // true, and the reader's own return is what reports the release.
 func TestDrainingReportedByWorkReturn(t *testing.T) {
 	s := store(t)
-	s.Set(alert("warnings", square(-95, 38, 1)))
+	s.HandIn(alert("warnings", square(-95, 38, 1)))
 	reader, ok := s.Read("warnings")
 	if !ok {
 		t.Fatal("nothing to read")
 	}
-	res, err := s.Set(alert("warnings", square(-96, 38, 1)))
+	res, err := s.HandIn(alert("warnings", square(-96, 38, 1)))
 	if err != nil || res.Created || res.Released {
 		t.Fatalf("a replace under a reader: %+v, %v; want replaced and not yet released", res, err)
 	}
-	if !s.InUse("warnings") {
+	if !s.Reading("warnings") {
 		t.Error("InUse is false while a call is still reading the old geometry")
 	}
 	if released := reader.Done(); len(released) != 1 || released[0] != "warnings" {
 		t.Errorf("the reader's return reported %v; it was the last to read the old geometry", released)
 	}
-	if s.InUse("warnings") {
+	if s.Reading("warnings") {
 		t.Error("InUse is still true after the last reader left")
 	}
 	if again := reader.Done(); len(again) != 0 {
@@ -103,7 +103,7 @@ func TestDrainingReportedByWorkReturn(t *testing.T) {
 	}
 	// Removal under a reader is the same.
 	held, _ := s.Read("warnings")
-	if res, _ := s.Remove("warnings"); !res.Found || res.Released {
+	if res, _ := s.Drop("warnings"); !res.Found || res.Released {
 		t.Errorf("a remove under a reader: %+v", res)
 	}
 	if released := held.Done(); len(released) != 1 {
@@ -116,7 +116,7 @@ func TestDrainingReportedByWorkReturn(t *testing.T) {
 func TestBorrowNotCopied(t *testing.T) {
 	s := store(t)
 	ring := square(-95, 38, 1)
-	s.Set(alert("warnings", ring))
+	s.HandIn(alert("warnings", ring))
 	reader, _ := s.Read("warnings")
 	defer reader.Done()
 	got := reader.Overlay().Features[0].Rings[0]
@@ -164,7 +164,7 @@ func TestHandInMistakes(t *testing.T) {
 		o.Features = []Feature{good.Features[0]}
 		o.Features[0].Rings = [][]project.LonLat{square(-95, 38, 1)}
 		c.break_(&o)
-		_, err := s.Set(o)
+		_, err := s.HandIn(o)
 		if !isKind(err, c.kind) {
 			t.Errorf("%s: %v; want the %v kind", c.name, err, c.kind)
 			continue
@@ -190,17 +190,17 @@ func TestVertexCaps(t *testing.T) {
 		t.Fatal(err)
 	}
 	big := circle(project.LonLat{Lon: -95, Lat: 38}, 2, 1200)
-	if _, err := s.Set(alert("huge", big)); !isKind(err, fault.OverVertexCap) || !strings.Contains(err.Error(), "1,000") {
+	if _, err := s.HandIn(alert("huge", big)); !isKind(err, fault.OverVertexCap) || !strings.Contains(err.Error(), "1,000") {
 		t.Errorf("1,201 vertices against a cap of 1,000: %v", err)
 	}
 	ok := circle(project.LonLat{Lon: -95, Lat: 38}, 2, 899)
-	if _, err := s.Set(alert("first", ok)); err != nil {
+	if _, err := s.HandIn(alert("first", ok)); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.Set(alert("second", ok)); !isKind(err, fault.OverVertexCap) {
+	if _, err := s.HandIn(alert("second", ok)); !isKind(err, fault.OverVertexCap) {
 		t.Errorf("900 and 900 against a store cap of 1,500: %v", err)
 	}
-	if _, err := s.Set(alert("first", ok)); err != nil {
+	if _, err := s.HandIn(alert("first", ok)); err != nil {
 		t.Errorf("replacing an overlay counts the new one, not both: %v", err)
 	}
 	defaults := store(t)
@@ -216,14 +216,14 @@ func TestVertexCaps(t *testing.T) {
 func TestWarningsCappedAndDeduplicated(t *testing.T) {
 	s := store(t)
 	for range 10 {
-		s.Set(Overlay{ID: "same"})
+		s.HandIn(Overlay{ID: "same"})
 	}
 	w := s.TakeWarnings()
 	if len(w) != 1 || w[0].Count != 10 {
 		t.Errorf("ten refusals of one id: %+v; want one warning counting ten", w)
 	}
 	for i := range 200 {
-		s.Set(Overlay{ID: "id-" + strings.Repeat("x", i%100) + string(rune('a'+i%26))})
+		s.HandIn(Overlay{ID: "id-" + strings.Repeat("x", i%100) + string(rune('a'+i%26))})
 	}
 	if w := s.TakeWarnings(); len(w) > 64 {
 		t.Errorf("%d warnings; at most 64 are kept", len(w))
@@ -237,9 +237,9 @@ func TestWarningsCappedAndDeduplicated(t *testing.T) {
 // makes a second overlay, and the result and a warning both show it.
 func TestNearDuplicateIDWarned(t *testing.T) {
 	s := store(t)
-	s.Set(alert("nws-warnings", square(-95, 38, 1)))
+	s.HandIn(alert("nws-warnings", square(-95, 38, 1)))
 	for _, typo := range []string{"nws-warning", "NWS-warnings", "nws_warnings", "nws-warnings "} {
-		res, err := s.Set(alert(typo, square(-95, 38, 1)))
+		res, err := s.HandIn(alert(typo, square(-95, 38, 1)))
 		if err != nil || !res.Created {
 			t.Fatalf("%q: %+v, %v", typo, res, err)
 		}
@@ -247,9 +247,9 @@ func TestNearDuplicateIDWarned(t *testing.T) {
 		if len(w) != 1 || w[0].Kind != fault.NearDuplicateID {
 			t.Errorf("%q beside \"nws-warnings\": warnings %+v", typo, w)
 		}
-		s.Remove(typo)
+		s.Drop(typo)
 	}
-	s.Set(alert("radar", square(-95, 38, 1)))
+	s.HandIn(alert("radar", square(-95, 38, 1)))
 	if w := s.TakeWarnings(); len(w) != 0 {
 		t.Errorf("an id nothing like the other: %+v", w)
 	}
@@ -257,12 +257,12 @@ func TestNearDuplicateIDWarned(t *testing.T) {
 
 func TestSetAndRemoveNeverBlock(t *testing.T) {
 	s := store(t)
-	s.Set(alert("warnings", square(-95, 38, 1)))
+	s.HandIn(alert("warnings", square(-95, 38, 1)))
 	reader, _ := s.Read("warnings")
 	done := make(chan struct{})
 	go func() {
-		s.Set(alert("warnings", square(-96, 38, 1)))
-		s.Remove("warnings")
+		s.HandIn(alert("warnings", square(-96, 38, 1)))
+		s.Drop("warnings")
 		close(done)
 	}()
 	select {

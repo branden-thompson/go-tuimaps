@@ -151,7 +151,7 @@ func shortestCover(arcs []arc) (west, width float64) {
 // longitude 0, centred on the Mercator midpoint of the two, at the smaller of
 // the zoom that fits that span's height and the zoom that fits the world's
 // width.
-func FitWorld(cols, rows int) (View, error) {
+func WholeWorld(cols, rows int) (View, error) {
 	if cols <= 0 || rows <= 0 {
 		return View{}, badView()
 	}

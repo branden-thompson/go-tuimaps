@@ -13,7 +13,7 @@ func TestFitWorld(t *testing.T) {
 	_, bottom, _ := ToTile(LonLat{Lat: -56}, 0)
 	span := (bottom - top) * TileSize
 	for _, size := range [][2]int{{149, 38}, {69, 12}, {40, 40}, {300, 20}, {2, 1}} {
-		v, err := FitWorld(size[0], size[1])
+		v, err := WholeWorld(size[0], size[1])
 		if err != nil {
 			t.Fatalf("%v: %v", size, err)
 		}
@@ -32,7 +32,7 @@ func TestFitWorld(t *testing.T) {
 		}
 	}
 	// The whole span is in view: its top and bottom are inside the rectangle.
-	v, _ := FitWorld(149, 38)
+	v, _ := WholeWorld(149, 38)
 	for _, lat := range []float64{83.9, -55.9} {
 		_, y, err := v.ToDot(LonLat{Lat: lat})
 		if err != nil || y < 0 || y > float64(38*DotsPerRow) {
@@ -40,7 +40,7 @@ func TestFitWorld(t *testing.T) {
 		}
 	}
 	for _, bad := range [][2]int{{0, 10}, {10, 0}, {-1, -1}} {
-		if _, err := FitWorld(bad[0], bad[1]); err == nil {
+		if _, err := WholeWorld(bad[0], bad[1]); err == nil {
 			t.Errorf("%v: no error", bad)
 		}
 	}

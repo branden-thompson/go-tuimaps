@@ -24,8 +24,8 @@ func TestRunIndexBuiltInsideSet(t *testing.T) {
 	if s.IndexFrom() != 30303 {
 		t.Fatalf("the index is built above %d vertices, want 30,303 at the default cap of 250,000 bytes", s.IndexFrom())
 	}
-	s.Set(ringOverlay("at", 30303))
-	s.Set(ringOverlay("over", 30304))
+	s.HandIn(ringOverlay("at", 30303))
+	s.HandIn(ringOverlay("over", 30304))
 	at, _ := s.Read("at")
 	over, _ := s.Read("over")
 	if at.Index() != nil {
@@ -47,7 +47,7 @@ func TestRunIndexBuiltInsideSet(t *testing.T) {
 	over.Done()
 	// It lives with the overlay: a replace drops the old one and is released
 	// at once on one goroutine; a remove drops it.
-	if res, _ := s.Set(ringOverlay("over", 40000)); res.Created || !res.Released {
+	if res, _ := s.HandIn(ringOverlay("over", 40000)); res.Created || !res.Released {
 		t.Errorf("%+v", res)
 	}
 	again, _ := s.Read("over")
@@ -55,7 +55,7 @@ func TestRunIndexBuiltInsideSet(t *testing.T) {
 		t.Errorf("after the replace: %d boxes", len(again.Index()))
 	}
 	again.Done()
-	s.Remove("over")
+	s.Drop("over")
 	if s.OwnedBytes() > 8192 {
 		t.Errorf("%d bytes owned after the big overlay was removed", s.OwnedBytes())
 	}
@@ -77,7 +77,7 @@ func TestBorrowCheckByRun(t *testing.T) {
 		t.Fatal(err)
 	}
 	ring := circle(project.LonLat{Lon: -95, Lat: 38}, 3, 999)
-	s.Set(alert("warnings", ring))
+	s.HandIn(alert("warnings", ring))
 	r, _ := s.Read("warnings")
 	defer r.Done()
 	if !r.CheckRuns(0, 0, 0, 15) {
@@ -98,7 +98,7 @@ func TestBorrowCheckByRun(t *testing.T) {
 		t.Errorf("warnings %+v; want one naming the overlay", w)
 	}
 	off := store(t)
-	off.Set(alert("warnings", ring))
+	off.HandIn(alert("warnings", ring))
 	quiet, _ := off.Read("warnings")
 	defer quiet.Done()
 	ring[5].Lat += 0.5
@@ -113,8 +113,8 @@ func TestBorrowCheckByRun(t *testing.T) {
 // live view draws is never evicted.
 func TestFallbackChosenByWholeCap(t *testing.T) {
 	s, _ := NewStore(Caps{ShapeBytes: 8250}) // room for 1,000 vertices
-	s.Set(alert("small", circle(project.LonLat{Lon: -95, Lat: 38}, 3, 400)))
-	s.Set(alert("huge", circle(project.LonLat{Lon: -95, Lat: 38}, 3, 5000)))
+	s.HandIn(alert("small", circle(project.LonLat{Lon: -95, Lat: 38}, 3, 400)))
+	s.HandIn(alert("huge", circle(project.LonLat{Lon: -95, Lat: 38}, 3, 5000)))
 	for id, want := range map[string]Path{"small": Cached, "huge": FromMemory} {
 		job := s.PrepareJob(id, 12)
 		if job.Kind() != scene.KindOverlayPrepare || job.Key() == "" {
@@ -139,7 +139,7 @@ func TestFallbackChosenByWholeCap(t *testing.T) {
 		t.Errorf("an overlay that is not set: %v", path)
 	}
 	// A replace drops what was prepared from the old geometry.
-	s.Set(alert("small", circle(project.LonLat{Lon: -90, Lat: 38}, 3, 400)))
+	s.HandIn(alert("small", circle(project.LonLat{Lon: -90, Lat: 38}, 3, 400)))
 	if _, _, path := s.Drawn("small", 12); path != NotReady {
 		t.Errorf("after a replace the old prepared form is still drawn: %v", path)
 	}
@@ -149,7 +149,7 @@ func TestShapePinsNeverEvicted(t *testing.T) {
 	s, _ := NewStore(Caps{ShapeBytes: 8250})
 	ids := []string{"a", "b", "c"}
 	for _, id := range ids {
-		s.Set(Overlay{ID: id, Valid: noon, Keeps: time.Hour, Features: []Feature{{Kind: Polygon, Role: colour.AlertMinorOutline,
+		s.HandIn(Overlay{ID: id, Valid: noon, Keeps: time.Hour, Features: []Feature{{Kind: Polygon, Role: colour.AlertMinorOutline,
 			Rings: [][]project.LonLat{circle(project.LonLat{Lon: -95, Lat: 38}, 3, 600)}}}})
 	}
 	view := s.Register()
@@ -188,12 +188,12 @@ func TestShapePinsNeverEvicted(t *testing.T) {
 // could not report is reported by the Work call that ran the job (D-86).
 func TestPrepareJobReportsRelease(t *testing.T) {
 	s := store(t)
-	s.Set(alert("warnings", square(-95, 38, 1)))
+	s.HandIn(alert("warnings", square(-95, 38, 1)))
 	if got := s.TakeReleased(); len(got) != 0 {
 		t.Errorf("%v released with nothing replaced", got)
 	}
 	reader, _ := s.Read("warnings")
-	s.Set(alert("warnings", square(-96, 38, 1)))
+	s.HandIn(alert("warnings", square(-96, 38, 1)))
 	reader.Done()
 	if got := s.TakeReleased(); len(got) != 1 || got[0] != "warnings" {
 		t.Errorf("released %v", got)
@@ -219,7 +219,7 @@ func TestPrepareJobReportsRelease(t *testing.T) {
 func TestOldShapeDrawsFromOwnCopy(t *testing.T) {
 	s := store(t)
 	ring := square(-95, 38, 1)
-	s.Set(alert("warnings", ring))
+	s.HandIn(alert("warnings", ring))
 	if err := s.PrepareJob("warnings", 5).Run(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -228,7 +228,7 @@ func TestOldShapeDrawsFromOwnCopy(t *testing.T) {
 		t.Fatalf("path %v, %d shapes; want a prepared form to draw", path, len(shapes))
 	}
 	was := append([]scene.Vertex(nil), shapes[0].Rings[0]...)
-	res, err := s.Set(alert("warnings", square(-20, -20, 1)))
+	res, err := s.HandIn(alert("warnings", square(-20, -20, 1)))
 	if err != nil || !res.Released {
 		t.Fatalf("a replace with nothing reading the old geometry: %+v, %v; want it released at once", res, err)
 	}

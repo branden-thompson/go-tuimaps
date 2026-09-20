@@ -23,7 +23,7 @@ func reuse(wait bool) {
 	}
 	held := ringOverlay("warnings", 200_000)
 	ring := held.Features[0].Rings[0]
-	if _, err = s.Set(held); err != nil {
+	if _, err = s.HandIn(held); err != nil {
 		panic(err)
 	}
 	reader, ok := s.Read("warnings")
@@ -38,7 +38,7 @@ func reuse(wait bool) {
 		reader.Done()
 	}()
 	<-reading
-	if _, err = s.Set(ringOverlay("warnings", 8)); err != nil {
+	if _, err = s.HandIn(ringOverlay("warnings", 8)); err != nil {
 		panic(err)
 	}
 	if wait {

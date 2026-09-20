@@ -61,7 +61,7 @@ func TestDrawFromRunIndex(t *testing.T) {
 		t.Fatalf("%d boxes for %d vertices; one for each run of %d", len(borrowed.Index), len(ring), RunLength)
 	}
 	// A view of one small part of the world.
-	v, err := project.FitWorld(149, 38)
+	v, err := project.WholeWorld(149, 38)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,7 +102,7 @@ func TestDrawFromRunIndex(t *testing.T) {
 // TestBorrowedSplitAtAntimeridian: a line that steps across the world's edge
 // is drawn as two lines, not as one straight across the map (L-17 f).
 func TestBorrowedSplitAtAntimeridian(t *testing.T) {
-	v, err := project.FitWorld(149, 38)
+	v, err := project.WholeWorld(149, 38)
 	if err != nil {
 		t.Fatal(err)
 	}

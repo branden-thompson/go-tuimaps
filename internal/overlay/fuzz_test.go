@@ -68,7 +68,7 @@ func FuzzHandIn(f *testing.F) {
 			t.Fatal(err)
 		}
 		o := fuzzOverlay(data)
-		res, err := s.Set(o)
+		res, err := s.HandIn(o)
 		if err != nil {
 			var own *fault.Error
 			if !errors.As(err, &own) || own.Kind().String() == "unknown" {
@@ -116,13 +116,13 @@ func FuzzHandIn(f *testing.F) {
 			t.Fatalf("%+v", use)
 		}
 		view.Withdraw()
-		if again, _ := s.Set(o); again.Created || again.Released {
+		if again, _ := s.HandIn(o); again.Created || again.Released {
 			t.Fatalf("a replace under a reader: %+v", again)
 		}
 		if released := reader.Done(); len(released) != 1 {
 			t.Fatalf("released %v", released)
 		}
-		if gone, err := s.Remove(o.ID); err != nil || !gone.Found || !gone.Released {
+		if gone, err := s.Drop(o.ID); err != nil || !gone.Found || !gone.Released {
 			t.Fatalf("%+v, %v", gone, err)
 		}
 	})

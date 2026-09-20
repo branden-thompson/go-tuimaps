@@ -333,7 +333,7 @@ func (s *Store) retireLocked(id string, h *held) bool {
 }
 
 // Set adds an overlay, or replaces the one of the same id. It never waits.
-func (s *Store) Set(o Overlay) (SetResult, error) {
+func (s *Store) HandIn(o Overlay) (SetResult, error) {
 	if s == nil {
 		return SetResult{}, refused(fault.Internal, textsafe.Const("there is no store to set it in"), textsafe.Const("this is a defect in the library; report it"))
 	}
@@ -391,7 +391,7 @@ func (s *Store) Set(o Overlay) (SetResult, error) {
 
 // Remove takes an overlay away. It never waits, and an id that is not set is
 // not an error: the result says it was not found.
-func (s *Store) Remove(id string) (RemoveResult, error) {
+func (s *Store) Drop(id string) (RemoveResult, error) {
 	if s == nil {
 		return RemoveResult{}, refused(fault.Internal, textsafe.Const("there is no store to remove it from"), textsafe.Const("this is a defect in the library; report it"))
 	}
@@ -418,7 +418,7 @@ func (s *Store) Remove(id string) (RemoveResult, error) {
 
 // InUse reports whether any call is still reading geometry of that id that
 // has been replaced or removed.
-func (s *Store) InUse(id string) bool {
+func (s *Store) Reading(id string) bool {
 	if s == nil || id == "" {
 		return false
 	}

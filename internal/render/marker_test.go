@@ -106,7 +106,7 @@ func TestParityP58_MarkerShapes(t *testing.T) {
 // tiles behind it: a marker on an empty frame would meet the no-tiles notice.
 func gulf(t *testing.T) (project.View, Input) {
 	t.Helper()
-	v, err := project.FitWorld(149, 38)
+	v, err := project.WholeWorld(149, 38)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -204,7 +204,7 @@ func TestParityP60_MarkerCullAndLabel(t *testing.T) {
 // collision-checked after the map's own names, so a name already placed
 // keeps its cells.
 func TestMarkerLabelAfterTheMapsNames(t *testing.T) {
-	v, err := project.FitWorld(149, 38)
+	v, err := project.WholeWorld(149, 38)
 	if err != nil {
 		t.Fatal(err)
 	}

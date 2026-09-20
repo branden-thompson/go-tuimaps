@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/branden-thompson/go-tuimaps/internal/fault"
+	"github.com/branden-thompson/go-tuimaps/internal/overlay"
 	"github.com/branden-thompson/go-tuimaps/internal/project"
 	"github.com/branden-thompson/go-tuimaps/internal/render"
 	"github.com/branden-thompson/go-tuimaps/internal/scene"
@@ -95,7 +96,7 @@ func WithSize(cols, rows int) Option {
 		if c == nil {
 			return noSize()
 		}
-		if _, err := project.FitWorld(cols, rows); err != nil {
+		if _, err := project.WholeWorld(cols, rows); err != nil {
 			return noSize()
 		}
 		if _, err := render.NewCanvas(cols, rows); err != nil {
@@ -139,8 +140,15 @@ type Map struct {
 	changed  uint64
 	places   []Place
 	drawn    []render.Drawn
+	store    *overlay.Store
+	view4    *overlay.ShapeView
+	overlays uint64
 
 	drawnPlaces []render.Marker
+	shapes      []scene.Shape
+	fields      []scene.Field
+	rasters     []scene.Raster
+	borrowed    []render.Borrowed
 }
 
 // New creates a map. It starts nothing: no goroutine, no connection, no file.
@@ -167,7 +175,12 @@ func New(options ...Option) (*Map, error) {
 	if err != nil {
 		return nil, err
 	}
-	m := &Map{pipe: pipe, member: member, style: style.BuiltIn()}
+	store, err := overlay.NewStore(overlay.Caps{})
+	if err != nil {
+		return nil, err
+	}
+	m := &Map{pipe: pipe, member: member, style: style.BuiltIn(), store: store}
+	m.view4 = store.Register()
 	if c.size != (Size{}) {
 		err = m.resize(c.size)
 	}
@@ -183,7 +196,7 @@ func (m *Map) resize(s Size) error {
 	if m.sized && m.view.Cols == s.Cols && m.view.Rows == s.Rows {
 		return nil
 	}
-	v, err := project.FitWorld(s.Cols, s.Rows)
+	v, err := project.WholeWorld(s.Cols, s.Rows)
 	if err != nil {
 		return noSize()
 	}
@@ -226,7 +239,8 @@ func (m *Map) note(now time.Time) error {
 			return err
 		}
 	}
-	return nil
+	m.view4.Publish(m.bucket()) // the shape cache keeps what this view draws (D-90)
+	return m.overlayWork()
 }
 
 // Pending is how many jobs wait for a Work or Settle call. It may be called
@@ -298,6 +312,7 @@ func (m *Map) Render(size Size, now time.Time) (Frame, error) {
 	m.paint(&in)
 	in.MarkerPhase = m.motion.Phase(now)
 	in.Markers = m.markers()
+	m.draw(&in)
 	in.Tiles, in.Missing = m.onHand()
 	was := m.renderer.Redraws()
 	frame, err := m.renderer.Draw(in)
@@ -351,6 +366,7 @@ func (m *Map) Close() int {
 	defer m.mu.Unlock()
 	if !m.shut {
 		m.shut = true
+		m.view4.Withdraw()
 		m.pipe.Release()
 		m.member.Leave()
 	}

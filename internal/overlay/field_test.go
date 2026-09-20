@@ -27,7 +27,7 @@ func temperatures(cols, rows int, at func(col, row int) float64) Overlay {
 func TestGridHandIn(t *testing.T) {
 	s := store(t)
 	good := temperatures(30, 25, func(col, row int) float64 { return float64(col) - 10 })
-	if res, err := s.Set(good); err != nil || !res.Created {
+	if res, err := s.HandIn(good); err != nil || !res.Created {
 		t.Fatalf("%+v, %v", res, err)
 	}
 	cases := []struct {
@@ -49,7 +49,7 @@ func TestGridHandIn(t *testing.T) {
 	for _, c := range cases {
 		o := temperatures(30, 25, func(col, row int) float64 { return 12 })
 		c.spoil(&o)
-		_, err := store(t).Set(o)
+		_, err := store(t).HandIn(o)
 		if !isKind(err, c.kind) || !strings.Contains(err.Error(), c.says) {
 			t.Errorf("%s: %v; want the %v kind, saying %q", c.name, err, c.kind, c.says)
 		}
@@ -61,14 +61,14 @@ func TestGridHandIn(t *testing.T) {
 func TestImplausibleUnitWarned(t *testing.T) {
 	s := store(t)
 	fahrenheitAsCelsius := temperatures(10, 10, func(col, row int) float64 { return 68 + float64(col) })
-	if _, err := s.Set(fahrenheitAsCelsius); err != nil {
+	if _, err := s.HandIn(fahrenheitAsCelsius); err != nil {
 		t.Fatalf("implausible values are accepted: %v", err)
 	}
 	w := s.TakeWarnings()
 	if len(w) != 1 || w[0].Kind != fault.ImplausibleUnit {
 		t.Errorf("temperatures all above 60 declared as C: warnings %+v", w)
 	}
-	s.Set(temperatures(10, 10, func(col, row int) float64 { return 12 + float64(col) }))
+	s.HandIn(temperatures(10, 10, func(col, row int) float64 { return 12 + float64(col) }))
 	if w := s.TakeWarnings(); len(w) != 0 {
 		t.Errorf("plausible temperatures: %+v", w)
 	}
@@ -78,7 +78,7 @@ func TestImplausibleUnitWarned(t *testing.T) {
 		}
 		return 15
 	})
-	s.Set(withGaps)
+	s.HandIn(withGaps)
 	if w := s.TakeWarnings(); len(w) != 0 {
 		t.Errorf("values that are no number are no data, not a wrong unit: %+v", w)
 	}
@@ -89,7 +89,7 @@ func TestImplausibleUnitWarned(t *testing.T) {
 // the renderer's, at draw time (L2 Overlays).
 func TestGridPrepared(t *testing.T) {
 	s := store(t)
-	s.Set(temperatures(4, 2, func(col, row int) float64 {
+	s.HandIn(temperatures(4, 2, func(col, row int) float64 {
 		if col == 3 {
 			return math.Inf(1)
 		}
@@ -114,7 +114,7 @@ func TestGridPrepared(t *testing.T) {
 	if shapes, _, path := s.Drawn("temperature", 5); path != NotReady || shapes != nil {
 		t.Errorf("a grid has no shapes: %v", path)
 	}
-	s.Remove("temperature")
+	s.Drop("temperature")
 	if _, ok := s.Field("temperature"); ok {
 		t.Error("the prepared field outlived its overlay")
 	}

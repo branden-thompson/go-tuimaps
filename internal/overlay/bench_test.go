@@ -25,7 +25,7 @@ func BenchmarkSetIndexAtVertexCap(b *testing.B) {
 			o := alert("huge", ring)
 			b.ResetTimer()
 			for range b.N {
-				if _, err := s.Set(o); err != nil {
+				if _, err := s.HandIn(o); err != nil {
 					b.Fatal(err)
 				}
 			}

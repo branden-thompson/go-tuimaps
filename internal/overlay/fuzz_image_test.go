@@ -38,7 +38,7 @@ func FuzzImage(f *testing.F) {
 		}
 		o := Overlay{ID: "radar", Valid: noon, Keeps: time.Hour, Image: &Image{PNG: data, West: -90, South: 30, East: -80, North: 40,
 			Projection: PlateCarree, Table: table, Type: Type{Preset: "radar", Unit: "dBZ"}}}
-		if _, err := s.Set(o); err != nil {
+		if _, err := s.HandIn(o); err != nil {
 			ownKind(t, err)
 			return
 		}

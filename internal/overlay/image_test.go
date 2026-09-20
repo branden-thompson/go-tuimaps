@@ -94,7 +94,7 @@ func headerOnly(w, h uint32, depth, colourType byte) []byte {
 // the header, before a byte is decoded.
 func TestImageHeaderFirst(t *testing.T) {
 	gulf := fixtureFile(t, "radar/gulf-2026-09-19.png")
-	if res, err := store(t).Set(radar(t, gulf)); err != nil || !res.Created {
+	if res, err := store(t).HandIn(radar(t, gulf)); err != nil || !res.Created {
 		t.Fatalf("the fixture's radar image: %+v, %v", res, err)
 	}
 	cases := []struct {
@@ -121,12 +121,12 @@ func TestImageHeaderFirst(t *testing.T) {
 	for _, c := range cases {
 		o := radar(t, gulf)
 		c.spoil(&o)
-		if _, err := store(t).Set(o); !isKind(err, c.kind) || !strings.Contains(err.Error(), c.says) {
+		if _, err := store(t).HandIn(o); !isKind(err, c.kind) || !strings.Contains(err.Error(), c.says) {
 			t.Errorf("%s: %v; want the %v kind, saying %q", c.name, err, c.kind, c.says)
 		}
 	}
 	// The cap is a byte a pixel, and the refusal says what would fit.
-	_, err := store(t).Set(radar(t, fixtureFile(t, "radar/indiana-2026-09-19.png")))
+	_, err := store(t).HandIn(radar(t, fixtureFile(t, "radar/indiana-2026-09-19.png")))
 	if err == nil || !strings.Contains(err.Error(), "770,000") {
 		t.Errorf("%v; the refusal says how large the image is as well as the cap", err)
 	}
@@ -138,7 +138,7 @@ func TestImageHeaderFirst(t *testing.T) {
 // TestImageBytesCappedBeforeDecode is part of 10.22.
 func TestImageBytesCappedBeforeDecode(t *testing.T) {
 	huge := append(headerOnly(10, 10, 8, 6), make([]byte, 9<<20)...)
-	if _, err := store(t).Set(radar(t, huge)); !isKind(err, fault.OverImageCap) {
+	if _, err := store(t).HandIn(radar(t, huge)); !isKind(err, fault.OverImageCap) {
 		t.Errorf("nine megabytes of PNG: %v", err)
 	}
 }
@@ -181,7 +181,7 @@ func TestTableRules(t *testing.T) {
 // provider's own table and no tolerance at all, every pixel matches.
 func TestExactTableZeroUnmatched(t *testing.T) {
 	s := store(t)
-	s.Set(radar(t, fixtureFile(t, "radar/gulf-2026-09-19.png")))
+	s.HandIn(radar(t, fixtureFile(t, "radar/gulf-2026-09-19.png")))
 	if err := s.PrepareJob("radar", 6).Run(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -230,7 +230,7 @@ func TestUnmatchedCountedAndSampled(t *testing.T) {
 	o := Overlay{ID: "radar", Valid: noon, Keeps: time.Hour, Image: &Image{PNG: picture, West: -90, South: 30, East: -80, North: 40,
 		Projection: PlateCarree, Table: table, Type: Type{Preset: "radar", Unit: "dBZ"}}}
 	s := store(t)
-	if _, err := s.Set(o); err != nil {
+	if _, err := s.HandIn(o); err != nil {
 		t.Fatal(err)
 	}
 	s.PrepareJob("radar", 6).Run(context.Background())
@@ -253,7 +253,7 @@ func TestUnmatchedCountedAndSampled(t *testing.T) {
 	}
 	// With no tolerance the near colour is unmatched too.
 	o.Image.Exact = true
-	s.Set(o)
+	s.HandIn(o)
 	s.PrepareJob("radar", 6).Run(context.Background())
 	if _, exact, _ := s.Raster("radar"); exact.Unmatched != 20 || len(exact.Samples) != 11 {
 		t.Errorf("exact: %d unmatched, %d distinct samples", exact.Unmatched, len(exact.Samples))
@@ -261,7 +261,7 @@ func TestUnmatchedCountedAndSampled(t *testing.T) {
 	// At most sixteen samples, however many colours there are.
 	many := picturePNG(t, 64, 1, func(x, _ int) color.Color { return color.NRGBA{R: uint8(4 * x), B: 255, A: 255} })
 	o.Image.PNG = many
-	s.Set(o)
+	s.HandIn(o)
 	s.PrepareJob("radar", 6).Run(context.Background())
 	if _, r, _ := s.Raster("radar"); r.Unmatched != 64 || len(r.Samples) != 16 {
 		t.Errorf("%d unmatched, %d samples; at most 16 are kept", r.Unmatched, len(r.Samples))
@@ -273,7 +273,7 @@ func TestUnmatchedCountedAndSampled(t *testing.T) {
 func TestBrokenImageIsRefusedByTheJob(t *testing.T) {
 	s := store(t)
 	o := radar(t, append(headerOnly(20, 20, 8, 6), []byte("no image data follows")...))
-	if _, err := s.Set(o); err != nil {
+	if _, err := s.HandIn(o); err != nil {
 		t.Fatalf("the header is a fine one: %v", err)
 	}
 	if err := s.PrepareJob("radar", 6).Run(context.Background()); !isKind(err, fault.ImageRefused) {

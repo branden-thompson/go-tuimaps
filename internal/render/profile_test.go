@@ -99,7 +99,7 @@ func TestLayerToggleInFrame(t *testing.T) {
 // what is drawn on top and the host's switches. Under a field it places fewer
 // names; with the water layer switched off there is no shore at all.
 func TestProfileChosenForTheFrame(t *testing.T) {
-	v, err := project.FitWorld(149, 38)
+	v, err := project.WholeWorld(149, 38)
 	if err != nil {
 		t.Fatal(err)
 	}
