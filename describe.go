@@ -135,11 +135,23 @@ func (m *Map) answersFor(place Place) []Answer {
 		reader.Done()
 		answer := m.answerOf(place, id, o)
 		answer.Valid = o.Valid
-		answer.Stale = overlay.FreshnessAt(o.Valid, o.Keeps, m.wallClock).DrawnStale()
+		answer.Stale = m.staleOverlay(o)
 		answer.UnderOneCell = m.underOneCell(answer)
 		out = append(out, answer.Cleaned())
 	}
 	return out
+}
+
+// staleOverlay reports whether one overlay is out of date, by the rule the
+// frame's own stale mark follows: a host that has given no time is told
+// nothing about time (D-114). Until a frame is drawn there is no wall clock
+// to judge by, and the answer carries the valid time so that a host which
+// only describes can judge it against a clock of its own.
+func (m *Map) staleOverlay(o Overlay) bool {
+	if m.wallClock.IsZero() {
+		return false
+	}
+	return overlay.FreshnessAt(o.Valid, o.Keeps, m.wallClock).DrawnStale()
 }
 
 // answerOf is the one answer for a place and an overlay, by its shape.

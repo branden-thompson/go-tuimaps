@@ -236,3 +236,66 @@ func warningAt(id string, west, south, east, north float64) tuimaps.Overlay {
 		Features: []tuimaps.Feature{{Kind: tuimaps.Polygon, Role: tuimaps.AlertSevere, Label: "Warning",
 			Rings: [][]tuimaps.LonLat{{{Lon: west, Lat: south}, {Lon: east, Lat: south}, {Lon: east, Lat: north}, {Lon: west, Lat: north}, {Lon: west, Lat: south}}}}}}
 }
+
+// TestStalenessIsJudgedByTheFramesOwnRule is a defect the app found: the
+// frame's stale mark says plainly that a host which has given no time is
+// told nothing about time (D-114), and every answer of a description said
+// the opposite - with no frame yet drawn, the wall clock is the zero
+// instant, every valid time is far ahead of it, and every overlay read as
+// stale. One fact cannot have two answers in one call.
+func TestStalenessIsJudgedByTheFramesOwnRule(t *testing.T) {
+	const cols, rows = 69, 12
+	m := gulfMap(t, cols, rows)
+	if _, err := m.SetPlaces([]tuimaps.Place{miami()}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Set(warning("alerts")); err != nil {
+		t.Fatal(err)
+	}
+	// Described before anything is drawn: the host has said nothing about
+	// the time, so nothing is said back about it.
+	said, err := m.Describe(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, one := range said {
+		for _, a := range one.Answers {
+			if a.Stale {
+				t.Errorf("%s in %s is called stale, and no clock has been given", one.Place, a.Overlay)
+			}
+			if a.Valid.IsZero() {
+				t.Errorf("%s in %s carries no valid time, which is what a host judges it by", one.Place, a.Overlay)
+			}
+		}
+	}
+	// Once a frame is drawn, the answer follows that frame's clock.
+	if _, err := m.Render(tuimaps.Size{Cols: cols, Rows: rows}, noon.Add(9*time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	said, err = m.Describe(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, one := range said {
+		for _, a := range one.Answers {
+			if !a.Stale {
+				t.Errorf("%s in %s is not stale nine hours after its data was valid", one.Place, a.Overlay)
+			}
+		}
+	}
+	// And a frame drawn while the data is current takes the mark away.
+	if _, err := m.Render(tuimaps.Size{Cols: cols, Rows: rows}, noon.Add(time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+	said, err = m.Describe(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, one := range said {
+		for _, a := range one.Answers {
+			if a.Stale {
+				t.Errorf("%s in %s is stale a minute after its data was valid", one.Place, a.Overlay)
+			}
+		}
+	}
+}
