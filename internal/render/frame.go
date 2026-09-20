@@ -83,7 +83,8 @@ type Input struct {
 	// FieldLabels are a field's values as text, by class: what its contour
 	// lines carry when there is no colour (D-35).
 	FieldLabels []string
-	Missing     int // tiles the view wants with nothing on hand to draw for them
+	Missing     int            // tiles the view wants with nothing on hand to draw for them
+	Layers      style.Switches // the basemap layers the host has switched off (FR-36)
 	Style       *style.Style
 	Palette     colour.Palette
 	// Look counts changes to the palette, which cannot be compared: whoever
@@ -270,20 +271,26 @@ func (r *Renderer) sameOverlays(in Input) bool {
 	return in.OverlaysVersion == l.OverlaysVersion && len(in.Shapes) == len(l.Shapes) && len(in.Fields) == len(l.Fields) && len(in.Rasters) == len(l.Rasters)
 }
 
+// sameLook reports whether everything but the tiles and the overlays is as it
+// was: the view, the colours, what is drawn of the basemap, and the furniture.
+func (r *Renderer) sameLook(in Input) bool {
+	l := r.last
+	if in.View != l.View || in.Look != l.Look || in.Ground != l.Ground || in.Depth != l.Depth || in.Style != l.Style {
+		return false
+	}
+	return in.Labels == l.Labels && in.Scale == l.Scale && in.Credit == l.Credit && in.Missing == l.Missing && in.Layers == l.Layers
+}
+
 // unchanged reports whether nothing a frame is a function of has changed
 // since the frame held was drawn. It allocates nothing.
 func (r *Renderer) unchanged(in Input) bool {
 	if !r.drawn || len(in.Tiles) != len(r.lastTiles) {
 		return false
 	}
-	l := r.last
 	if !r.sameOverlays(in) {
 		return false
 	}
-	if in.View != l.View || in.Look != l.Look || in.Ground != l.Ground || in.Depth != l.Depth || in.Style != l.Style {
-		return false
-	}
-	if in.Labels != l.Labels || in.Scale != l.Scale || in.Credit != l.Credit || in.Missing != l.Missing {
+	if !r.sameLook(in) {
 		return false
 	}
 	for i, d := range in.Tiles {
@@ -353,6 +360,7 @@ func (r *Renderer) paint(in Input) (Status, error) {
 		}
 		return a.Y < b.Y
 	})
+	r.painter.SetProfile(style.NewProfile(load(in), in.View.Cols, in.View.Rows, in.Layers))
 	status := Complete
 	if len(r.order) == 0 {
 		status = NoTiles
@@ -389,6 +397,15 @@ func (r *Renderer) paint(in Input) (Status, error) {
 	return status, nil
 }
 
+// load is what is drawn over the basemap this frame, which decides how much
+// of itself the basemap gives up (FR-19).
+func load(in Input) style.Load {
+	if len(in.Fields) > 0 || len(in.Rasters) > 0 {
+		return style.Covered
+	}
+	return style.Bare
+}
+
 // compose builds the cells: areas, line work, then names, then furniture.
 func (r *Renderer) compose(in Input, status Status) {
 	g := r.grid
@@ -423,8 +440,15 @@ func (r *Renderer) compose(in Input, status Status) {
 	// the tiles gave them, and the tiles were sorted (P-25).
 	r.labels = append(r.labels[:0], r.painter.Labels()...)
 	sort.SliceStable(r.labels, func(i, j int) bool { return r.labels[i].Rank < r.labels[j].Rank })
+	budget := style.NewProfile(load(in), g.cols, g.rows, in.Layers).Labels()
+	placed := 0
 	for _, l := range r.labels {
-		g.labelAt(l, r.painter.Points(l))
+		if budget > 0 && placed >= budget {
+			return // the profile's label budget: fewer names under an overlay, or on a small map
+		}
+		if g.labelAt(l, r.painter.Points(l)) {
+			placed++
+		}
 	}
 }
 

@@ -66,6 +66,7 @@ Measured on real tiles across the whole range the map uses. **Zoom 0 to 4:** all
 | Run index | One 16-byte box for each run of 64 vertices; lives with the overlay while it is set; counts as need and is never evicted (D-90). 203 KB at 812,058 vertices; 500 KB at the vertex cap — twice the default shape cap, and reported as such | Set here |
 | Draw-from-borrowed fallback: **bound** | **Stated as work, not as time** (PL-PF-6): at most one box test per run, plus the vertices of the runs whose box meets the view. For the synthetic worst case (812,058 vertices) that is 12,689 box tests a frame | By arithmetic. Task 14.10 asserts the count; a time figure is recorded by the benchmark, not gated |
 | Line features with no colour | Dashed: five dots on, four off, two dots thick | Set here, from specimen 19c (D-77) |
+| Basemap profiles (FR-19) | A floor on the roles drawn, in the order of what is given up (D-83). Nothing on top: everything. A field or an image on top: minor roads off, the roads left drawn one dot thick, at most 12 names. Wind, later: roads off, at most 8 names. **A map smaller than 80x20 gives up one more role** than its load alone asks for, and halves its name budget - 16 where there was none | Set in BUILD (task 09.8), from the order the style document states |
 
 ## 4 · Colour (FR-15, FR-16)
 

@@ -41,6 +41,7 @@ type Painter struct {
 	ring          []Point
 	edge          []bool // for each point of ring: the segment that ends there lies along the tile's border
 	rings         [][]Point
+	profile       style.Profile
 	culled        int
 	lastPoints    int
 }
@@ -68,6 +69,16 @@ func (p *Painter) Reset() {
 	p.literals, p.labels, p.labelPts = p.literals[:0], p.labels[:0], p.labelPts[:0]
 	p.overlayLabels = p.overlayLabels[:0]
 	p.culled, p.lastPoints = 0, 0
+	p.profile = style.Profile{}
+}
+
+// SetProfile says how much of the basemap this frame draws (FR-19, FR-36).
+// The zero profile draws all of it.
+func (p *Painter) SetProfile(profile style.Profile) {
+	if p == nil {
+		return
+	}
+	p.profile = profile
 }
 
 // Lines is the canvas of line work.
@@ -340,6 +351,8 @@ func (p *Painter) feature(l *scene.Layer, feature scene.Feature, f frame, s *sty
 	attrs := style.AttrsOf(feature)
 	rule, drawn := s.Match(l.Name, attrs, f.zoom)
 	fill, filled := s.Fill(l.Name, attrs, f.zoom)
+	drawn = drawn && p.profile.Draws(rule) // the profile and the host's switches (FR-19, FR-36)
+	filled = filled && p.profile.Draws(fill)
 	if !drawn && !filled {
 		return nil
 	}
@@ -352,21 +365,35 @@ func (p *Painter) feature(l *scene.Layer, feature scene.Feature, f frame, s *sty
 		return nil
 	}
 	if drawn && rule.Kind == style.Line {
-		at := 0
-		for _, ring := range p.rings {
-			p.stroke(ring, p.edge[at:at+len(ring)], feature.Kind == scene.GeomPolygon, f, rule)
-			at += len(ring)
-		}
+		p.strokeParts(feature, f, rule)
 	}
 	if filled && feature.Kind == scene.GeomPolygon {
 		p.areas.Fill(p.rings, p.inkFor(fill, f.zoom))
 	}
-	if drawn && rule.Kind == style.Symbol && len(p.ring) > 0 && len(p.labels) < maxLabels {
-		first := len(p.labelPts)
-		p.labelPts = append(p.labelPts, p.ring...)
-		p.labels = append(p.labels, Label{X: p.ring[0].X, Y: p.ring[0].Y, Name: feature.Name, Rank: feature.Rank, Ink: p.inkFor(rule, f.zoom), first: first, end: len(p.labelPts)})
+	if drawn && rule.Kind == style.Symbol {
+		p.keepName(feature, f, rule)
 	}
 	return nil
+}
+
+// strokeParts draws every part of a feature as a line.
+func (p *Painter) strokeParts(feature scene.Feature, f frame, rule *style.Rule) {
+	at := 0
+	for _, ring := range p.rings {
+		p.stroke(ring, p.edge[at:at+len(ring)], feature.Kind == scene.GeomPolygon, f, rule)
+		at += len(ring)
+	}
+}
+
+// keepName keeps a feature's name for the label pass, with the vertices it
+// may be anchored at (P-32).
+func (p *Painter) keepName(feature scene.Feature, f frame, rule *style.Rule) {
+	if len(p.ring) == 0 || len(p.labels) >= maxLabels {
+		return
+	}
+	first := len(p.labelPts)
+	p.labelPts = append(p.labelPts, p.ring...)
+	p.labels = append(p.labels, Label{X: p.ring[0].X, Y: p.ring[0].Y, Name: feature.Name, Rank: feature.Rank, Ink: p.inkFor(rule, f.zoom), first: first, end: len(p.labelPts)})
 }
 
 // project turns a feature's parts into dots: floored, with consecutive points
@@ -419,7 +446,7 @@ func (p *Painter) stroke(dots []Point, border []bool, ring bool, f frame, rule *
 		return
 	}
 	ink := p.inkFor(rule, f.zoom)
-	width := int(math.Round(rule.Width(f.zoom)))
+	width := int(math.Round(p.profile.Weight(rule, f.zoom)))
 	for i := 0; i+1 < len(dots); i++ {
 		if ring && border[i+1] {
 			continue
