@@ -210,3 +210,40 @@ func TestPrepareJobReportsRelease(t *testing.T) {
 		t.Errorf("%v", err)
 	}
 }
+
+// TestOldShapeDrawsFromOwnCopy finishes plan task 10.5 (D-86, FR-11): once a
+// replace is reported released, the host may write over the memory it handed
+// in. A shape already prepared from that memory goes on drawing as it was,
+// because what was prepared is the library's own copy of the geometry, in the
+// fixed point the renderer draws in.
+func TestOldShapeDrawsFromOwnCopy(t *testing.T) {
+	s := store(t)
+	ring := square(-95, 38, 1)
+	s.Set(alert("warnings", ring))
+	if err := s.PrepareJob("warnings", 5).Run(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	shapes, _, path := s.Drawn("warnings", 5)
+	if path != Cached || len(shapes) == 0 || len(shapes[0].Rings) == 0 {
+		t.Fatalf("path %v, %d shapes; want a prepared form to draw", path, len(shapes))
+	}
+	was := append([]scene.Vertex(nil), shapes[0].Rings[0]...)
+	res, err := s.Set(alert("warnings", square(-20, -20, 1)))
+	if err != nil || !res.Released {
+		t.Fatalf("a replace with nothing reading the old geometry: %+v, %v; want it released at once", res, err)
+	}
+	for i := range ring { // the host reuses what it was told it may
+		ring[i] = project.LonLat{Lon: 170, Lat: -80}
+	}
+	if len(shapes[0].Rings[0]) != len(was) {
+		t.Fatalf("the prepared ring is now %d vertices, was %d", len(shapes[0].Rings[0]), len(was))
+	}
+	for i, v := range shapes[0].Rings[0] {
+		if v != was[i] {
+			t.Fatalf("vertex %d moved to %v from %v when the host reused its own memory", i, v, was[i])
+		}
+	}
+	if _, _, path := s.Drawn("warnings", 5); path != NotReady {
+		t.Errorf("path %v for the replaced overlay; nothing prepared from geometry that is gone may be drawn again", path)
+	}
+}
