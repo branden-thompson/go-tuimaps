@@ -97,3 +97,21 @@ func Join(parts ...Text) Text {
 	}
 	return Clean(b.String())
 }
+
+// Each calls visit with every cluster of t in order, and the one or two
+// cells it occupies, until visit returns false. It is how text is laid out a
+// cell at a time without ever splitting a cluster.
+func Each(t Text, visit func(cluster string, width int) bool) {
+	if visit == nil || t.s == "" {
+		return
+	}
+	clusters := graphemes.FromString(t.s)
+	for range len(t.s) { // a cluster is at least one byte
+		if !clusters.Next() {
+			return
+		}
+		if !visit(clusters.Value(), clusterWidth(clusters.Value())) {
+			return
+		}
+	}
+}

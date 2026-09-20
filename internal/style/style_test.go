@@ -60,7 +60,7 @@ func TestBuiltInStylesCoverEveryRole(t *testing.T) {
 		{"water_name", Attrs{Kind: scene.GeomPoint, Class: "ocean", Name: "Atlantic Ocean"}, colour.LabelWater},
 	}
 	for _, c := range cases {
-		rule, ok := s.Match(c.layer, c.attrs, 8)
+		rule, ok := s.Match(c.layer, c.attrs, 12)
 		if !ok || rule.Token != c.want {
 			t.Errorf("%s %+v: %+v, %v; want token %s", c.layer, c.attrs, rule, ok, c.want.Name())
 		}
@@ -79,6 +79,31 @@ func TestBuiltInStylesCoverEveryRole(t *testing.T) {
 	} {
 		if rule, ok := s.Match(c.layer, c.attrs, 8); ok {
 			t.Errorf("%s %+v matched %s", c.layer, c.attrs, rule.ID)
+		}
+	}
+
+	// The finer roles wait for a zoom at which they can be read: at world
+	// scale a region's border and a river are clutter, a country's is not.
+	for _, c := range []struct {
+		layer     string
+		attrs     Attrs
+		from      float64
+		worldWide bool
+	}{
+		{"boundary", Attrs{Kind: scene.GeomLine, AdminLevel: 2}, 0, true},
+		{"water", Attrs{Kind: scene.GeomPolygon, Class: "ocean"}, 0, true},
+		{"boundary", Attrs{Kind: scene.GeomLine, AdminLevel: 4}, 3, false},
+		{"waterway", line("river"), 3, false},
+		{"transportation", line("motorway"), 5, false},
+		{"transportation", line("rail"), 8, false},
+		{"transportation", line("minor"), 10, false},
+		{"park", Attrs{Kind: scene.GeomPolygon, Class: "national_park"}, 6, false},
+	} {
+		if _, ok := s.Match(c.layer, c.attrs, 1.2); ok != c.worldWide {
+			t.Errorf("%s %+v at zoom 1.2: drawn=%v", c.layer, c.attrs, ok)
+		}
+		if _, ok := s.Match(c.layer, c.attrs, c.from); !ok {
+			t.Errorf("%s %+v is not drawn from zoom %v", c.layer, c.attrs, c.from)
 		}
 	}
 
@@ -129,9 +154,20 @@ func TestUserStyleLegacyFilters(t *testing.T) {
 			t.Errorf("zoom %v: colour %v, want %v; upstream read the first stop only", zoom, got, want)
 		}
 	}
-	for _, zoom := range []float64{3.9, 12, 14} {
+	for _, zoom := range []float64{3.9, 12.1, 14} {
 		if rule, _ := s.Match("transportation", line("motorway"), zoom); rule.ID != "roads-other" {
-			t.Errorf("zoom %v matched %s; the layer's own zooms bound it, the top one excluded", zoom, rule.ID)
+			t.Errorf("zoom %v matched %s; the layer's own zooms bound it", zoom, rule.ID)
+		}
+	}
+}
+
+// TestParityP27_ZoomGate: a layer's zooms are compared with the map's
+// fractional zoom, and both ends are included.
+func TestParityP27_ZoomGate(t *testing.T) {
+	s := mustParse(t, userStyle)
+	for zoom, want := range map[float64]string{3.99: "roads-other", 4: "roads-major", 8.5: "roads-major", 12: "roads-major", 12.01: "roads-other"} {
+		if rule, _ := s.Match("transportation", line("motorway"), zoom); rule.ID != want {
+			t.Errorf("zoom %v matched %s, want %s", zoom, rule.ID, want)
 		}
 	}
 	for name, body := range map[string]string{

@@ -35,25 +35,29 @@ func named(classes ...string) []step {
 // Dark and bright are this one set of roles: a rule names a token, and the
 // ground in effect picks between the token's two defaults (FR-20, D-64).
 //
+// The finer roles start at the zoom where they can be read: at world scale
+// a region's border, a river or a road is clutter. The starting zooms are a
+// first setting, made from the first frames drawn, and are HUM LEAD's to tune.
+//
 // Priority is what the basemap gives up, first to last, when it must thin
 // itself (D-83): this is not a navigation tool, so roads go first, and
 // coast, water and borders go last.
 func BuiltIn() *Style {
-	line := func(id, layer string, token colour.Token, priority int, filter ...step) Rule {
-		return Rule{ID: id, Layer: layer, Kind: Line, Token: token, priority: priority, filter: filter}
+	line := func(id, layer string, token colour.Token, priority int, from float64, filter ...step) Rule {
+		return Rule{ID: id, Layer: layer, Kind: Line, Token: token, priority: priority, MinZoom: from, filter: filter}
 	}
 	return &Style{rules: []Rule{
-		line("coast", "water", colour.Coast, 10, classIn("ocean")),
-		line("water-edge", "water", colour.WaterLine, 9),
+		line("coast", "water", colour.Coast, 10, 0, classIn("ocean")),
+		line("water-edge", "water", colour.WaterLine, 9, 0),
 		{ID: "water", Layer: "water", Kind: Fill, Token: colour.WaterFill, priority: 9},
-		line("border-country", "boundary", colour.BorderCountry, 8, level(1, 2)...),
-		line("river", "waterway", colour.River, 7, classIn("river", "canal")),
-		line("border-region", "boundary", colour.BorderRegion, 5, level(3, 4)...),
-		line("park", "park", colour.Park, 4),
-		line("rail", "transportation", colour.Rail, 3, classIn("rail")),
-		line("road-major", "transportation", colour.RoadMajor, 2, classIn("motorway", "trunk", "primary")),
-		line("road-minor", "transportation", colour.RoadMinor, 1, classIn("secondary", "tertiary", "minor")),
-		line("runway", "aeroway", colour.Runway, 3, classIn("runway", "taxiway")),
+		line("border-country", "boundary", colour.BorderCountry, 8, 0, level(1, 2)...),
+		line("river", "waterway", colour.River, 7, 3, classIn("river", "canal")),
+		line("border-region", "boundary", colour.BorderRegion, 5, 3, level(3, 4)...),
+		line("park", "park", colour.Park, 4, 6),
+		line("rail", "transportation", colour.Rail, 3, 8, classIn("rail")),
+		line("road-major", "transportation", colour.RoadMajor, 2, 5, classIn("motorway", "trunk", "primary")),
+		line("road-minor", "transportation", colour.RoadMinor, 1, 10, classIn("secondary", "tertiary", "minor")),
+		line("runway", "aeroway", colour.Runway, 3, 10, classIn("runway", "taxiway")),
 		{ID: "label-region", Layer: "place", Kind: Symbol, Token: colour.LabelRegion, priority: 6, filter: named("country", "state", "province", "continent")},
 		{ID: "label-place", Layer: "place", Kind: Symbol, Token: colour.LabelPlace, priority: 6, filter: named()},
 		{ID: "label-water", Layer: "water_name", Kind: Symbol, Token: colour.LabelWater, priority: 6, filter: named()},

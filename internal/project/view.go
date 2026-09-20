@@ -132,3 +132,19 @@ func (v View) Tiles() ([]scene.TileID, error) {
 	}
 	return tiles, nil
 }
+
+// TilePlace is where a tile sits in the view's dots - its top-left corner -
+// and the side it is drawn at: 256 dots at the tile's own zoom, larger for an
+// ancestor standing in, smaller for a deeper tile.
+func (v View) TilePlace(t scene.TileID) (x, y, side float64, err error) {
+	err = t.Validate()
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	ox, oy, err := v.origin()
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	side = TileSize * math.Exp2(v.Zoom-float64(t.Z))
+	return float64(t.X)*side - ox, float64(t.Y)*side - oy, side, nil
+}

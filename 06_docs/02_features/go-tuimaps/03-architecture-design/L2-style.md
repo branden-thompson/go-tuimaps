@@ -62,5 +62,6 @@ flowchart LR
 |---|---|
 | The provider changes its schema | Only the mapping box and the role table |
 | Style expressions arrive (after v0.1.0) | The user's-file branch. Until then a style that uses them is refused as `malformed-style`, saying so (D-102) |
+| The built-in style's starting zooms (set in BUILD from the first frames; HUM LEAD's to tune) | Coast, water and country borders from zoom 0; region borders and rivers from 3; major roads from 5; parks from 6; rail from 8; minor roads and runways from 10 |
 | What a filter can ask about | `$type`, `class`, `name`, `rank`, `admin_level`, `maritime` — what the decoder keeps. `==` on any other key is false, as upstream has it for a key a feature lacks (P-42) |
 | The block renderer is built | A second, sparser set of profiles |
