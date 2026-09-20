@@ -9,21 +9,30 @@ import (
 	"github.com/branden-thompson/go-tuimaps/assets"
 )
 
-// Example_pump is the ten lines an interactive host writes: the library
-// starts no goroutine, so the host runs the work on its own. Two goroutines
-// call Work; OnPending wakes them; the whole thing stops cleanly on quit.
+// Example_pump is the pump an interactive host writes. The library starts no
+// goroutine, so the host runs the work on its own: two goroutines call Work,
+// the library's hook wakes them when there is something to do, and each unit
+// done tells the host to draw again. It all stops cleanly on quit.
+//
+// Note what is *not* here: Settle. Settle waits for the queue, not for work
+// another goroutine has already taken (D-86), so beside a running pump it is
+// the wrong call. A host with a pump redraws when the pump says something
+// changed, which is what this does.
 func Example_pump() {
 	m, _ := tuimaps.New(tuimaps.WithSize(80, 24), tuimaps.Embed(assets.Tile, assets.MaxZoom))
 	defer m.Close()
 
 	ctx, quit := context.WithCancel(context.Background())
-	wake := make(chan struct{}, 1)
-	if err := m.OnPending(func() {
+	defer quit()
+	wake := make(chan struct{}, 1)   // the library has work
+	redraw := make(chan struct{}, 1) // the pump has done some
+	nudge := func(c chan struct{}) {
 		select {
-		case wake <- struct{}{}:
+		case c <- struct{}{}:
 		default: // already awake
 		}
-	}); err != nil {
+	}
+	if err := m.OnPending(func() { nudge(wake) }); err != nil {
 		fmt.Println(err)
 		return
 	}
@@ -38,6 +47,7 @@ func Example_pump() {
 					return
 				}
 				if did {
+					nudge(redraw)
 					continue // there may be more
 				}
 				select {
@@ -49,23 +59,26 @@ func Example_pump() {
 		}()
 	}
 
-	// The host draws whenever it likes; the pump fills the map in behind it.
+	// The host draws, and draws again whenever the pump has done something,
+	// until the frame is as good as it gets.
 	frame, err := m.Render(tuimaps.Size{Cols: 80, Rows: 24}, noon)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 	fmt.Println("first frame:", frame.Status)
-	if _, err := m.Settle(ctx); err != nil {
-		fmt.Println(err)
-		return
+	for frame.Status != tuimaps.Complete {
+		<-redraw
+		if frame, err = m.Render(tuimaps.Size{Cols: 80, Rows: 24}, noon); err != nil {
+			fmt.Println(err)
+			return
+		}
 	}
-	frame, _ = m.Render(tuimaps.Size{Cols: 80, Rows: 24}, noon)
-	fmt.Println("once the work is done:", frame.Status)
+	fmt.Println("once the pump has caught up:", frame.Status)
 
 	quit()
 	pump.Wait()
 	// Output:
 	// first frame: no tiles
-	// once the work is done: complete
+	// once the pump has caught up: complete
 }

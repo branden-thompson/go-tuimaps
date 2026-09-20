@@ -43,7 +43,10 @@ func main() {
 ```
 
 Three calls: create, settle, render. An interactive host writes a short pump
-as well - see `examples/example_pump_test.go`, which is ten lines.
+as well - see `examples/example_pump_test.go`. **A host with a pump does not
+call `Settle`**: `Settle` waits for the queue, not for work another goroutine
+has already taken, so a host with a pump redraws when the pump says something
+changed.
 
 ## What you need to know before you start
 
