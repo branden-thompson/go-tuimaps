@@ -57,7 +57,7 @@
 | P-35 | POI glyph | Match | WP-09 render | `TestParityP35_PoiGlyph` |
 | P-36 | Label language | Match | WP-03 mvt decoder | `TestParityP36_LabelLanguage` |
 | P-37 | Gzip sniff | Match | WP-03 mvt decoder | `TestParityP37_GzipSniff` |
-| P-38 | MVT decode | Match | WP-03 mvt decoder | `TestParityP38_MvtDecode` |
+| P-38 | MVT decode | Match | WP-03 mvt decoder | `TestParityP38_MVTDecode` |
 | P-39 | Ring grouping | Match | WP-03 mvt decoder | `TestParityP39_RingGrouping` |
 | P-41 | Style match | Match | WP-08 style and colour | `TestParityP41_StyleMatch` |
 | P-42 | Filter ops | Match | WP-08 style and colour | `TestParityP42_FilterOps` |

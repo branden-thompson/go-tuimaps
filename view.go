@@ -53,7 +53,7 @@ func (m *Map) Zoom(to float64) (err error) {
 
 	if math.IsNaN(to) || to < MinZoom || to > MaxZoom {
 		return badView(textsafe.Const("that is not a zoom the map has"),
-			textsafe.Const("zoom runs from 0, the whole world, to 20"))
+			textsafe.Const("zoom runs from -8, further out than the whole world on a wide map, to 18, the closest"))
 	}
 	return m.move(func(v *project.View) { v.Zoom = to })
 }

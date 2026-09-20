@@ -199,3 +199,54 @@ func TestAssetsRegisterExplicitly(t *testing.T) {
 		t.Errorf("%d package-level variables, want 1: the embedded files", vars)
 	}
 }
+
+// TestParityP47_EmbeddedTiles is the parity row for upstream's embedded
+// tiles (P-47, Extended). Upstream carries zoom 0 and zoom 1 - one tile and
+// four - and consults them before disk and before the network, whatever
+// source is named. This release carries zoom 0 to 3 instead (D-27, D-33),
+// which is the extension; that they never override a chosen source is the
+// pipeline's rule and is proved by TestAssetsNeverOverrideChosenSource,
+// because this package cannot name a source at all: it hands out bytes and
+// has no way to reach anything.
+func TestParityP47_EmbeddedTiles(t *testing.T) {
+	// Upstream's own two zooms are here, whole.
+	for _, z := range []uint8{0, 1} {
+		across := uint32(1) << z
+		for x := range across {
+			for y := range across {
+				if _, ok := Tile(z, x, y); !ok {
+					t.Errorf("zoom %d, tile %d,%d is missing; upstream carries this zoom whole", z, x, y)
+				}
+			}
+		}
+	}
+	// And the extension: every tile of every zoom up to the deepest.
+	if MaxZoom != 3 {
+		t.Errorf("the deepest embedded zoom is %d; D-27 and D-33 say 3", MaxZoom)
+	}
+	held := 0
+	for z := uint8(0); z <= MaxZoom; z++ {
+		across := uint32(1) << z
+		for x := range across {
+			for y := range across {
+				body, ok := Tile(z, x, y)
+				if !ok {
+					t.Errorf("zoom %d, tile %d,%d is missing", z, x, y)
+					continue
+				}
+				if len(body) == 0 {
+					t.Errorf("zoom %d, tile %d,%d is empty", z, x, y)
+				}
+				held++
+			}
+		}
+	}
+	if want := 1 + 4 + 16 + 64; held != want {
+		t.Errorf("%d tiles are embedded, want %d - one, four, sixteen and sixty-four", held, want)
+	}
+	// Past the deepest zoom there is nothing, said as nothing rather than
+	// as an empty tile: that is what makes the pipeline ask elsewhere.
+	if _, ok := Tile(MaxZoom+1, 0, 0); ok {
+		t.Error("a zoom deeper than the embedded set answered with a tile")
+	}
+}

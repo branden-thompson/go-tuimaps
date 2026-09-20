@@ -133,3 +133,55 @@ func TestFitTo(t *testing.T) {
 		t.Errorf("fitting to two places in Europe centred on %+v", at)
 	}
 }
+
+// TestParityP55_ZoomByInitialZoom is the parity row for upstream's zoom_by
+// and its initial zoom (P-55, Match): zooming by a number of levels stops
+// at the ends rather than going past them, the closest is 18, and a map
+// that was told no zoom starts at one it holds.
+func TestParityP55_ZoomByInitialZoom(t *testing.T) {
+	m := world(t, 80, 24)
+
+	// A map told nothing starts at a zoom inside the bounds, and one it
+	// can be asked for again.
+	_, start := m.Centre()
+	if start < tuimaps.MinZoom || start > tuimaps.MaxZoom {
+		t.Errorf("a map told no zoom starts at %v, outside %v to %v", start, tuimaps.MinZoom, tuimaps.MaxZoom)
+	}
+	if err := m.Zoom(start); err != nil {
+		t.Errorf("the zoom a map starts at is one it refuses: %v", err)
+	}
+
+	// Zooming by levels stops at each end instead of going past it.
+	if err := m.ZoomBy(1000); err != nil {
+		t.Fatal(err)
+	}
+	if _, zoom := m.Centre(); zoom != tuimaps.MaxZoom {
+		t.Errorf("zooming in by a thousand levels left the map at %v, want %v", zoom, tuimaps.MaxZoom)
+	}
+	if err := m.ZoomBy(-1000); err != nil {
+		t.Fatal(err)
+	}
+	if _, zoom := m.Centre(); zoom != tuimaps.MinZoom {
+		t.Errorf("zooming out by a thousand levels left the map at %v, want %v", zoom, tuimaps.MinZoom)
+	}
+
+	// Upstream's closest is 18, and it is the library's own too (P-55).
+	if tuimaps.MaxZoom != 18 {
+		t.Errorf("the closest zoom is %v; upstream's is 18", tuimaps.MaxZoom)
+	}
+
+	// A zoom outside the bounds is refused, and the refusal says the
+	// bounds it actually has.
+	err := m.Zoom(tuimaps.MaxZoom + 1)
+	if !isKind(err, fault.InvalidCoordinates) {
+		t.Errorf("a zoom past the closest: %v", err)
+	}
+	for _, edge := range []string{"-8", "18"} {
+		if err != nil && !strings.Contains(err.Error(), edge) {
+			t.Errorf("the refusal does not say %s: %v", edge, err)
+		}
+	}
+	if _, zoom := m.Centre(); zoom != tuimaps.MinZoom {
+		t.Errorf("a refused zoom moved the map to %v", zoom)
+	}
+}
