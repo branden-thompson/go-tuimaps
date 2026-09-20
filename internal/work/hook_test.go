@@ -19,7 +19,7 @@ func TestOnPendingFiresOnceInsideOwnerCall(t *testing.T) {
 	m := member(t)
 	fired := 0
 	var pendingSeen int
-	if err := m.OnPending(func() { fired++; pendingSeen = m.Backlog() }); err != nil {
+	if err := m.WhenPending(func() { fired++; pendingSeen = m.Backlog() }); err != nil {
 		t.Fatal(err)
 	}
 	add(t, m, tile("t/1"))
@@ -54,10 +54,10 @@ func TestOnPendingFiresOnceInsideOwnerCall(t *testing.T) {
 func TestOwnerCallFromHookRefused(t *testing.T) {
 	m := member(t)
 	var inHook []error
-	m.OnPending(func() {
+	m.WhenPending(func() {
 		inHook = append(inHook, m.Add(tile("from/hook")), m.Keep(func(string) bool { return true }))
 		_, err := m.Promote(time.Time{})
-		inHook = append(inHook, err, m.OnPending(nil))
+		inHook = append(inHook, err, m.WhenPending(nil))
 	})
 	add(t, m, tile("t/1"))
 	if len(inHook) != 4 {
@@ -83,7 +83,7 @@ func TestTwoWidePumpBothWake(t *testing.T) {
 	m := member(t)
 	const wide = 2
 	wake := make(chan struct{}, wide)
-	m.OnPending(func() {
+	m.WhenPending(func() {
 		for range wide {
 			select {
 			case wake <- struct{}{}:
@@ -108,7 +108,7 @@ func TestTwoWidePumpBothWake(t *testing.T) {
 				case <-wake:
 				}
 				for {
-					did, _ := m.Work(ctx)
+					did, _ := m.RunOne(ctx)
 					if !did {
 						break
 					}
@@ -149,7 +149,7 @@ func TestSharedJobReturnsToQueue(t *testing.T) {
 	a, _ := q.Join()
 	b, _ := q.Join()
 	var bWoken atomic.Int32
-	b.OnPending(func() { bWoken.Add(1) })
+	b.WhenPending(func() { bWoken.Add(1) })
 	started := make(chan struct{}, 2)
 	shared := job{kind: scene.KindTile, key: "t/shared", run: func(ctx context.Context) error {
 		started <- struct{}{}
@@ -164,7 +164,7 @@ func TestSharedJobReturnsToQueue(t *testing.T) {
 	woken := bWoken.Load()
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
-	go func() { _, err := a.Work(ctx); done <- err }()
+	go func() { _, err := a.RunOne(ctx); done <- err }()
 	<-started
 	if b.Backlog() != 0 {
 		t.Error("a job inside a Work call is not pending, for any map")
@@ -197,7 +197,7 @@ func TestLeavingAQueue(t *testing.T) {
 	if err := a.Add(tile("x")); !isKind(err, fault.Closed) {
 		t.Errorf("Add after Leave: %v", err)
 	}
-	if did, err := a.Work(context.Background()); did || !isKind(err, fault.Closed) {
+	if did, err := a.RunOne(context.Background()); did || !isKind(err, fault.Closed) {
 		t.Errorf("Work after Leave: did=%v, %v", did, err)
 	}
 }

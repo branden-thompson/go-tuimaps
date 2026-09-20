@@ -138,9 +138,11 @@ type Map struct {
 	look      look
 	motion    render.Motion
 	changed   uint64
-	driven    bool      // the host drives the animation clock itself (D-114)
-	footer    bool      // the footer is drawn inside the map (P-57)
-	animation time.Time // and this is the moment it has driven it to
+	driven    bool            // the host drives the animation clock itself (D-114)
+	footer    bool            // the footer is drawn inside the map (P-57)
+	own       []fault.Warning // what the map itself noticed, for the next Warnings call
+	planted   func(string)    // set only by the library's own tests, to plant a panic
+	animation time.Time       // and this is the moment it has driven it to
 	places    []Place
 	drawn     []render.Drawn
 	store     *overlay.Store
@@ -249,6 +251,9 @@ func (m *Map) note(now time.Time) error {
 // Pending is how many jobs wait for a Work or Settle call. It may be called
 // from any goroutine.
 func (m *Map) Pending() int {
+	defer m.guardQuiet("Pending")
+	m.plant("Pending")
+
 	if m == nil {
 		return 0
 	}
@@ -258,7 +263,10 @@ func (m *Map) Pending() int {
 // Settle notes what the map's view and size need, then works, on the caller's
 // goroutine, until nothing is pending or ctx ends. It is for one-shot renders
 // and tests; an interactive host calls Work from goroutines of its own.
-func (m *Map) Settle(ctx context.Context) (SettleResult, error) {
+func (m *Map) Settle(ctx context.Context) (res SettleResult, err error) {
+	defer guard("Settle", &err)
+	m.plant("Settle")
+
 	if m == nil {
 		return SettleResult{}, closed()
 	}
@@ -276,19 +284,22 @@ func (m *Map) Settle(ctx context.Context) (SettleResult, error) {
 		m.mu.Unlock()
 		return SettleResult{}, noSize()
 	}
-	err := m.note(time.Time{})
+	err = m.note(time.Time{})
 	m.mu.Unlock()
 	if err != nil {
 		return SettleResult{}, err
 	}
-	res, err := m.member.Drain(ctx)
-	return SettleResult{Ran: res.Ran, Failed: res.Failed, InFlight: res.InFlight, Why: res.Why}, err
+	done, err := m.member.Drain(ctx)
+	return SettleResult{Ran: done.Ran, Failed: done.Failed, InFlight: done.InFlight, Why: done.Why}, err
 }
 
 // Render draws the map at a size, which becomes the map's size. now is the
 // host's clock. It reads only what is on hand and never waits: what is
 // missing is noted as wanted, and the frame's status says so.
-func (m *Map) Render(size Size, now time.Time) (Frame, error) {
+func (m *Map) Render(size Size, now time.Time) (frame Frame, err error) {
+	defer guard("Render", &err)
+	m.plant("Render")
+
 	if m == nil {
 		return Frame{}, closed()
 	}
@@ -302,7 +313,7 @@ func (m *Map) Render(size Size, now time.Time) (Frame, error) {
 	if m.shut {
 		return Frame{}, closed()
 	}
-	err := m.resize(size)
+	err = m.resize(size)
 	if err != nil {
 		return Frame{}, err
 	}
@@ -322,14 +333,14 @@ func (m *Map) Render(size Size, now time.Time) (Frame, error) {
 	m.draw(&in)
 	in.Tiles, in.Missing = m.onHand()
 	was := m.renderer.Redraws()
-	frame, err := m.renderer.Draw(in)
+	drawn, err := m.renderer.Draw(in)
 	if err != nil {
 		return Frame{}, err
 	}
 	if m.renderer.Redraws() != was {
 		m.changed++ // the frame differs from the one before it
 	}
-	return Frame{Lines: frame.Lines, Status: Status(frame.Status)}, nil
+	return Frame{Lines: drawn.Lines, Status: Status(drawn.Status)}, nil
 }
 
 // onHand is what can be drawn for the view now: each wanted tile, or what
@@ -366,6 +377,9 @@ func seen(drawn []render.Drawn, at scene.TileID) bool {
 // Close closes the map at once, and reports how many of the host's calls are
 // still inside it.
 func (m *Map) Close() int {
+	defer m.guardQuiet("Close")
+	m.plant("Close")
+
 	if m == nil {
 		return 0
 	}

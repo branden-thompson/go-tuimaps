@@ -163,7 +163,7 @@ func (m *Member) Backlog() int {
 }
 
 // InFlight is how many of this map's jobs are inside a Work call.
-func (m *Member) InFlight() int {
+func (m *Member) Flying() int {
 	if m == nil || m.q == nil {
 		return 0
 	}
@@ -191,7 +191,7 @@ func (m *Member) Changed() uint64 {
 
 // OnPending sets the hook called when this map's pending work goes from
 // none to some. It is called with no lock held and must not call the map.
-func (m *Member) OnPending(hook func()) error {
+func (m *Member) WhenPending(hook func()) error {
 	err := m.owner()
 	if err != nil {
 		return err

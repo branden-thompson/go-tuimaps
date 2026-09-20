@@ -62,7 +62,7 @@ func add(t *testing.T, m *Member, jobs ...scene.Job) {
 func drain(t *testing.T, m *Member) (keys int) {
 	t.Helper()
 	for range 10000 {
-		did, err := m.Work(context.Background())
+		did, err := m.RunOne(context.Background())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -152,15 +152,15 @@ func TestWorkDoesOneJob(t *testing.T) {
 			return nil
 		}})
 	}
-	did, err := m.Work(context.Background())
+	did, err := m.RunOne(context.Background())
 	if !did || err != nil || len(stacks) != 1 || m.Backlog() != 1 {
 		t.Fatalf("one Work call: did=%v err=%v ran=%d pending=%d", did, err, len(stacks), m.Backlog())
 	}
 	if !strings.Contains(stacks[0], "TestWorkDoesOneJob") {
 		t.Errorf("the job did not run on the caller's goroutine:\n%s", stacks[0])
 	}
-	did, _ = m.Work(context.Background())
-	again, _ := m.Work(context.Background())
+	did, _ = m.RunOne(context.Background())
+	again, _ := m.RunOne(context.Background())
 	if !did || again {
 		t.Errorf("second call did=%v, third did=%v; want true, then false", did, again)
 	}
@@ -173,18 +173,18 @@ func TestWorkCancel(t *testing.T) {
 	add(t, m, job{kind: scene.KindTile, key: "slow", run: func(ctx context.Context) error { close(started); <-ctx.Done(); return ctx.Err() }})
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
-	go func() { _, err := m.Work(ctx); done <- err }()
+	go func() { _, err := m.RunOne(ctx); done <- err }()
 	<-started
-	if m.Backlog() != 0 || m.InFlight() != 1 {
-		t.Errorf("while it runs: %d pending, %d in flight", m.Backlog(), m.InFlight())
+	if m.Backlog() != 0 || m.Flying() != 1 {
+		t.Errorf("while it runs: %d pending, %d in flight", m.Backlog(), m.Flying())
 	}
 	cancel()
 	err := <-done
 	if !isKind(err, fault.Cancelled) || !errors.Is(err, context.Canceled) {
 		t.Errorf("%v; want the cancelled kind", err)
 	}
-	if m.Backlog() != 0 || m.InFlight() != 0 {
-		t.Errorf("after a cancel: %d pending, %d in flight; an abandoned job that no other map wants is gone", m.Backlog(), m.InFlight())
+	if m.Backlog() != 0 || m.Flying() != 0 {
+		t.Errorf("after a cancel: %d pending, %d in flight; an abandoned job that no other map wants is gone", m.Backlog(), m.Flying())
 	}
 	add(t, m, tile("slow")) // and can be asked for again
 	if m.Backlog() != 1 {
@@ -192,7 +192,7 @@ func TestWorkCancel(t *testing.T) {
 	}
 	already, stop := context.WithCancel(context.Background())
 	stop()
-	if did, err := m.Work(already); did || !isKind(err, fault.Cancelled) {
+	if did, err := m.RunOne(already); did || !isKind(err, fault.Cancelled) {
 		t.Errorf("Work with a context that has already ended: did=%v, %v", did, err)
 	}
 	if m.Backlog() != 1 {
@@ -218,7 +218,7 @@ func TestWorkNeverWaitsOnWork(t *testing.T) {
 	var wg sync.WaitGroup
 	for range wide {
 		wg.Add(1)
-		go func() { defer wg.Done(); m.Work(context.Background()) }()
+		go func() { defer wg.Done(); m.RunOne(context.Background()) }()
 	}
 	select {
 	case <-all:
@@ -241,7 +241,7 @@ func TestLeftViewCancelsJob(t *testing.T) {
 	started := make(chan struct{})
 	add(t, m, job{kind: scene.KindTile, key: "t/left", run: func(ctx context.Context) error { close(started); <-ctx.Done(); return ctx.Err() }}, tile("t/left-too"), tile("t/stays"))
 	done := make(chan error, 1)
-	go func() { _, err := m.Work(context.Background()); done <- err }()
+	go func() { _, err := m.RunOne(context.Background()); done <- err }()
 	<-started
 	m.NewView()
 	if err := m.Keep(func(key string) bool { return key == "t/stays" }); err != nil {
@@ -268,9 +268,9 @@ func TestChangeCounterMovesOnCompletion(t *testing.T) {
 	if m.Changed() != before {
 		t.Error("asking for work moved the counter; only finished work changes what a redraw would show")
 	}
-	m.Work(context.Background())
+	m.RunOne(context.Background())
 	first := m.Changed()
-	_, err := m.Work(context.Background())
+	_, err := m.RunOne(context.Background())
 	if first == before || m.Changed() == first {
 		t.Errorf("counter %d, %d, %d; it moves when a job finishes, and when one fails: the frame's status changes either way", before, first, m.Changed())
 	}
@@ -370,7 +370,7 @@ func TestSettleReportsWorkInFlightElsewhere(t *testing.T) {
 	m := member(t)
 	started, release := make(chan struct{}), make(chan struct{})
 	add(t, m, job{kind: scene.KindTile, key: "slow", run: func(context.Context) error { close(started); <-release; return nil }})
-	go m.Work(context.Background())
+	go m.RunOne(context.Background())
 	<-started
 	res, err := m.Drain(context.Background())
 	close(release)
@@ -383,14 +383,14 @@ func TestSettleReportsWorkInFlightElsewhere(t *testing.T) {
 func TestNoPanicEscapes(t *testing.T) {
 	m := member(t)
 	add(t, m, job{kind: scene.KindTile, key: "boom", run: func(context.Context) error { panic("index out of range") }}, tile("after"))
-	did, err := m.Work(context.Background())
+	did, err := m.RunOne(context.Background())
 	if !did || !isKind(err, fault.Internal) {
 		t.Errorf("did=%v, %v; a panicking job is an internal error, not a crash", did, err)
 	}
 	if strings.Contains(err.Error(), "index out of range") {
 		t.Errorf("%q repeats the panic's own text, which may hold outside data", err)
 	}
-	if did, err := m.Work(context.Background()); !did || err != nil || m.InFlight() != 0 {
+	if did, err := m.RunOne(context.Background()); !did || err != nil || m.Flying() != 0 {
 		t.Errorf("the queue is not usable after a panic: did=%v, %v", did, err)
 	}
 }
@@ -412,7 +412,7 @@ func TestNoWorkCalledWarning(t *testing.T) {
 	add(t, m2, tile("t/1"), tile("t/2"))
 	for i := range 60 {
 		if i == 10 {
-			m2.Work(context.Background())
+			m2.RunOne(context.Background())
 		}
 		if m2.NoteRender() && i < 29 {
 			t.Errorf("warned at render %d; a Work call restarts the count", i)

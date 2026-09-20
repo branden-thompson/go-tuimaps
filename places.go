@@ -89,7 +89,10 @@ func checkPlace(p Place) (Place, error) {
 // SetPlaces replaces the host's places with these, and answers with the id
 // of each in the order given. An id left empty is the position to six
 // decimal places (P-61).
-func (m *Map) SetPlaces(places []Place) ([]string, error) {
+func (m *Map) SetPlaces(places []Place) (ids []string, err error) {
+	defer guard("SetPlaces", &err)
+	m.plant("SetPlaces")
+
 	if m == nil {
 		return nil, closed()
 	}
@@ -98,7 +101,7 @@ func (m *Map) SetPlaces(places []Place) ([]string, error) {
 			textsafe.Const("a map holds four thousand of them; hand in the ones in view"))
 	}
 	kept := make([]Place, 0, len(places))
-	ids := make([]string, 0, len(places))
+	ids = make([]string, 0, len(places))
 	for _, p := range places {
 		one, err := checkPlace(p)
 		if err != nil {
@@ -118,7 +121,10 @@ func (m *Map) SetPlaces(places []Place) ([]string, error) {
 }
 
 // AddPlace adds one place, or replaces the one already carrying its id.
-func (m *Map) AddPlace(p Place) (string, error) {
+func (m *Map) AddPlace(p Place) (id string, err error) {
+	defer guard("AddPlace", &err)
+	m.plant("AddPlace")
+
 	if m == nil {
 		return "", closed()
 	}
@@ -149,7 +155,10 @@ func (m *Map) AddPlace(p Place) (string, error) {
 
 // RemovePlace removes every place carrying an id, as upstream does (P-61),
 // and says how many went.
-func (m *Map) RemovePlace(id string) (int, error) {
+func (m *Map) RemovePlace(id string) (gone int, err error) {
+	defer guard("RemovePlace", &err)
+	m.plant("RemovePlace")
+
 	if m == nil {
 		return 0, closed()
 	}
@@ -164,7 +173,7 @@ func (m *Map) RemovePlace(id string) (int, error) {
 	}
 	was := len(m.places)
 	m.places = slices.DeleteFunc(m.places, func(p Place) bool { return p.ID == id })
-	gone := was - len(m.places)
+	gone = was - len(m.places)
 	if gone > 0 {
 		m.changed++
 	}
@@ -174,6 +183,9 @@ func (m *Map) RemovePlace(id string) (int, error) {
 // Places are the host's places as the library holds them: names cleaned and
 // ids filled in, in the order they were given.
 func (m *Map) Places() []Place {
+	defer m.guardQuiet("Places")
+	m.plant("Places")
+
 	if m == nil {
 		return nil
 	}

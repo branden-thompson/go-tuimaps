@@ -11,6 +11,9 @@ import (
 // for a host that drives animation itself, or freezes it. A frozen animation
 // clock cannot hide data that is out of date: staleness is the wall clock's.
 func (m *Map) Animate(at time.Time) {
+	defer m.guardQuiet("Animate")
+	m.plant("Animate")
+
 	if m == nil {
 		return
 	}
@@ -26,6 +29,9 @@ func (m *Map) Animate(at time.Time) {
 // FollowClock gives the animation clock back to Render's own: markers move
 // again on the wall clock the host passes it.
 func (m *Map) FollowClock() {
+	defer m.guardQuiet("FollowClock")
+	m.plant("FollowClock")
+
 	if m == nil {
 		return
 	}
@@ -73,6 +79,9 @@ func (m *Map) stale(wall time.Time) bool {
 // overlay going stale (FR-25). It is false when nothing at all is due, and
 // then a host may sleep until something happens to it instead.
 func (m *Map) NextCall(wall time.Time) (time.Time, bool) {
+	defer m.guardQuiet("NextCall")
+	m.plant("NextCall")
+
 	if m == nil {
 		return time.Time{}, false
 	}

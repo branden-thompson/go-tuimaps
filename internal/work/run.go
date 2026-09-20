@@ -21,7 +21,7 @@ type SettleResult struct {
 // ran one. It may be called from any goroutine, any number at once: no Work
 // waits on another. It must not be called from the interface goroutine - a
 // fetch can take seconds.
-func (m *Member) Work(ctx context.Context) (did bool, err error) {
+func (m *Member) RunOne(ctx context.Context) (did bool, err error) {
 	if m == nil || m.q == nil || ctx == nil {
 		return false, internal()
 	}
@@ -150,7 +150,7 @@ func (m *Member) Drain(ctx context.Context) (SettleResult, error) {
 		return res, internal()
 	}
 	for range maxSettle {
-		did, err := m.Work(ctx)
+		did, err := m.RunOne(ctx)
 		var f *fault.Error
 		if errors.As(err, &f) && (f.Kind() == fault.Cancelled || f.Kind() == fault.Closed) {
 			return res, err
@@ -166,7 +166,7 @@ func (m *Member) Drain(ctx context.Context) (SettleResult, error) {
 			}
 		}
 	}
-	res.InFlight = m.InFlight()
+	res.InFlight = m.Flying()
 	return res, nil
 }
 

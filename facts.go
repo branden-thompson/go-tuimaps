@@ -40,6 +40,9 @@ type Scaled struct {
 // class, in the colours actually in use at the depth in effect (FR-18). It
 // is the same facts the picture carries, for a host that cannot show them.
 func (m *Map) Legend() []LegendEntry {
+	defer m.guardQuiet("Legend")
+	m.plant("Legend")
+
 	if m == nil {
 		return nil
 	}
@@ -141,6 +144,9 @@ func number(v float64) string {
 // Credits are every credit the map owes: the basemap's, then each overlay's
 // in the order they were set, once each (FR-14).
 func (m *Map) Credits() []string {
+	defer m.guardQuiet("Credits")
+	m.plant("Credits")
+
 	if m == nil {
 		return nil
 	}
@@ -170,6 +176,9 @@ const basemapCredit = "OpenFreeMap (c) OpenMapTiles Data from OpenStreetMap"
 // Scale is how far the map spans, as data (FR-33): how far one cell is, and
 // the round distance the bar on the frame stands for.
 func (m *Map) Scale() (Scaled, bool) {
+	defer m.guardQuiet("Scale")
+	m.plant("Scale")
+
 	if m == nil {
 		return Scaled{}, false
 	}
@@ -192,6 +201,9 @@ func (m *Map) Scale() (Scaled, bool) {
 // floor as upstream cuts them (P-57). It is drawn inside the map only when
 // the host turns it on, and it is off by default.
 func (m *Map) Footer() string {
+	defer m.guardQuiet("Footer")
+	m.plant("Footer")
+
 	if m == nil {
 		return ""
 	}
@@ -226,6 +238,9 @@ func cut(v float64, places int) string {
 // ShowFooter draws the footer inside the map, or takes it off again. It is
 // off by default (P-57).
 func (m *Map) ShowFooter(on bool) {
+	defer m.guardQuiet("ShowFooter")
+	m.plant("ShowFooter")
+
 	if m == nil {
 		return
 	}

@@ -70,7 +70,10 @@ func badLanguage() error {
 // names that are no token of the library's, sorted, which are ignored; the
 // rest take effect at the next Render, and nothing is decoded again for
 // them (FR-15). Passing no names puts the library's own colours back.
-func (m *Map) SetPalette(tokens map[string]RGB) ([]string, error) {
+func (m *Map) SetPalette(tokens map[string]RGB) (names []string, err error) {
+	defer guard("SetPalette", &err)
+	m.plant("SetPalette")
+
 	if m == nil {
 		return nil, closed()
 	}
@@ -97,6 +100,9 @@ func (m *Map) SetPalette(tokens map[string]RGB) ([]string, error) {
 // host set, which is the setting to reach for when a palette has not been
 // checked (D-63).
 func (m *Map) SafeRamps(on bool) {
+	defer m.guardQuiet("SafeRamps")
+	m.plant("SafeRamps")
+
 	if m == nil {
 		return
 	}
@@ -114,7 +120,10 @@ func (m *Map) SafeRamps(on bool) {
 // Ground says what colour is behind the map, and that the library is not to
 // paint it (D-64). By default the library paints every cell's background
 // from the ground token, so that the map reads the same on any terminal.
-func (m *Map) Ground(behind RGB) error {
+func (m *Map) Ground(behind RGB) (err error) {
+	defer guard("Ground", &err)
+	m.plant("Ground")
+
 	if m == nil {
 		return closed()
 	}
@@ -134,6 +143,9 @@ func (m *Map) Ground(behind RGB) error {
 
 // PaintGround puts the default back: the library paints the ground itself.
 func (m *Map) PaintGround() {
+	defer m.guardQuiet("PaintGround")
+	m.plant("PaintGround")
+
 	if m == nil {
 		return
 	}
@@ -149,6 +161,9 @@ func (m *Map) PaintGround() {
 // ColourDepth hints at how much colour the terminal has. With no hint the
 // library chooses from the usual settings of the environment.
 func (m *Map) ColourDepth(depth Depth) {
+	defer m.guardQuiet("ColourDepth")
+	m.plant("ColourDepth")
+
 	if m == nil {
 		return
 	}
@@ -173,6 +188,9 @@ func (m *Map) depthInEffect() Depth {
 // ReduceMotion stops the library animating: markers are drawn steadily and
 // nothing is ever due on the clock (NFR-21).
 func (m *Map) ReduceMotion(on bool) {
+	defer m.guardQuiet("ReduceMotion")
+	m.plant("ReduceMotion")
+
 	if m == nil {
 		return
 	}
@@ -189,6 +207,9 @@ func (m *Map) ReduceMotion(on bool) {
 // Layers switches a basemap layer off or on (FR-36). A layer switched off is
 // never drawn, whatever else the frame would have drawn.
 func (m *Map) Layers(layer Layer, on bool) {
+	defer m.guardQuiet("Layers")
+	m.plant("Layers")
+
 	if m == nil {
 		return
 	}
@@ -214,7 +235,10 @@ func (m *Map) Layers(layer Layer, on bool) {
 // LabelLanguage sets which language names are kept in. It is the one look
 // setting that reaches the tiles: a language is part of a tile's cache key,
 // so a change of language wants the tiles again (D-82).
-func (m *Map) LabelLanguage(code string) error {
+func (m *Map) LabelLanguage(code string) (err error) {
+	defer guard("LabelLanguage", &err)
+	m.plant("LabelLanguage")
+
 	if m == nil {
 		return closed()
 	}

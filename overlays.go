@@ -108,7 +108,10 @@ func unitName(u Unit) string {
 // Set hands an overlay to the map, or replaces the one of that id. It never
 // waits: what it answers says whether the geometry the overlay replaced is
 // free for the host to write over again (D-86).
-func (m *Map) Set(o Overlay) (SetResult, error) {
+func (m *Map) Set(o Overlay) (res SetResult, err error) {
+	defer guard("Set", &err)
+	m.plant("Set")
+
 	if m == nil {
 		return SetResult{}, closed()
 	}
@@ -117,7 +120,7 @@ func (m *Map) Set(o Overlay) (SetResult, error) {
 	if m.shut {
 		return SetResult{}, closed()
 	}
-	res, err := m.store.HandIn(o)
+	res, err = m.store.HandIn(o)
 	if err != nil {
 		return res, err
 	}
@@ -128,7 +131,10 @@ func (m *Map) Set(o Overlay) (SetResult, error) {
 
 // Remove takes an overlay away, and says whether it was there and whether
 // its geometry is free at once.
-func (m *Map) Remove(id string) (RemoveResult, error) {
+func (m *Map) Remove(id string) (res RemoveResult, err error) {
+	defer guard("Remove", &err)
+	m.plant("Remove")
+
 	if m == nil {
 		return RemoveResult{}, closed()
 	}
@@ -137,7 +143,7 @@ func (m *Map) Remove(id string) (RemoveResult, error) {
 	if m.shut {
 		return RemoveResult{}, closed()
 	}
-	res, err := m.store.Drop(id)
+	res, err = m.store.Drop(id)
 	if err != nil || !res.Found {
 		return res, err
 	}
@@ -149,6 +155,9 @@ func (m *Map) Remove(id string) (RemoveResult, error) {
 // InUse reports whether anything is still reading an overlay's old geometry.
 // While it is true the host must leave that memory alone (FR-11, D-86).
 func (m *Map) InUse(id string) bool {
+	defer m.guardQuiet("InUse")
+	m.plant("InUse")
+
 	if m == nil {
 		return false
 	}
@@ -159,6 +168,9 @@ func (m *Map) InUse(id string) bool {
 
 // Overlays are the ids the map holds, sorted.
 func (m *Map) Overlays() []string {
+	defer m.guardQuiet("Overlays")
+	m.plant("Overlays")
+
 	if m == nil {
 		return nil
 	}
@@ -173,6 +185,9 @@ func (m *Map) Overlays() []string {
 // Warnings are what the library noticed and did not refuse, taken once: a
 // host that never asks is never blocked by them (NFR-20).
 func (m *Map) Warnings() []Warning {
+	defer m.guardQuiet("Warnings")
+	m.plant("Warnings")
+
 	if m == nil {
 		return nil
 	}
@@ -181,7 +196,9 @@ func (m *Map) Warnings() []Warning {
 	if m.shut {
 		return nil
 	}
-	return slices.Concat(m.store.TakeWarnings(), m.pipe.TakeWarnings())
+	mine := m.own
+	m.own = nil
+	return slices.Concat(mine, m.store.TakeWarnings(), m.pipe.TakeWarnings())
 }
 
 // bucket is the zoom bucket the view draws overlays at.

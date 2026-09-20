@@ -21,6 +21,9 @@ func badView(why, todo textsafe.Text) error {
 
 // Centre is where the map is centred, and at what zoom.
 func (m *Map) Centre() (LonLat, float64) {
+	defer m.guardQuiet("Centre")
+	m.plant("Centre")
+
 	if m == nil {
 		return LonLat{}, 0
 	}
@@ -30,7 +33,10 @@ func (m *Map) Centre() (LonLat, float64) {
 }
 
 // Recentre puts a place at the middle of the map (FR-24).
-func (m *Map) Recentre(at LonLat) error {
+func (m *Map) Recentre(at LonLat) (err error) {
+	defer guard("Recentre", &err)
+	m.plant("Recentre")
+
 	if math.IsNaN(at.Lat) || math.IsNaN(at.Lon) || at.Lat < -90 || at.Lat > 90 || at.Lon < -180 || at.Lon > 180 {
 		return badView(textsafe.Const("that place is not on the world"),
 			textsafe.Const("latitude runs from -90 to 90 and longitude from -180 to 180"))
@@ -39,7 +45,10 @@ func (m *Map) Recentre(at LonLat) error {
 }
 
 // Zoom sets the zoom, holding the centre where it is.
-func (m *Map) Zoom(to float64) error {
+func (m *Map) Zoom(to float64) (err error) {
+	defer guard("Zoom", &err)
+	m.plant("Zoom")
+
 	if math.IsNaN(to) || to < MinZoom || to > MaxZoom {
 		return badView(textsafe.Const("that is not a zoom the map has"),
 			textsafe.Const("zoom runs from 0, the whole world, to 20"))
@@ -48,7 +57,10 @@ func (m *Map) Zoom(to float64) error {
 }
 
 // ZoomBy zooms in or out by a number of levels, stopping at the ends.
-func (m *Map) ZoomBy(levels float64) error {
+func (m *Map) ZoomBy(levels float64) (err error) {
+	defer guard("ZoomBy", &err)
+	m.plant("ZoomBy")
+
 	if math.IsNaN(levels) {
 		return badView(textsafe.Const("that is not a number of levels"), textsafe.Const("pass how many levels to zoom, positive to zoom in"))
 	}
@@ -56,7 +68,10 @@ func (m *Map) ZoomBy(levels float64) error {
 }
 
 // PanCells moves the map by whole cells, which is what a key press means.
-func (m *Map) PanCells(cols, rows int) error {
+func (m *Map) PanCells(cols, rows int) (err error) {
+	defer guard("PanCells", &err)
+	m.plant("PanCells")
+
 	if m == nil {
 		return closed()
 	}
@@ -76,7 +91,10 @@ func (m *Map) PanCells(cols, rows int) error {
 }
 
 // FitWorld puts the whole world in the map (P-56).
-func (m *Map) FitWorld() error {
+func (m *Map) FitWorld() (err error) {
+	defer guard("FitWorld", &err)
+	m.plant("FitWorld")
+
 	if m == nil {
 		return closed()
 	}
