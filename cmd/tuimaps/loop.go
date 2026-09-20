@@ -28,6 +28,7 @@ type app struct {
 	reduceMotion bool
 	noColour     bool
 
+	offline    bool
 	helpUp     bool
 	describeUp bool
 	said       string // what went wrong, for the status row
@@ -47,7 +48,7 @@ type event struct {
 func newApp(m *tuimaps.Map, s settings, out io.Writer, cols, rows int) *app {
 	return &app{
 		m: m, out: out, cols: cols, rows: rows,
-		places: s.places, focus: -1,
+		places: s.places, focus: -1, offline: s.offline,
 		labels: true, water: true, markers: true,
 		safeRamps: s.safeRamps, reduceMotion: s.reduceMotion, noColour: s.noColour,
 	}

@@ -268,3 +268,44 @@ func TestInteractiveSaysSoWithNoTerminal(t *testing.T) {
 		t.Errorf("the complaint is not clean text: %q", errs)
 	}
 }
+
+// TestStatusRowSaysWhyTheMapIsEmpty: zooming in with --offline reaches the
+// end of what the tiles built into the app hold - the world down to zoom 3
+// - and at street scale there is nothing in them to draw. An empty screen
+// that says nothing is a bug report waiting to happen, so the status row
+// says what happened and what to do about it (NFR-20's rule, in the app).
+func TestStatusRowSaysWhyTheMapIsEmpty(t *testing.T) {
+	a, out := upFor(t)
+	a.offline = true
+	if err := a.m.Recentre(tuimaps.LonLat{Lon: 2.3729, Lat: 48.8553}); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.m.Zoom(14); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.drawn(noon); err != nil {
+		t.Fatal(err)
+	}
+	rows := strings.Split(out.String(), "\r\n")
+	status := colourless(rows[len(rows)-1])
+	if !strings.Contains(status, "--offline") {
+		t.Errorf("the status row at a zoom the built-in tiles do not reach is %q; it does not say what to do", status)
+	}
+	// And a map that is drawing everything it wants says nothing of the
+	// sort: the notice is for the case it is about.
+	a.offline = true
+	if err := a.m.Zoom(2); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.m.Settle(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	out.Reset()
+	if err := a.drawn(noon); err != nil {
+		t.Fatal(err)
+	}
+	rows = strings.Split(out.String(), "\r\n")
+	if got := colourless(rows[len(rows)-1]); strings.Contains(got, "--offline") {
+		t.Errorf("a complete map says %q", got)
+	}
+}

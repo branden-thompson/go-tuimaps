@@ -123,6 +123,15 @@ This may be the same sitting or a different reviewer; the record says which.
 
 **The network is on by default in this app** and off in the library (D-65). Every command
 above says `--offline`, which reaches nothing at all and draws from the tiles built into
-the program — the world down to zoom 3. Leave `--offline` off to fetch a real basemap
-from OpenFreeMap; the scenarios then sit on a drawn map rather than on an empty one. The
-judged frames are the offline ones, so that they can be reproduced exactly.
+the program — the world down to zoom 3.
+
+**So zooming in while offline runs out of map.** Past zoom 3 there is nothing in the
+built-in tiles to draw, and at street scale the screen is empty but for the credit line.
+That is honest and it is not a fault; the status row says so and says what to do:
+
+    no tiles at this zoom - run without --offline to fetch them
+
+Drop `--offline` and the same view draws the streets, fetched from OpenFreeMap: the
+scenarios then sit on a drawn map rather than on an empty one. **The judged frames are
+the offline ones**, so that they can be reproduced exactly by anyone, on any machine,
+with no network at all.

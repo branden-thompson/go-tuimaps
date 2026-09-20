@@ -75,11 +75,21 @@ func (a *app) statusRow(frame tuimaps.Frame) string {
 		return ">> " + place.Name
 	}
 	said := a.m.Footer()
-	if frame.Status != tuimaps.Complete {
-		return said + "  " + frame.Status.String()
+	if frame.Status == tuimaps.Complete {
+		return said
 	}
-	return said
+	if a.offline {
+		// The notice stands alone: it is longer than the room beside the
+		// footer, and it is what a person needs to read.
+		return offlineNotice
+	}
+	return said + "  " + frame.Status.String()
 }
+
+// offlineNotice is why the map is not all there. The tiles built into the
+// app are the world down to zoom 3, so a person who zooms to their own
+// street sees an empty screen and has no way of knowing why (D-65, D-83).
+const offlineNotice = "no tiles at this zoom - run without --offline to fetch them"
 
 // panelText is what is shown instead of the map, where anything is: the
 // description in words, or the keys in full.
