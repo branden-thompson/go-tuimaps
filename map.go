@@ -125,24 +125,26 @@ func Embed(tile func(z uint8, x, y uint32) ([]byte, bool), maxZoom uint8) Option
 // Map is one map. Its calls are the host's to make from one goroutine, except
 // those the documentation says may be made from any.
 type Map struct {
-	mu       sync.Mutex
-	shut     bool
-	inside   atomic.Int32
-	sized    bool
-	view     project.View
-	noted    project.View // the view whose tiles were last asked for
-	pipe     *tiles.Pipeline
-	member   *work.Member
-	renderer *render.Renderer
-	style    *style.Style
-	look     look
-	motion   render.Motion
-	changed  uint64
-	places   []Place
-	drawn    []render.Drawn
-	store    *overlay.Store
-	view4    *overlay.ShapeView
-	overlays uint64
+	mu        sync.Mutex
+	shut      bool
+	inside    atomic.Int32
+	sized     bool
+	view      project.View
+	noted     project.View // the view whose tiles were last asked for
+	pipe      *tiles.Pipeline
+	member    *work.Member
+	renderer  *render.Renderer
+	style     *style.Style
+	look      look
+	motion    render.Motion
+	changed   uint64
+	driven    bool      // the host drives the animation clock itself (D-114)
+	animation time.Time // and this is the moment it has driven it to
+	places    []Place
+	drawn     []render.Drawn
+	store     *overlay.Store
+	view4     *overlay.ShapeView
+	overlays  uint64
 
 	drawnPlaces []render.Marker
 	shapes      []scene.Shape
@@ -310,7 +312,8 @@ func (m *Map) Render(size Size, now time.Time) (Frame, error) {
 	in := render.Input{View: m.view, Style: m.style, Labels: true,
 		Credit: textsafe.Const("OpenFreeMap (c) OpenMapTiles Data from OpenStreetMap")}
 	m.paint(&in)
-	in.MarkerPhase = m.motion.Phase(now)
+	in.MarkerPhase = m.motion.Phase(m.animationAt(now))
+	in.Stale = m.stale(now)
 	in.Markers = m.markers()
 	m.draw(&in)
 	in.Tiles, in.Missing = m.onHand()

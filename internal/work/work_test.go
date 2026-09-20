@@ -283,7 +283,7 @@ func TestChangeCounterMovesOnCompletion(t *testing.T) {
 func TestNextCallIsEarliest(t *testing.T) {
 	m := member(t)
 	now := time.Date(2026, 9, 19, 12, 0, 0, 0, time.UTC)
-	if _, due := m.NextCall(now); due {
+	if _, due := m.DueAt(now); due {
 		t.Fatal("nothing is set, yet something is due")
 	}
 	m.SetDeadline("blink", now.Add(800*time.Millisecond))
@@ -291,14 +291,14 @@ func TestNextCallIsEarliest(t *testing.T) {
 	if err := m.Defer(tile("t/failed"), now.Add(30*time.Second)); err != nil {
 		t.Fatal(err)
 	}
-	if at, due := m.NextCall(now); !due || !at.Equal(now.Add(800*time.Millisecond)) {
+	if at, due := m.DueAt(now); !due || !at.Equal(now.Add(800*time.Millisecond)) {
 		t.Errorf("NextCall = %v, %v; want the blink", at, due)
 	}
 	m.SetDeadline("blink", time.Time{}) // cleared: reduce-motion, say
-	if at, due := m.NextCall(now); !due || !at.Equal(now.Add(30*time.Second)) {
+	if at, due := m.DueAt(now); !due || !at.Equal(now.Add(30*time.Second)) {
 		t.Errorf("NextCall = %v, %v; want the retry time", at, due)
 	}
-	if at, _ := m.NextCall(now.Add(time.Hour)); !at.Equal(now.Add(30 * time.Second)) {
+	if at, _ := m.DueAt(now.Add(time.Hour)); !at.Equal(now.Add(30 * time.Second)) {
 		t.Errorf("a deadline already past is still the earliest: %v", at)
 	}
 }
@@ -306,7 +306,7 @@ func TestNextCallIsEarliest(t *testing.T) {
 func TestNothingDueWhenOffline(t *testing.T) {
 	m := member(t)
 	add(t, m, tile("t/1"))
-	if _, due := m.NextCall(time.Date(2026, 9, 19, 12, 0, 0, 0, time.UTC)); due {
+	if _, due := m.DueAt(time.Date(2026, 9, 19, 12, 0, 0, 0, time.UTC)); due {
 		t.Error("waiting work is not a deadline: with nothing set and nothing deferred, nothing is due")
 	}
 }
@@ -327,7 +327,7 @@ func TestPendingCountsWaitingOnly(t *testing.T) {
 	if n, _ := m.Promote(now.Add(30 * time.Second)); n != 1 || m.Backlog() != 1 {
 		t.Errorf("at its time: promoted %d, pending %d", n, m.Backlog())
 	}
-	if _, due := m.NextCall(now); due {
+	if _, due := m.DueAt(now); due {
 		t.Error("a promoted retry still counts as a deadline")
 	}
 }

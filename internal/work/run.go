@@ -239,7 +239,7 @@ func (m *Member) SetDeadline(name string, at time.Time) {
 // NextCall is the earliest moment anything is due: a named deadline, or a
 // deferred job's retry time. Waiting work is not a deadline, so an offline
 // map with nothing set reports nothing due.
-func (m *Member) NextCall(now time.Time) (time.Time, bool) {
+func (m *Member) DueAt(now time.Time) (time.Time, bool) {
 	if m == nil || m.q == nil {
 		return time.Time{}, false
 	}
