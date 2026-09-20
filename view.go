@@ -8,11 +8,13 @@ import (
 	"github.com/branden-thompson/go-tuimaps/internal/textsafe"
 )
 
-// The zooms a map may be at: the world in one tile, to the deepest tile any
-// source has (P-54, P-55).
+// The zooms a map may be at. The closest is upstream's (P-55). The furthest
+// out is past the world in one tile: a rectangle taller than the world
+// needs a zoom below zero to hold it, which is what fitting the world to a
+// wide, short map gives (P-54, P-56).
 const (
-	MinZoom = 0.0
-	MaxZoom = 20.0
+	MinZoom = project.MinViewZoom
+	MaxZoom = project.MaxViewZoom
 )
 
 func badView(why, todo textsafe.Text) error {

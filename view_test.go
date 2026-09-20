@@ -36,8 +36,8 @@ func TestIntents(t *testing.T) {
 	if err := m.ZoomBy(-100); err != nil {
 		t.Fatal(err)
 	}
-	if _, zoom := m.Centre(); zoom != 0 {
-		t.Errorf("ZoomBy past the world gave %v, want the world", zoom)
+	if _, zoom := m.Centre(); zoom != tuimaps.MinZoom {
+		t.Errorf("ZoomBy past the furthest gave %v, want %v", zoom, tuimaps.MinZoom)
 	}
 	if err := m.Zoom(5); err != nil {
 		t.Fatal(err)
@@ -62,8 +62,8 @@ func TestIntents(t *testing.T) {
 	// Every intent refuses what is not a view of anywhere.
 	for name, err := range map[string]error{
 		"a latitude off the world":  m.Recentre(tuimaps.LonLat{Lon: 0, Lat: 91}),
-		"a zoom below the world":    m.Zoom(-1),
-		"a zoom past the deepest":   m.Zoom(30),
+		"a zoom below the furthest": m.Zoom(tuimaps.MinZoom - 1),
+		"a zoom past the closest":   m.Zoom(tuimaps.MaxZoom + 1),
 		"a zoom that is no number":  m.Zoom(notANumber()),
 		"levels that are no number": m.ZoomBy(notANumber()),
 	} {
