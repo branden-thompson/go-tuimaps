@@ -102,6 +102,7 @@ Each question was presented one at a time with: what was being decided, the evid
 | D-110 | The Linux machine's terminal application | Asked for, not put as options | Ghostty |
 | D-111 | Running the test card on the Linux machine | Asked for, not put as options | Not until the repository can be pulled there; clear to proceed meanwhile |
 | D-112 | A code-quality exemption for `internal/overlay`, and whether to stop ratifying one at a time | A. Exempt · B. Reshape · C. Add repeating checks · and, as the counter-argument, a standing rule the coordinator did not assume | **A standing rule, with HUM LEAD informed each time** |
+| D-113 | The alert preset's colours, seen on a map (task 08.23) | Put as a look, not as options | Fine |
 
 ## Where HUM LEAD chose against the recommendation ◇
 
