@@ -71,12 +71,21 @@ type Input struct {
 	View  project.View
 	Tiles []Drawn // in any order: the renderer draws them in one
 	// Shapes are the overlays' prepared shapes, in the order they are drawn;
-	// ShapesVersion counts their changes, since they cannot be compared.
-	Shapes        []scene.Shape
-	ShapesVersion uint64
-	Missing       int // tiles the view wants with nothing on hand to draw for them
-	Style         *style.Style
-	Palette       colour.Palette
+	// OverlaysVersion counts their changes, since they cannot be compared.
+	Shapes          []scene.Shape
+	Fields          []scene.Field  // prepared scalar grids, sampled into cells here, at draw time
+	Rasters         []scene.Raster // prepared images, resampled here, at draw time
+	OverlaysVersion uint64
+	// FieldsOverWater and ImagesMaskedByWater flip the two defaults: a field
+	// stops at the shore (D-32), and an image never does (D-87).
+	FieldsOverWater     bool
+	ImagesMaskedByWater bool
+	// FieldLabels are a field's values as text, by class: what its contour
+	// lines carry when there is no colour (D-35).
+	FieldLabels []string
+	Missing     int // tiles the view wants with nothing on hand to draw for them
+	Style       *style.Style
+	Palette     colour.Palette
 	// Look counts changes to the palette, which cannot be compared: whoever
 	// changes the palette raises it, and a frame is reused only while it and
 	// everything else here stay the same (contract, section 5).
@@ -101,6 +110,7 @@ type cell struct {
 	glyph  rune
 	ink    uint8
 	area   uint8 // the ink of the area that owns the cell's background, or 0
+	under  uint8 // the ink of the field or image class that colours the cell, or 0
 	taken  bool  // text occupies the cell: a label, or the second half of a wide character
 	strict bool  // the cell holds text, held to the text contrast
 }
@@ -218,6 +228,8 @@ type Renderer struct {
 	grid    *grid
 	order   []Drawn
 	labels  []Label
+	lons    []float64 // the longitude of each dot column's centre, for this frame
+	lats    []float64 // the latitude of each dot row's
 	line    strings.Builder
 
 	drawn     bool  // a frame has been drawn, and last describes it
@@ -251,7 +263,11 @@ func (r *Renderer) sameOverlays(in Input) bool {
 	if r == nil {
 		return false
 	}
-	return in.ShapesVersion == r.last.ShapesVersion && len(in.Shapes) == len(r.last.Shapes)
+	l := r.last
+	if in.FieldsOverWater != l.FieldsOverWater || in.ImagesMaskedByWater != l.ImagesMaskedByWater {
+		return false
+	}
+	return in.OverlaysVersion == l.OverlaysVersion && len(in.Shapes) == len(l.Shapes) && len(in.Fields) == len(l.Fields) && len(in.Rasters) == len(l.Rasters)
 }
 
 // unchanged reports whether nothing a frame is a function of has changed
@@ -376,9 +392,13 @@ func (r *Renderer) paint(in Input) (Status, error) {
 // compose builds the cells: areas, line work, then names, then furniture.
 func (r *Renderer) compose(in Input, status Status) {
 	g := r.grid
+	r.underlays(in) // before the cells are read: a field with no colour is lines, drawn on the canvas
 	for row := range g.rows {
 		for col := range g.cols {
 			c := &g.cells[row*g.cols+col]
+			if c.taken {
+				continue // an image's shade with no colour: text, which wins over dots
+			}
 			c.glyph, c.ink = r.painter.Lines().Cell(col, row)
 			if ink, owned := r.painter.Area(col, row); owned {
 				c.area = ink
@@ -447,9 +467,15 @@ func scaleMark(v project.View, room int) textsafe.Text {
 // ground; the ink's own colour where it reads on that, else black or white
 // (FR-16, D-77).
 func (r *Renderer) colours(c cell, in Input, groundColour colour.RGB, kind colour.GroundKind) (fg, bg colour.RGB) {
+	// The background, bottom to top: the ground; water; a field or an image;
+	// an alert's tint (L2 Render, steps 1 to 4).
 	bg = groundColour
+	tinted := colour.Token(c.area) >= colour.AlertExtremeOutline && colour.Token(c.area) <= colour.AlertUnknownTint
 	if area, ok := r.painter.Colour(c.area, in.Palette, kind, in.Depth); ok {
 		bg = area
+	}
+	if under, ok := r.painter.Colour(c.under, in.Palette, kind, in.Depth); ok && !tinted {
+		bg = under
 	}
 	own, ok := r.painter.Colour(c.ink, in.Palette, kind, in.Depth)
 	if !ok {
@@ -557,7 +583,7 @@ func (g *grid) rowSum(row int, sum uint64) uint64 {
 		if c.strict {
 			flags |= 2
 		}
-		sum = mix(sum, uint64(c.glyph)<<32|uint64(c.ink)<<16|uint64(c.area)<<8|flags)
+		sum = mix(sum, uint64(c.glyph)<<32|uint64(c.under)<<24|uint64(c.ink)<<16|uint64(c.area)<<8|flags)
 		for i := range len(c.text) {
 			sum = (sum ^ uint64(c.text[i])) * sumPrime
 		}
@@ -621,7 +647,7 @@ func (r *Renderer) colourCell(c cell, in Input, under ground, p *pen) {
 	if p.fresh || fg != p.fg {
 		sgrColour(&r.line, "38", fg, in.Depth)
 	}
-	shown := under.painted || c.area != 0
+	shown := under.painted || c.area != 0 || c.under != 0
 	if shown && (p.fresh || bg != p.bg) {
 		sgrColour(&r.line, "48", bg, in.Depth)
 	}

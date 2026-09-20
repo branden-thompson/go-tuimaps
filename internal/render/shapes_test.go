@@ -29,7 +29,7 @@ func lonLatBox(t *testing.T, west, south, east, north float64) []scene.Vertex {
 func TestAlertAreaDrawn(t *testing.T) {
 	v := project.View{Centre: project.LonLat{Lon: -95, Lat: 38}, Zoom: 3.5, Cols: 120, Rows: 40}
 	area := scene.Shape{Kind: scene.ShapeArea, Role: uint8(colour.AlertSevereOutline), Label: "Tornado Warning", Rings: [][]scene.Vertex{lonLatBox(t, -99, 36, -91, 40)}}
-	in := Input{View: v, Tiles: embedded(t, v), Style: style.BuiltIn(), Labels: true, Shapes: []scene.Shape{area}, ShapesVersion: 1}
+	in := Input{View: v, Tiles: embedded(t, v), Style: style.BuiltIn(), Labels: true, Shapes: []scene.Shape{area}, OverlaysVersion: 1}
 	r, err := NewRenderer(v.Cols, v.Rows)
 	if err != nil {
 		t.Fatal(err)
@@ -67,7 +67,7 @@ func TestAlertAreaDrawn(t *testing.T) {
 	// Moving the area is a change the frame must show.
 	moved := in
 	moved.Shapes = []scene.Shape{{Kind: scene.ShapeArea, Role: uint8(colour.AlertSevereOutline), Rings: [][]scene.Vertex{lonLatBox(t, -89, 36, -85, 40)}}}
-	moved.ShapesVersion = 2
+	moved.OverlaysVersion = 2
 	before := r.Redraws()
 	if _, err := r.Draw(moved); err != nil || r.Redraws() != before+1 {
 		t.Errorf("a changed overlay did not redraw the frame: %v", err)
@@ -85,7 +85,7 @@ func TestOverlayLabelBeforeBasemap(t *testing.T) {
 	area := scene.Shape{Kind: scene.ShapeArea, Role: uint8(colour.AlertExtremeOutline), Label: "Flood Warning",
 		Rings: [][]scene.Vertex{lonLatBox(t, tileCentre.Lon-2, tileCentre.Lat-1, tileCentre.Lon+2, tileCentre.Lat+1)}}
 	view := project.View{Centre: tileCentre, Zoom: 4, Cols: 120, Rows: 40}
-	in := Input{View: view, Tiles: []Drawn{{Tile: &scene.Tile{Layers: []scene.Layer{places}}, At: at, Exact: true}}, Style: style.BuiltIn(), Labels: true, Shapes: []scene.Shape{area}, ShapesVersion: 1}
+	in := Input{View: view, Tiles: []Drawn{{Tile: &scene.Tile{Layers: []scene.Layer{places}}, At: at, Exact: true}}, Style: style.BuiltIn(), Labels: true, Shapes: []scene.Shape{area}, OverlaysVersion: 1}
 	text := ""
 	for _, line := range render(t, in).Lines {
 		text += plain(line) + "\n"
@@ -101,7 +101,7 @@ func TestLineAndPointShapes(t *testing.T) {
 	v := project.View{Centre: project.LonLat{Lon: -95, Lat: 38}, Zoom: 3.5, Cols: 120, Rows: 40}
 	track := scene.Shape{Kind: scene.ShapeLine, Role: uint8(colour.Track), Rings: [][]scene.Vertex{{vertex(t, -105, 38), vertex(t, -85, 38)}}}
 	point := scene.Shape{Kind: scene.ShapePoint, Role: uint8(colour.Marker), Label: "Home", Rings: [][]scene.Vertex{{vertex(t, -95, 42)}}}
-	in := Input{View: v, Tiles: embedded(t, v), Style: style.BuiltIn(), Labels: true, Shapes: []scene.Shape{track, point}, ShapesVersion: 1}
+	in := Input{View: v, Tiles: embedded(t, v), Style: style.BuiltIn(), Labels: true, Shapes: []scene.Shape{track, point}, OverlaysVersion: 1}
 	r, _ := NewRenderer(v.Cols, v.Rows)
 	f, err := r.Draw(in)
 	if err != nil {
@@ -124,7 +124,7 @@ func TestLineAndPointShapes(t *testing.T) {
 		t.Errorf("the point's label is not drawn:\n%s", text)
 	}
 	// A shape wholly outside the view costs nothing and draws nothing.
-	far := Input{View: v, Tiles: in.Tiles, Style: in.Style, Shapes: []scene.Shape{{Kind: scene.ShapeArea, Role: uint8(colour.AlertMinorOutline), Rings: [][]scene.Vertex{lonLatBox(t, 100, -40, 110, -30)}}}, ShapesVersion: 3}
+	far := Input{View: v, Tiles: in.Tiles, Style: in.Style, Shapes: []scene.Shape{{Kind: scene.ShapeArea, Role: uint8(colour.AlertMinorOutline), Rings: [][]scene.Vertex{lonLatBox(t, 100, -40, 110, -30)}}}, OverlaysVersion: 3}
 	r2, _ := NewRenderer(v.Cols, v.Rows)
 	if _, err := r2.Draw(far); err != nil {
 		t.Fatal(err)
