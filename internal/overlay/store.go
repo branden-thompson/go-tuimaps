@@ -86,6 +86,7 @@ type held struct {
 	readers  int
 	retired  bool                // replaced or removed: released when its last reader leaves
 	kind     Kind                // a grid's type, resolved at hand-in
+	box      project.Box         // where it is, recorded at hand-in so fit-to needs no work (D-76)
 	index    []Box               // built inside Set for a shape that may be drawn from memory (D-92)
 	prints   map[[2]int][]uint64 // fingerprints by feature, ring and run, if the borrow check is on
 }
@@ -252,6 +253,58 @@ func (s *Store) check(o Overlay) (int, error) {
 	return vertices, nil
 }
 
+// boxOfOverlay is where an overlay is, recorded at hand-in so that fitting
+// the view to it needs no work to have run (D-76). A grid's and an image's
+// box is the one they state; a feature overlay's is round its geometry,
+// with a circle grown by its radius in degrees of latitude.
+func boxOfOverlay(o Overlay) project.Box {
+	if o.Grid != nil {
+		return project.Box{West: o.Grid.West, South: o.Grid.South, East: o.Grid.East, North: o.Grid.North}
+	}
+	if o.Image != nil {
+		return project.Box{West: o.Image.West, South: o.Image.South, East: o.Image.East, North: o.Image.North}
+	}
+	box := project.Box{West: 180, South: 90, East: -180, North: -90}
+	for _, f := range o.Features {
+		for _, ring := range f.Rings {
+			for _, at := range ring {
+				box = grown(box, at, 0)
+			}
+		}
+		if f.Kind == Circle {
+			box = grown(box, f.Centre, f.RadiusKm/111.0)
+		}
+	}
+	if box.West > box.East || box.South > box.North {
+		return project.Box{} // nothing to fit to
+	}
+	return box
+}
+
+// grown is a box grown to hold a place, and a margin in degrees around it.
+func grown(box project.Box, at project.LonLat, pad float64) project.Box {
+	return project.Box{
+		West:  min(box.West, at.Lon-pad),
+		South: min(box.South, at.Lat-pad),
+		East:  max(box.East, at.Lon+pad),
+		North: max(box.North, at.Lat+pad),
+	}
+}
+
+// Box is where an overlay is, as recorded when it was handed in (D-76).
+func (s *Store) Box(id string) (project.Box, bool) {
+	if s == nil || id == "" {
+		return project.Box{}, false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	h, ok := s.current[id]
+	if !ok || h.box == (project.Box{}) {
+		return project.Box{}, false
+	}
+	return h.box, true
+}
+
 // warnLocked records a warning, counting a repeat and keeping at most 64.
 func (s *Store) warnLocked(kind fault.WarningKind, subject textsafe.Text) {
 	for i := range s.warnings {
@@ -367,7 +420,7 @@ func (s *Store) HandIn(o Overlay) (SetResult, error) {
 			}
 		}
 	}
-	next := &held{overlay: o, vertices: vertices}
+	next := &held{overlay: o, vertices: vertices, box: boxOfOverlay(o)}
 	if o.Image != nil {
 		next.kind, _ = ResolveType(o.Image.Type) // it resolved a moment ago, in check
 	}

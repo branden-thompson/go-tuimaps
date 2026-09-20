@@ -191,6 +191,9 @@ func (m *Map) Places() []Place {
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	if m.shut {
+		return nil
+	}
 	return slices.Clone(m.places)
 }
 

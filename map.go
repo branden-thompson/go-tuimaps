@@ -391,6 +391,13 @@ func (m *Map) Close() int {
 	defer m.mu.Unlock()
 	if !m.shut {
 		m.shut = true
+		// Everything the map holds is let go, the host's borrowed geometry
+		// among it: what a call still inside is reading goes when that call
+		// returns (contract, section 1).
+		for _, id := range m.store.IDs() {
+			_, _ = m.store.Drop(id) // an id the store just gave back is always there
+		}
+		m.places, m.own = nil, nil
 		m.view4.Withdraw()
 		m.pipe.Release()
 		m.member.Leave()

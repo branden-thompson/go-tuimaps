@@ -45,7 +45,7 @@ func badFit() error {
 // zoom that does - solved directly, not stepped. A single point is centred
 // at the zoom the view already has; nothing named changes nothing. The
 // short way round is taken: longitude is circular.
-func FitTo(current View, points []LonLat, boxes []Box, margin int) (View, error) {
+func Frame(current View, points []LonLat, boxes []Box, margin int) (View, error) {
 	err := current.Validate()
 	if err != nil {
 		return View{}, err

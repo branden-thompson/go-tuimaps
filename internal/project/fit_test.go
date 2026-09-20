@@ -45,7 +45,7 @@ var small = View{Centre: LonLat{Lon: 10, Lat: 10}, Zoom: 3, Cols: 69, Rows: 12}
 // TestFitToContainsAll is plan task 01.9.
 func TestFitToContainsAll(t *testing.T) {
 	for _, margin := range []int{0, 1, 2} {
-		v, err := FitTo(small, scenario6(), nil, margin)
+		v, err := Frame(small, scenario6(), nil, margin)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -62,7 +62,7 @@ func TestFitToContainsAll(t *testing.T) {
 // fits, solved directly; 1/256 of a level closer and a named point is out.
 func TestFitToLargestZoom(t *testing.T) {
 	for _, base := range []View{small, {Centre: LonLat{}, Zoom: 5, Cols: 149, Rows: 38}} {
-		v, err := FitTo(base, scenario6(), nil, 1)
+		v, err := Frame(base, scenario6(), nil, 1)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -77,19 +77,19 @@ func TestFitToLargestZoom(t *testing.T) {
 // TestFitToEdgeCases is plan task 01.12.
 func TestFitToEdgeCases(t *testing.T) {
 	one := []LonLat{{Lon: -85.14, Lat: 41.08}}
-	v, err := FitTo(small, one, nil, 1)
+	v, err := Frame(small, one, nil, 1)
 	if err != nil || v.Zoom != small.Zoom || math.Abs(v.Centre.Lon+85.14) > 1e-9 || math.Abs(v.Centre.Lat-41.08) > 1e-9 {
 		t.Errorf("a single point must be centred at the zoom the view already has: %+v, %v", v, err)
 	}
 
-	same, err := FitTo(small, nil, nil, 1)
+	same, err := Frame(small, nil, nil, 1)
 	if err != nil || same != small {
 		t.Errorf("with nothing named the view must not change: %+v, %v", same, err)
 	}
 
 	// Across the seam: the short way round is two degrees wide, not 358.
 	seam := []LonLat{{Lon: 179, Lat: 50}, {Lon: -179, Lat: 52}}
-	v, err = FitTo(small, seam, nil, 1)
+	v, err = Frame(small, seam, nil, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,7 +102,7 @@ func TestFitToEdgeCases(t *testing.T) {
 
 	// A box recorded at hand-in is enough: no shape, no Work.
 	box := []Box{{West: -87, South: 40, East: -84, North: 42}}
-	v, err = FitTo(small, nil, box, 1)
+	v, err = Frame(small, nil, box, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,13 +112,13 @@ func TestFitToEdgeCases(t *testing.T) {
 	}
 	// A box wider than half the world is not mistaken for its complement.
 	wide := []Box{{West: -100, South: -10, East: 100, North: 10}}
-	v, err = FitTo(View{Centre: LonLat{}, Zoom: 3, Cols: 149, Rows: 38}, nil, wide, 0)
+	v, err = Frame(View{Centre: LonLat{}, Zoom: 3, Cols: 149, Rows: 38}, nil, wide, 0)
 	if err != nil || math.Abs(v.Centre.Lon) > 1e-6 {
 		t.Errorf("a box from 100 west to 100 east is centred at %v, %v; want longitude 0", v.Centre.Lon, err)
 	}
 	// A box that itself crosses the seam.
 	crossing := []Box{{West: 170, South: 50, East: -170, North: 55}}
-	v, err = FitTo(small, nil, crossing, 0)
+	v, err = Frame(small, nil, crossing, 0)
 	if err != nil || math.Abs(math.Abs(v.Centre.Lon)-180) > 1e-6 {
 		t.Errorf("a box from 170 east to 170 west is centred at %v, %v; want 180", v.Centre.Lon, err)
 	}
@@ -126,23 +126,23 @@ func TestFitToEdgeCases(t *testing.T) {
 
 func TestFitToClampsAndRefuses(t *testing.T) {
 	near := []LonLat{{Lon: 2.3500, Lat: 48.8600}, {Lon: 2.3501, Lat: 48.8601}}
-	v, err := FitTo(small, near, nil, 0)
+	v, err := Frame(small, near, nil, 0)
 	if err != nil || v.Zoom != MaxViewZoom {
 		t.Errorf("two points a few metres apart: zoom %v, %v; want the closest zoom, %d", v.Zoom, err, MaxViewZoom)
 	}
-	if _, err := FitTo(small, scenario6(), nil, 6); !isInvalidCoordinates(err) {
+	if _, err := Frame(small, scenario6(), nil, 6); !isInvalidCoordinates(err) {
 		t.Errorf("a margin that leaves no room in a 12-row view: %v", err)
 	}
-	if _, err := FitTo(small, scenario6(), nil, -1); !isInvalidCoordinates(err) {
+	if _, err := Frame(small, scenario6(), nil, -1); !isInvalidCoordinates(err) {
 		t.Errorf("a negative margin: %v", err)
 	}
-	if _, err := FitTo(small, []LonLat{{Lon: math.NaN(), Lat: 0}}, nil, 0); !isInvalidCoordinates(err) {
+	if _, err := Frame(small, []LonLat{{Lon: math.NaN(), Lat: 0}}, nil, 0); !isInvalidCoordinates(err) {
 		t.Errorf("a point that is not a number: %v", err)
 	}
-	if _, err := FitTo(small, nil, []Box{{West: 0, South: 10, East: 5, North: 5}}, 0); !isInvalidCoordinates(err) {
+	if _, err := Frame(small, nil, []Box{{West: 0, South: 10, East: 5, North: 5}}, 0); !isInvalidCoordinates(err) {
 		t.Errorf("a box whose south is north of its north: %v", err)
 	}
-	if _, err := FitTo(View{}, scenario6(), nil, 0); !isInvalidCoordinates(err) {
+	if _, err := Frame(View{}, scenario6(), nil, 0); !isInvalidCoordinates(err) {
 		t.Errorf("a view with no size: %v", err)
 	}
 }

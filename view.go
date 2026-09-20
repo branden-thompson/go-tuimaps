@@ -113,6 +113,55 @@ func (m *Map) FitWorld() (err error) {
 	return m.moveLocked(func(v *project.View) { v.Centre, v.Zoom = whole.Centre, whole.Zoom })
 }
 
+// FitTo frames the places and overlays named, with a margin in cells on
+// every side, at the largest zoom that holds them all (FR-24). The places
+// are the host's own and any given here; the overlays are named by id, and
+// **it needs no Work to have run**, because where each overlay is was
+// recorded when it was handed in (D-76).
+func (m *Map) FitTo(places []LonLat, overlays []string, margin int) (err error) {
+	defer guard("FitTo", &err)
+	m.plant("FitTo")
+
+	if m == nil {
+		return closed()
+	}
+	if margin < 0 {
+		return badView(textsafe.Const("the margin is below zero"), textsafe.Const("give a margin of cells to leave on each side, or none"))
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.shut {
+		return closed()
+	}
+	if !m.sized {
+		return noSize()
+	}
+	points := make([]LonLat, 0, len(places)+len(m.places))
+	points = append(points, places...)
+	for _, p := range m.places {
+		points = append(points, p.At)
+	}
+	boxes := make([]project.Box, 0, len(overlays))
+	for _, id := range overlays {
+		box, ok := m.store.Box(id)
+		if !ok {
+			return fault.Make(fault.InvalidID, textsafe.Const("the view was not moved"),
+				textsafe.Const("one of the overlays named is not on the map, or has nowhere to fit to"),
+				textsafe.Const("name overlays the map holds; Overlays() lists them"))
+		}
+		boxes = append(boxes, box)
+	}
+	if len(points) == 0 && len(boxes) == 0 {
+		return badView(textsafe.Const("nothing was named to fit to, and the map has no places of its own"),
+			textsafe.Const("name places or overlays, or set the map's places first"))
+	}
+	fitted, err := project.Frame(m.view, points, boxes, margin)
+	if err != nil {
+		return badView(textsafe.Const("what was named cannot be framed"), textsafe.Const("check the places and overlays named are on the world"))
+	}
+	return m.moveLocked(func(v *project.View) { v.Centre, v.Zoom = fitted.Centre, fitted.Zoom })
+}
+
 // move applies one change to the view under the map's lock.
 func (m *Map) move(change func(*project.View)) error {
 	if m == nil {
