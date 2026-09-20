@@ -14,10 +14,10 @@ flowchart TB
     subgraph TUI["Interactive"]
       direction TB
       TERM["Terminal: raw mode, restored on EVERY exit path, including a panic (L-16)"]
-      KEYS["Keys → intents: pan · zoom — about the focused place when one is focused, the keyboard equivalent of zoom-toward-the-pointer (FR-5) · fit world · labels · water ·<br/>safe ramps · reduce motion · no colour · layers (P-68a)<br/>every state reachable by keys alone (NFR-15)"]
-      LOOP["Draw loop: Render on a tick and whenever the pump says 'changed';<br/>sleeps until NextCall when nothing is due"]
+      KEYS["Keys → intents: pan (±8/2^zoom, ±6/2^zoom — P-69) · zoom — about the focused place when one is focused, the keyboard equivalent of zoom-toward-the-pointer (FR-5) ·<br/>fit world · labels · water · markers · focus the next place · safe ramps · reduce motion · no colour · layers (P-68a)<br/>describe and help open in place of the map, so the chrome is never lost<br/>every state reachable by keys alone (NFR-15)"]
+      LOOP["Draw loop: Render on a key, a resize or a unit of work done;<br/>otherwise waits for NextCall, and for nothing at all when nothing is due — never a poll (P-71, L-15)"]
       PUMP["Its own pump: two goroutines calling Work, woken by OnPending —<br/>the same ten lines the examples show"]
-      FOOT["Footer and help (P-72a): states that maps need a font with braille,<br/>that the network is ON by default here, and lists every accessibility switch"]
+      FOOT["Chrome (P-72a): a key row at rows-2 and a status row at rows-1, which carries '>> label' for the focused place<br/>Help: states that maps need a font with braille, that the network is ON by default here, and lists every accessibility switch with its flag and its key"]
       KEYS --> LOOP
       PUMP --> LOOP
     end

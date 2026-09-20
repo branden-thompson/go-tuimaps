@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 	"unicode/utf8"
 )
 
@@ -354,8 +355,10 @@ func TestEverythingPrintedIsCleanText(t *testing.T) {
 	}
 }
 
-// colourless is the text of something drawn, with the colour sequences
-// taken out - which are the one kind of escape the library emits.
+// colourless is the text of something drawn, with the escape sequences
+// taken out - the colours the library emits, and the few the app sends to
+// the terminal itself. A sequence ends at its last byte, which is anything
+// from @ to ~; taking it to end at "m" would eat the row behind it.
 func colourless(text string) string {
 	var b strings.Builder
 	for len(text) > 0 {
@@ -364,11 +367,15 @@ func colourless(text string) string {
 		if !found {
 			break
 		}
-		if end := strings.IndexByte(after, 'm'); end >= 0 {
-			text = after[end+1:]
-			continue
+		end := strings.IndexFunc(after, func(r rune) bool { return r >= '@' && r <= '~' })
+		if end < 0 {
+			break
 		}
-		text = after
+		text = after[end+1:]
 	}
 	return b.String()
 }
+
+// noon is a fixed instant, so that a frame drawn in a test is the same
+// frame every time.
+var noon = time.Date(2026, 9, 20, 12, 0, 0, 0, time.UTC)
