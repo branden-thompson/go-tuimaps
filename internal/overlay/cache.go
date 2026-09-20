@@ -21,9 +21,10 @@ const (
 	bytesPerVertex = 8.25
 )
 
-// Box is one entry of a run index: the bounds of a run of 64 vertices, in the
-// world's fractions. It is 16 bytes.
-type Box struct{ MinX, MinY, MaxX, MaxY uint32 }
+// Box is one entry of a run index: the bounds of a run of 64 vertices, in
+// the world's fractions. It is 16 bytes, and it is the renderer's own
+// type, so that drawing from the host's memory copies no index (D-92).
+type Box = scene.Run
 
 // Path is how an overlay is drawn now.
 type Path uint8

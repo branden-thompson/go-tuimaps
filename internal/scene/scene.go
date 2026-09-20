@@ -98,6 +98,12 @@ type Job interface {
 // is the west or north edge, 2^32 the east or south.
 type Vertex struct{ X, Y uint32 }
 
+// Run is one box of a run index: the bounds of a run of vertices, in the
+// world's fractions, north the smaller. It is 16 bytes, and it is what lets
+// an overlay be drawn from the host's own memory without reading all of it
+// (D-92).
+type Run struct{ MinX, MinY, MaxX, MaxY uint32 }
+
 // ShapeKind is how a prepared overlay shape is drawn.
 type ShapeKind uint8
 

@@ -46,6 +46,9 @@ type Painter struct {
 	rings         [][]Point
 	profile       style.Profile
 	depth         colour.Depth
+	reads         Reads
+	simplifying   bool
+	thinner       []Point
 	culled        int
 	lastPoints    int
 }
@@ -74,7 +77,8 @@ func (p *Painter) Reset() {
 	p.overlayLabels = p.overlayLabels[:0]
 	p.markerLabels, p.glyphs = p.markerLabels[:0], p.glyphs[:0]
 	p.culled, p.lastPoints = 0, 0
-	p.profile, p.depth = style.Profile{}, 0
+	p.profile, p.depth, p.reads = style.Profile{}, 0, Reads{}
+	p.simplifying = false
 }
 
 // SetProfile says how much of the basemap this frame draws (FR-19, FR-36).
@@ -84,6 +88,15 @@ func (p *Painter) SetProfile(profile style.Profile) {
 		return
 	}
 	p.profile = profile
+}
+
+// SetSimplify turns upstream's line simplification on, which upstream and
+// this library both leave off (P-31).
+func (p *Painter) SetSimplify(on bool) {
+	if p == nil {
+		return
+	}
+	p.simplifying = on
 }
 
 // SetDepth says what colour the frame has to draw with. With none, an
@@ -465,6 +478,14 @@ func (p *Painter) stroke(dots []Point, border []bool, ring bool, f frame, rule *
 	}
 	ink := p.inkFor(rule, f.zoom)
 	width := int(math.Round(p.profile.Weight(rule, f.zoom)))
+	if p.simplifying {
+		p.thinner = simplify(dots, p.thinner, SimplifyTolerance)
+		p.lines.Line(p.thinner[0].X, p.thinner[0].Y, p.thinner[0].X, p.thinner[0].Y, width, ink)
+		for i := 0; i+1 < len(p.thinner); i++ {
+			p.lines.Line(p.thinner[i].X, p.thinner[i].Y, p.thinner[i+1].X, p.thinner[i+1].Y, width, ink)
+		}
+		return
+	}
 	for i := 0; i+1 < len(dots); i++ {
 		if ring && border[i+1] {
 			continue

@@ -72,7 +72,10 @@ type Input struct {
 	Tiles []Drawn // in any order: the renderer draws them in one
 	// Shapes are the overlays' prepared shapes, in the order they are drawn;
 	// OverlaysVersion counts their changes, since they cannot be compared.
-	Shapes          []scene.Shape
+	Shapes []scene.Shape
+	// Borrowed are the overlays drawn straight from the host's memory,
+	// which are read through their run index and never copied (D-92).
+	Borrowed        []Borrowed
 	Fields          []scene.Field  // prepared scalar grids, sampled into cells here, at draw time
 	Rasters         []scene.Raster // prepared images, resampled here, at draw time
 	OverlaysVersion uint64
@@ -100,6 +103,9 @@ type Input struct {
 	Depth  Depth
 	Labels bool
 	Scale  bool
+	// Simplify turns on upstream's line simplification, which upstream and
+	// this library both leave off (P-31).
+	Simplify bool
 	// Stale says that the data of an overlay on the frame is no longer
 	// current, which the frame marks in a word (FR-32); Footer is the
 	// host's own line of text, drawn only when it is given (P-57).
@@ -291,7 +297,7 @@ func (r *Renderer) sameOverlays(in Input) bool {
 			return false
 		}
 	}
-	return in.OverlaysVersion == l.OverlaysVersion && len(in.Shapes) == len(l.Shapes) && len(in.Fields) == len(l.Fields) && len(in.Rasters) == len(l.Rasters)
+	return in.OverlaysVersion == l.OverlaysVersion && len(in.Shapes) == len(l.Shapes) && len(in.Borrowed) == len(l.Borrowed) && len(in.Fields) == len(l.Fields) && len(in.Rasters) == len(l.Rasters)
 }
 
 // sameLook reports whether everything but the tiles and the overlays is as it
@@ -301,7 +307,7 @@ func (r *Renderer) sameLook(in Input) bool {
 	if in.View != l.View || in.Look != l.Look || in.Ground != l.Ground || in.Depth != l.Depth || in.Style != l.Style {
 		return false
 	}
-	if in.Stale != l.Stale || in.Footer != l.Footer {
+	if in.Stale != l.Stale || in.Footer != l.Footer || in.Simplify != l.Simplify {
 		return false
 	}
 	return in.Labels == l.Labels && in.Scale == l.Scale && in.Credit == l.Credit && in.Missing == l.Missing && in.Layers == l.Layers
@@ -388,6 +394,7 @@ func (r *Renderer) paint(in Input) (Status, error) {
 	})
 	r.painter.SetProfile(style.NewProfile(load(in), in.View.Cols, in.View.Rows, in.Layers))
 	r.painter.SetDepth(in.Depth)
+	r.painter.SetSimplify(in.Simplify)
 	status := Complete
 	if len(r.order) == 0 {
 		status = NoTiles
@@ -414,16 +421,31 @@ func (r *Renderer) paint(in Input) (Status, error) {
 		}
 	}
 	// Overlays are drawn over the basemap, and with no tile at all they are
-	// still drawn: the frame is never an empty rectangle (FR-23).
+	// still drawn: the frame is never an empty rectangle (FR-23). Markers
+	// go over everything beneath them, a hatch included (FR-18a).
+	err := r.overlays(in)
+	if err != nil {
+		return status, err
+	}
+	return status, r.marks(in)
+}
+
+// overlays draws the prepared shapes, then the ones read straight from
+// the host's memory through their run index (D-92).
+func (r *Renderer) overlays(in Input) error {
 	for _, s := range in.Shapes {
 		err := r.painter.Shape(in.View, s)
 		if err != nil {
-			return status, err
+			return err
 		}
 	}
-	// Markers are over everything beneath them, a hatch included (FR-18a).
-	err := r.marks(in)
-	return status, err
+	for _, b := range in.Borrowed {
+		err := r.painter.Borrow(in.View, b)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // marks draws the host's places over everything already drawn.
