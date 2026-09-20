@@ -4,9 +4,9 @@
    "place": "Home",
    "image": "radar",
    "class": 0,
+   "no_data": true,
    "heavier_km": 293.5,
-   "heavier_way": "east",
-   "heavier_class": 1
+   "heavier_way": "east"
   }
  ]
 }

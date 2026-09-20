@@ -45,6 +45,7 @@ type Scenario struct {
 	Shapes   []Shape   `json:"shapes"`
 	Fields   []Field   `json:"fields"`
 	Pictures []Picture `json:"images"`
+	Painted  []Painted `json:"pictures"`
 	// Views are the map sizes the scenario is drawn at, so that the key can
 	// say how many cells from the edge a place is at each of them.
 	Views []View `json:"views"`
@@ -121,6 +122,13 @@ func WholeKey(s Scenario) Keys {
 			out.Fields = append(out.Fields, atField(p, f))
 		}
 		for _, pic := range s.Pictures {
+			out.Pictures = append(out.Pictures, atPicture(p, pic))
+		}
+		for _, painted := range s.Painted {
+			pic, ok := classify(painted)
+			if !ok {
+				continue // a picture this program cannot read is not answered for
+			}
 			out.Pictures = append(out.Pictures, atPicture(p, pic))
 		}
 	}

@@ -1,48 +1,11 @@
 {
  "name": "M1 scenario 3: radar, rain near but not over the place",
- "note": "A hand-made radar picture: six pixels across, four down, over the Gulf coast. The western half is clear and the rain thickens eastward. Classes are the library's radar classes, 0 for none.",
+ "note": "A hand-made radar picture: six pixels across, four down, over the Gulf coast, in the provider's own colours, with the table that says what they mean. The west is clear and the rain thickens eastward. The picture and the table are what both the library and this key are given, so the two are working from the same input.",
  "places": [
   {
    "name": "Home",
    "lon": -86.0,
    "lat": 30.0
-  }
- ],
- "images": [
-  {
-   "id": "radar",
-   "west": -90,
-   "south": 28,
-   "east": -78,
-   "north": 32,
-   "width": 6,
-   "height": 4,
-   "classes": [
-    0,
-    0,
-    0,
-    1,
-    2,
-    3,
-    0,
-    0,
-    0,
-    1,
-    2,
-    3,
-    0,
-    0,
-    0,
-    1,
-    2,
-    3,
-    0,
-    0,
-    0,
-    1,
-    2,
-    3
-   ]
   }
  ],
  "views": [
@@ -55,6 +18,49 @@
    "name": "69x12",
    "cell_km": 3.5,
    "cell_row_km": 7.0
+  }
+ ],
+ "pictures": [
+  {
+   "id": "radar",
+   "west": -90,
+   "south": 28,
+   "east": -78,
+   "north": 32,
+   "png_base64": "iVBORw0KGgoAAAANSUhEUgAAAAYAAAAECAIAAAAiZtkUAAAAGElEQVR4nGNggAGWl88Z539hZvjCQK4QAElkEX2PYmFUAAAAAElFTkSuQmCC",
+   "table": [
+    {
+     "r": 0,
+     "g": 0,
+     "b": 0,
+     "value": 0,
+     "missing": true
+    },
+    {
+     "r": 4,
+     "g": 233,
+     "b": 231,
+     "value": 15
+    },
+    {
+     "r": 1,
+     "g": 159,
+     "b": 244,
+     "value": 25
+    },
+    {
+     "r": 3,
+     "g": 0,
+     "b": 244,
+     "value": 35
+    },
+    {
+     "r": 253,
+     "g": 149,
+     "b": 83,
+     "value": 45
+    }
+   ]
   }
  ]
 }

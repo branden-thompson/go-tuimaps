@@ -1,6 +1,8 @@
 package tuimaps_test
 
 import (
+	"context"
+	"encoding/base64"
 	"encoding/json"
 	"math"
 	"os"
@@ -36,9 +38,22 @@ type scenario struct {
 		Rows   int       `json:"rows"`
 		Values []float64 `json:"values"`
 	} `json:"fields"`
-	Images []struct {
-		ID string `json:"id"`
-	} `json:"images"`
+	Pictures []struct {
+		ID        string  `json:"id"`
+		West      float64 `json:"west"`
+		South     float64 `json:"south"`
+		East      float64 `json:"east"`
+		North     float64 `json:"north"`
+		PNG       string  `json:"png_base64"`
+		Tolerance float64 `json:"tolerance"`
+		Table     []struct {
+			R       uint8   `json:"r"`
+			G       uint8   `json:"g"`
+			B       uint8   `json:"b"`
+			Value   float64 `json:"value"`
+			Missing bool    `json:"missing"`
+		} `json:"table"`
+	} `json:"pictures"`
 }
 
 // wholeKey is the key as the tool writes it: the shapes, the fields and
@@ -53,6 +68,14 @@ type wholeKey struct {
 		Rises string  `json:"rises"`
 		Flat  bool    `json:"flat"`
 	} `json:"fields"`
+	Images []struct {
+		Place      string  `json:"place"`
+		Image      string  `json:"image"`
+		Class      int     `json:"class"`
+		NoData     bool    `json:"no_data"`
+		HeavierKm  float64 `json:"heavier_km"`
+		HeavierWay string  `json:"heavier_way"`
+	} `json:"images"`
 }
 
 // keyed is one answer of the independent key.
@@ -82,14 +105,7 @@ func againstKey(t *testing.T, name string) {
 	var whole wholeKey
 	read(t, filepath.Join(dir, name+"-key.json"), &whole)
 	key := whole.Shapes
-	if len(s.Images) > 0 {
-		// The library takes an image as a picture and a table and classifies
-		// it; this key takes the classes themselves. Comparing them would
-		// compare two different inputs, so an image scenario is not compared
-		// here, and says so rather than passing quietly.
-		t.Skip("an image scenario: the library classifies a picture, the key is given classes")
-	}
-	if len(key)+len(whole.Fields) == 0 {
+	if len(key)+len(whole.Fields)+len(whole.Images) == 0 {
 		t.Fatal("the key is empty")
 	}
 
@@ -104,6 +120,26 @@ func againstKey(t *testing.T, name string) {
 	for _, shape := range s.Shapes {
 		if _, err := m.Set(overlayOf(t, shape.ID, shape.Kind, shape.Rings)); err != nil {
 			t.Fatalf("%s: %v", shape.ID, err)
+		}
+	}
+	for _, pic := range s.Pictures {
+		// The picture and its table are what the library is given too, so
+		// the two readings are of one input (D-43).
+		png, err := base64.StdEncoding.DecodeString(pic.PNG)
+		if err != nil {
+			t.Fatalf("%s: %v", pic.ID, err)
+		}
+		image := tuimaps.Image{West: pic.West, South: pic.South, East: pic.East, North: pic.North,
+			Projection: tuimaps.PlateCarree, PNG: png, Tolerance: pic.Tolerance}
+		for _, e := range pic.Table {
+			image.Table = append(image.Table, tuimaps.TableEntry{
+				Colour: tuimaps.RGB{R: e.R, G: e.G, B: e.B}, Value: e.Value, Missing: e.Missing})
+		}
+		if _, err := m.Set(tuimaps.RadarImage(pic.ID, image, noon)); err != nil {
+			t.Fatalf("%s: %v", pic.ID, err)
+		}
+		if _, err := m.Settle(context.Background()); err != nil {
+			t.Fatal(err) // the picture is classified by a job, as the contract says
 		}
 	}
 	for _, f := range s.Fields {
@@ -141,6 +177,32 @@ func againstKey(t *testing.T, name string) {
 		}
 		if mine.Rises != want.Rises {
 			t.Errorf("%s in %s: the library says it rises %q, the key says %q", want.Place, want.Field, mine.Rises, want.Rises)
+		}
+	}
+
+	// The images: the class here, and where it gets heavier.
+	for _, want := range whole.Images {
+		var mine tuimaps.Answer
+		for _, a := range byPlace[want.Place] {
+			if a.Overlay == want.Image {
+				mine = a
+			}
+		}
+		if mine.Overlay == "" {
+			t.Errorf("the library says nothing about %s and %s", want.Place, want.Image)
+			continue
+		}
+		if mine.NoData != want.NoData || mine.Class != want.Class {
+			t.Errorf("%s in %s: the library says class %d (no data %v), the key says %d (%v)",
+				want.Place, want.Image, mine.Class, mine.NoData, want.Class, want.NoData)
+		}
+		if mine.Heavier != want.HeavierWay {
+			t.Errorf("%s in %s: the library says it gets heavier to the %q, the key says %q",
+				want.Place, want.Image, mine.Heavier, want.HeavierWay)
+		}
+		if diff := math.Abs(mine.HeavierAt - want.HeavierKm); diff > math.Max(1, want.HeavierKm*0.01) {
+			t.Errorf("%s in %s: the library says %.1f km, the key says %.1f km",
+				want.Place, want.Image, mine.HeavierAt, want.HeavierKm)
 		}
 	}
 
