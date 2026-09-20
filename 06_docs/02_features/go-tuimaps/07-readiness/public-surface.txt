@@ -16,6 +16,7 @@ const Closed
 const Colours16
 const Colours256
 const Complete
+const Distinct
 const Fahrenheit
 const FetchFailed
 const FetchRefused
@@ -47,6 +48,7 @@ const NoColour
 const NoSize
 const NoTiles
 const NoWorkCalled
+const Ordered
 const OverImageCap
 const OverLimit
 const OverVertexCap
@@ -56,6 +58,7 @@ const Point
 const Polygon
 const RailLayer
 const RampRuleBroken
+const Readable
 const ReentrantCall
 const RenderFailed
 const RingTooShort
@@ -74,8 +77,10 @@ const UnmatchedImageColours
 const UnsortedBreaks
 const UnsupportedSchema
 const UnsupportedTile
+const VisionSafe
 const WaterLayer
 const WebMercator
+func CheckRamp
 func Embed
 func KindOf
 func Kinds
@@ -142,6 +147,7 @@ type Depth
 type Feature
 type FeatureKind
 type Fetcher
+type Finding
 type Frame
 type Grid
 type Image
@@ -156,7 +162,9 @@ type Overlay
 type Place
 type Projection
 type RGB
+type RampCheck
 type RemoveResult
+type Rule
 type Scaled
 type SetResult
 type SettleResult

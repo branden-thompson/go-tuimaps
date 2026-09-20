@@ -3,6 +3,7 @@ package tuimaps
 import (
 	"errors"
 
+	"github.com/branden-thompson/go-tuimaps/internal/colour"
 	"github.com/branden-thompson/go-tuimaps/internal/fault"
 )
 
@@ -90,4 +91,30 @@ func WarningKinds() []WarningKind {
 		out = append(out, k)
 	}
 	return out
+}
+
+// Rule is one of the rules a colour ramp is held to (FR-16, D-88).
+type Rule = colour.Rule
+
+// The rules. A host that themes a ramp can hold its own to the same ones.
+const (
+	Ordered    = colour.Ordered    // luminance moves one way, or one way each side of a midpoint
+	Distinct   = colour.Distinct   // every class is a different colour at the depth in use
+	Readable   = colour.Readable   // line work 3:1 against the ground; text 4.5:1 over a class
+	VisionSafe = colour.VisionSafe // every pair, and every class against the ground, far enough apart
+)
+
+// Finding is one way a ramp breaks a rule: which rule, which classes, and
+// by how much.
+type Finding = colour.Finding
+
+// RampCheck says how a ramp is used, which decides what is asked of it.
+type RampCheck = colour.RampCheck
+
+// CheckRamp holds a ramp of colours to the library's own rules and answers
+// with what it found, empty for a ramp that passes (FR-16). It is the check
+// the library runs on its own presets, exported so that a host can run it on
+// a palette of its own, in its own tests, before anyone sees it.
+func CheckRamp(ramp []RGB, how RampCheck) []Finding {
+	return colour.Check(ramp, how)
 }

@@ -131,15 +131,15 @@ func (p Palette) Warnings(ground GroundKind, depth Depth) []fault.Warning {
 		}
 	}
 	if p.sets(Radar1, Radar6) {
-		report(textsafe.Const("radar"), len(CheckRamp(p.effective(Radar1, Radar6, 1, ground, depth), RampCheck{Ground: under, Depth: depth, Midpoint: -1})))
+		report(textsafe.Const("radar"), len(Check(p.effective(Radar1, Radar6, 1, ground, depth), RampCheck{Ground: under, Depth: depth, Midpoint: -1})))
 	}
 	if p.sets(Temperature1, Temperature17) {
 		mid := Midpoint(Temperature, ground, depth)
-		report(textsafe.Const("temperature"), len(CheckRamp(p.effective(Temperature1, Temperature17, 1, ground, depth), RampCheck{Ground: under, Depth: depth, Midpoint: mid})))
+		report(textsafe.Const("temperature"), len(Check(p.effective(Temperature1, Temperature17, 1, ground, depth), RampCheck{Ground: under, Depth: depth, Midpoint: mid})))
 	}
 	if p.sets(AlertExtremeOutline, AlertUnknownTint) {
-		lines := CheckRamp(p.effective(AlertExtremeOutline, AlertUnknownOutline, 2, ground, depth), RampCheck{Ground: under, Depth: depth, Midpoint: -1, Lines: true})
-		areas := CheckRamp(p.effective(AlertExtremeTint, AlertUnknownTint, 2, ground, depth), RampCheck{Ground: under, Depth: depth, Midpoint: -1})
+		lines := Check(p.effective(AlertExtremeOutline, AlertUnknownOutline, 2, ground, depth), RampCheck{Ground: under, Depth: depth, Midpoint: -1, Lines: true})
+		areas := Check(p.effective(AlertExtremeTint, AlertUnknownTint, 2, ground, depth), RampCheck{Ground: under, Depth: depth, Midpoint: -1})
 		report(textsafe.Const("alerts"), countUnordered(lines)+countUnordered(areas))
 	}
 	return out

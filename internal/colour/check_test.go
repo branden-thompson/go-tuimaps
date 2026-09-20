@@ -56,27 +56,27 @@ func TestCheckerOrdered(t *testing.T) {
 	temperature := specimen(t, "21-temperature-scale-candidate.json", "truecolor")
 	// The break at 0 C lies between classes 6 and 7, both pale; class 6, just
 	// below freezing, is the lightest, and luminance falls from it.
-	if f := CheckRamp(temperature, RampCheck{Ground: darkGround, Midpoint: 6}); count(f, Ordered) != 0 {
+	if f := Check(temperature, RampCheck{Ground: darkGround, Midpoint: 6}); count(f, Ordered) != 0 {
 		t.Errorf("the temperature scale, lightest at freezing: %+v", f)
 	}
 	light := specimen(t, "21-temperature-scale-candidate.json", "on_a_light_ground", "truecolor")
 	// On a light ground three bands differ (D-91), and the lightest is class 7,
 	// just above freezing: each variant carries its own midpoint.
-	if f := CheckRamp(light, RampCheck{Ground: lightGround, Midpoint: 7}); count(f, Ordered) != 0 {
+	if f := Check(light, RampCheck{Ground: lightGround, Midpoint: 7}); count(f, Ordered) != 0 {
 		t.Errorf("the light-ground temperature scale: %+v", f)
 	}
-	if f := CheckRamp(temperature, RampCheck{Ground: darkGround, Midpoint: -1}); count(f, Ordered) == 0 {
+	if f := Check(temperature, RampCheck{Ground: darkGround, Midpoint: -1}); count(f, Ordered) == 0 {
 		t.Error("the temperature scale read as one-way passed; it rises and then falls")
 	}
 	radar := specimen(t, "22-radar-ramp-candidate.json", "truecolor")
-	if f := CheckRamp(radar, RampCheck{Ground: darkGround, Midpoint: -1}); count(f, Ordered) != 0 {
+	if f := Check(radar, RampCheck{Ground: darkGround, Midpoint: -1}); count(f, Ordered) != 0 {
 		t.Errorf("the radar ramp, lighter at every step: %+v", f)
 	}
 	first := specimen(t, "22-radar-ramp-candidate.json", "on_a_light_ground", "first_version", "truecolor")
-	if f := CheckRamp(first, RampCheck{Ground: lightGround, Midpoint: -1}); count(f, Ordered) != 1 {
+	if f := Check(first, RampCheck{Ground: lightGround, Midpoint: -1}); count(f, Ordered) != 1 {
 		t.Errorf("the light-ground radar ramp as first filed got lighter from class 2 to 3: %+v", f)
 	}
-	if f := CheckRamp(rainbow(), RampCheck{Ground: darkGround, Midpoint: -1}); count(f, Ordered) == 0 {
+	if f := Check(rainbow(), RampCheck{Ground: darkGround, Midpoint: -1}); count(f, Ordered) == 0 {
 		t.Error("the broadcast-style scale passed as ordered")
 	}
 }
@@ -93,13 +93,13 @@ func TestCheckerVisionSafe(t *testing.T) {
 		{"radar, dark", specimen(t, "22-radar-ramp-candidate.json", "truecolor"), darkGround, Truecolor},
 		{"radar, light", specimen(t, "22-radar-ramp-candidate.json", "on_a_light_ground", "truecolor"), lightGround, Truecolor},
 	} {
-		if f := CheckRamp(c.ramp, RampCheck{Ground: c.ground, Midpoint: -1, Depth: c.depth}); count(f, VisionSafe) != 0 {
+		if f := Check(c.ramp, RampCheck{Ground: c.ground, Midpoint: -1, Depth: c.depth}); count(f, VisionSafe) != 0 {
 			t.Errorf("%s: %+v", c.name, f)
 		}
 	}
 	// The broadcast-style scale fails three ways (S21-2): not ordered, a pair
 	// of neighbours too close, and a pair that are not neighbours too close.
-	findings := CheckRamp(rainbow(), RampCheck{Ground: darkGround, Midpoint: -1})
+	findings := Check(rainbow(), RampCheck{Ground: darkGround, Midpoint: -1})
 	neighbours, others := 0, 0
 	for _, f := range findings {
 		if f.Rule != VisionSafe || f.B < 0 {
@@ -125,7 +125,7 @@ func TestCheckerVisionSafe(t *testing.T) {
 // neighbours nearly the same.
 func TestCheckerAllPairs(t *testing.T) {
 	ramp := []RGB{{240, 232, 144}, {255, 136, 68}, {244, 230, 150}, {85, 0, 17}}
-	findings := CheckRamp(ramp, RampCheck{Ground: darkGround, Midpoint: -1})
+	findings := Check(ramp, RampCheck{Ground: darkGround, Midpoint: -1})
 	found := false
 	for _, f := range findings {
 		if f.Rule == VisionSafe && f.A == 0 && f.B == 2 {
@@ -142,7 +142,7 @@ func TestCheckerAllPairs(t *testing.T) {
 
 func TestCheckerGroundRule(t *testing.T) {
 	dark := specimen(t, "22-radar-ramp-candidate.json", "truecolor")
-	findings := CheckRamp(dark, RampCheck{Ground: lightGround, Midpoint: -1})
+	findings := Check(dark, RampCheck{Ground: lightGround, Midpoint: -1})
 	worst := Finding{Value: 1e9}
 	for _, f := range findings {
 		if f.Rule == VisionSafe && f.B == -1 && f.Value < worst.Value {
@@ -156,32 +156,32 @@ func TestCheckerGroundRule(t *testing.T) {
 
 func TestCheckerReadable(t *testing.T) {
 	outlines := []RGB{{255, 128, 80}, {255, 214, 90}}
-	if f := CheckRamp(outlines, RampCheck{Ground: darkGround, Midpoint: -1, Lines: true}); count(f, Readable) != 0 {
+	if f := Check(outlines, RampCheck{Ground: darkGround, Midpoint: -1, Lines: true}); count(f, Readable) != 0 {
 		t.Errorf("two bright outlines on the dark ground: %+v", f)
 	}
-	if f := CheckRamp(outlines, RampCheck{Ground: lightGround, Midpoint: -1, Lines: true}); count(f, Readable) != 2 {
+	if f := Check(outlines, RampCheck{Ground: lightGround, Midpoint: -1, Lines: true}); count(f, Readable) != 2 {
 		t.Errorf("the same outlines on a light ground both fail 3:1 (1.3 and 2.3, constants section 4): %+v", f)
 	}
 	// An area ramp is read through the text drawn on it, which the foreground
 	// rule picks: every colour takes black or white at 4.5:1 or better.
-	if f := CheckRamp(rainbow(), RampCheck{Ground: darkGround, Midpoint: -1}); count(f, Readable) != 0 {
+	if f := Check(rainbow(), RampCheck{Ground: darkGround, Midpoint: -1}); count(f, Readable) != 0 {
 		t.Errorf("%+v", f)
 	}
 }
 
 func TestCheckerDistinct(t *testing.T) {
 	close := []RGB{{10, 60, 120}, {14, 64, 124}, {200, 200, 60}}
-	if f := CheckRamp(close, RampCheck{Ground: darkGround, Midpoint: -1, Depth: Truecolor}); count(f, Distinct) != 0 {
+	if f := Check(close, RampCheck{Ground: darkGround, Midpoint: -1, Depth: Truecolor}); count(f, Distinct) != 0 {
 		t.Errorf("three different colours at truecolor: %+v", f)
 	}
-	if f := CheckRamp(close, RampCheck{Ground: darkGround, Midpoint: -1, Depth: Colours256}); count(f, Distinct) != 1 {
+	if f := Check(close, RampCheck{Ground: darkGround, Midpoint: -1, Depth: Colours256}); count(f, Distinct) != 1 {
 		t.Errorf("two colours that fall on one entry of the 256 palette: %+v", f)
 	}
 	same := []RGB{{1, 2, 3}, {1, 2, 3}}
-	if f := CheckRamp(same, RampCheck{Ground: darkGround, Midpoint: -1}); count(f, Distinct) != 1 {
+	if f := Check(same, RampCheck{Ground: darkGround, Midpoint: -1}); count(f, Distinct) != 1 {
 		t.Errorf("one colour twice: %+v", f)
 	}
-	if f := CheckRamp(nil, RampCheck{}); len(f) != 0 {
+	if f := Check(nil, RampCheck{}); len(f) != 0 {
 		t.Errorf("no ramp: %+v", f)
 	}
 	for r := Ordered; r <= VisionSafe; r++ {

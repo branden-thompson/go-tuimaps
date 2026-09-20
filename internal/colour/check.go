@@ -53,7 +53,7 @@ type RampCheck struct {
 // CheckRamp holds a ramp to the four rules and returns every breach. The
 // library's own presets must pass with none; a host's colours are reported
 // on and never refused (D-53). A host can run it in its own tests.
-func CheckRamp(ramp []RGB, c RampCheck) []Finding {
+func Check(ramp []RGB, c RampCheck) []Finding {
 	if len(ramp) == 0 {
 		return nil
 	}

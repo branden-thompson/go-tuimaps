@@ -44,7 +44,7 @@ func TestAlertPreset(t *testing.T) {
 				}
 			}
 			for name, ramp := range map[string][]RGB{"outlines": outlines, "tints": tints} {
-				for _, f := range CheckRamp(ramp, RampCheck{Ground: ground, Depth: depth, Midpoint: -1}) {
+				for _, f := range Check(ramp, RampCheck{Ground: ground, Depth: depth, Midpoint: -1}) {
 					if f.Rule == VisionSafe || f.Rule == Distinct {
 						t.Errorf("%v %v: %s %+v", kind, depth, name, f)
 					}

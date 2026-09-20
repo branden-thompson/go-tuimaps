@@ -152,3 +152,41 @@ func TestFactsOnAClosedMap(t *testing.T) {
 	}
 	_ = time.Now
 }
+
+// TestCheckRampIsTheHostsToRun is the last of 12.20 (FR-16, D-88): the
+// check the library runs on its own ramps is one a host can run on a
+// palette of its own, before anyone sees it.
+func TestCheckRampIsTheHostsToRun(t *testing.T) {
+	dark := tuimaps.RGB{R: 16, G: 18, B: 22}
+	// A ramp of three greys a hair apart breaks the rules, and says which.
+	bad := []tuimaps.RGB{{R: 100, G: 100, B: 100}, {R: 102, G: 102, B: 102}, {R: 104, G: 104, B: 104}}
+	findings := tuimaps.CheckRamp(bad, tuimaps.RampCheck{Ground: dark, Depth: tuimaps.Truecolor, Midpoint: -1})
+	if len(findings) == 0 {
+		t.Fatal("three greys two units apart passed every rule")
+	}
+	broke := map[tuimaps.Rule]bool{}
+	for _, f := range findings {
+		broke[f.Rule] = true
+	}
+	if !broke[tuimaps.VisionSafe] {
+		t.Errorf("the findings are %+v; three near-identical greys are not far enough apart", findings)
+	}
+	// The library's own temperature ramp passes on the dark ground.
+	m := world(t, 80, 24)
+	grid := tuimaps.Grid{West: -10, South: -10, East: 10, North: 10, Cols: 1, Rows: 1, Values: []float64{20}}
+	if _, err := m.Set(tuimaps.TemperatureGrid("t", grid, tuimaps.Celsius, noon)); err != nil {
+		t.Fatal(err)
+	}
+	var ramp []tuimaps.RGB
+	for _, c := range m.Legend()[0].Classes {
+		if c.Drawn {
+			ramp = append(ramp, c.Colour)
+		}
+	}
+	if len(ramp) == 0 {
+		t.Fatal("the temperature legend carries no colours")
+	}
+	if found := tuimaps.CheckRamp(ramp, tuimaps.RampCheck{Ground: dark, Depth: tuimaps.Truecolor, Midpoint: 6}); len(found) != 0 {
+		t.Errorf("the library's own temperature ramp breaks its own rules: %+v", found)
+	}
+}

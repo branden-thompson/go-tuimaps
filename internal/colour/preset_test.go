@@ -53,7 +53,7 @@ func TestTemperaturePresetPasses(t *testing.T) {
 				t.Fatalf("%v, %v: the preset is not the ramp HUM LEAD was shown (specimen 21)", kind, depth)
 			}
 			mid := Midpoint(Temperature, kind, depth)
-			if f := CheckRamp(ramp, RampCheck{Ground: groundOf(kind, depth), Depth: depth, Midpoint: mid}); len(f) != 0 {
+			if f := Check(ramp, RampCheck{Ground: groundOf(kind, depth), Depth: depth, Midpoint: mid}); len(f) != 0 {
 				t.Errorf("%v, %v: %+v", kind, depth, f)
 			}
 			// Lightness, not only luminance, rises to the pale class and falls
@@ -125,7 +125,7 @@ func TestRadarPresetPasses(t *testing.T) {
 			if !ok || len(ramp) != 6 || !sameRamp(ramp, want) {
 				t.Fatalf("%v, %v: the preset is not the ramp HUM LEAD was shown (specimen 22)", kind, depth)
 			}
-			if f := CheckRamp(ramp, RampCheck{Ground: groundOf(kind, depth), Depth: depth, Midpoint: -1}); len(f) != 0 {
+			if f := Check(ramp, RampCheck{Ground: groundOf(kind, depth), Depth: depth, Midpoint: -1}); len(f) != 0 {
 				t.Errorf("%v, %v: %+v", kind, depth, f)
 			}
 			// Lighter means heavier on a dark ground, darker on a light one -
