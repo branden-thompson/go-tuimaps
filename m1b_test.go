@@ -92,7 +92,7 @@ type keyed struct {
 // itself (D-67): the library's own description must equal a key worked out
 // by a separate program, over the same data, sharing no code with it.
 func TestM1bAgreesWithTheIndependentKey(t *testing.T) {
-	for _, name := range []string{"hand-made", "scenario-1", "scenario-3", "scenario-4"} {
+	for _, name := range []string{"hand-made", "scenario-1", "scenario-2", "scenario-3", "scenario-4", "scenario-6", "scenario-7"} {
 		t.Run(name, func(t *testing.T) { againstKey(t, name) })
 	}
 }

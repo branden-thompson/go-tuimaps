@@ -1,0 +1,49 @@
+{
+ "name": "M1 scenario 6: point hazards, an earthquake and a fire detection",
+ "note": "Great Falls, Montana, with two point hazards placed at the distances and bearings PLAN's own key recorded for specimen 18: the earthquake 6.0 km at 343 degrees, the fire detection 43.3 km at 115 degrees. The positions here are worked out from those two figures, so this scenario carries its own data rather than pointing at a feed.",
+ "places": [
+  {
+   "name": "Great Falls",
+   "lon": -111.3,
+   "lat": 47.5
+  }
+ ],
+ "shapes": [
+  {
+   "id": "earthquake",
+   "kind": "point",
+   "rings": [
+    [
+     [
+      -111.323352,
+      47.551601
+     ]
+    ]
+   ]
+  },
+  {
+   "id": "fire",
+   "kind": "point",
+   "rings": [
+    [
+     [
+      -110.77761,
+      47.33543
+     ]
+    ]
+   ]
+  }
+ ],
+ "views": [
+  {
+   "name": "149x38",
+   "cell_km": 1.6,
+   "cell_row_km": 3.2
+  },
+  {
+   "name": "69x12",
+   "cell_km": 3.5,
+   "cell_row_km": 7.0
+  }
+ ]
+}

@@ -1,0 +1,45 @@
+{
+ "name": "M1 scenario 7: a storm track passing the place",
+ "note": "The same place, with a track whose closest approach is the 31.9 km at 319 degrees that PLAN's key recorded for specimen 19. The track runs through that point at right angles to the bearing, so the closest approach is in the middle of a stretch and not at an end.",
+ "places": [
+  {
+   "name": "Great Falls",
+   "lon": -111.3,
+   "lat": 47.5
+  }
+ ],
+ "shapes": [
+  {
+   "id": "storm-track",
+   "kind": "line",
+   "rings": [
+    [
+     [
+      -110.973304,
+      48.070519
+     ],
+     [
+      -111.57859,
+      47.716514
+     ],
+     [
+      -112.183876,
+      47.362509
+     ]
+    ]
+   ]
+  }
+ ],
+ "views": [
+  {
+   "name": "149x38",
+   "cell_km": 1.6,
+   "cell_row_km": 3.2
+  },
+  {
+   "name": "69x12",
+   "cell_km": 3.5,
+   "cell_row_km": 7.0
+  }
+ ]
+}

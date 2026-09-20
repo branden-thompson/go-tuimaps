@@ -1,0 +1,19 @@
+{
+ "shapes": [
+  {
+   "place": "Great Falls",
+   "shape": "storm-track",
+   "km": 31.9,
+   "bearing_deg": 319,
+   "compass": "north-west",
+   "cells": {
+    "149x38": 9.96,
+    "69x12": 4.55
+   },
+   "frame_answer": {
+    "149x38": "outside",
+    "69x12": "outside"
+   }
+  }
+ ]
+}
