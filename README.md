@@ -58,6 +58,7 @@ changed.
 | **You own the clock** | `Render(size, now)` takes the wall clock. Markers move on it; data going out of date is judged by it. `Animate(at)` takes animation over if you want to drive it yourself |
 | **Colour is yours to set** | `SetPalette` takes your own colours, `SafeRamps(true)` keeps the library's where a scale must stay readable, `ColourDepth` hints at the terminal. With no hint, a non-empty `NO_COLOR` means no colour at all |
 | **Nothing is hidden by colour alone** | With no colour, alert areas are hatched and labelled, overlay lines are dashed, and a scalar field becomes contour lines carrying their values |
+| **A style is bytes, never a path** | `SetStyle(body)` draws the basemap by a style of your own, in the same JSON format as the library's. The library never opens a style file: you read it, and pass what you read |
 
 ## What it sends and stores
 

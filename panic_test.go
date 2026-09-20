@@ -27,6 +27,7 @@ func TestPanicRecoveredAtEveryPublicCall(t *testing.T) {
 		{"Work", func(m *tuimaps.Map) error { _, err := m.Work(context.Background()); return err }},
 		{"OnPending", func(m *tuimaps.Map) error { return m.OnPending(func() {}) }},
 		{"SetPalette", func(m *tuimaps.Map) error { _, err := m.SetPalette(nil); return err }},
+		{"SetStyle", func(m *tuimaps.Map) error { return m.SetStyle([]byte(userStyle)) }},
 		{"Ground", func(m *tuimaps.Map) error { return m.Ground(tuimaps.RGB{}) }},
 		{"LabelLanguage", func(m *tuimaps.Map) error { return m.LabelLanguage("en") }},
 		{"SetPlaces", func(m *tuimaps.Map) error { _, err := m.SetPlaces(nil); return err }},

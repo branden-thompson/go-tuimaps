@@ -130,6 +130,7 @@ method Map.Scale
 method Map.Set
 method Map.SetPalette
 method Map.SetPlaces
+method Map.SetStyle
 method Map.Settle
 method Map.ShowFooter
 method Map.Source
