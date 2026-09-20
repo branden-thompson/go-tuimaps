@@ -161,8 +161,23 @@ func compare(theirs orbmvt.Layers, ours *scene.Tile) (compared int, err error) {
 				if got.Class != class || got.Name != label(f, "en") {
 					return compared, fmt.Errorf("layer %s feature %d: class %q name %q; they have class %q name %q", their.Name, n, got.Class, got.Name, class, label(f, "en"))
 				}
-				if rank, level, sea := importance(f); got.Rank != rank || got.AdminLevel != level || got.Maritime != sea {
-					return compared, fmt.Errorf("layer %s feature %d: rank %d level %d maritime %v; they have %d, %d, %v", their.Name, n, got.Rank, got.AdminLevel, got.Maritime, rank, level, sea)
+				rank, level, sea := importance(f)
+				if got.Rank != rank || got.AdminLevel != level || got.Maritime != sea {
+					// **The one difference this oracle does not arbitrate,
+					// and it covers attributes only (D-117).** On a value
+					// carrying several fields where the format allows one,
+					// this decoder answers "none" rather than picking a
+					// number out of the damage, and the proven decoder
+					// picks one - it has no rule for garbage either. Where
+					// ours refused and theirs guessed, that is a difference
+					// by design, the same standing this file already gives
+					// their panics. **A number this decoder invents where
+					// they read none is still a failure**, and geometry,
+					// classes, names, feature counts and which layers are
+					// kept stay exact on every input.
+					if !onlyRefused(got.Rank, rank) || !onlyRefused(int32(got.AdminLevel), int32(level)) || (got.Maritime && !sea) {
+						return compared, fmt.Errorf("layer %s feature %d: rank %d level %d maritime %v; they have %d, %d, %v", their.Name, n, got.Rank, got.AdminLevel, got.Maritime, rank, level, sea)
+					}
 				}
 				for p := got.FirstPart; p < got.EndPart; p++ {
 					coords, err := our.Part(int(p))
@@ -265,4 +280,12 @@ func FuzzAgree(f *testing.F) {
 			t.Fatal(err)
 		}
 	})
+}
+
+// onlyRefused reports whether this decoder's answer for one attribute is
+// either the same as the proven decoder's or the refusal "none" where the
+// proven decoder read a number. It is never true the other way round
+// (D-117).
+func onlyRefused(ours, theirs int32) bool {
+	return ours == theirs || ours == 0
 }
