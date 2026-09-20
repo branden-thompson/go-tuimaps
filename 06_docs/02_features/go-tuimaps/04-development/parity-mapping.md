@@ -46,7 +46,7 @@
 | P-24 | Draw order, z<2 | Extended | WP-09 render | `TestParityP24_DrawOrderBelowZ2` |
 | P-25 | Label deferral | Match | WP-09 render | `TestParityP25_LabelDeferral` |
 | P-26 | Sort key | Match | WP-03 mvt decoder | `TestParityP26_SortKey` |
-| P-27 | Zoom gate | Match | WP-09 render | `TestParityP27_ZoomGate` |
+| P-27 | Zoom gate | Match | WP-08 style | `TestParityP27_ZoomGate` |
 | P-28 | Feature cull | Match | WP-09 render | `TestParityP28_FeatureCull` |
 | P-29 | Scaling | Match | WP-09 render | `TestParityP29_Scaling` |
 | P-30 | Line clip pad | Fix | WP-09 render | `TestParityP30_LineClipPad` |

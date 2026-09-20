@@ -269,3 +269,30 @@ func colours(line, text string) string {
 	}
 	return seen
 }
+
+// TestParityP35_PoiGlyph is the parity row of the same name: a symbol with
+// no name of its own draws upstream's place glyph, and one with a name
+// draws the name.
+func TestParityP35_PoiGlyph(t *testing.T) {
+	v := worldView()
+	g, err := newGrid(v.Cols, v.Rows)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !placed(g, Label{X: 40, Y: 8, Ink: uint8(colour.LabelPlace)}) {
+		t.Fatal("a symbol with no name was not placed")
+	}
+	if got := g.cells[2*v.Cols+20].text; got != placeGlyph {
+		t.Errorf("a symbol with no name drew %q, want upstream's %q", got, placeGlyph)
+	}
+	named, err := newGrid(v.Cols, v.Rows)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !placed(named, Label{X: 40, Y: 8, Name: "Quay", Ink: uint8(colour.LabelPlace)}) {
+		t.Fatal("a symbol with a name was not placed")
+	}
+	if got := named.cells[2*named.cols+18].text; got != "Q" { // centred on its point
+		t.Errorf("a symbol with a name drew %q; the name is what is drawn", got)
+	}
+}
