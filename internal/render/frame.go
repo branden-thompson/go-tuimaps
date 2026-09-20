@@ -68,11 +68,15 @@ type Input struct {
 	Missing int     // tiles the view wants with nothing on hand to draw for them
 	Style   *style.Style
 	Palette colour.Palette
-	Ground  colour.GroundChoice
-	Depth   Depth
-	Labels  bool
-	Scale   bool
-	Credit  textsafe.Text
+	// Look counts changes to the palette, which cannot be compared: whoever
+	// changes the palette raises it, and a frame is reused only while it and
+	// everything else here stay the same (contract, section 5).
+	Look   uint64
+	Ground colour.GroundChoice
+	Depth  Depth
+	Labels bool
+	Scale  bool
+	Credit textsafe.Text
 }
 
 // Frame is a drawn map: one string a row, each exactly the view's width in
@@ -146,15 +150,33 @@ func (g *grid) write(col, row int, text textsafe.Text, ink uint8) bool {
 // skipped whole if it would leave the rectangle (P-33) or if its box - the
 // text grown by upstream's margin - meets one already placed (P-34).
 func (g *grid) label(l Label) bool {
+	return g.labelAt(l, []Point{{X: l.X, Y: l.Y}})
+}
+
+// labelAt tries each of a name's vertices in turn until one takes it (P-32).
+func (g *grid) labelAt(l Label, anchors []Point) bool {
+	if g == nil || len(anchors) == 0 {
+		return false
+	}
+	for _, a := range anchors {
+		if g.anchor(l, a) {
+			return true
+		}
+	}
+	return false
+}
+
+// anchor places a name at one vertex.
+func (g *grid) anchor(l Label, at Point) bool {
 	text := textsafe.Clean(l.Name)
 	if l.Name == "" {
 		text = textsafe.Clean(placeGlyph)
 	}
 	width := textsafe.Width(text)
-	if width == 0 || l.X < 0 || l.Y < 0 {
-		return false
+	if width == 0 || at.X < 0 || at.Y < 0 {
+		return false // above or left of the rectangle: never a negative row (P-33, L-8)
 	}
-	col, row := l.X/2-width/2, l.Y/4
+	col, row := at.X/2-width/2, at.Y/4
 	mine := box{left: col - labelMargin, right: col + labelMargin + width, top: row - labelMargin/2, bottom: row + labelMargin/2}
 	for _, b := range g.boxes {
 		if mine.left <= b.right && b.left <= mine.right && mine.top <= b.bottom && b.top <= mine.bottom {
@@ -175,6 +197,51 @@ type Renderer struct {
 	order   []Drawn
 	labels  []Label
 	line    strings.Builder
+
+	drawn     bool  // a frame has been drawn, and last describes it
+	last      Input // the input of the frame held; its tiles are lastTiles
+	lastTiles []Drawn
+	held      Frame    // valid until the next Render (contract, section 5)
+	rowSums   []uint64 // what each held row was built from
+	redraws   int
+	rowsBuilt int
+}
+
+// Redraws is how many frames were drawn and not reused.
+func (r *Renderer) Redraws() int {
+	if r == nil {
+		return 0
+	}
+	return r.redraws
+}
+
+// RowsBuilt is how many rows of text were built, over every frame.
+func (r *Renderer) RowsBuilt() int {
+	if r == nil {
+		return 0
+	}
+	return r.rowsBuilt
+}
+
+// unchanged reports whether nothing a frame is a function of has changed
+// since the frame held was drawn. It allocates nothing.
+func (r *Renderer) unchanged(in Input) bool {
+	if !r.drawn || len(in.Tiles) != len(r.lastTiles) {
+		return false
+	}
+	l := r.last
+	if in.View != l.View || in.Look != l.Look || in.Ground != l.Ground || in.Depth != l.Depth || in.Style != l.Style {
+		return false
+	}
+	if in.Labels != l.Labels || in.Scale != l.Scale || in.Credit != l.Credit || in.Missing != l.Missing {
+		return false
+	}
+	for i, d := range in.Tiles {
+		if d != r.lastTiles[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // NewRenderer makes a renderer for a map of cols by rows cells.
@@ -202,14 +269,23 @@ func (r *Renderer) Render(in Input) (Frame, error) {
 	if in.View.Cols != r.grid.cols || in.View.Rows != r.grid.rows {
 		return Frame{}, badInput(textsafe.Const("the view is not the size the renderer was made for"))
 	}
+	if r.unchanged(in) {
+		return r.held, nil // an unchanged frame costs nothing (NFR-4)
+	}
 	r.painter.Reset()
 	r.grid.reset()
 	status, err := r.paint(in)
 	if err != nil {
+		r.drawn = false
 		return Frame{}, err
 	}
 	r.compose(in, status)
-	return Frame{Lines: r.emit(in), Status: status}, nil
+	r.held = Frame{Lines: r.emit(in), Status: status}
+	r.lastTiles = append(r.lastTiles[:0], in.Tiles...)
+	r.last, r.drawn = in, true
+	r.last.Tiles = nil
+	r.redraws++
+	return r.held, nil
 }
 
 // paint draws every tile, in one order whatever order they came in (NFR-6):
@@ -230,6 +306,10 @@ func (r *Renderer) paint(in Input) (Status, error) {
 	if len(r.order) == 0 {
 		return NoTiles, nil
 	}
+	err := r.painter.World(in.View)
+	if err != nil {
+		return status, err
+	}
 	if in.Missing > 0 {
 		status = Sharpening
 	}
@@ -240,7 +320,7 @@ func (r *Renderer) paint(in Input) (Status, error) {
 		if !d.Exact {
 			status = Sharpening
 		}
-		err := r.painter.Tile(in.View, d.Tile, d.At, in.Style)
+		err = r.painter.Tile(in.View, d.Tile, d.At, in.Style)
 		if err != nil {
 			return status, err
 		}
@@ -269,7 +349,7 @@ func (r *Renderer) compose(in Input, status Status) {
 	r.labels = append(r.labels[:0], r.painter.Labels()...)
 	sort.SliceStable(r.labels, func(i, j int) bool { return r.labels[i].Rank < r.labels[j].Rank })
 	for _, l := range r.labels {
-		g.label(l)
+		g.labelAt(l, r.painter.Points(l))
 	}
 }
 
@@ -350,15 +430,71 @@ type ground struct {
 	kind    colour.GroundKind
 }
 
+// The two numbers of the 64-bit FNV-1a sum.
+const (
+	sumStart = 14695981039346656037
+	sumPrime = 1099511628211
+)
+
+func mix(sum uint64, v uint64) uint64 {
+	for range 8 {
+		sum = (sum ^ (v & 0xff)) * sumPrime
+		v >>= 8
+	}
+	return sum
+}
+
+// salt is a sum of everything but the cells that decides a row's bytes.
+func (r *Renderer) salt(in Input, under ground) uint64 {
+	sum := mix(sumStart, in.Look)
+	sum = mix(sum, uint64(in.Depth)<<32|uint64(under.kind)<<24|uint64(under.colour.R)<<16|uint64(under.colour.G)<<8|uint64(under.colour.B))
+	if under.painted {
+		sum = mix(sum, 1)
+	}
+	for _, c := range r.painter.literals {
+		sum = mix(sum, uint64(c.R)<<16|uint64(c.G)<<8|uint64(c.B))
+	}
+	return sum
+}
+
+// rowSum is a sum of one row's cells.
+func (g *grid) rowSum(row int, sum uint64) uint64 {
+	for _, c := range g.cells[row*g.cols : (row+1)*g.cols] {
+		flags := uint64(0)
+		if c.taken {
+			flags |= 1
+		}
+		if c.strict {
+			flags |= 2
+		}
+		sum = mix(sum, uint64(c.glyph)<<32|uint64(c.ink)<<16|uint64(c.area)<<8|flags)
+		for i := range len(c.text) {
+			sum = (sum ^ uint64(c.text[i])) * sumPrime
+		}
+	}
+	return sum
+}
+
 // emit writes the rows. Each stands alone: it sets its colours afresh, sends
 // a colour again only when it changes, and puts the terminal's own back at
-// its end (P-06, P-07). With no colour it is glyphs alone.
+// its end (P-06, P-07). With no colour it is glyphs alone. A row whose cells
+// are what they were in the frame held is not built again.
 func (r *Renderer) emit(in Input) []string {
 	g := r.grid
 	under := ground{kind: in.Ground.Kind(in.Palette)}
 	under.colour, under.painted = in.Ground.InEffect(in.Palette)
-	lines := make([]string, 0, g.rows)
+	salt := r.salt(in, under)
+	if len(r.held.Lines) != g.rows {
+		r.held.Lines, r.rowSums = make([]string, g.rows), make([]uint64, g.rows)
+	}
+	lines := r.held.Lines
 	for row := range g.rows {
+		sum := g.rowSum(row, salt)
+		if sum == r.rowSums[row] && lines[row] != "" {
+			continue
+		}
+		r.rowSums[row] = sum
+		r.rowsBuilt++
 		r.line.Reset()
 		p := pen{fresh: true}
 		for col := range g.cols {
@@ -378,7 +514,7 @@ func (r *Renderer) emit(in Input) []string {
 		if in.Depth != NoColour {
 			r.line.WriteString("\x1b[0m")
 		}
-		lines = append(lines, r.line.String())
+		lines[row] = r.line.String()
 	}
 	return lines
 }

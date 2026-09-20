@@ -22,21 +22,26 @@ const (
 // Label is a place name waiting to be placed: where it belongs, in dots, and
 // how important it is - the lower the rank, the more.
 type Label struct {
-	X, Y int
-	Name string
-	Rank int32
-	Ink  uint8
+	X, Y       int // its first vertex
+	Name       string
+	Rank       int32
+	Ink        uint8
+	first, end int // its vertices, among the painter's: each is tried in turn (P-32)
 }
 
 // Painter paints the basemap of one frame: line work as dots, areas as the
 // cells they own, and the names that want placing.
 type Painter struct {
-	lines    *Canvas
-	areas    *Canvas
-	literals []colour.RGB
-	labels   []Label
-	ring     []Point
-	rings    [][]Point
+	lines      *Canvas
+	areas      *Canvas
+	literals   []colour.RGB
+	labels     []Label
+	labelPts   []Point
+	ring       []Point
+	edge       []bool // for each point of ring: the segment that ends there lies along the tile's border
+	rings      [][]Point
+	culled     int
+	lastPoints int
 }
 
 // NewPainter makes a painter for a map of cols by rows cells.
@@ -59,7 +64,8 @@ func (p *Painter) Reset() {
 	}
 	p.lines.Wipe()
 	p.areas.Wipe()
-	p.literals, p.labels = p.literals[:0], p.labels[:0]
+	p.literals, p.labels, p.labelPts = p.literals[:0], p.labels[:0], p.labelPts[:0]
+	p.culled, p.lastPoints = 0, 0
 }
 
 // Lines is the canvas of line work.
@@ -76,6 +82,45 @@ func (p *Painter) Labels() []Label {
 		return nil
 	}
 	return p.labels
+}
+
+// Points are the vertices a label may be anchored at, in order.
+func (p *Painter) Points(l Label) []Point {
+	if p == nil || l.first < 0 || l.end > len(p.labelPts) || l.first > l.end {
+		return nil
+	}
+	return p.labelPts[l.first:l.end]
+}
+
+// Culled is how many features this frame were passed over because their box
+// misses the view (P-28).
+func (p *Painter) Culled() int {
+	if p == nil {
+		return 0
+	}
+	return p.culled
+}
+
+// World makes everything beyond the world's edge ocean, in the style's water
+// colour (P-22, L-6). It is called before any tile is painted.
+func (p *Painter) World(v project.View) error {
+	if p == nil {
+		return badTile()
+	}
+	x, y, side, err := v.TilePlace(scene.TileID{})
+	if err != nil {
+		return err
+	}
+	w, h := p.areas.Dots()
+	left, top, right, bottom := toDot(x), toDot(y), toDot(x+side), toDot(y+side)
+	ink := uint8(colour.WaterFill)
+	for _, r := range [4][4]int{{0, 0, left, h}, {right, 0, w, h}, {0, 0, w, top}, {0, bottom, w, h}} {
+		if r[0] >= r[2] || r[1] >= r[3] {
+			continue
+		}
+		p.areas.Fill([][]Point{{{r[0], r[1]}, {r[2], r[1]}, {r[2], r[3]}, {r[0], r[3]}}}, ink)
+	}
+	return nil
 }
 
 // Area is the ink of the area that owns a cell: the area covering at least
@@ -168,20 +213,41 @@ func (p *Painter) Tile(v project.View, tile *scene.Tile, at scene.TileID, s *sty
 	if err != nil {
 		return err
 	}
-	for i := range tile.Layers {
-		l := &tile.Layers[i]
-		if l.Extent == 0 || l.Extent > math.MaxInt16 {
-			continue
-		}
-		f := frame{x: x, y: y, scale: side / float64(l.Extent), extent: int16(l.Extent), zoom: v.Zoom}
-		for _, feature := range l.Features {
-			err = p.feature(l, feature, f, s)
-			if err != nil {
-				return err
+	// Layers are drawn in one order, whatever order the tile carries them in
+	// (P-23, P-24): areas, then line work from the least to the most
+	// important, so that a border lying on a road shows as a border.
+	for rank := range len(drawOrder()) + 1 {
+		for i := range tile.Layers {
+			l := &tile.Layers[i]
+			if orderOf(l.Name) != rank || l.Extent == 0 || l.Extent > math.MaxInt16 {
+				continue
+			}
+			f := frame{x: x, y: y, scale: side / float64(l.Extent), extent: int16(l.Extent), zoom: v.Zoom}
+			for _, feature := range l.Features {
+				err = p.feature(l, feature, f, s)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
 	return nil
+}
+
+// drawOrder is the order layers are drawn in.
+func drawOrder() []string {
+	return []string{"water", "landcover", "park", "waterway", "aeroway", "transportation", "boundary", "water_name", "place", "aerodrome_label"}
+}
+
+// orderOf is a layer's place in the draw order; a layer not in it comes last.
+func orderOf(name string) int {
+	order := drawOrder()
+	for i, n := range order {
+		if n == name {
+			return i
+		}
+	}
+	return len(order)
 }
 
 // feature paints one feature by the rules that take it.
@@ -192,50 +258,81 @@ func (p *Painter) feature(l *scene.Layer, feature scene.Feature, f frame, s *sty
 	if !drawn && !filled {
 		return nil
 	}
-	p.rings = p.rings[:0]
-	p.ring = p.ring[:0]
-	for part := feature.FirstPart; part < feature.EndPart; part++ {
-		coords, err := l.Part(int(part))
-		if err != nil {
-			return badTile()
-		}
-		start := len(p.ring)
-		for i := 0; i+1 < len(coords); i += 2 {
-			p.ring = append(p.ring, Point{X: place(f.x, coords[i], f.scale), Y: place(f.y, coords[i+1], f.scale)})
-		}
-		p.rings = append(p.rings, p.ring[start:len(p.ring):len(p.ring)])
-		if drawn && rule.Kind == style.Line {
-			p.stroke(coords, p.ring[start:], feature.Kind == scene.GeomPolygon, f, rule)
+	visible := p.project(l, feature, f)
+	if p.lastPoints < 0 {
+		return badTile()
+	}
+	if !visible {
+		p.culled++ // its box misses the view: nothing of it is rastered (P-28)
+		return nil
+	}
+	if drawn && rule.Kind == style.Line {
+		at := 0
+		for _, ring := range p.rings {
+			p.stroke(ring, p.edge[at:at+len(ring)], feature.Kind == scene.GeomPolygon, f, rule)
+			at += len(ring)
 		}
 	}
 	if filled && feature.Kind == scene.GeomPolygon {
 		p.areas.Fill(p.rings, p.inkFor(fill, f.zoom))
 	}
 	if drawn && rule.Kind == style.Symbol && len(p.ring) > 0 && len(p.labels) < maxLabels {
-		p.labels = append(p.labels, Label{X: p.ring[0].X, Y: p.ring[0].Y, Name: feature.Name, Rank: feature.Rank, Ink: p.inkFor(rule, f.zoom)})
+		first := len(p.labelPts)
+		p.labelPts = append(p.labelPts, p.ring...)
+		p.labels = append(p.labels, Label{X: p.ring[0].X, Y: p.ring[0].Y, Name: feature.Name, Rank: feature.Rank, Ink: p.inkFor(rule, f.zoom), first: first, end: len(p.labelPts)})
 	}
 	return nil
 }
 
+// project turns a feature's parts into dots: floored, with consecutive points
+// that fall on one dot kept once (P-29). It reports whether the feature's box
+// meets the view grown by the clip pad, and leaves lastPoints negative if a
+// part runs past the layer's coordinates.
+func (p *Painter) project(l *scene.Layer, feature scene.Feature, f frame) bool {
+	p.rings, p.ring, p.edge = p.rings[:0], p.ring[:0], p.edge[:0]
+	w, h := p.lines.Dots()
+	box := [4]int{math.MaxInt, math.MaxInt, math.MinInt, math.MinInt}
+	for part := feature.FirstPart; part < feature.EndPart; part++ {
+		coords, err := l.Part(int(part))
+		if err != nil {
+			p.lastPoints = -1
+			return false
+		}
+		start, prev := len(p.ring), -1
+		for i := 0; i+1 < len(coords); i += 2 {
+			pt := Point{X: place(f.x, coords[i], f.scale), Y: place(f.y, coords[i+1], f.scale)}
+			if len(p.ring) > start && p.ring[len(p.ring)-1] == pt {
+				continue
+			}
+			p.ring = append(p.ring, pt)
+			p.edge = append(p.edge, prev >= 0 && onBorder(coords[prev], coords[prev+1], coords[i], coords[i+1], f.extent))
+			prev = i
+			box = [4]int{min(box[0], pt.X), min(box[1], pt.Y), max(box[2], pt.X), max(box[3], pt.Y)}
+		}
+		p.rings = append(p.rings, p.ring[start:len(p.ring):len(p.ring)])
+	}
+	p.lastPoints = len(p.ring)
+	return box[2] >= -clipMargin && box[0] < w+clipMargin && box[3] >= -clipMargin && box[1] < h+clipMargin
+}
+
 // onBorder reports whether a polygon's edge lies along or beyond one side of
 // its tile: that edge is where the tile was cut, not a coast.
-func onBorder(coords []int16, i int, extent int16) bool {
-	if i < 0 || i+3 >= len(coords) {
+func onBorder(x0, y0, x1, y1, extent int16) bool {
+	if extent <= 0 {
 		return false
 	}
-	x0, y0, x1, y1 := coords[i], coords[i+1], coords[i+2], coords[i+3]
 	return (x0 <= 0 && x1 <= 0) || (x0 >= extent && x1 >= extent) || (y0 <= 0 && y1 <= 0) || (y0 >= extent && y1 >= extent)
 }
 
 // stroke draws a part as a line: a line feature, or a polygon's edge.
-func (p *Painter) stroke(coords []int16, dots []Point, ring bool, f frame, rule *style.Rule) {
-	if len(dots) < 2 || rule == nil {
+func (p *Painter) stroke(dots []Point, border []bool, ring bool, f frame, rule *style.Rule) {
+	if len(dots) < 2 || rule == nil || len(border) != len(dots) {
 		return
 	}
 	ink := p.inkFor(rule, f.zoom)
 	width := int(math.Round(rule.Width(f.zoom)))
 	for i := 0; i+1 < len(dots); i++ {
-		if ring && onBorder(coords, 2*i, f.extent) {
+		if ring && border[i+1] {
 			continue
 		}
 		p.lines.Line(dots[i].X, dots[i].Y, dots[i+1].X, dots[i+1].Y, width, ink)
