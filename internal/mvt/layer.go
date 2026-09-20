@@ -125,9 +125,30 @@ func readHeader(body []byte) (header, error) {
 			h.keys++
 		case f.num == 4 && f.wire == wireBytes:
 			h.values++
+		case wrongWire(f):
+			// **A field the schema names, carrying something the schema
+			// does not allow.** A layer whose own name arrives as a number
+			// is not a layer of this format, and reading past it is
+			// guessing at what was meant. The proven decoder drops such a
+			// layer; this one refuses it, which is the same answer said
+			// plainly (found by the differential fuzz target).
+			return header{}, malformed()
 		}
 	}
 	return h, nil
+}
+
+// wrongWire reports a field the schema names carrying something the schema
+// does not allow: a layer's name as a number, its extent as bytes. Each of
+// the five fields a layer has is one kind of thing and no other.
+func wrongWire(f field) bool {
+	switch f.num {
+	case 1, 2, 3, 4:
+		return f.wire != wireBytes
+	case 5, 15:
+		return f.wire != wireVarint
+	}
+	return false // a field this format does not name is passed over
 }
 
 // wanted reports whether the map draws the layer called name. The

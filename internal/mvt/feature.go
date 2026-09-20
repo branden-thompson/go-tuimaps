@@ -230,10 +230,12 @@ func intOf(value []byte) int32 {
 		}
 	}
 	// **A value carries one field.** One with several is damaged, and
-	// taking the first number out of it is guessing: the proven decoder
-	// reads such a value as nothing, and so does this one now. Found by
-	// the differential fuzz target, which read an administrative level of
-	// 4 out of a value the other decoder read as none.
+	// taking a number out of it is guessing at what was meant: the first
+	// number and the last number were both tried against the proven
+	// decoder and each disagreed with it, in opposite directions, on
+	// different damaged values. This decoder refuses to guess, which is
+	// the rule it keeps everywhere else (D-75: the decoder refuses a
+	// malformed stream rather than reading on).
 	if fields != 1 {
 		return 0
 	}
