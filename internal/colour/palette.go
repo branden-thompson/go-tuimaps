@@ -48,13 +48,22 @@ func NewPalette(values map[string]RGB) (Palette, []string) {
 
 // Resolve is the colour of a token: the host's if it set one, else the
 // library's default for the kind of ground in effect. It is false for a
-// value that is no token, and for a ramp token whose default is not the
-// palette's to give.
+// value that is no token, and for a token with no default yet.
 func (p Palette) Resolve(t Token, ground GroundKind) (RGB, bool) {
+	return p.ResolveAt(t, ground, Truecolor)
+}
+
+// ResolveAt is Resolve at a depth. A ramp token's default is the library's
+// own ramp for that depth; every other colour is the same at every depth and
+// is mapped to the depth's palette when it is drawn.
+func (p Palette) ResolveAt(t Token, ground GroundKind, depth Depth) (RGB, bool) {
 	if t < Ground || t > TrackLabel {
 		return RGB{}, false
 	}
 	if c, ok := p.set[t]; ok {
+		return c, true
+	}
+	if c, ok := rampDefault(t, ground, depth); ok {
 		return c, true
 	}
 	if ground == Light {

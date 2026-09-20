@@ -287,3 +287,12 @@ Unlike every specimen above, these were not drawn by the throwaway program of PL
 | S26-3 | Region borders, rivers and roads at world scale were clutter. | The built-in style's finer roles start at the zoom where they can be read (L2 Style). A first setting: HUM LEAD's to tune |
 | S26-4 | At the world's western edge a short vertical line is drawn near Antarctica: the polygon's own edge along the antimeridian, which lies just inside the tile and so is not taken for the tile's border. | **Fixed (D-107):** the edge starts one unit inside the tile, so an edge now counts as the border when both ends are within 1/2048 of the extent of the side. The frames here were drawn again after the fix |
 
+## Specimen 27 — the alert colours, as swatches (BUILD, task 08.10)
+
+`27-alert-colours-swatch.ans`: for each ground, dark and light, and each depth, truecolor and 256 colours, the five severities - each an outline drawn on the ground around its tint, with its name in the text colour the foreground rule picks - beside a patch of water. Show it with `cat`. It is a swatch, not a map: the look the plan asks of HUM LEAD (task 08.23) is at alert areas drawn on a map, once overlays draw.
+
+| # | Finding | Consequence |
+|---|---|---|
+| S27-1 | Pale tints on a light ground cannot be told apart under simulated colour vision: the first search ended below the threshold. | On a light ground the scheme turns over: dark outlines, mid-tone tints, black text |
+| S27-2 | The truecolor sets converted to the 256-colour palette fail on both grounds - one tint 4.6 from water, two tints 6.6 apart. | The preset has its own 256-colour sets, searched within that palette, as the ramps do (S10-1) |
+
