@@ -255,7 +255,7 @@ func (c *Cache) settleLocked() {
 }
 
 // Use reports the bytes live views need, the bytes held, and the cap.
-func (c *Cache) Use() Use {
+func (c *Cache) Bytes() Use {
 	if c == nil {
 		return Use{}
 	}

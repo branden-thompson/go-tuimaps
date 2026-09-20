@@ -39,7 +39,7 @@ func TestMemoryCacheByteCap(t *testing.T) {
 	for x := uint32(0); x < 8; x++ {
 		c.Put(key(6, x, 0), sized(100_000))
 	}
-	use := c.Use()
+	use := c.Bytes()
 	if use.Held > use.Cap || use.Cap != DefaultCacheBytes || use.Need != 0 {
 		t.Errorf("%+v: over the cap with nothing needed", use)
 	}
@@ -91,7 +91,7 @@ func TestPinnedNeverEvicted(t *testing.T) {
 			t.Errorf("%v is needed by a live view and was evicted; it would be fetched again without end", k.Tile)
 		}
 	}
-	use := c.Use()
+	use := c.Bytes()
 	if use.Need <= use.Cap || use.Held != use.Need {
 		t.Errorf("%+v: over its cap the cache holds exactly the need", use)
 	}
@@ -175,7 +175,7 @@ func TestCacheUseReportsNeedHeldCap(t *testing.T) {
 	c.Put(key(8, 0, 0), a)
 	c.Put(key(8, 1, 0), b)
 	view.Publish(lineages(key(8, 0, 0), key(8, 9, 9))) // one on hand, one not: it counts for nothing until it arrives
-	use := c.Use()
+	use := c.Bytes()
 	if use.Need != int64(a.Bytes()) || use.Held != int64(a.Bytes()+b.Bytes()) || use.Cap != 400_000 {
 		t.Errorf("%+v; want need %d, held %d", use, a.Bytes(), a.Bytes()+b.Bytes())
 	}

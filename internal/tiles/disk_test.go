@@ -224,7 +224,7 @@ func TestEvictLeastRecentlyRead(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if held, _ := d.Use(); held != 10*size {
+	if held, _ := d.Held(); held != 10*size {
 		t.Fatalf("held %d, want %d", held, 10*size)
 	}
 	// Reading the oldest, more than an hour on, makes it the most recent.
@@ -238,7 +238,7 @@ func TestEvictLeastRecentlyRead(t *testing.T) {
 	if err := d.Store(planet, id(8, 10, 0), body, later); err != nil {
 		t.Fatal(err)
 	}
-	held, limit := d.Use()
+	held, limit := d.Held()
 	if held > limit*9/10 {
 		t.Errorf("held %d after pruning, want at most 90%% of %d", held, limit)
 	}
@@ -255,7 +255,7 @@ func TestEvictLeastRecentlyRead(t *testing.T) {
 	// The total is seeded by one walk when the cache is opened.
 	d.Release()
 	reopened := openDisk(t, root, 10*size)
-	if again, _ := reopened.Use(); again != held {
+	if again, _ := reopened.Held(); again != held {
 		t.Errorf("reopened: held %d, want %d", again, held)
 	}
 }
@@ -301,11 +301,11 @@ func TestPurgeAndVerify(t *testing.T) {
 	if err := d.Store(planet, id(4, 9, 9), []byte("rotted"), t0); err != nil {
 		t.Fatal(err)
 	}
-	checked, removed, err := d.Verify(mvt.DefaultLimits())
+	checked, removed, err := d.ReadBack(mvt.DefaultLimits())
 	if err != nil || checked != 7 || removed != 1 {
 		t.Errorf("verify: %d checked, %d removed, %v; want 7 and 1", checked, removed, err)
 	}
-	if err := d.Purge(planet); err != nil {
+	if err := d.Empty(planet); err != nil {
 		t.Fatal(err)
 	}
 	if got := files(t, root); len(got) != 3 {
@@ -314,13 +314,13 @@ func TestPurgeAndVerify(t *testing.T) {
 	if _, ok := d.Load(other, id(4, 0, 0), t0); !ok {
 		t.Error("purging one source removed another's tiles")
 	}
-	if err := d.Purge(""); err != nil {
+	if err := d.Empty(""); err != nil {
 		t.Fatal(err)
 	}
 	if got := files(t, root); len(got) != 0 {
 		t.Errorf("after purging everything: %v", got)
 	}
-	if held, _ := d.Use(); held != 0 {
+	if held, _ := d.Held(); held != 0 {
 		t.Errorf("held %d after a purge", held)
 	}
 }

@@ -98,7 +98,7 @@ func (d *Disk) Release() {
 }
 
 // Use reports the bytes held and the cap.
-func (d *Disk) Use() (held, limit int64) {
+func (d *Disk) Held() (held, limit int64) {
 	if d == nil {
 		return 0, 0
 	}
@@ -326,7 +326,7 @@ func (d *Disk) Flush(now time.Time) {
 }
 
 // Purge deletes one source's tiles, or with an empty identity every tile.
-func (d *Disk) Purge(identity string) error {
+func (d *Disk) Empty(identity string) error {
 	if d == nil {
 		return cacheRefused(textsafe.Const("there is no cache"))
 	}
@@ -346,7 +346,7 @@ func (d *Disk) Purge(identity string) error {
 
 // Verify decodes every cached tile through the gate and deletes those that
 // fail. It says how many it checked and how many it removed.
-func (d *Disk) Verify(lim mvt.Limits) (checked, removed int, err error) {
+func (d *Disk) ReadBack(lim mvt.Limits) (checked, removed int, err error) {
 	if d == nil {
 		return 0, 0, cacheRefused(textsafe.Const("there is no cache"))
 	}

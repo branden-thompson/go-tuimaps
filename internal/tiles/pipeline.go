@@ -198,6 +198,29 @@ func (p *Pipeline) SetLanguage(code string) error {
 	return nil
 }
 
+// SetDisk gives the pipeline a disk cache, or with nil takes it away
+// (FR-21b). What is already in memory stays there.
+func (p *Pipeline) SetDisk(d *Disk) error {
+	if p == nil {
+		return refusedOptions(textsafe.Const("there is no pipeline"))
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.opts.Disk = d
+	return nil
+}
+
+// Use is what the tile cache in memory needs, holds and may hold (D-90).
+func (p *Pipeline) Holding() Use {
+	if p == nil {
+		return Use{}
+	}
+	p.mu.Lock()
+	cache := p.opts.Cache
+	p.mu.Unlock()
+	return cache.Bytes()
+}
+
 // SetEmbedded passes the embedded tiles, or with nil takes them away.
 func (p *Pipeline) SetEmbedded(get EmbeddedFunc, maxZoom uint8) error {
 	if p == nil {

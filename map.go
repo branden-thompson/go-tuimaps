@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/branden-thompson/go-tuimaps/internal/fault"
+	"github.com/branden-thompson/go-tuimaps/internal/fetch"
 	"github.com/branden-thompson/go-tuimaps/internal/overlay"
 	"github.com/branden-thompson/go-tuimaps/internal/project"
 	"github.com/branden-thompson/go-tuimaps/internal/render"
@@ -142,6 +143,9 @@ type Map struct {
 	footer    bool            // the footer is drawn inside the map (P-57)
 	own       []fault.Warning // what the map itself noticed, for the next Warnings call
 	planted   func(string)    // set only by the library's own tests, to plant a panic
+	remote    *tiles.Remote   // the source named, if any: nothing is reached until one is (D-65)
+	disk      *tiles.Disk     // the disk cache, if the host named a directory
+	fetcher   fetch.Func      // a replacement for the library's own way of reaching a source
 	animation time.Time       // and this is the moment it has driven it to
 	places    []Place
 	drawn     []render.Drawn
