@@ -34,7 +34,8 @@ The first release accepts radar as **one image for one bounding box** (FR-9); fe
 
 | Terminal and font | Braille | Quadrants | Shades | Box | Hatch | Arrows | Markers | U+FFFD | Picture reads | Colour specimens read |
 |---|---|---|---|---|---|---|---|---|---|---|
-| HUM LEAD's terminal on macOS, 2026-09-19 — application and font not yet stated | pass | pass | pass | pass | pass | pass | pass | pass | pass | not yet reported |
+| HUM LEAD's terminal on macOS, 2026-09-19 — **cmux, with zsh as its shell; JetBrains Mono** (named 2026-09-19, D-109) | pass | pass | pass | pass | pass | pass | pass | pass | pass | Specimen 26, the first map the library drew, read and found fine (D-105). The earlier colour specimens: not yet reported |
+| HUM LEAD's Linux machine — JetBrains Mono, with fish as its shell; the terminal application is not named (D-109) | NOT RUN | NOT RUN | NOT RUN | NOT RUN | NOT RUN | NOT RUN | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
 
 **As reported:** "passed on my terminal" — HUM LEAD ran the card and pasted its output. The result is HUM LEAD's reading of the screen; a paste of text cannot show widths or missing glyphs, so the coordinator has not verified it independently. In the pasted text three sections (box drawing, hatch, arrows) showed some lines joined by long runs of spaces; with the card reported as passing, that is taken to be an artefact of copying from the terminal, and is noted here in case it recurs. **What this does and does not settle:** the closed list of characters (NFR-8) is one column wide and present in one real terminal and font, including braille (risk RS-25) — one data point, not a survey.
 

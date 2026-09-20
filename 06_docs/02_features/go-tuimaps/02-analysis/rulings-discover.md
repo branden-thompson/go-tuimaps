@@ -102,10 +102,11 @@ Rulings on the open questions carried out of Tier 1 ([`tier1-synthesis.md`](tier
 | D-106 | 2026-09-19 | BUILD, M-A, matter 3: the name of the option that passes the embedded tiles, which the coordinator had called `WithEmbedded` and said was HUM LEAD's to change | "3. withEmbedded doesnt make much sense to me, id rather is be something like - 'tuiMapsEmbed(asset.Tile, assets.MaxZoom) to make it super clear" | **The option is `tuimaps.Embed(assets.Tile, assets.MaxZoom)`.** HUM LEAD's words were "something like"; in Go a call carries its package's name, so `tuimaps.Embed(...)` is how `tuiMapsEmbed(...)` reads at the place it is written, and a function named `TuiMapsEmbed` would read `tuimaps.TuiMapsEmbed`. The reading is the coordinator's, said to HUM LEAD in the same turn, and the name stays HUM LEAD's to change. |
 | D-107 | 2026-09-19 | BUILD, M-A, matter 4: a short vertical line at the world's western edge near Antarctica (S26-4), reported and not fixed | "4. I noticed, fix approved" | **Fixed, test first.** The real zoom-0 tile's ocean polygon has an edge down the antimeridian that starts one unit inside the tile, so the rule "an edge along the tile's border is not a coast", which wanted both ends on or past the side, let it through. An edge now counts when both ends are within 1/2048 of the extent of the side. |
 | D-108 | 2026-09-19 | BUILD, M-A, matter 5: the data notice's sentence offering the embedded tiles under the same Open Database License as their source, flagged in WP-04 as a licence statement made in HUM LEAD's name; and the `landcover` layer, kept and undrawn | "5. License is fine - we'll also add a credit in Watchpost's about - which is what consuming apps should also do" | **The data notice stands as written.** A consuming application also credits the data in its About, as the first host will; the documents for hosts say so. The credit line drawn on the map stays: an About alone is outside what the data's attribution guidelines allow, because a person must go looking for it (research AI-2, section 4). **The reply does not speak to `landcover`; that is not an answer (D-39) and stays open for REVIEW.** |
+| D-109 | 2026-09-19 | BUILD, after M-A: the name of HUM LEAD's terminal and font, owed since the terminal test card was run in PLAN and asked for again at the M-A look | "Terminal name is cmux running zsh / font is Jetbrains Mono \| Linux terminal is fish with JetBrains Mono" | **Recorded on the terminal matrix.** The macOS row that passed the card is cmux, with zsh as its shell, in JetBrains Mono. A second row is added for HUM LEAD's Linux machine: JetBrains Mono, with fish as its shell. **Two things are said plainly and not assumed:** fish and zsh are shells, and for Linux the terminal application itself is not named; and the card has not been reported as run on the Linux machine, so that row reads NOT RUN. |
 
 ## Summary of rulings D-11 to D-37
 
-*This table was written at D-37 and is kept as written. Rulings D-38 to D-108 are summarised in the table that follows it; where a later ruling changed a line here, the line says so.*
+*This table was written at D-37 and is kept as written. Rulings D-38 to D-109 are summarised in the table that follows it; where a later ruling changed a line here, the line says so.*
 
 | Area | Settled |
 |---|---|
@@ -121,7 +122,7 @@ Rulings on the open questions carried out of Tier 1 ([`tier1-synthesis.md`](tier
 | Metrics | M4 ≤ 8 MB added, byte-capped caches, near-zero cost for unchanged frames, flat heap — a target, confirmed by measurement at PLAN exit (D-29). M2 ≤ 1 s warm / ≤ 3 s cold, never blank — likewise (D-30). |
 | Still open, by design | keyboard zoom-target mechanism, dependency posture (PLAN) · *colour output depth was listed here; FR-17, D-44 and D-59 have since settled it* · every visual approach, from specimens (D-31). |
 
-### Rulings D-38 to D-108
+### Rulings D-38 to D-109
 
 | Area | Settled |
 |---|---|
