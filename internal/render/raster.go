@@ -36,8 +36,16 @@ func (c *Canvas) clip(x0, y0, x1, y1, width int) (int, int, int, int, bool) {
 	if t0 > t1 {
 		return 0, 0, 0, 0, false
 	}
+	// **Each product is converted before it is added**, so that no machine
+	// fuses the two into one rounding. This is where a line meeting the
+	// edge of the rectangle is cut, and the result is rounded to a whole
+	// dot: a machine that fuses keeps more bits and cuts the line a dot
+	// further along, so the same data draws two pictures (NFR-6, constants
+	// section 6). Found by bisecting the compiler's own fused
+	// multiply-adds against a frame that differed between architectures.
 	round := func(v float64) int { return int(math.Round(v)) }
-	return round(fx0 + t0*dx), round(fy0 + t0*dy), round(fx0 + t1*dx), round(fy0 + t1*dy), true
+	return round(fx0 + float64(t0*dx)), round(fy0 + float64(t0*dy)),
+		round(fx0 + float64(t1*dx)), round(fy0 + float64(t1*dy)), true
 }
 
 // thick is upstream's thick line (P-14): an error-carrying walk along the

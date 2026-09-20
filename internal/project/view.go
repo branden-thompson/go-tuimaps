@@ -71,7 +71,13 @@ func (v View) origin() (x, y float64, err error) {
 		return 0, 0, err
 	}
 	w := TileSize * math.Exp2(v.Zoom) // the side of the whole world, in dots, at this zoom
-	return cx*w - float64(v.Cols*DotsPerCol)/2, cy*w - float64(v.Rows*DotsPerRow)/2, nil
+	// **Each product is converted before the half-window is taken off it**,
+	// so that no machine fuses the two into one rounding. This is the
+	// origin every dot of a frame is measured from: a fused multiply-add
+	// keeps more bits than the separate steps, so a machine that fuses
+	// puts a line's dots in different cells from one that does not, and
+	// the same data draws two pictures (NFR-6, constants section 6).
+	return float64(cx*w) - float64(v.Cols*DotsPerCol)/2, float64(cy*w) - float64(v.Rows*DotsPerRow)/2, nil
 }
 
 // ToDot projects a position into the view's dots: x grows east and y grows
@@ -146,5 +152,11 @@ func (v View) TilePlace(t scene.TileID) (x, y, side float64, err error) {
 		return 0, 0, 0, err
 	}
 	side = TileSize * math.Exp2(v.Zoom-float64(t.Z))
-	return float64(t.X)*side - ox, float64(t.Y)*side - oy, side, nil
+	// **The product is converted before the origin is taken off it**, so
+	// that no machine fuses the two into one rounding: a fused
+	// multiply-add keeps more bits than the separate steps, and this is
+	// where a tile's corner is decided. A corner a fraction of a dot apart
+	// puts a line's dots in different cells, and the same data then draws
+	// two pictures on two machines (NFR-6, constants section 6).
+	return float64(float64(t.X)*side) - ox, float64(float64(t.Y)*side) - oy, side, nil
 }

@@ -154,7 +154,12 @@ func (r *Rule) Width(zoom float64) float64 {
 	for i := 1; i < len(r.widths); i++ {
 		lo, hi := r.widths[i-1], r.widths[i]
 		if zoom <= hi.zoom && hi.zoom > lo.zoom {
-			return lo.width + (hi.width-lo.width)*(zoom-lo.zoom)/(hi.zoom-lo.zoom)
+			// The product is converted before it is added, so that no
+			// machine fuses the two into one rounding: this number is
+			// rounded to a whole number of dots, and a width that rounds
+			// to 2 on one machine and 1 on another draws a different
+			// picture from the same data (NFR-6, constants section 6).
+			return lo.width + float64((hi.width-lo.width)*(zoom-lo.zoom))/(hi.zoom-lo.zoom)
 		}
 	}
 	return r.widths[len(r.widths)-1].width
