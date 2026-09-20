@@ -41,6 +41,13 @@ func (t Text) String() string { return t.s }
 //
 // Clean is idempotent, and its result never holds an escape byte.
 func Clean(s string) Text {
+	// Text that needs no cleaning is handed back as it is. Every label of
+	// every feature passes through here on its way to the screen, so a copy
+	// made for clean text is a copy made for each of them, on every frame
+	// (D-115).
+	if alreadyClean(s) {
+		return Text{s: s}
+	}
 	var kept strings.Builder
 	kept.Grow(len(s))
 	for _, r := range s { // an invalid byte arrives as utf8.RuneError
@@ -162,4 +169,39 @@ type constant string
 // the source it is written in.
 func Const(s constant) Text {
 	return Text{s: string(s)}
+}
+
+// alreadyClean reports whether cleaning would change nothing: valid UTF-8,
+// no control or bidirectional character, and every grapheme cluster one the
+// cleaner keeps. It looks at the text and allocates nothing while doing so.
+func alreadyClean(s string) bool {
+	if s == "" {
+		return true
+	}
+	for i, r := range s {
+		if r == utf8.RuneError {
+			// Either a bad byte, which becomes U+FFFD, or the character
+			// itself, which is kept; the slow path tells them apart.
+			if _, size := utf8.DecodeRuneInString(s[i:]); size == 1 {
+				return false
+			}
+		}
+		if isControl(r) || isBidiControl(r) {
+			return false
+		}
+	}
+	clusters := graphemes.FromString(s)
+	for range len(s) { // a cluster is at least one byte, so this bounds the walk
+		if !clusters.Next() {
+			return true
+		}
+		cluster := clusters.Value()
+		if stripStrayTags(cluster) != cluster {
+			return false
+		}
+		if onlyZeroWidth(cluster) || clusterWidth(cluster) == 0 || headlessMark(cluster) {
+			return false
+		}
+	}
+	return true
 }

@@ -142,3 +142,33 @@ func TestNoHeadlessMark(t *testing.T) {
 		t.Errorf("Clean of a letter with its accent gave %q", got.String())
 	}
 }
+
+// TestCleanKeepsCleanTextWithoutCopyingIt is D-115's half in this package:
+// **cleaning text that is already clean must cost nothing.** Every label of
+// every feature is cleaned on the way to the screen, so a copy made here is
+// a copy made for each of them, on every frame - which is how the cost of a
+// redraw came to grow with the number of features on the map.
+func TestCleanKeepsCleanTextWithoutCopyingIt(t *testing.T) {
+	for _, s := range []string{"", "Warning", "Tornado Warning", "Great Falls", "Ceuta y Melilla",
+		"149 km", "a name with an accent: Bogot\u00E1", "\u2800\u2801"} {
+		got := Clean(s)
+		if got.String() != s {
+			t.Errorf("%q came back as %q; it needed no cleaning", s, got.String())
+		}
+		if allocs := testing.AllocsPerRun(50, func() { Clean(s) }); allocs != 0 {
+			t.Errorf("cleaning %q, which is already clean, allocates %.0f times", s, allocs)
+		}
+	}
+	// Text that does need cleaning is still cleaned, and the fast path has
+	// not made a liar of it.
+	for _, c := range []struct{ in, want string }{
+		{"a\x00b", "ab"},
+		{"a\u202Eb", "ab"},
+		{"\xffz", "\uFFFDz"},
+		{"a\u2028b", "ab"},
+	} {
+		if got := Clean(c.in).String(); got != c.want {
+			t.Errorf("Clean(%q) = %q, want %q", c.in, got, c.want)
+		}
+	}
+}

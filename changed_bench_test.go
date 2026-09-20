@@ -98,16 +98,21 @@ func BenchmarkChangedFrame(b *testing.B) {
 
 // TestChangedFrameCost is NFR-4's numbers, pinned as a test rather than
 // left in a benchmark nobody reads: a frame whose marker has turned over
-// allocates no more than 16 KB in no more than 64 allocations.
+// allocates no more than 16 KB in no more than 64 allocations, **and the
+// count does not grow with the features on the map** (D-115).
 //
-// **It is pinned at a hundred features, because at a thousand the library
-// does not meet it** - the cost of a changed frame grows with the number of
-// features on the map, and NFR-4 asks for counts that do not. That gap is
-// measured, recorded in the build log, and is HUM LEAD's to rule on: it is
-// either work to do or a number to revise, and it is not for the
-// coordinator to decide which.
+// A person zooming into a dense area is the ordinary case for a general map
+// library, not the exception; a redraw caused by something that is not the
+// overlays must not walk the features again.
 func TestChangedFrameCost(t *testing.T) {
-	const features = 100
+	for _, features := range []int{100, 1000} {
+		t.Run(itoa(features)+" features", func(t *testing.T) { costOfAChange(t, features) })
+	}
+}
+
+// costOfAChange measures one marker turn on a map carrying n features.
+func costOfAChange(t *testing.T, features int) {
+	t.Helper()
 	m, err := tuimaps.New(tuimaps.WithSize(149, 38))
 	if err != nil {
 		t.Fatal(err)
@@ -142,6 +147,31 @@ func TestChangedFrameCost(t *testing.T) {
 		}
 	})
 	if allocs > 64 {
-		t.Errorf("a marker-phase change allocates %.0f times; NFR-4 says at most 64", allocs)
+		t.Errorf("with %d features a marker-phase change allocates %.0f times; NFR-4 says at most 64, whatever is on the map (D-115)",
+			features, allocs)
 	}
+
+	// A one-cell pan does change what is drawn of every feature, so it is
+	// held to NFR-4's own figure for a pan rather than to the marker's.
+	// **What it may not do is grow with the map's contents**: the residual
+	// here is about a twentieth of an allocation a feature, against the one
+	// and a half it was before D-115.
+	panned := testing.AllocsPerRun(rounds, func() {
+		if err := m.PanCells(1, 0); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := m.Render(size, at); err != nil {
+			t.Fatal(err)
+		}
+		if err := m.PanCells(-1, 0); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := m.Render(size, at); err != nil {
+			t.Fatal(err)
+		}
+	})
+	if panned > 1346 {
+		t.Errorf("with %d features a one-cell pan allocates %.0f times; NFR-4 says at most 1,346", features, panned)
+	}
+	t.Logf("%d features: a marker turn allocates %.0f times, a one-cell pan %.0f", features, allocs, panned)
 }
