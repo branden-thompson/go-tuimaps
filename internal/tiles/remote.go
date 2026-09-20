@@ -107,6 +107,13 @@ func checkAddress(raw string, source *url.URL, allowHosts []string) error {
 	if u.User != nil || u.Host == "" {
 		return refusedAddress(textsafe.Const("its tile address carries a user name, or has no host"))
 	}
+	// The address is checked as it is parsed but used as it was written, so
+	// the two must be the same text: a scheme written "Https" parses as
+	// https and passes every check above, while every tile the library then
+	// asks for carries the odd spelling.
+	if !strings.HasPrefix(raw, u.Scheme+"://") {
+		return refusedAddress(textsafe.Const("its tile address is not written as it parses: the scheme must be lower case"))
+	}
 	if strings.Contains(raw, "#") {
 		return refusedAddress(textsafe.Const("its tile address has a fragment, which is never sent: every tile would be the same request"))
 	}

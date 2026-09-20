@@ -263,3 +263,27 @@ func TestParityP51_FetchFailure(t *testing.T) {
 		t.Error("the tile did not sharpen once the source came back")
 	}
 }
+
+// TestAddressWrittenAsItParses: a tile address is checked as it is parsed
+// and used as it was written, so the two must be the same text. A scheme
+// written "Https" parses as https and passes every check, while every tile
+// the library then asks for carries the odd spelling. Found by FuzzTileJSON.
+func TestAddressWrittenAsItParses(t *testing.T) {
+	for _, raw := range []string{
+		`{"tiles":["Https://tiles.example/{z}/{x}/{y}.pbf"]}`,
+		`{"tiles":["HTTPS://tiles.example/{z}/{x}/{y}.pbf"]}`,
+	} {
+		if _, err := ParseTileJSON([]byte(raw), source, nil); !isKind(err, fault.FetchRefused) {
+			t.Errorf("%s: %v; want it refused", raw, err)
+		}
+	}
+	// Written as it parses, it is taken.
+	good := `{"tiles":["https://tiles.example/{z}/{x}/{y}.pbf"]}`
+	info, err := ParseTileJSON([]byte(good), source, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := info.Template.URL(scene.TileID{Z: 1, X: 1, Y: 0}); !strings.HasPrefix(got, "https://tiles.example/") {
+		t.Errorf("the template built %q", got)
+	}
+}
