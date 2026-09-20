@@ -57,8 +57,10 @@ type Overlay struct {
 
 // Caps are a store's limits, fixed when it is made.
 type Caps struct {
-	OverlayVertices int // zero means 2,000,000
-	StoreVertices   int // zero means 4,000,000
+	OverlayVertices int  // zero means 2,000,000
+	StoreVertices   int  // zero means 4,000,000
+	ShapeBytes      int  // the shape cache's cap; zero means 250,000
+	BorrowCheck     bool // fingerprint borrowed geometry at hand-in, and re-check what is read
 }
 
 // SetResult is what Set returns at once (D-74, D-86).
@@ -78,7 +80,9 @@ type held struct {
 	overlay  Overlay
 	vertices int
 	readers  int
-	retired  bool // replaced or removed: released when its last reader leaves
+	retired  bool                // replaced or removed: released when its last reader leaves
+	index    []Box               // built inside Set for a shape that may be drawn from memory (D-92)
+	prints   map[[2]int][]uint64 // fingerprints by feature, ring and run, if the borrow check is on
 }
 
 // Store holds a map's overlays. Set and Remove never wait: a version that is
@@ -92,13 +96,22 @@ type Store struct {
 	retiring map[string]int // ids with a retired version still being read, and how many
 	vertices int
 	warnings []fault.Warning
+
+	prepared   map[string]map[int]*prepared // by overlay id, then bucket
+	fromMemory map[string]bool              // overlays whose prepared form is larger than the whole cap
+	views      map[*ShapeView]int           // live views, and the bucket each draws at
+	released   []string
+	shapeHeld  int64
+	shapeNeed  int64
+	overNeed   bool
+	clock      uint64
 }
 
 // NewStore makes a store. Caps may be lowered, never raised.
 func NewStore(c Caps) (*Store, error) {
-	if c.OverlayVertices < 0 || c.StoreVertices < 0 || c.OverlayVertices > defaultOverlayVertices || c.StoreVertices > defaultStoreVertices {
+	if c.OverlayVertices < 0 || c.StoreVertices < 0 || c.OverlayVertices > defaultOverlayVertices || c.StoreVertices > defaultStoreVertices || c.ShapeBytes < 0 || c.ShapeBytes > defaultShapeBytes {
 		return nil, fault.Make(fault.OverVertexCap, textsafe.Const("the overlay limits were refused"),
-			textsafe.Const("a vertex cap may be lowered, never raised: the memory the library promises is stated against it"),
+			textsafe.Const("a cap may be lowered, never raised: the memory the library promises is stated against it"),
 			textsafe.Const("give a cap between 1 and the default, or none"))
 	}
 	if c.OverlayVertices == 0 {
@@ -107,7 +120,10 @@ func NewStore(c Caps) (*Store, error) {
 	if c.StoreVertices == 0 {
 		c.StoreVertices = defaultStoreVertices
 	}
-	return &Store{caps: c, current: map[string]*held{}, retiring: map[string]int{}}, nil
+	if c.ShapeBytes == 0 {
+		c.ShapeBytes = defaultShapeBytes
+	}
+	return &Store{caps: c, current: map[string]*held{}, retiring: map[string]int{}, prepared: map[string]map[int]*prepared{}, fromMemory: map[string]bool{}, views: map[*ShapeView]int{}}, nil
 }
 
 func refused(kind fault.Kind, why, todo textsafe.Text) error {
@@ -305,7 +321,15 @@ func (s *Store) Set(o Overlay) (SetResult, error) {
 			}
 		}
 	}
-	s.current[o.ID] = &held{overlay: o, vertices: vertices}
+	next := &held{overlay: o, vertices: vertices}
+	if vertices > s.IndexFrom() {
+		next.index = buildIndex(o) // one linear pass, inside Set, so the shape draws next frame (D-92)
+	}
+	if s.caps.BorrowCheck {
+		next.prints = fingerprints(o)
+	}
+	s.dropPreparedLocked(o.ID) // what was prepared from the old geometry is not this overlay's
+	s.current[o.ID] = next
 	s.vertices += vertices
 	return res, nil
 }
@@ -327,6 +351,7 @@ func (s *Store) Remove(id string) (RemoveResult, error) {
 		return RemoveResult{Released: true}, nil
 	}
 	delete(s.current, id)
+	s.dropPreparedLocked(id)
 	for i, other := range s.order {
 		if other == id {
 			s.order = append(s.order[:i], s.order[i+1:]...)
@@ -366,8 +391,9 @@ func (s *Store) OwnedBytes() int {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	total := 0
+	total += int(s.shapeHeld)
 	for id, h := range s.current {
-		total += 160 + len(id) + len(h.overlay.Credit) + 96*len(h.overlay.Features)
+		total += 160 + len(id) + len(h.overlay.Credit) + 96*len(h.overlay.Features) + 16*len(h.index)
 		for _, f := range h.overlay.Features {
 			total += len(f.Label) + 24*len(f.Rings)
 		}
@@ -427,5 +453,6 @@ func (r *Reader) Done() []string {
 		return nil
 	}
 	delete(s.retiring, r.id)
+	s.released = append(s.released, r.id)
 	return []string{r.id}
 }

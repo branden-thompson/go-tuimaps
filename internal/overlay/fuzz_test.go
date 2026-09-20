@@ -1,6 +1,7 @@
 package overlay
 
 import (
+	"context"
 	"encoding/binary"
 	"errors"
 	"math"
@@ -103,6 +104,18 @@ func FuzzHandIn(f *testing.F) {
 				}
 			}
 		}
+		view := s.Register()
+		view.Publish(6)
+		if err := s.PrepareJob(o.ID, 6).Run(context.Background()); err != nil {
+			t.Fatalf("an accepted overlay could not be prepared: %v", err)
+		}
+		if _, _, path := s.Drawn(o.ID, 6); path == NotReady {
+			t.Fatal("a prepared overlay is not ready to draw")
+		}
+		if use := s.ShapeUse(); use.Held < 0 || use.Need < 0 {
+			t.Fatalf("%+v", use)
+		}
+		view.Withdraw()
 		if again, _ := s.Set(o); again.Created || again.Released {
 			t.Fatalf("a replace under a reader: %+v", again)
 		}
