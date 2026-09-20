@@ -69,5 +69,5 @@ Before 3.2 and after 3.1: **the `replace` directives come out and the required v
 |---|---|---|
 | 5.1 | **Nothing is pushed without HUM LEAD saying so** (D-19, D-28, D-50) | the coordinator never pushes; the remote is named at SHIP and not before |
 | 5.2 | It is published from a **fresh clone**, not from this working tree | clone to a directory outside this one, and push from there |
-| 5.3 | The identity on every commit is the personal one | `git log --format='%an <%ae>' | sort -u` shows one author, the personal address |
+| 5.3 | The identity on every commit is the personal one | the authors of every commit of the release are one author, the personal identity |
 | 5.4 | Sole-author commits; no tool-generated trailers or watermarks | read every commit message of the release and confirm that none carries a trailer naming anything but its author |
