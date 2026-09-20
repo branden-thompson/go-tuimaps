@@ -17,6 +17,9 @@ the person looking at the map can see it without asking:
 
   OpenFreeMap (c) OpenMapTiles Data from OpenStreetMap
 
+go-tuiMaps draws that line on the map by itself. An application should also
+give the credit in full, with the links above, in its About.
+
 What was changed. Zoom 0 to 3 of the planet file named in PIN was decoded and
 written again with only what go-tuiMaps reads: the layers it draws, each
 feature's class and rank, and its name in the local language and in English.

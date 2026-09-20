@@ -316,12 +316,16 @@ func (p *Painter) project(l *scene.Layer, feature scene.Feature, f frame) bool {
 }
 
 // onBorder reports whether a polygon's edge lies along or beyond one side of
-// its tile: that edge is where the tile was cut, not a coast.
+// its tile: that edge is where the tile - or at zoom 0 the world - was cut,
+// not a coast. Real tiles cut a sliver inside the side as often as on it, so
+// an edge counts when both its ends are within 1/2048 of the extent of the
+// side: two units of 4096, a sixteenth of a dot at the tile's own zoom.
 func onBorder(x0, y0, x1, y1, extent int16) bool {
 	if extent <= 0 {
 		return false
 	}
-	return (x0 <= 0 && x1 <= 0) || (x0 >= extent && x1 >= extent) || (y0 <= 0 && y1 <= 0) || (y0 >= extent && y1 >= extent)
+	lo, hi := extent>>11, extent-extent>>11
+	return (x0 <= lo && x1 <= lo) || (x0 >= hi && x1 >= hi) || (y0 <= lo && y1 <= lo) || (y0 >= hi && y1 >= hi)
 }
 
 // stroke draws a part as a line: a line feature, or a polygon's edge.

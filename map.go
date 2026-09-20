@@ -106,11 +106,11 @@ func WithSize(cols, rows int) Option {
 	}
 }
 
-// WithEmbedded passes embedded tiles to the map: assets.Tile and
-// assets.MaxZoom. Importing the assets package does nothing by itself. With
+// Embed passes the embedded tiles to the map - tuimaps.Embed(assets.Tile,
+// assets.MaxZoom) - so that it can draw with no network at all. Importing the assets package does nothing by itself. With
 // no source named they are the map's tiles for the zooms they hold; with one
 // named they only ever stand in until its tiles arrive.
-func WithEmbedded(tile func(z uint8, x, y uint32) ([]byte, bool), maxZoom uint8) Option {
+func Embed(tile func(z uint8, x, y uint32) ([]byte, bool), maxZoom uint8) Option {
 	return func(c *config) error {
 		if c == nil || tile == nil {
 			return fault.Make(fault.Internal, textsafe.Const("the embedded tiles were refused"),

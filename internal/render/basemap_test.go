@@ -111,6 +111,33 @@ func TestWaterOwnsItsCells(t *testing.T) {
 	}
 }
 
+// TestBorderSliverNotACoast (S26-4): the real zoom-0 tile has an ocean edge
+// down the antimeridian that starts one unit inside the tile. It is where
+// the world was cut, not a coast.
+func TestBorderSliverNotACoast(t *testing.T) {
+	v := worldView()
+	p := painter(t, v)
+	ocean := tileWith("water", scene.Feature{Kind: scene.GeomPolygon, Class: "ocean"}, 1, 4054, 0, 2239, 0, 1000, 2048, 1000, 2048, 4054, 1, 4054)
+	if err := p.Tile(v, ocean, here, style.BuiltIn()); err != nil {
+		t.Fatal(err)
+	}
+	for _, y := range []int{80, 150, 200, 250} {
+		if p.Lines().Lit(0, y) {
+			t.Errorf("dot 0,%d is lit: an edge within a sliver of the tile's side was stroked as a coast", y)
+		}
+	}
+	if !p.Lines().Lit(128, 150) {
+		t.Error("the real coast down the middle is not drawn")
+	}
+	// A coast that merely passes near the side is still a coast.
+	if onBorder(1, 100, 40, 900, 4096) || onBorder(4000, 5, 4094, 5, 4096) {
+		t.Error("an edge that only ends near the side was taken for the border")
+	}
+	if !onBorder(1, 4054, 0, 2239, 4096) || !onBorder(4095, 10, 4096, 900, 4096) || !onBorder(5, 1, 900, 0, 4096) {
+		t.Error("an edge lying within a sliver of the side was not taken for the border")
+	}
+}
+
 // TestStandInDrawnLarger: an ancestor drawn in place of a missing tile is
 // drawn at the missing tile's scale, and only its part of the view matters.
 func TestStandInDrawnLarger(t *testing.T) {

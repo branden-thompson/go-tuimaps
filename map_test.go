@@ -21,7 +21,7 @@ import (
 // render (NFR-19). It reaches no network: the tiles are the embedded ones,
 // passed as an option.
 func Example_threeCalls() {
-	m, err := tuimaps.New(tuimaps.WithSize(80, 24), tuimaps.WithEmbedded(assets.Tile, assets.MaxZoom))
+	m, err := tuimaps.New(tuimaps.WithSize(80, 24), tuimaps.Embed(assets.Tile, assets.MaxZoom))
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -43,7 +43,7 @@ func isKind(err error, k fault.Kind) bool {
 // TestThreeCalls is plan task 12.1 in full: the frame the three calls give is
 // the world, with names, and nothing was reached to draw it.
 func TestThreeCalls(t *testing.T) {
-	m, err := tuimaps.New(tuimaps.WithSize(149, 38), tuimaps.WithEmbedded(assets.Tile, assets.MaxZoom))
+	m, err := tuimaps.New(tuimaps.WithSize(149, 38), tuimaps.Embed(assets.Tile, assets.MaxZoom))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +61,7 @@ func TestThreeCalls(t *testing.T) {
 		t.Errorf("the world map lacks a continent's name or the credit line:\n%s", text)
 	}
 	// On a map wider than the world, names stay on the world.
-	small, _ := tuimaps.New(tuimaps.WithSize(69, 12), tuimaps.WithEmbedded(assets.Tile, assets.MaxZoom))
+	small, _ := tuimaps.New(tuimaps.WithSize(69, 12), tuimaps.Embed(assets.Tile, assets.MaxZoom))
 	defer small.Close()
 	small.Settle(context.Background())
 	narrow, _ := small.Render(tuimaps.Size{Cols: 69, Rows: 12}, time.Time{})
@@ -85,7 +85,7 @@ func TestNewStartsNothing(t *testing.T) {
 	t.Setenv("HOME", dir)
 	t.Setenv("XDG_CACHE_HOME", filepath.Join(dir, "cache"))
 	before := runtime.NumGoroutine()
-	m, err := tuimaps.New(tuimaps.WithSize(80, 24), tuimaps.WithEmbedded(assets.Tile, assets.MaxZoom))
+	m, err := tuimaps.New(tuimaps.WithSize(80, 24), tuimaps.Embed(assets.Tile, assets.MaxZoom))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,7 +113,7 @@ func TestNewStartsNothing(t *testing.T) {
 // TestSizeIsStateBeforeSettle and TestSettleWithoutSizeRefused are plan task
 // 12.4 (contract, section 3).
 func TestSizeIsStateBeforeSettle(t *testing.T) {
-	m, err := tuimaps.New(tuimaps.WithSize(80, 24), tuimaps.WithEmbedded(assets.Tile, assets.MaxZoom))
+	m, err := tuimaps.New(tuimaps.WithSize(80, 24), tuimaps.Embed(assets.Tile, assets.MaxZoom))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -128,7 +128,7 @@ func TestSizeIsStateBeforeSettle(t *testing.T) {
 }
 
 func TestSettleWithoutSizeRefused(t *testing.T) {
-	m, err := tuimaps.New(tuimaps.WithEmbedded(assets.Tile, assets.MaxZoom))
+	m, err := tuimaps.New(tuimaps.Embed(assets.Tile, assets.MaxZoom))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -164,7 +164,7 @@ func TestNoTilesSaysWhy(t *testing.T) {
 // TestRenderTakesTheSize: Render's size becomes the map's, and a closed map
 // refuses every call.
 func TestRenderTakesTheSize(t *testing.T) {
-	m, _ := tuimaps.New(tuimaps.WithEmbedded(assets.Tile, assets.MaxZoom))
+	m, _ := tuimaps.New(tuimaps.Embed(assets.Tile, assets.MaxZoom))
 	frame, err := m.Render(tuimaps.Size{Cols: 60, Rows: 16}, time.Time{})
 	if err != nil || len(frame.Lines) != 16 || frame.Status != tuimaps.NoTiles {
 		t.Fatalf("%v, %d rows, status %v; nothing is on hand before any work", err, len(frame.Lines), frame.Status)

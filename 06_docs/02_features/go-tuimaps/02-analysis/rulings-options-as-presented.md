@@ -94,6 +94,10 @@ Each question was presented one at a time with: what was being decided, the evid
 | D-102 | The error kind for a refused style file and for an unknown palette token | A. Two new error kinds · **B. One new error kind, `malformed-style`; an unknown token is a warning, `unknown-token`, and the rest of the palette takes effect** · C. No new kind; reuse two existing kinds | B |
 | D-103 | Ratify a code-quality exemption for `internal/style` | A. Exempt now · **B. Exempt only after the style fuzz target is written and has run clean** · C. Merge helpers until the count passes | B |
 | D-104 | Ratify a code-quality exemption for `internal/render` | A. Exempt now · **B. Exempt only after a fuzz target for the painter is written and has run clean** · C. Add bounds checks to every rasteriser | B |
+| D-105 | M-A: the look of the first map, and the built-in style's starting zooms | Put as matters for HUM LEAD's look, not as options | Look fine; zooms fine as the library's defaults |
+| D-106 | M-A: the name of the option that passes the embedded tiles | Put as the coordinator's name, HUM LEAD's to change | HUM LEAD: something like `tuiMapsEmbed(...)`; built as `tuimaps.Embed(...)` |
+| D-107 | M-A: the line at the world's western edge (S26-4) | Reported with its cause and remedy, not fixed | Fix approved |
+| D-108 | M-A: the data notice's licence sentence | Flagged for HUM LEAD's eye | Fine; consuming applications also credit in their About |
 
 ## Where HUM LEAD chose against the recommendation ◇
 

@@ -27,6 +27,7 @@ At SHIP the `replace` line is deleted and the placeholder version becomes the fi
 | Shown | Risk it answers |
 |---|---|
 | One map, drawn inside the host's own layout, from embedded tiles | — |
+| The data's credit in the host's About, beside the credit line the map draws itself (D-108) | The attribution the data's licence asks for: on the map where nobody has to look for it, and in the About in full, with the links the assets package's notice gives. Every consuming application should do both |
 | One overlay, handed in from the host's own data | RS-2 — the overlay contract, in a real host |
 | The pump, written in the host's idiom: `OnPending` wakes it, two goroutines, a message to the interface when the map changes, a clean stop on quit | RS-4 — background work run by the host |
 | The host's memory figure before and after, by the host's own protocol | RS-7 — confirmatory only |

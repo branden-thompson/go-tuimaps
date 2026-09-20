@@ -72,7 +72,7 @@ As first drawn, tiles became wanted only when `Render` noticed them missing, yet
 
 | # | Call | What it does |
 |---|---|---|
-| 1 | `New(WithSize(cols, rows), …)` with the assets package's tiles passed as an option (importing the package changes nothing by itself) | Creates the map. Starts nothing |
+| 1 | `New(WithSize(cols, rows), …)` with the assets package's tiles passed as an option, `Embed(assets.Tile, assets.MaxZoom)` (D-106; importing the package changes nothing by itself) | Creates the map. Starts nothing |
 | 2 | `Settle(ctx)` | Notes what the current view and size need, then works until nothing is pending. With no source and no embedded tiles it says so in its result |
 | 3 | `Render(size, now)` | A complete frame; its status says complete, still sharpening, or no tiles |
 
