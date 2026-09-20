@@ -83,10 +83,10 @@ func (p Palette) ResolveAt(t Token, ground GroundKind, depth Depth) (RGB, bool) 
 	return darkDefault(t)
 }
 
-// SafeRamps returns the palette with safe ramps on or off. On, every ramp is
+// KeepRamps returns the palette with safe ramps on or off. On, every ramp is
 // the library's own, whatever the host set for its tokens; the host's other
 // colours stand (D-63).
-func (p Palette) SafeRamps(on bool) Palette {
+func (p Palette) KeepRamps(on bool) Palette {
 	p.safe = on
 	return p
 }

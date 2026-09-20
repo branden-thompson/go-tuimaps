@@ -133,7 +133,10 @@ type Map struct {
 	pipe     *tiles.Pipeline
 	member   *work.Member
 	renderer *render.Renderer
-	look     *style.Style
+	style    *style.Style
+	look     look
+	motion   render.Motion
+	changed  uint64
 	drawn    []render.Drawn
 }
 
@@ -161,7 +164,7 @@ func New(options ...Option) (*Map, error) {
 	if err != nil {
 		return nil, err
 	}
-	m := &Map{pipe: pipe, member: member, look: style.BuiltIn()}
+	m := &Map{pipe: pipe, member: member, style: style.BuiltIn()}
 	if c.size != (Size{}) {
 		err = m.resize(c.size)
 	}
@@ -287,12 +290,18 @@ func (m *Map) Render(size Size, now time.Time) (Frame, error) {
 	if err != nil {
 		return Frame{}, err
 	}
-	in := render.Input{View: m.view, Style: m.look, Labels: true,
+	in := render.Input{View: m.view, Style: m.style, Labels: true,
 		Credit: textsafe.Const("OpenFreeMap (c) OpenMapTiles Data from OpenStreetMap")}
+	m.paint(&in)
+	in.MarkerPhase = m.motion.Phase(now)
 	in.Tiles, in.Missing = m.onHand()
+	was := m.renderer.Redraws()
 	frame, err := m.renderer.Draw(in)
 	if err != nil {
 		return Frame{}, err
+	}
+	if m.renderer.Redraws() != was {
+		m.changed++ // the frame differs from the one before it
 	}
 	return Frame{Lines: frame.Lines, Status: Status(frame.Status)}, nil
 }

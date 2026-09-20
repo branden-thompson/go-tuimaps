@@ -129,7 +129,7 @@ func TestOverrideIsWarnedNotRefused(t *testing.T) {
 
 func TestSafeRampsForcesPreset(t *testing.T) {
 	host, _ := NewPalette(map[string]RGB{"radar.6": {200, 0, 0}, "road.major": {255, 0, 0}, "alert.severe.tint": {1, 2, 3}})
-	safe := host.SafeRamps(true)
+	safe := host.KeepRamps(true)
 	preset, _ := Ramp(Radar, Dark, Truecolor)
 	if c, _ := safe.ResolveAt(Radar6, Dark, Truecolor); c != preset[5] {
 		t.Errorf("radar.6 with safe ramps on: %v, want the preset's %v", c, preset[5])

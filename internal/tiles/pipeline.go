@@ -178,6 +178,26 @@ func (p *Pipeline) SetNetwork(n *Network) error {
 	return nil
 }
 
+// SetLanguage sets the one label language kept when a tile is decoded. It is
+// part of a tile's cache key (D-82), so tiles already on hand are another
+// language's and are wanted again.
+func (p *Pipeline) SetLanguage(code string) error {
+	if p == nil {
+		return refusedOptions(textsafe.Const("there is no pipeline"))
+	}
+	if code == "" {
+		code = "en"
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.opts.Language == code {
+		return nil
+	}
+	p.opts.Language = code
+	p.sourcesChangedLocked()
+	return nil
+}
+
 // SetEmbedded passes the embedded tiles, or with nil takes them away.
 func (p *Pipeline) SetEmbedded(get EmbeddedFunc, maxZoom uint8) error {
 	if p == nil {
