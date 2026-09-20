@@ -74,6 +74,7 @@ type config struct {
 	size     Size
 	embedded tiles.EmbeddedFunc
 	maxZoom  uint8
+	shared   *Shared
 }
 
 func noSize() error {
@@ -172,9 +173,13 @@ func New(options ...Option) (*Map, error) {
 			return nil, err
 		}
 	}
-	cache, err := tiles.NewCache(tiles.DefaultCacheBytes)
-	if err != nil {
-		return nil, err
+	cache := sharedCache(c)
+	if cache == nil {
+		own, err := tiles.NewCache(tiles.DefaultCacheBytes)
+		if err != nil {
+			return nil, err
+		}
+		cache = own
 	}
 	pipe, err := tiles.NewPipeline(tiles.Options{Cache: cache, Embedded: c.embedded, EmbeddedMaxZoom: c.maxZoom})
 	if err != nil {
@@ -194,6 +199,15 @@ func New(options ...Option) (*Map, error) {
 		err = m.resize(c.size)
 	}
 	return m, err
+}
+
+// sharedCache is the cache the map draws from when a host has passed a
+// shared set, and nil when it has one of its own.
+func sharedCache(c config) *tiles.Cache {
+	if c.shared == nil {
+		return nil
+	}
+	return c.shared.tiles
 }
 
 // resize gives the map a size. Until the view can be moved, a map shows the

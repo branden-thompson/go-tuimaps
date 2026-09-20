@@ -80,7 +80,9 @@ func Embed
 func KindOf
 func Kinds
 func New
+func NewShared
 func RadarImage
+func SharedCaches
 func TemperatureGrid
 func WarningKinds
 func WithSize
@@ -131,6 +133,7 @@ method Map.Warnings
 method Map.Work
 method Map.Zoom
 method Map.ZoomBy
+method Shared.Use
 method Status.String
 type CacheUse
 type Caches
@@ -157,6 +160,7 @@ type RemoveResult
 type Scaled
 type SetResult
 type SettleResult
+type Shared
 type Size
 type Status
 type TableEntry

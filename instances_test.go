@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	tuimaps "github.com/branden-thompson/go-tuimaps"
+	"github.com/branden-thompson/go-tuimaps/assets"
 	"github.com/branden-thompson/go-tuimaps/internal/fault"
 )
 
@@ -90,3 +91,77 @@ func TestCloseReleasesEverything(t *testing.T) {
 
 // second is the error of a call that answers a value and an error.
 func second[T any](_ T, err error) error { return err }
+
+// TestSharedCacheOwnership is the rest of 12.11 and plan task 12.27
+// (FR-27, D-90): two maps of different views, sharing one set of caches,
+// both reach a complete frame and stay there, and what the two need
+// together is reported even when it is over the cap.
+func TestSharedCacheOwnership(t *testing.T) {
+	set, err := tuimaps.NewShared(0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	build := func(cols, rows int, lon, lat, zoom float64) *tuimaps.Map {
+		t.Helper()
+		m, err := tuimaps.New(tuimaps.WithSize(cols, rows), tuimaps.Embed(assets.Tile, assets.MaxZoom), tuimaps.SharedCaches(set))
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { m.Close() })
+		if err := m.Recentre(tuimaps.LonLat{Lon: lon, Lat: lat}); err != nil {
+			t.Fatal(err)
+		}
+		if err := m.Zoom(zoom); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := m.Settle(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+		return m
+	}
+	gulf := build(149, 38, -84, 26, 3)
+	alps := build(80, 24, 10, 46, 3)
+	sizes := map[*tuimaps.Map]tuimaps.Size{gulf: {Cols: 149, Rows: 38}, alps: {Cols: 80, Rows: 24}}
+	for _, one := range []*tuimaps.Map{gulf, alps} {
+		frame, err := one.Render(sizes[one], noon)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if frame.Status == tuimaps.NoTiles {
+			t.Error("a map sharing caches with another has no tiles at all")
+		}
+	}
+	// Drawing one again does not take the other's tiles away: both settle
+	// with nothing left to do.
+	for range 3 {
+		for _, one := range []*tuimaps.Map{gulf, alps} {
+			if _, err := one.Render(sizes[one], noon); err != nil {
+				t.Fatal(err)
+			}
+			res, err := one.Settle(context.Background())
+			if err != nil {
+				t.Fatal(err)
+			}
+			if res.Failed != 0 {
+				t.Errorf("settling a shared map failed %d units", res.Failed)
+			}
+		}
+	}
+	use := set.Use()
+	if use.Held <= 0 || use.Limit <= 0 {
+		t.Errorf("the shared caches report %+v", use)
+	}
+	// Each map reports the same shared figures, since they are the same
+	// caches.
+	if got := gulf.CacheUse().Tiles; got.Limit != use.Limit {
+		t.Errorf("a map sharing caches reports a cap of %d and the set says %d", got.Limit, use.Limit)
+	}
+	// Closing one leaves the other drawing from the shared set.
+	gulf.Close()
+	if _, err := alps.Render(sizes[alps], noon); err != nil {
+		t.Errorf("closing one map broke the other's shared caches: %v", err)
+	}
+	if after := set.Use(); after.Limit != use.Limit {
+		t.Errorf("the shared caches changed size when one map closed: %+v", after)
+	}
+}
