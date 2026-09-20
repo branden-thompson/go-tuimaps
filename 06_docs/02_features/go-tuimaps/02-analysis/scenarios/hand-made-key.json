@@ -1,0 +1,188 @@
+[
+ {
+  "place": "middle",
+  "shape": "square",
+  "inside": true,
+  "km": 537,
+  "bearing_deg": 88,
+  "compass": "east",
+  "cells": {
+   "149x38": 335.63,
+   "69x12": 153.43
+  },
+  "frame_answer": {
+   "149x38": "inside",
+   "69x12": "inside"
+  }
+ },
+ {
+  "place": "middle",
+  "shape": "triangle",
+  "inside": false,
+  "km": 2059.4,
+  "bearing_deg": 218,
+  "compass": "south-west",
+  "cells": {
+   "149x38": 643.55,
+   "69x12": 294.19
+  },
+  "frame_answer": {
+   "149x38": "outside",
+   "69x12": "outside"
+  }
+ },
+ {
+  "place": "middle",
+  "shape": "strike",
+  "km": 111.2,
+  "bearing_deg": 0,
+  "compass": "north",
+  "cells": {
+   "149x38": 34.75,
+   "69x12": 15.89
+  },
+  "frame_answer": {
+   "149x38": "outside",
+   "69x12": "outside"
+  }
+ },
+ {
+  "place": "middle",
+  "shape": "track",
+  "km": 111.2,
+  "bearing_deg": 0,
+  "compass": "north",
+  "cells": {
+   "149x38": 34.75,
+   "69x12": 15.89
+  },
+  "frame_answer": {
+   "149x38": "outside",
+   "69x12": "outside"
+  }
+ },
+ {
+  "place": "west of it",
+  "shape": "square",
+  "inside": false,
+  "km": 214.8,
+  "bearing_deg": 90,
+  "compass": "east",
+  "cells": {
+   "149x38": 134.26,
+   "69x12": 61.37
+  },
+  "frame_answer": {
+   "149x38": "outside",
+   "69x12": "outside"
+  }
+ },
+ {
+  "place": "west of it",
+  "shape": "triangle",
+  "inside": false,
+  "km": 1596.7,
+  "bearing_deg": 214,
+  "compass": "south-west",
+  "cells": {
+   "149x38": 498.96,
+   "69x12": 228.1
+  },
+  "frame_answer": {
+   "149x38": "outside",
+   "69x12": "outside"
+  }
+ },
+ {
+  "place": "west of it",
+  "shape": "strike",
+  "km": 758.2,
+  "bearing_deg": 81,
+  "compass": "east",
+  "cells": {
+   "149x38": 473.88,
+   "69x12": 216.63
+  },
+  "frame_answer": {
+   "149x38": "outside",
+   "69x12": "outside"
+  }
+ },
+ {
+  "place": "west of it",
+  "shape": "track",
+  "km": 241.4,
+  "bearing_deg": 62,
+  "compass": "north-east",
+  "cells": {
+   "149x38": 150.89,
+   "69x12": 68.98
+  },
+  "frame_answer": {
+   "149x38": "outside",
+   "69x12": "outside"
+  }
+ },
+ {
+  "place": "north-east of it",
+  "shape": "square",
+  "inside": false,
+  "km": 392.5,
+  "bearing_deg": 212,
+  "compass": "south-west",
+  "cells": {
+   "149x38": 122.67,
+   "69x12": 56.08
+  },
+  "frame_answer": {
+   "149x38": "outside",
+   "69x12": "outside"
+  }
+ },
+ {
+  "place": "north-east of it",
+  "shape": "triangle",
+  "inside": false,
+  "km": 3213.3,
+  "bearing_deg": 221,
+  "compass": "south-west",
+  "cells": {
+   "149x38": 1004.17,
+   "69x12": 459.05
+  },
+  "frame_answer": {
+   "149x38": "outside",
+   "69x12": "outside"
+  }
+ },
+ {
+  "place": "north-east of it",
+  "shape": "strike",
+  "km": 1069.2,
+  "bearing_deg": 225,
+  "compass": "south-west",
+  "cells": {
+   "149x38": 334.13,
+   "69x12": 152.74
+  },
+  "frame_answer": {
+   "149x38": "outside",
+   "69x12": "outside"
+  }
+ },
+ {
+  "place": "north-east of it",
+  "shape": "track",
+  "km": 542.5,
+  "bearing_deg": 146,
+  "compass": "south-east",
+  "cells": {
+   "149x38": 169.55,
+   "69x12": 77.51
+  },
+  "frame_answer": {
+   "149x38": "outside",
+   "69x12": "outside"
+  }
+ }
+]

@@ -1,0 +1,18 @@
+{
+ "name": "hand-made shapes, whose answers can be worked out on paper",
+ "places": [
+  {"name": "middle", "lon": 15, "lat": 15},
+  {"name": "west of it", "lon": 8, "lat": 15},
+  {"name": "north-east of it", "lon": 22, "lat": 23}
+ ],
+ "shapes": [
+  {"id": "square", "kind": "area", "rings": [[[10, 10], [20, 10], [20, 20], [10, 20]]]},
+  {"id": "triangle", "kind": "area", "rings": [[[0, 0], [4, 0], [0, 3]]]},
+  {"id": "strike", "kind": "point", "rings": [[[15, 16]]]},
+  {"id": "track", "kind": "line", "rings": [[[10, 16], [20, 16], [25, 19]]]}
+ ],
+ "views": [
+  {"name": "149x38", "cell_km": 1.6, "cell_row_km": 3.2},
+  {"name": "69x12", "cell_km": 3.5, "cell_row_km": 7.0}
+ ]
+}
