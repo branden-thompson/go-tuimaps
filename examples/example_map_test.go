@@ -1,8 +1,12 @@
 package examples_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"image"
+	"image/color"
+	"image/png"
 	"time"
 
 	tuimaps "github.com/branden-thompson/go-tuimaps"
@@ -125,4 +129,55 @@ func Example_places() {
 	// 25.770000,-80.190000
 	// home
 	// removed: 1
+}
+
+// Example_radarImage is a radar image with the table that says what its
+// colours mean (D-45). **The provider's terms and its credit are the host's
+// to honour**: this example names the United States' National Weather
+// Service, whose radar imagery is public domain and asks to be credited,
+// and a host using another provider must carry that provider's own terms
+// and credit in its place.
+func Example_radarImage() {
+	m, _ := tuimaps.New(tuimaps.WithSize(80, 24), tuimaps.Embed(assets.Tile, assets.MaxZoom))
+	defer m.Close()
+
+	// One pixel a class: the table maps the provider's own colours to the
+	// classes the library draws, and every colour in the picture must be in
+	// it or the hand-in says how many were not.
+	image := tuimaps.Image{
+		West: -100, South: 20, East: -70, North: 35,
+		Projection: tuimaps.PlateCarree,
+		PNG:        lightRainPNG(),
+		Type:       tuimaps.Type{Preset: "radar", Unit: "dBZ"},
+		Table: []tuimaps.TableEntry{
+			{Colour: tuimaps.RGB{R: 0x04, G: 0xe9, B: 0xe7}, Value: 15}, // light rain, in dBZ
+		},
+	}
+	radar := tuimaps.RadarImage("radar", image, noon)
+	radar.Credit = "NOAA/NWS radar imagery, public domain"
+	res, err := m.Set(radar)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println("created:", res.Created)
+	for _, credit := range m.Credits() {
+		fmt.Println(credit)
+	}
+	// Output:
+	// created: true
+	// OpenFreeMap (c) OpenMapTiles Data from OpenStreetMap
+	// NOAA/NWS radar imagery, public domain
+}
+
+// lightRainPNG is one pixel of the provider's own lightest rain colour: the
+// smallest picture that shows the shape of the call.
+func lightRainPNG() []byte {
+	one := image.NewNRGBA(image.Rect(0, 0, 1, 1))
+	one.Set(0, 0, color.NRGBA{R: 0x04, G: 0xe9, B: 0xe7, A: 0xff})
+	var out bytes.Buffer
+	if err := png.Encode(&out, one); err != nil {
+		panic(err)
+	}
+	return out.Bytes()
 }

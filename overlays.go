@@ -43,8 +43,18 @@ type Type = overlay.Type
 // mean (D-45).
 type Image = overlay.Image
 
-// TableEntry is one row of that table.
+// TableEntry is one row of that table: a colour of the provider's, the
+// value it stands for, and whether it means "no data".
 type TableEntry = overlay.TableEntry
+
+// Projection is how an image's pixels are laid on the world.
+type Projection = overlay.Projection
+
+// The projections an image may be handed in.
+const (
+	PlateCarree = overlay.PlateCarree // equal steps of longitude and latitude
+	WebMercator = overlay.WebMercator // the projection the tiles are in
+)
 
 // Unit is a unit of temperature.
 type Unit = colour.Unit
