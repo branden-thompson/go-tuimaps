@@ -1,0 +1,18 @@
+SPECIMEN 25a — isolines, smallest Watchpost window
+69x12 cells · braille renderer · no colour · centre 44.00,-96.00 · zoom 2.2 · 2 basemap tile(s) at z2 © OpenMapTiles © OpenStreetMap
+field: Open-Meteo current temperature_2m, 12x8 lattice, one request (CC BY 4.0)
+cell colour: the HIGHEST-PRIORITY line in the cell wins (the rule every earlier specimen used)
+no colour: ISOLINES at every 5 degrees, found by classifying the field at every braille dot; value labels along each line
+⡏⠉⡏⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⢹⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⢹⠉⠉⠙⠛⠮⣰⢦⣎15  ⢀⣤⠟⠑⠒⢦         ⠐⢾⡄     ⣡
+⡇ ⢇  ⣀⣀⣀⡀     ⢀⣀⣠⡶⡄  NORTH DAKOTA⡀  ⢀⠔⠁ ⠈⠉⠊⣓⠶⡞⢹⠑⠢⢄⡈⠒⢲  ⢀⠔⠦⠤⠤⠤⢼⢤   ⣀ ⠈
+⡇ ⢨⢲⡉⢀⢤⣀MONTANA⠁     ⢸   ⠉⢀      ⢧ ⢀⠎    ⡠⣞⡖⡞⣀⠜⣯⣁⣀⣈⣑⣢⣧⣀⠼⢀    ⠸⣸   ⠻  
+⣧20 ⣿⠡⠆5⠈⠉⠓⡆  ⠈⠳⡄    ⢸⣀⣀⣀⣀⣀⣇⣀⣀⣀⣀MINNESOTA⠉⡔⠛⠛⠫⣍⣀⠈⣑⣊⣩⢝⣻⣧⣴⣭⣭15⠶⠶⠘⠶⣤⣀⡀  
+⢈⠇⡇ ⢻⡱⡀   ⣰⣁⣀⣀⣀⣀⣇⣀⣀⣀⣀⣸     ⢿     ⠺⡄⠙⢦  ⢘⡆⡸15 ⣀⣀⡨⣧⠿⡯⣤⡼⣍⣒⣕⢫⠙⢧ ⢧    ⠈⠛⠻⢊
+⣜⢠⠃  ⢹⡙⠤⠲⠟⡗⠒⠲10 ⢸    SOUTH DAKOTA ⡇ ⠈⠓⠊⠙WISCONSIN⡸⢸⠉⢀⡠⠔⡟⠘⡄⡼⠓⠺⠃   ⣀⣀⡤⠃
+⡎⢸IDAHO   ⡇⣀WYOMING  ⢸⣀⠤⠤⠤⢤⣀⣀    ⢠⠧⠤⠤⠤⠤⠤⠤⠬⢧    ⢀⠿MICHIGAN⠇⡇  ⡠⣶⣮⣭⣿⡽⠇ 
+⡇⠘⢦⣀⡀ ⠈⠙⠲⠤⣯⣉⣉⡠⠜ ⢸    ⢹⡒⠒⠒⠒⠒⠒⠚⠛⠲⠴⠒⢾⡓⠒⠒⠒⠒20⠉⠹⢍⣓⣦⣀⣈⣆⡏⢹     ⣼⠉⡠⢤⣴⡾⡟      
+⠓⠒⠒⠒⠛⡟⢛⣖⡒⠒⡧⠤⠤⠤⠤15⡠⢤⡀ ⢸⣇ NEBRASKA ⢀⣱⠔IOWA⠲⠤⣄⣈⠇ ⠉⠓⢧⣧⣧⣤⣤⣤⠤⢼⣷⣛⡩⠕⡗⠛⠒⠒⠒⠒⠒⠒⠲
+     ⡇ ⠫⡽ ⠓⠒⠒⣶⠚⠒⠒⠒⢒⠛⢶⡚⠚⢷⢲   ⣀⠤⠒⠒⠊⠁⠸⣆⣀⣀⣀⣀⣀⣀⣸⠋⠓⠲⠤⢤⣸25⡀◉ Fort Wayne⠤⠤⠤⠔⢲
+     ⡇      ⣀⡟⠦⣄⣀⠚⠯10⠝ ⡸⢸⠤⡤⠾⠤⠤⢤⠤30⠤⠵⣤⠤⠤⠤⠤⠤⡧⠤⠤⣄⣀INDIANA⠉⠉⠓⢦⡀⡜⣇MARYLAND
+⠲⠤⠤⠤⠤⡇UTAH⠊⠉⠈⡟COLORADO⠊ ⢸⠊  ⠠⠊⠁     ⠙⡆    ⠈⠦35 ⠉⢻⠒⠦30⡷⣀⣀⡀⡠⠛⠧ ⠘⢩⠋⠛⢢⣸⣿⢳
+temp °C   5.0   9.1  13.3  17.4  21.6  25.7  29.9  →34.0

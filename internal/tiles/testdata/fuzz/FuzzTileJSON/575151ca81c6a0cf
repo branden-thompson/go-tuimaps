@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"tiles\":[\"Https://tiles.example/{z}{x}{y}\"]}")

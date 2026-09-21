@@ -1,0 +1,15 @@
+SPECIMEN 5a — wind lattice, smallest Watchpost window
+69x12 cells · braille renderer · 24-bit colour · centre 41.08,-85.14 · zoom 4.3 · 4 basemap tile(s) at z4 © OpenMapTiles © OpenStreetMap
+wind: Open-Meteo current wind_speed_10m / wind_direction_10m, 12x8 lattice, one request (CC BY 4.0); arrows point the way the wind is going; colour = speed (km/h): <8 grey, <16 cyan, <24 yellow, <32 orange, else red
+       ⢸⠤⣀⡀    ⢟⡄    ⡇   ⢀⣟⣀⣀⣀⠤⠶⠤⠤⠶⢺⠤⠦⠤⠤⠴⠒⠒⠒⠦⣠⣸⡭⣽·Detroit⠶⠃  ⢀⣀⠤⠤⠔⠒⡖⠉
+   ←   ⢸ ←⠉⠑⠲⠤⢬←⣗⡄  ⢰←  ⢠⡷⠉←     ← ⢸   ↙     ↙ ⣧⣿⠤⣀↙⢄⡔⠁  ↓⣀⠔⠊⠁ ←  ⢀⣇⢤
+ ⢀⣀⣀⡠⠤⠔⢺⠒⠒⠒⠤⣀⣠⡿⣟⡾·Chicago⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣸⣀⡀        ⣰⡫⠊⢆⡀  ⠁ ⡠⠔⠊    ⣀⣤⣒⠮⠓⡏⠁
+⠊⠁⠈←   ⡎ ←   ⣰⢻←⣳⣿⣷⣤⣤←⠿⠓⠋⠈⠉←⠉⠉⠉⠉ ←⠈⡝⠑⡷⠶←⣒⣒⠭⠭⣹↙⣏⠙⠤⢄⢈↙⠒⠒⠉  ↙ ⣀⣴⠝⠋↙   ⡇ 
+⠤⠤⠤⠤⠤⣤⣀⣇⣀⣀⣀⣠⠔⡏⠉ ⡎ ⡇⢮               ⡇ ⡇       ⡇⠉⠑⠤⠶⣛⣛⡦⣤⣒⠶⢿⣿·Cleveland 
+   ←⠘⠒ ⡇ ← ⢀⡴⠃ ←⠁ ⡇⢸ ←     ←     ←⣀⢇ ⡇ ←     ←     ↙⠉    ↙⡯⡗⠛⢒⠒↓⣆⣀⡠⣧⠤
+       ⡇  ⡠⠊   ⡜  ⡇⠘⡄            ⡰◉ Fort Wayne         ⢀⡠⠒⠓⠚⢯⠉⠉⠉⠉⠒⢇⡧⡇
+⠉⠉⠲←   ⢻ ←⠁   ⢸←  ⡇ ⠸←   ⣀⠤←⠤⠒⠊⠉⢉←⠢⡀ ⡇ ← ⢀⡔⠋ ↙     ↙ ⡰⠉⠁ ↙  ⢸⠆ ↙   ⡏⡗
+   ⠉⡗⠒⠒⢼⠔⠁    ⡎   ⡇  ⠑⢄⡰⠉      ⢰⠃  ⠈⠑⡇   ⢸         ⣠⠜       ⡎     ⣞⡏⢹
+   ↖⢹ ⡠⠊⠑←⣀  ⡜ ←  ⡇⣀⠔←⠉INDIANA ⢸ ←   ⡟⠂← ⡸   ↙   OHIO    ↓ ⢰⠁  ↙  ⡺⡇⠘
+ILLINOIS  ⣀⠭⢵⠧⠤⠤⠤⠤⣿⠤⠤⠤⣀⡀⠑⡄    ⢀⣸    ⢰⠁   ⡇      ⢠⢴⡇        ⢸⢀⣀⣀⣀⣀⣠⣇⡧⠔
+   ←⣁⣀⣀⡠⠔←  ⢸  ←  ⡟⡄ ← ⠈⠑⢬⣳←⣖⣉⣁⣀⣀←⣀⡠⢼⣀⣀←⣠⡧⢤⠤⠴↙⠒⠒⣙⡿⠿↙⠒⠒⠒⠒⠒↙⠉⢩⠇  ↙ ⡎ ⡇ 

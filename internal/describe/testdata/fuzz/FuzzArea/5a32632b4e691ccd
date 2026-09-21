@@ -1,0 +1,4 @@
+go test fuzz v1
+[]byte("0000\xe5\xe5\xe5\xe50100")
+int16(89)
+int16(89)

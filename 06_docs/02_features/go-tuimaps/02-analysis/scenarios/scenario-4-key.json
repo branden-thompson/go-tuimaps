@@ -1,0 +1,18 @@
+{
+ "fields": [
+  {
+   "place": "Home",
+   "field": "temperature",
+   "value": 15,
+   "band": 10,
+   "rises": "south-east"
+  },
+  {
+   "place": "Warmer",
+   "field": "temperature",
+   "value": 23,
+   "band": 11,
+   "rises": "south-east"
+  }
+ ]
+}

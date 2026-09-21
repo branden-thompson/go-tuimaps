@@ -1,0 +1,40 @@
+SPECIMEN 7e — stand-in basemap: the same local view drawn from a zoom-3 tile (5 levels stretched)
+149x38 cells · braille renderer · 24-bit colour · centre 40.88,-85.12 · zoom 8.3 · 2 basemap tile(s) at z3 © OpenMapTiles © OpenStreetMap
+                                                                                                              ⡇                                      
+                                                                                                              ⡇                                      
+                                                                                                              ⡇                                      
+                                                                                                              ⡇                                      
+                                                                        ◉ Fort Wayne                          ⡇                                      
+                                                                                                              ⡇                                      
+                                                                                                              ⡇                                      
+                                                                                                              ⡇                                      
+                                                                                                              ⡇                                      
+                                                                                                              ⡇                                      
+                                                                                                              ⡇                                      
+                                                                                                              ⡇                                      
+                                                                                                              ⡇                                      
+                                                                                                              ⡇                                      
+                                                                                                              ⡇                                      
+                                                                                                              ⡇                                      
+                                                                                                              ⡇                                      
+                                                                                                              ⡇                                      
+                                                                                                              ⡇                                      
+                                                                                                              ⡇                                      
+                                                                                                              ⡇                                      
+                                                                                                              ⡇                                      
+                                                                                                              ⡇                                      
+                                                                                                              ⡇                                      
+                                                                                                              ⡇                                      
+                                                                                                             ⢀⡇                                      
+                                                                                                             ⢸⡇                                      
+                                                                                                             ⢸⡇                                      
+                                                                                                             ⢸                                       
+                                                                                                             ⢸                                       
+                                                                                                             ⢸                                       
+                                                                                                             ⢸                                       
+                                                                                                             ⢸                                       
+                                                                                                             ⢸                                       
+                                                                                                             ⢸                                       
+                                                                                                             ⢸                                       
+                                                                                                             ⢸                                       
+                                                                                                             ⢸                                       

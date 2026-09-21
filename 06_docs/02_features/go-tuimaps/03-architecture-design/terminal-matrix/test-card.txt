@@ -1,0 +1,101 @@
+go-tuiMaps — TERMINAL TEST CARD
+
+How to use: run   cat test-card.txt   in each terminal and font you use.
+Every test row is a bar, 20 copies of one character, and a closing bar.
+PASS = the closing bar sits exactly under the arrow (column 22), and the
+character looks like what the label says. FAIL = the bar drifts left or
+right (wrong width), or you see empty boxes, question marks or blanks
+(the font lacks the character).
+
+BRAILLE (the map itself)
+                     v  column 22
+|12345678901234567890|  <- ruler (plain digits)
+|⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁|  U+2801
+|⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿|  U+283F
+|⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿|  U+28FF
+|⡇⡇⡇⡇⡇⡇⡇⡇⡇⡇⡇⡇⡇⡇⡇⡇⡇⡇⡇⡇|  U+2847
+|⢸⢸⢸⢸⢸⢸⢸⢸⢸⢸⢸⢸⢸⢸⢸⢸⢸⢸⢸⢸|  U+28B8
+|⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀|  U+28C0
+|⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉|  U+2809
+|⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒|  U+2812
+
+QUADRANT BLOCKS (block renderer, later)
+                     v  column 22
+|12345678901234567890|  <- ruler (plain digits)
+|▘▘▘▘▘▘▘▘▘▘▘▘▘▘▘▘▘▘▘▘|  U+2598
+|▝▝▝▝▝▝▝▝▝▝▝▝▝▝▝▝▝▝▝▝|  U+259D
+|▖▖▖▖▖▖▖▖▖▖▖▖▖▖▖▖▖▖▖▖|  U+2596
+|▗▗▗▗▗▗▗▗▗▗▗▗▗▗▗▗▗▗▗▗|  U+2597
+|▚▚▚▚▚▚▚▚▚▚▚▚▚▚▚▚▚▚▚▚|  U+259A
+|▞▞▞▞▞▞▞▞▞▞▞▞▞▞▞▞▞▞▞▞|  U+259E
+|▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀|  U+2580
+|▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄|  U+2584
+|▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌|  U+258C
+|▐▐▐▐▐▐▐▐▐▐▐▐▐▐▐▐▐▐▐▐|  U+2590
+|████████████████████|  U+2588
+
+SHADES (radar with no colour)
+                     v  column 22
+|12345678901234567890|  <- ruler (plain digits)
+|░░░░░░░░░░░░░░░░░░░░|  U+2591
+|▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒|  U+2592
+|▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓|  U+2593
+
+BOX DRAWING (scale mark, frames)
+                     v  column 22
+|12345678901234567890|  <- ruler (plain digits)
+|────────────────────|  U+2500
+|││││││││││││││││││││|  U+2502
+|├├├├├├├├├├├├├├├├├├├├|  U+251C
+|┤┤┤┤┤┤┤┤┤┤┤┤┤┤┤┤┤┤┤┤|  U+2524
+|┌┌┌┌┌┌┌┌┌┌┌┌┌┌┌┌┌┌┌┌|  U+250C
+|┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐|  U+2510
+|└└└└└└└└└└└└└└└└└└└└|  U+2514
+|┘┘┘┘┘┘┘┘┘┘┘┘┘┘┘┘┘┘┘┘|  U+2518
+
+HATCH (alert areas with no colour)
+                     v  column 22
+|12345678901234567890|  <- ruler (plain digits)
+|╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱|  U+2571
+|╲╲╲╲╲╲╲╲╲╲╲╲╲╲╲╲╲╲╲╲|  U+2572
+|╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳╳|  U+2573
+
+ARROWS (wind, later)
+                     v  column 22
+|12345678901234567890|  <- ruler (plain digits)
+|←←←←←←←←←←←←←←←←←←←←|  U+2190
+|↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑|  U+2191
+|→→→→→→→→→→→→→→→→→→→→|  U+2192
+|↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓|  U+2193
+|↖↖↖↖↖↖↖↖↖↖↖↖↖↖↖↖↖↖↖↖|  U+2196
+|↗↗↗↗↗↗↗↗↗↗↗↗↗↗↗↗↗↗↗↗|  U+2197
+|↘↘↘↘↘↘↘↘↘↘↘↘↘↘↘↘↘↘↘↘|  U+2198
+|↙↙↙↙↙↙↙↙↙↙↙↙↙↙↙↙↙↙↙↙|  U+2199
+
+MARKERS AND DOTS
+                     v  column 22
+|12345678901234567890|  <- ruler (plain digits)
+|◉◉◉◉◉◉◉◉◉◉◉◉◉◉◉◉◉◉◉◉|  U+25C9
+|●●●●●●●●●●●●●●●●●●●●|  U+25CF
+|○○○○○○○○○○○○○○○○○○○○|  U+25CB
+|◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆|  U+25C6
+|····················|  U+00B7
+|••••••••••••••••••••|  U+2022
+
+REPLACEMENT CHARACTER
+                     v  column 22
+|12345678901234567890|  <- ruler (plain digits)
+|��������������������|  U+FFFD
+
+BRAILLE PICTURE — you should see a coastline-like line drawing, not boxes:
+
+⠀⠀⠀⢀⣀⠤⠤⠒⠒⠉⠉⠉⠒⠤⣀⠀⠀⠀⠀⠀⠀⢀⡠⠤⠒⠉⠉⠒⠢⢄⡀⠀⠀⠀
+⠀⡠⠔⠁⠀⠀⠀⠀◉ Place⠀⠀⠈⠑⠢⢄⣀⠔⠁⠀⠀⠀⠀⠀⠀⠀⠀⠈⠢⡀⠀
+⢰⠁⠀⠀⠀╱╱╱╱⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀░▒▓▓▒░⠀⠀⠀⠀⢱⠀
+⠈⠢⣀⠀⠀╱╱╱╱⠀[FLOOD]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠔⠁⠀
+⠀⠀⠀⠉⠒⠤⣀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣀⠤⠤⠒⠒⠒⠤⠤⣀⡠⠔⠁⠀⠀⠀
+ ├──────────┤ 20 km
+
+Then, for colour:   cat ../../02-analysis/specimens/16-diverging-ramp-149x38.ans
+                    cat ../../02-analysis/specimens/13a-alerts-no-colour-69x12.txt
+(widen the window to at least 150 columns for the first one).

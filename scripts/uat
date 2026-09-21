@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# Builds the app for a sitting, and says how to start one.
+#
+#   scripts/uat            build ./dist/tuimaps and print what to run
+#   scripts/uat --frames   write the reference frames again (they are then
+#                          HUM LEAD's to approve — plan task 14.16)
+#
+# No remote exists until SHIP, so the app's module cannot resolve the
+# library the ordinary way. This script writes a throw-away workspace file
+# **outside the repository** and builds through it: the tree is left exactly
+# as it was found, because a tracked workspace file is something the gate
+# refuses.
+
+set -u
+set -o pipefail
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$root" || { echo "uat: cannot enter $root" >&2; exit 2; }
+
+frames=0
+for arg in "$@"; do
+  case "$arg" in
+    --frames) frames=1 ;;
+    *) echo "uat: unknown argument: $arg" >&2; exit 2 ;;
+  esac
+done
+
+if [ "$frames" = 1 ]; then
+  echo "uat: writing the reference frames"
+  TUIMAPS_WRITE_REFERENCE_FRAMES=1 GOFLAGS=-mod=readonly GOPROXY=off \
+    go test -run TestReferenceFrames . || exit 1
+  echo "uat: written to 06_docs/02_features/go-tuimaps/07-readiness/reference-frames"
+  echo "uat: they are candidates until they are approved (plan task 14.16)"
+  exit 0
+fi
+
+held="$(mktemp -d)"
+work="$held/go.work"
+trap 'rm -rf "$held"' EXIT
+{
+  echo "go 1.25.0"
+  echo
+  echo "use ("
+  echo "	$root"
+  echo "	$root/cmd/tuimaps"
+  echo ")"
+  echo
+  echo "replace github.com/branden-thompson/go-tuimaps v0.0.0 => $root"
+} > "$work"
+
+mkdir -p "$root/dist"
+if ! GOWORK="$work" GOFLAGS=-mod=readonly GOPROXY=off CGO_ENABLED=0 \
+  go build -o "$root/dist/tuimaps" ./cmd/tuimaps; then
+  echo "uat: the app did not build" >&2
+  exit 1
+fi
+
+echo "uat: built ./dist/tuimaps"
+echo
+echo "The sitting is written up in:"
+echo "  06_docs/02_features/go-tuimaps/07-readiness/uat-instructions.md"
+echo
+echo "The shortest way in:"
+echo "  ./dist/tuimaps --help"
+echo "  ./dist/tuimaps --offline --scenario 1 --size 69x12 --headless --no-colour"
+echo "  ./dist/tuimaps --offline --scenario 1"
+echo
+echo "A terminal whose font has no braille shows boxes where the map should be."

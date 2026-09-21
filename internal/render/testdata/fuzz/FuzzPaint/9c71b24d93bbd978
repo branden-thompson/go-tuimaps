@@ -1,0 +1,7 @@
+go test fuzz v1
+[]byte("꧀")
+byte('+')
+byte('\t')
+byte('£')
+byte('\x0f')
+byte('\x17')

@@ -1,0 +1,15 @@
+SPECIMEN 15a — re-coloured radar, smallest Watchpost window
+69x12 cells · braille renderer · truecolor · centre 33.80,-86.50 · zoom 4.3 · 2 basemap tile(s) at z4 © OpenMapTiles © OpenStreetMap
+radar: Iowa Environmental Mesonet NEXRAD base-reflectivity mosaic, 2 XYZ tile(s) at z4, pre-coloured PNG placed as-is x1.00 brightness (public domain; attribution appreciated) — 547 cells painted
+    ⢀⡠⠔⠒⣺·Memphis     ⢇         ⡇      ⠙⣄⡤⣠⣴⡮⠜⠃  ⢀⠇       ⡄⣀⠤⠔⠒⠊⠉⠻⣉⣩⠵
+⠤⠔⠒⠉⠁ ⢀⡴⠫⠭⡯⠭⠽⣉⠉⠉⠉⠉⠉⠉⠉⠉⠉⢻⢍⡉⡩⣭⣉⡉⠉⢹⠉⠉⠉⠉⠉⠉⠉⡹⠉⡿⠉⠉⠫⡍⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⡩⠋    ⣠⡤⠚⢯  
+      ⡏⠁  ⢣   ⠓⠦⡀      ⡸ ⠈⠉  ⠉⠳⢾⣒⣒⡁  ⢀⠎ ⡠⢻   ⢣        ⢲ ⠘⠢⣄⠠⣄⣀⠜⠉⠑⠦⡸⡀ 
+    ⢠⠤⠃   ⢸     ⠈⠢⣄    ⡇       ⢸  ⠈⠒⠔⠁ ⡰⠁⠸⡀  ⠸⡀  ⣠  ⣶⣦⠎ ⢀⡠⠜⠻⣿⡀    ⠈⠑⠤
+   ⢰⡋     ⢸        ⡉⠉⠒⢒⢧⡀      ⠘⡆     ⡜⣀⡖⠒⡗⠉  ⠸⣀⣸⠁ ⢰⣿⣋⡠⠔⠁   ⠈⢷⡀      
+⠑⠒⣴⠋⠁     ⠘⡄          ⢸ ⠈⠑⠒⠤⣀   ⡇   ⡠⢜⠎⠁  ⢣    ⠈⢳⡴⣶⢿⡽   ⠖    ⠈⣷⣶     
+ ⠰⡛        ⢇          ⡸      ⠙⠤⣄⣇⢀⠴⣋⣠⠜ ⣀⣀⣀⣼⠤⠴⠒⠒⡺⢻·Atlanta     ⣠⡩⠿⡀ ⢀⣀
+ ⠘⡇        ⢸          ⡇        ⡰◉ Birmingham⢀⠔⢉⡔⠉⠈⠳⡄   ⠉⠉⠒⠉⠓⠒⠒⠒⠒⠒⠺⣺⠁ 
+ ⠈⣣        ⡸          ⡇   ⢀⣄ALABAMA⠎       ⡇⢸ ⡸    ⠱⡀             ⠈⢳⡀
+⠒⠒⢧   MISSISSIPPI    ⢸   ⡰⠉      ⢧⠘        ⢸⡪⢾      ⠑⢤⣀             ⠉
+  ⣯      ⢸           ⢸ ⡴⠊         ⢣⢢      ⢀⠜⢧⡏        ⡟⢣             
+⣀⣀⢱⡀     ⡜          ⣀⡧⠊        ⡀⡀⢀ ·Montgomery       ⢀⠇ ⠉⠒⠲⠤⢄⣀⣀⣀⡀    

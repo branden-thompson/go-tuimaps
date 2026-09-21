@@ -1,0 +1,16 @@
+SPECIMEN 3b — the value lattice with no colour, smallest Watchpost window
+69x12 cells · braille renderer · no colour · centre 41.08,-85.14 · zoom 4.3 · 4 basemap tile(s) at z4 © OpenMapTiles © OpenStreetMap
+field: Open-Meteo current temperature_2m, 12x8 lattice, one request (CC BY 4.0)
+               ⠈⣿⣿⣿⣿⣿⣿⣿⣿⣿⡟                      ⢰·Detroit⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+  19       18   ⠈⣿⣿⣿21⣿⣿⡟    19       17       17⣄⣀⣤⣄⣴⣿⣿18⣿⣿⣿⣿⣿⣿⣿19⡟⠋
+                 ·Chicago⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⡀        ⢠⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⠋⠉  ⡇ 
+                  ⡟⠛⠋⠁               ⡗⠒⠒⠒⠒⠉⠉⠉⠉⠉⠈⠛⠿⡿⢿⣿⣿⣿⣿⣿⣿⣿⠟⠁      ⡇ 
+  21       20     ⡇ 19       19      ⡇18       18 ⠉⠉⠙⠛⠉⠁  ·Cleveland 
+                  ⡇                  ⡇                             ⡇ 
+                  ⡇               ◉ Fort Wayne                     ⡇ 
+  22       22     ⡇ 21   ⣀⠤⠤⠤20⠉⠉⠒⠢⡀ ⡇18       17       18       17⡇⡀
+                  ⡇    ⡰⠉          ⠈⠑⡇                            ⣞⡏⠈
+                  ⡇⣀⠔⠊⠉INDIANA       ⡟⠂          OHIO             ⡺⡇ 
+ILLINOIS   22     ⣿ 22       21     ⢰⠁20       19       19       18⡇ 
+                  ⡟⡄                ⢸                            ⡎ ⡇ 
+temp °C  15.0  16.6  18.1  19.7  21.3  22.9  24.4  →26.0

@@ -1,0 +1,27 @@
+{
+ "M3.6": {
+  "distance_km": 6.0,
+  "bearing_deg": 343,
+  "compass": "north"
+ },
+ "fire": {
+  "distance_km": 43.3,
+  "bearing_deg": 115,
+  "compass": "south-east"
+ },
+ "track": {
+  "closest_approach_km": 31.9,
+  "bearing_to_closest_point_deg": 319,
+  "passes_to_the": "north-west"
+ },
+ "cells_149x38": {
+  "M3.6": 3.4,
+  "fire": 24.7,
+  "track": 18.2
+ },
+ "cells_69x12": {
+  "M3.6": 1.6,
+  "fire": 11.5,
+  "track": 8.5
+ }
+}
