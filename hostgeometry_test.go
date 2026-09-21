@@ -108,3 +108,26 @@ func TestNothingComesOfNothing(t *testing.T) {
 		t.Errorf("no positions became %v", got)
 	}
 }
+
+// hostRing and hostArea are what a host that keeps geometry really declares:
+// NAMED types, not anonymous slices. The first version of Rings took `[][]P`
+// and so refused them - inference cannot match a `[]hostRing` against `[][]P`
+// - and every test here passed because every test here used an unnamed
+// `[][]hostPoint`. The real integration found it in one compile.
+type hostRing []hostPoint
+type hostArea []hostRing
+
+// TestAHostThatNamesItsRingTypeIsAccepted.
+func TestAHostThatNamesItsRingTypeIsAccepted(t *testing.T) {
+	area := hostArea{
+		hostRing{{Lon: -85, Lat: 41}, {Lon: -83, Lat: 41}, {Lon: -83, Lat: 43}, {Lon: -85, Lat: 41}},
+		hostRing{{Lon: -84.5, Lat: 41.5}, {Lon: -83.5, Lat: 41.5}, {Lon: -83.5, Lat: 42.5}, {Lon: -84.5, Lat: 41.5}},
+	}
+	rings := tuimaps.Rings(area)
+	if len(rings) != 2 || len(rings[0]) != 4 {
+		t.Fatalf("a named area of two named rings became %d rings", len(rings))
+	}
+	if got := tuimaps.Ring(area[0]); len(got) != 4 || got[0] != (tuimaps.LonLat{Lon: -85, Lat: 41}) {
+		t.Errorf("a named ring converted to %v", got)
+	}
+}

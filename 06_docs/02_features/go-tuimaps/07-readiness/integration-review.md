@@ -220,3 +220,40 @@ the copy is a few hundred kilobytes every few minutes and the API stays one type
 `Positioned` asks a point to *say* where it is rather than inspecting how it is laid out, so field
 order, field names and struct tags stay the host's business - and a host's data model satisfies it
 without importing this library at all, which is what the first host's layering required.
+
+### 9.4 The conversion helper refused the first host, and its own tests did not notice
+
+`Rings` was written as `Rings[P Positioned](area [][]P)`, which reads correctly and is wrong. A host
+that keeps geometry **names its ring type** - `type Ring []Point`, `type Polygon []Ring` - so it
+hands over a `[]Polygon`, and Go cannot match that against `[][]P`:
+
+```
+in call to tuimaps.Rings, type geo.Polygon of area does not match [][]P (cannot infer P)
+```
+
+Every test here passed, because every test here built an unnamed `[][]hostPoint`. **The helper
+written to make integration easy was unusable by the only real integration**, and it took one
+compile of the actual host to find - after a full gate run, a public-surface snapshot and five
+green tests.
+
+The ring is a type parameter of its own now (`Rings[R ~[]P, P Positioned](area []R)`, and `Ring`
+the same), and a test declares named types the way a host does.
+
+### 9.5 End to end on live data
+
+One hazard, fetched by the host from the live service and described by this library, nothing
+mocked - a marine zone of thirteen areas over a hundred and thirty-four rings, and a county zone
+that until the same day could not be fetched at all:
+
+```
+the hazard's ground: 14 areas, 135 rings, 10639 positions
+handed to the library as 14 features
+
+on Pamlico Sound       inside   nearest edge      9.2 kilometres north-west
+in San Diego county    inside   nearest edge     43.1 kilometres west
+Denver                 outside  nearest edge   1209.6 kilometres south-west
+```
+
+Rings outnumber areas by ten to one here, so the grouping is doing real work rather than passing
+through - and a place inside one of fourteen areas answers *inside*, which is the fix in §9.1 seen
+from the outside.

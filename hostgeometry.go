@@ -32,7 +32,7 @@ type Positioned interface {
 // if the host edits its copy. For the geometry this library is built for that
 // is a few hundred kilobytes when an overlay changes, against nothing at all
 // per frame.
-func Ring[P Positioned](run []P) []LonLat {
+func Ring[R ~[]P, P Positioned](run R) []LonLat {
 	if len(run) == 0 {
 		return nil
 	}
@@ -52,7 +52,12 @@ func Ring[P Positioned](run []P) []LonLat {
 // ring after it is a hole - so pouring two areas into one Feature would make
 // the second a hole in the first. A host with many areas calls this once per
 // area and makes a Feature of each.
-func Rings[P Positioned](area [][]P) [][]LonLat {
+// **The ring type is a parameter of its own** (`R ~[]P`, not `[]P`). A host
+// that names its ring - `type Ring []Point`, which any host keeping geometry
+// will - hands over a `[]Ring`, and inference cannot match that against
+// `[][]P`. Written the obvious way this refused the first host outright, and
+// the tests did not notice because they passed an unnamed `[][]hostPoint`.
+func Rings[R ~[]P, P Positioned](area []R) [][]LonLat {
 	if len(area) == 0 {
 		return nil
 	}
