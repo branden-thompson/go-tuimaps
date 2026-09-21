@@ -128,10 +128,15 @@ func Embed(tile func(z uint8, x, y uint32) ([]byte, bool), maxZoom uint8) Option
 // Map is one map. Its calls are the host's to make from one goroutine, except
 // those the documentation says may be made from any.
 type Map struct {
-	mu            sync.Mutex
-	shut          bool
-	inside        atomic.Int32
-	sized         bool
+	mu     sync.Mutex
+	shut   bool
+	inside atomic.Int32
+	sized  bool
+	// placed says the host has told the map where to look - by Recentre,
+	// Zoom or FitTo. Until it does, the map is showing the whole world and
+	// a change of size refits it; afterwards, the place the host chose is
+	// kept and only the rectangle around it changes (task 14.19).
+	placed        bool
 	view          project.View
 	noted         project.View // the view whose tiles were last asked for
 	pipe          *tiles.Pipeline
@@ -230,16 +235,36 @@ func (m *Map) resize(s Size) error {
 	if m.sized && m.view.Cols == s.Cols && m.view.Rows == s.Rows {
 		return nil
 	}
-	v, err := project.WholeWorld(s.Cols, s.Rows)
+	r, err := render.NewRenderer(s.Cols, s.Rows)
 	if err != nil {
 		return noSize()
 	}
-	r, err := render.NewRenderer(s.Cols, s.Rows)
+	v, err := m.viewAt(s)
 	if err != nil {
 		return noSize()
 	}
 	m.view, m.renderer, m.sized = v, r, true
 	return nil
+}
+
+// viewAt is the view to draw at a new size. **A host that has said where to
+// look keeps looking there**: a terminal host cannot know its size when it
+// makes the map - the size arrives with the first frame and changes with the
+// window - so a resize that refitted the world would throw the host's chosen
+// place away on the very first frame. A map nobody has pointed anywhere is
+// still showing the whole world, and the whole world at one size is a
+// different zoom from the whole world at another, so that one is refitted
+// (NFR-19).
+func (m *Map) viewAt(s Size) (project.View, error) {
+	if !m.sized || !m.placed {
+		return project.WholeWorld(s.Cols, s.Rows)
+	}
+	kept := m.view
+	kept.Cols, kept.Rows = s.Cols, s.Rows
+	if err := kept.Validate(); err != nil {
+		return project.WholeWorld(s.Cols, s.Rows) // a size the chosen view cannot be drawn at
+	}
+	return kept, nil
 }
 
 // note asks for what the view needs: the tiles to fetch now, those waiting
@@ -351,7 +376,7 @@ func (m *Map) Render(size Size, now time.Time) (frame Frame, err error) {
 		return Frame{}, err
 	}
 	in := render.Input{View: m.view, Style: m.style, Labels: true, Scale: true,
-		Credit: textsafe.Const(basemapCredit)}
+		Credit: textsafe.Const(basemapCredit), Supplied: m.pipe != nil && m.pipe.Deepest() > 0}
 	if m.footer {
 		in.Footer = textsafe.Clean(footerOf(m.view.Centre.Lat, m.view.Centre.Lon, m.view.Zoom))
 	}

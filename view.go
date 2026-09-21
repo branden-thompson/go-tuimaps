@@ -46,6 +46,28 @@ func (m *Map) Recentre(at LonLat) (err error) {
 	return m.move(func(v *project.View) { v.Centre = at })
 }
 
+// DeepestZoom is the deepest zoom this map can draw real detail at: the
+// source's own limit, or the embedded tiles' when there is no source. Zoom
+// accepts anything up to MaxZoom, and beyond this the map is drawn from
+// ancestors standing in - which is a picture, but not a sharper one.
+//
+// **A host cannot work this out for itself.** It is a property of the tiles
+// the map was given, not of the assets package a host imported (task 14.19).
+func (m *Map) DeepestZoom() float64 {
+	defer m.guardQuiet("DeepestZoom")
+	m.plant("DeepestZoom")
+
+	if m == nil {
+		return 0
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.shut || m.pipe == nil {
+		return 0
+	}
+	return float64(m.pipe.Deepest())
+}
+
 // Zoom sets the zoom, holding the centre where it is.
 func (m *Map) Zoom(to float64) (err error) {
 	defer guard("Zoom", &err)
@@ -189,6 +211,9 @@ func (m *Map) moveLocked(change func(*project.View)) error {
 		m.view = was
 		return badView(textsafe.Const("the map would not be a map of anywhere"), textsafe.Const("move it a shorter way, or zoom out first"))
 	}
+	// The host has said where to look, so a later change of size keeps the
+	// place it chose rather than refitting the world (task 14.19).
+	m.placed = true
 	if m.view != was {
 		m.changed++
 	}

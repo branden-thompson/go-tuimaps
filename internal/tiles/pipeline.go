@@ -251,6 +251,22 @@ func (p *Pipeline) maxZoomLocked() uint8 {
 	return hi
 }
 
+// Deepest is the deepest tile zoom this pipeline can actually draw at: the
+// chosen source's, or the embedded tiles' when there is no source. It is what
+// a host needs to know before asking for a zoom it cannot be given.
+func (p *Pipeline) Deepest() uint8 {
+	if p == nil {
+		return 0
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.opts.Network != nil {
+		_, hi := p.opts.Network.zooms()
+		return hi
+	}
+	return p.opts.EmbeddedMaxZoom
+}
+
 // ancestorAt returns the tile's ancestor at zoom z, or the tile itself if it
 // is no deeper.
 func ancestorAt(tile scene.TileID, z uint8) scene.TileID {

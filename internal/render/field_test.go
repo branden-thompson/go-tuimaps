@@ -175,8 +175,11 @@ func TestImageResampledAtDrawTime(t *testing.T) {
 // colour a field is lines where its class changes, each carrying its value.
 func TestContoursAtBreaks(t *testing.T) {
 	v := gulfView()
-	in := Input{View: v, Tiles: embedded(t, v), Style: style.BuiltIn(), Depth: colour.NoColour, Fields: []scene.Field{bands(40, 30)}, OverlaysVersion: 1,
-		FieldLabels: []string{"", "", "", "", "-10", "-5", "0", "5", "10", "15", "20", "25", "30", "35", "40", "45", ""}}
+	// The values a contour carries ride on the prepared field itself, put
+	// there when the grid was classified and its breaks were still known.
+	field := bands(40, 30)
+	field.Labels = []string{"", "", "", "", "-10", "-5", "0", "5", "10", "15", "20", "25", "30", "35", "40", "45", ""}
+	in := Input{View: v, Tiles: embedded(t, v), Style: style.BuiltIn(), Depth: colour.NoColour, Fields: []scene.Field{field}, OverlaysVersion: 1}
 	r, f := drawn(t, in)
 	contour := 0
 	for _, c := range r.grid.cells {

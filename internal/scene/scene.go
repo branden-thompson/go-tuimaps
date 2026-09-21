@@ -133,6 +133,11 @@ type Field struct {
 	Classes                  []int8
 	Preset                   uint8 // the colour preset, or 0 for a host's own type
 	ClassCount               int
+	// Labels are the values the field's bands are divided at, as text, by
+	// class: what a contour line carries when there is no colour to carry it
+	// (D-35). Labels[c] is the value of the boundary below class c, so class
+	// 0 - everything under the first break - has none.
+	Labels []string
 }
 
 // Raster is a prepared image: one class a pixel, one byte each, in the

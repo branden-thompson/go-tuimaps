@@ -66,6 +66,22 @@ func badLanguage() error {
 		textsafe.Const("pass a code of at most eight letters, digits or hyphens"))
 }
 
+// TokenNames are the names SetPalette accepts, in the order the constants
+// document lists them. **A host theming the map to its own design system needs
+// to know what there is to theme**, and without this the only way to find out
+// was to guess a name and read it back from SetPalette's list of refusals
+// (task 14.19, the first host).
+func TokenNames() []string {
+	all := colour.Tokens()
+	out := make([]string, 0, len(all))
+	for _, t := range all {
+		if name := t.Name(); name != "" {
+			out = append(out, name)
+		}
+	}
+	return out
+}
+
 // SetPalette gives tokens colours of the host's own. It answers with the
 // names that are no token of the library's, sorted, which are ignored; the
 // rest take effect at the next Render, and nothing is decoded again for

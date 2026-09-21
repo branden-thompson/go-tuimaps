@@ -40,17 +40,23 @@ type Painter struct {
 	overlayLabels []Label
 	markerLabels  []Label
 	glyphs        []Label
-	labelPts      []Point
-	ring          []Point
-	edge          []bool // for each point of ring: the segment that ends there lies along the tile's border
-	rings         [][]Point
-	profile       style.Profile
-	depth         colour.Depth
-	reads         Reads
-	simplifying   bool
-	thinner       []Point
-	culled        int
-	lastPoints    int
+	// bandLabels are the values a field's contours carry with no colour
+	// (D-35). They are kept apart from an overlay's own labels because
+	// there are many of them and they matter least: a contour's value must
+	// never cost the map a warning's word, a place's name or the host's own
+	// marker, so they are placed after all three.
+	bandLabels  []Label
+	labelPts    []Point
+	ring        []Point
+	edge        []bool // for each point of ring: the segment that ends there lies along the tile's border
+	rings       [][]Point
+	profile     style.Profile
+	depth       colour.Depth
+	reads       Reads
+	simplifying bool
+	thinner     []Point
+	culled      int
+	lastPoints  int
 }
 
 // NewPainter makes a painter for a map of cols by rows cells.
@@ -76,6 +82,7 @@ func (p *Painter) Reset() {
 	p.literals, p.labels, p.labelPts = p.literals[:0], p.labels[:0], p.labelPts[:0]
 	p.overlayLabels = p.overlayLabels[:0]
 	p.markerLabels, p.glyphs = p.markerLabels[:0], p.glyphs[:0]
+	p.bandLabels = p.bandLabels[:0]
 	p.culled, p.lastPoints = 0, 0
 	p.profile, p.depth, p.reads = style.Profile{}, 0, Reads{}
 	p.simplifying = false
@@ -240,6 +247,14 @@ func (p *Painter) mark(ring []Point, s scene.Shape) {
 	for i := 0; i+1 < len(ring); i++ {
 		p.lines.Line(ring[i].X, ring[i].Y, ring[i+1].X, ring[i+1].Y, 1, s.Role)
 	}
+}
+
+// BandLabels are the values a field's contour lines carry.
+func (p *Painter) BandLabels() []Label {
+	if p == nil {
+		return nil
+	}
+	return p.bandLabels
 }
 
 // OverlayLabels are the labels of the overlays' shapes, in the order drawn.

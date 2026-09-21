@@ -1,6 +1,8 @@
 package overlay
 
 import (
+	"strconv"
+
 	"github.com/branden-thompson/go-tuimaps/internal/fault"
 	"github.com/branden-thompson/go-tuimaps/internal/scene"
 	"github.com/branden-thompson/go-tuimaps/internal/textsafe"
@@ -76,7 +78,8 @@ func implausible(g *Grid) bool {
 // classify makes a grid's prepared form: each value's class, once.
 func classify(g *Grid, kind Kind) scene.Field {
 	field := scene.Field{West: g.West, South: g.South, East: g.East, North: g.North, Cols: g.Cols, Rows: g.Rows,
-		Classes: make([]int8, len(g.Values)), Preset: uint8(kind.Preset), ClassCount: len(kind.Breaks) + 1}
+		Classes: make([]int8, len(g.Values)), Preset: uint8(kind.Preset), ClassCount: len(kind.Breaks) + 1,
+		Labels: bandLabels(kind.Breaks)}
 	for i, v := range g.Values {
 		field.Classes[i] = int8(Classify(v, kind.Breaks))
 	}
@@ -92,4 +95,20 @@ func (s *Store) Field(id string) (scene.Field, bool) {
 	defer s.mu.Unlock()
 	f, ok := s.fields[id]
 	return f, ok
+}
+
+// bandLabels are the breaks as text, each placed at the class above it, so
+// that a contour drawn between two bands carries the value it divides them at.
+// **Without these a field drawn with no colour is bare lines**, which say where
+// a band changes but not to what - the defect the first acceptance sitting
+// found in scenario 4, and the reason D-35 asked for them.
+func bandLabels(breaks []float64) []string {
+	if len(breaks) == 0 {
+		return nil
+	}
+	out := make([]string, len(breaks)+1) // class 0 lies below the first break and has no boundary of its own
+	for i, b := range breaks {
+		out[i+1] = strconv.FormatFloat(b, 'f', -1, 64)
+	}
+	return out
 }

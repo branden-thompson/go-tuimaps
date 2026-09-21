@@ -224,7 +224,7 @@ func (r *Renderer) contours(in Input, f *scene.Field) {
 				r.painter.lines.Set(x, y, ink)
 			}
 			if y%labelEvery == labelEvery/2 && east >= 0 && east != here {
-				r.painter.valueLabel(x, y, in.FieldLabels, max(here, east), ink)
+				r.painter.valueLabel(x, y, f.Labels, max(here, east), ink)
 			}
 		}
 	}
@@ -232,8 +232,8 @@ func (r *Renderer) contours(in Input, f *scene.Field) {
 
 // valueLabel offers a contour's value as a label at a dot.
 func (p *Painter) valueLabel(x, y int, labels []string, class int8, ink uint8) {
-	if class < 0 || int(class) >= len(labels) || labels[class] == "" || len(p.overlayLabels) >= maxLabels {
+	if class < 0 || int(class) >= len(labels) || labels[class] == "" || len(p.bandLabels) >= maxLabels {
 		return
 	}
-	p.overlayLabels = append(p.overlayLabels, Label{X: x, Y: y, Name: textsafe.Clean(labels[class]), Ink: ink})
+	p.bandLabels = append(p.bandLabels, Label{X: x, Y: y, Name: textsafe.Clean(labels[class]), Ink: ink})
 }

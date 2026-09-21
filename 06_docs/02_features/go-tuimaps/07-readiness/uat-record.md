@@ -348,3 +348,25 @@ a reader might "flatten the indentation" mistook a convenience printout for the 
 **The debt is not cancelled, only moved.** PL-AX-3 is owed at task 14.19, where a host
 renders `Answer` values to its own platform's accessibility layer. If that review does not
 test it, this paragraph is where the gap shows.
+
+### Finding 4's cause, found later in the code (not during the sitting)
+
+**The contours are unlabelled because nothing ever fills the field that labels
+them, not because the library cannot.** `internal/render/frame.go` carries
+`Input.FieldLabels`, documented as *"a field's values as text, by class: what
+its contour lines carry when there is no colour (D-35)"*. The renderer reads it
+at `internal/render/field.go:227`, in `valueLabel`. **Nothing outside the tests
+ever assigns it.** `overlays.go:266` hands the renderer its shapes, fields,
+rasters and borrowed overlays and leaves `FieldLabels` empty, so every field
+ever drawn without colour has had bare contours.
+
+So D-35 designed exactly the thing HUM LEAD found missing, the renderer
+implements it, and the wiring between them was never written. The values have
+to be derived from the field's preset and the map's unit, because the prepared
+`scene.Field` carries `Preset` and `ClassCount` but not the break values.
+
+**This changes what Finding 4 asks of REVIEW.** It is not "should a field's
+no-colour form carry values" - that was ruled in PLAN and built. It is a defect
+with a known cause and one place to fix it. HUM LEAD's "cannot tell" verdict
+stands and NFR-15 is still not met today; what has changed is the size and the
+nature of the work.

@@ -83,18 +83,19 @@ type Input struct {
 	// stops at the shore (D-32), and an image never does (D-87).
 	FieldsOverWater     bool
 	ImagesMaskedByWater bool
-	// FieldLabels are a field's values as text, by class: what its contour
-	// lines carry when there is no colour (D-35).
-	FieldLabels []string
 	// Markers are the host's places, drawn over everything beneath them
 	// (FR-26); MarkerPhase is which half of the blink this frame draws, and
 	// Motion works it out from the host's clock.
 	Markers     []Marker
 	MarkerPhase bool
-	Missing     int            // tiles the view wants with nothing on hand to draw for them
-	Layers      style.Switches // the basemap layers the host has switched off (FR-36)
-	Style       *style.Style
-	Palette     colour.Palette
+	Missing     int // tiles the view wants with nothing on hand to draw for them
+	// Supplied says the map has somewhere to get tiles from - a source, or
+	// embedded tiles - so that a frame with none on hand can tell a host
+	// that has not run the work from one that gave the map nothing to draw.
+	Supplied bool
+	Layers   style.Switches // the basemap layers the host has switched off (FR-36)
+	Style    *style.Style
+	Palette  colour.Palette
 	// Look counts changes to the palette, which cannot be compared: whoever
 	// changes the palette raises it, and a frame is reused only while it and
 	// everything else here stay the same (contract, section 5).
@@ -310,7 +311,7 @@ func (r *Renderer) sameLook(in Input) bool {
 	if in.Stale != l.Stale || in.Footer != l.Footer || in.Simplify != l.Simplify {
 		return false
 	}
-	return in.Labels == l.Labels && in.Scale == l.Scale && in.Credit == l.Credit && in.Missing == l.Missing && in.Layers == l.Layers
+	return in.Labels == l.Labels && in.Scale == l.Scale && in.Credit == l.Credit && in.Missing == l.Missing && in.Supplied == l.Supplied && in.Layers == l.Layers
 }
 
 // unchanged reports whether nothing a frame is a function of has changed
@@ -468,10 +469,10 @@ func load(in Input) style.Load {
 	return style.Bare
 }
 
-// compose builds the cells: areas, line work, then names, then furniture.
-func (r *Renderer) compose(in Input, status Status) {
+// canvas reads the painter's dots and areas into the cells, leaving alone any
+// cell text has already claimed.
+func (r *Renderer) canvas() {
 	g := r.grid
-	r.underlays(in) // before the cells are read: a field with no colour is lines, drawn on the canvas
 	for row := range g.rows {
 		for col := range g.cols {
 			c := &g.cells[row*g.cols+col]
@@ -484,6 +485,13 @@ func (r *Renderer) compose(in Input, status Status) {
 			}
 		}
 	}
+}
+
+// compose builds the cells: areas, line work, then names, then furniture.
+func (r *Renderer) compose(in Input, status Status) {
+	g := r.grid
+	r.underlays(in) // before the cells are read: a field with no colour is lines, drawn on the canvas
+	r.canvas()
 	// The text of a cell is a contest, not a painting: the first to claim a
 	// cell keeps it, so the order below is the order of precedence. The
 	// frame's own furniture is never overdrawn; a marker keeps its cell
@@ -501,6 +509,7 @@ func (r *Renderer) compose(in Input, status Status) {
 	}
 	if !in.Labels {
 		r.markerNames() // the host's own places are not the basemap's names
+		r.bandNames()
 		if colourless(in.Depth) {
 			r.hatch()
 		}
@@ -508,6 +517,23 @@ func (r *Renderer) compose(in Input, status Status) {
 	}
 	if x, y, side, err := in.View.TilePlace(scene.TileID{}); err == nil {
 		g.world = box{left: toDot(x), top: toDot(y), right: toDot(x + side), bottom: toDot(y + side)}
+	}
+	// **A field's values are placed before the basemap's names, and only
+	// then.** A field drawn without colour is contour lines, and a contour
+	// with no value says where a band changes but not to what - so on such a
+	// frame the values are the data the host asked for and a place name is
+	// the decoration (D-124). The host's own markers are placed first of the
+	// three, so that a value can never cost the map its "you are here".
+	//
+	// **This is where P-60 would otherwise put the marker labels**, which
+	// upstream collision-checks after the map's names. Upstream has no scalar
+	// fields at all, so it has no contour values to order against names, and
+	// this reordering therefore changes no frame upstream could draw: the
+	// parity row holds for every input it supports, and the branch below is
+	// taken only when a field is being labelled.
+	if bands := r.painter.BandLabels(); len(bands) > 0 {
+		r.markerNames()
+		r.bandNames()
 	}
 	// Names last, most important first; the order among equals is the order
 	// the tiles gave them, and the tiles were sorted (P-25).
@@ -523,9 +549,23 @@ func (r *Renderer) compose(in Input, status Status) {
 			placed++
 		}
 	}
-	r.markerNames()
+	if len(r.painter.BandLabels()) == 0 {
+		r.markerNames() // P-60's own place, on every frame with no field on it
+	}
 	if colourless(in.Depth) {
 		r.hatch() // last of all: it fills what nothing else has taken (FR-18a)
+	}
+}
+
+// bandNames places the values a field's contours carry, after every other
+// name. **They are last because they are the least of them and the most
+// numerous**: a field drawn without colour puts a value on every contour it
+// crosses, and placed any earlier they take the room a warning's word, a
+// place's name or the host's own marker would have had (D-35, P-60).
+func (r *Renderer) bandNames() {
+	r.grid.world = box{}
+	for _, l := range r.painter.BandLabels() {
+		r.grid.label(l)
 	}
 }
 
@@ -543,7 +583,16 @@ func (r *Renderer) markerNames() {
 func (r *Renderer) furniture(in Input, status Status) {
 	g := r.grid
 	if status == NoTiles {
+		// **Two different things bring a frame here, and they need different
+		// answers.** With tiles to draw from, nothing has decoded them yet and
+		// the host has work to run; with none, there is nothing to run. The
+		// wording used to tell every host to name a source or pass the
+		// embedded tiles - which the first host had already done - and said
+		// nothing of the pump, the one thing that would have helped (14.19).
 		notice := textsafe.Const("no map tiles: name a source, or pass the assets package's tiles")
+		if in.Supplied {
+			notice = textsafe.Const("no map tiles yet: call Settle, or run Work until it has none left")
+		}
 		fit := textsafe.Fit(notice, g.cols)
 		g.write((g.cols-textsafe.Width(fit))/2, g.rows/2, fit, uint8(colour.Notice))
 	}
@@ -553,6 +602,13 @@ func (r *Renderer) furniture(in Input, status Status) {
 	}
 	credit := textsafe.Fit(in.Credit, g.cols)
 	if w := textsafe.Width(credit); w > 0 {
+		// **A narrow map put the scale mark and the credit against each other**
+		// with nothing between them, so that "50 km" and the credit read as one
+		// word. The credit gives up its first cell rather than touch it.
+		if left := g.cols - w; left > 0 && g.cells[(g.rows-1)*g.cols+left-1].taken {
+			credit = textsafe.Fit(credit, g.cols-1)
+			w = textsafe.Width(credit)
+		}
 		g.write(g.cols-w, g.rows-1, credit, uint8(colour.Credit))
 	}
 	if in.Scale {

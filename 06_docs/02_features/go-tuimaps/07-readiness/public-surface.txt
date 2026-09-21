@@ -89,6 +89,7 @@ func NewShared
 func RadarImage
 func SharedCaches
 func TemperatureGrid
+func TokenNames
 func WarningKinds
 func WithSize
 method Map.AddPlace
@@ -100,6 +101,7 @@ method Map.Changed
 method Map.Close
 method Map.ColourDepth
 method Map.Credits
+method Map.DeepestZoom
 method Map.Describe
 method Map.Fetcher
 method Map.FitTo
