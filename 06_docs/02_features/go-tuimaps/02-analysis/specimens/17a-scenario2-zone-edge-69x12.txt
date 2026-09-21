@@ -1,0 +1,16 @@
+SPECIMEN 17a — M1 scenario 2, smallest Watchpost window
+69x12 cells · braille renderer · truecolor · centre 37.47,-86.34 · zoom 7.2 · 1 basemap tile(s) at z7 © OpenMapTiles © OpenStreetMap
+alert: a live Heat Advisory from the NWS feed of 2026-09-18 that carried no polygon of its own - the shape drawn is its zone, Grayson County KY (KYZ027), 527 vertices, fetched 2026-09-19 from api.weather.gov; outline + tint, colour by severity
+scale: one column is 1.7 km east-west at the centre latitude; one row is 3.4 km north-south (a cell is twice as tall as it is wide)
+⢇                          ⣤⣰⣶⣠⡄                       ⢀⠤⠋⠁⢸⠃⠣⡀      
+⠈⢆                    ⣀⣀⣖⣊⡿⣿⣿ ⠉⠁       ⣀             ⡠⠒⠁   ⡞  ⠑⢤⣀    
+  ⠱⡀               ⣀ ⢀⡵⠈⠉ ⢡⠟⡿⢷⣷⣄⣄⣀⡟⠓⠞⠋◉ Place⢀⣀  ⢀⡠⠔⠉     ⢠⠃    ⠈⣇   
+   ⠱⡀            ⢰⠚⠉⢲⡽⠆   ⠈  ⠈  ⠉⠉⠁       ⠈⠃⠉⢉⠿⢲⠊⠁        ⢸      ⠈⠒⠢⡀
+    ⢣             ⡇                         ⣠⠃  ⠱⡀        ⡇         ⠈
+    ⠈⢆            ⢱                    ⣀⠤⠒⠊⠉⠁    ⢿        ⢱          
+      ⠣⡀           ⡇             ⢀⣀⠤⠒⠊⠉          ⣯⡀       ⢸          
+       ⠈⢢          ⠸⡀        ⢀⣀⠤⠒⠁               ⠈⣧       ⢸          
+         ⠳⣠⠤⠤⠤⠤⢤⣀⣀⣀⡠⠵⢤⣤⠒⠉⠉⠉⠉⠉⠁             ⣼⠃   ⢀⣠⢿⠦      ⢸          
+    ⢀ ⣀⠤⠔⠉⠹⡄           ⠉⠉⠒⠤⡄            ⢺⣆ ⢼⡃⡀⣀⢀⢸⡇       ⢀⡇          
+⣄⠤⠔⠊⠁⠉   ⢠⠤⢝⡲⡄             ⠸⡀   ⣀⣀⣀⣀⣀⣀⣀⣤⣬⣽⣷⡿⢿⣷⠿⢿⠛⠁       ⡞           
+⠱├──────────┤ 20 km         ⠉⠉⠉⠉       ⠚⣿⡟⡉ ⠐⠛           ⢳  ⣀ ⡤⡄⡼⣳⣷⠣⢤

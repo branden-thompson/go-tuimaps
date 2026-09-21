@@ -1,0 +1,18 @@
+{
+ "name": "M1 scenario 1: an alert with its own polygon, the place inside it",
+ "note": "A flood warning of nine vertices over the Chattahoochee north-west of Atlanta, and a place inside it. The shape is hand-made and is not a live alert; the scenario asks only that the viewer can say inside or outside.",
+ "places": [
+  {"name": "Home", "lon": -84.51, "lat": 33.82},
+  {"name": "Downtown", "lon": -84.39, "lat": 33.75}
+ ],
+ "shapes": [
+  {"id": "flood-warning", "kind": "area", "rings": [[
+   [-84.62, 33.74], [-84.55, 33.71], [-84.47, 33.73], [-84.42, 33.79],
+   [-84.44, 33.87], [-84.52, 33.91], [-84.60, 33.88], [-84.64, 33.82]
+  ]]}
+ ],
+ "views": [
+  {"name": "149x38", "cell_km": 1.6, "cell_row_km": 3.2},
+  {"name": "69x12", "cell_km": 3.5, "cell_row_km": 7.0}
+ ]
+}

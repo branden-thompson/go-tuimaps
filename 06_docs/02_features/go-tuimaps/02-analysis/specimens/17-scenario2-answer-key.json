@@ -1,0 +1,14 @@
+{
+ "inside": true,
+ "nearest_edge_km": 0.9,
+ "bearing_deg": 342,
+ "compass": "north",
+ "view_149x38": {
+  "cells_from_edge": 0.56,
+  "frame_answer": "on the edge"
+ },
+ "view_69x12": {
+  "cells_from_edge": 0.26,
+  "frame_answer": "on the edge"
+ }
+}

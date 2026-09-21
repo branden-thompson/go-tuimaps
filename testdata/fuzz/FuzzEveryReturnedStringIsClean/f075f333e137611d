@@ -1,0 +1,8 @@
+go test fuzz v1
+string("0")
+string("0")
+string("0")
+string("\x87")
+byte('P')
+byte('\x18')
+byte('\x00')

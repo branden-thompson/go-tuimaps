@@ -1,0 +1,36 @@
+{
+ "shapes": [
+  {
+   "place": "Home",
+   "shape": "flood-warning",
+   "inside": true,
+   "km": 7.5,
+   "bearing_deg": 78,
+   "compass": "east",
+   "cells": {
+    "149x38": 4.66,
+    "69x12": 2.13
+   },
+   "frame_answer": {
+    "149x38": "inside",
+    "69x12": "inside"
+   }
+  },
+  {
+   "place": "Downtown",
+   "shape": "flood-warning",
+   "inside": false,
+   "km": 4.8,
+   "bearing_deg": 304,
+   "compass": "north-west",
+   "cells": {
+    "149x38": 3.01,
+    "69x12": 1.38
+   },
+   "frame_answer": {
+    "149x38": "outside",
+    "69x12": "outside"
+   }
+  }
+ ]
+}

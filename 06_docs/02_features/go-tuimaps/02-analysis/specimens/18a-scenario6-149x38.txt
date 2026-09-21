@@ -1,0 +1,42 @@
+SPECIMEN 18a — M1 scenario 6: point hazards - an earthquake and a fire detection
+149x38 cells · braille renderer · truecolor · centre 47.50,-111.30 · zoom 7.5 · 1 basemap tile(s) at z7 © OpenMapTiles © OpenStreetMap
+features: earthquake: a real event, magnitude 3.6, 5 km NW of Black Eagle, Montana (USGS feed, fetched 2026-09-19); fire detection: a SYNTHETIC point, placed for this specimen; glyphs: quake ◆, fire ●
+scale: one column is 1.2 km east-west at the centre latitude; one row is 2.3 km north-south (a cell is twice as tall as it is wide)
+                                               ⠈⡆                                                                       ⡠⠔⠁   ⡀⣠⡼⠃                   
+                                                ⡇                                                                    ⢀⣀⠎⣿⠖⢤⣀ ⢐⡏⠉                     
+                                                ⠸⡄                                                                ⡠⠔⠊⠁⣠⢶⣬⠿ ⠉⠉⠉                       
+                                                 ⠈⢦⡀                                                             ⡸⠁⢀⡤⠖⠁                              
+                                                   ⡇                                               ⢀⡠⠤⠤⠒⠒⠒⠉⠉⠉⠉⠉⠉⠿⡷⠤⠎                                 
+                                                   ⡇                                          ⢀⡠⠤⠔⠊⠁        ⢀⣀⡤⠾⠓⠃                                   
+                                                   ⡇                                       ⢀⡠⠒⠁     ⢰⠲⠴⠛⠢⣀⣠⠔⠉⠉                                       
+                                                   ⡇                                    ⢀⠤⠊⠁      ⣀⡞⠉                                                
+                                                   ⣇                                 ⣀⠤⠊⠁       ⢀⡿⠈                                                  
+⡀                        ⡰⡀                        ⠘⢆                               ⡜          ⡠⠊                                 ⣀⡄                 
+⡼                        ⣷⢷⡀                        ⠈⢢                             ⡜          ⡴⠃                                  ⠣⡇                 
+                         ⢣⠈⡦⣤                         ⠱⡀                         ⢀⠜         ⢠⠞                                     ⢀                 
+                          ⢑⣜⡜                          ⠘⡄                       ⢀⠎         ⢀⡼                                      ⢸⠣⢄               
+                           ⠉                            ⢸⡄                     ⢀⠎         ⢀⡾                                       ⠘⠒⠁               
+                                                         ⢻⡀                   ⢠⠊          ⣰⠃                                                         
+                                                          ⠱⡄                 ⢠⠃      ⢀⣀⢀⣰⠒⠃                                          ⢀⣔⡱⡀            
+                                                  ⢀⣀⣀⣀⣀⣀⡠⠤⠔⠛⠒⠦⠤⣄⣀       ◆ M3.6    ⢀⣀⠴⠁ ⠁                                             ⠈⠁⠣⠃            
+                                               ⡰⠉⠉⠁              ⠉⠑⠢⢄⡀    ⢀⡔⠃ ⡠⠒⠢⠜⠁                                                                  
+                                          ⡠⠔⠒⠒⠉                      ⠘⠢⢤⣀⣰◉ Great Falls                                                              
+                                ⢀⠔⠒⠒⠒⠒⠒⠒⠒⠊                             ⢰⡡⢶⡓⠒⠒⠒⠒⠲⠦⠤⠤⣀                                                                 
+                               ⡰⠁                                    ⣀⡠⠋ ⢼⣁         ⠑⢄⣀⡀                                                             
+                              ⡰⠁                               ⣀⡠⠔⠒⠉⠉     ⢸            ⠈⠉⠑⠒⠢⢄⡀                                                       
+                             ⢰⠁                             ⡠⢲⢫⣶⢄  ⣞⢫⣆⢰⡟⡆  ⢱                 ⠈⠑⠤⡀                                                    
+                             ⡎                            ⢀⠔⣗⡾⠋⠋⠘⠷⠋⠛ ⠹⠛⢸⠃⢰⠚⠋                    ⢣                                                    
+                           ⢀⠜                            ⡰⢃⣤⣬⣳         ⠘⠲⠚                      ⠈⢆⡀                                                  
+                          ⡠⠃                           ⢠⢊⣠⡟⠿                                      ⠈⠲⡄                                                
+                        ⢀⠔⠁                          ⢀⠔⡥⠼⠁                                          ⠘⢄⡀    ● fire                                    
+                       ⡠⠊                           ⡠⠃⣰⡁                                              ⠑⢄                                             
+                    ⢀⡠⠊                           ⣠⢎⢹⠉⠁                                                 ⠱⡀                                           
+                ⢀⠔⠊⠉⠁                           ⢀⢴⠋⠈⠊                                                    ⠉⠒⠒⠒⠢⣀                                      
+               ⢠⠃                               ⣮⠃                                                             ⠉⠒⠒⠢⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⡀                     
+              ⢀⠎                             ⣠⠴⡾⠛                                                                              ⠈⠢⢄                   
+             ⡠⠊                            ⢠⢺⠉⠉                                                                                   ⠑⠤⣀                
+           ⢀⠜                             ⣠⠞⠊                                                                                        ⠉⠢⢄             
+         ⢀⠔⠁                            ⢠⣼⠁                                                                                             ⠉⠢⢄⡀         
+        ⢀⠎                             ⡴⠽⠋                                                                                                 ⠈⠉⠉⠒⠢⡀    
+       ⢀⠎                         ⢀⣠⡤⡶⠼⠋                                                                                                        ⠘⢄   
+ ├───────────────┤ 20 km        ⢰⡏⠁ ⠈⠁                                                                                                            ⠑⡄ 

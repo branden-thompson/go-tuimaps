@@ -1,0 +1,11 @@
+# Specimens are terminal output kept byte for byte: .ans files are never line-ending converted and never diffed as text; text sources are kept at LF on every platform.
+*.ans -text -diff
+*.png binary
+*.txt text eol=lf
+*.md text eol=lf
+*.go text eol=lf
+go.mod text eol=lf
+go.sum text eol=lf
+
+# Test fixture: vector tiles are binary
+*.pbf binary

@@ -5,6 +5,11 @@ dist/
 *.log
 !06_docs/**/*.log
 
+# The workspace file is written by the gate script and never tracked:
+# tracked module files carry no replace directive.
+go.work
+go.work.sum
+
 # Go test and profiling output
 coverage.out
 *.test
@@ -12,6 +17,9 @@ coverage.out
 
 # OS and editor
 .DS_Store
+
+# Browser-automation scratch output
+.playwright-mcp/
 
 # Local development harness — not part of the public project
 .claude/

@@ -1,0 +1,16 @@
+SPECIMEN 19c — dashed track, no colour, smallest window
+69x12 cells · braille renderer · no colour · centre 47.50,-111.30 · zoom 6.4 · 1 basemap tile(s) at z6 © OpenMapTiles © OpenStreetMap
+features: storm track: a SYNTHETIC line placed for this specimen, passing north-west of the place; drawn as a DASHED stroke, thicker than a road - a stroke no basemap line uses
+scale: one column is 2.5 km east-west at the centre latitude; one row is 5.0 km north-south (a cell is twice as tall as it is wide)
+                          ⢀⣠⠄                ⣀⡜⠛⠙⠚⠉⠁                 
+           ⢠⡀            ⠰⠋⠁                ⡠⠃                       
+           ⢸⢣⡄        ⢀⡤                   ⡼⠁                        
+            ⠙⠁       track                ⡼                          
+                  ⣠⠖                   ⡠⠤⠖⠁                          
+                 ⠞⠁               ◉ Great Falls                      
+              ⢀⡀                  ⣏                                  
+             ⣰⠏             ⢠⣠⡀⡤⣄⢤⢘⡄                                 
+             ⠁             ⣸⣻⠁⠉⠉⠈⠣⠏⠁                                 
+         ⣠⠞⠁             ⢠⠎⠉                                         
+        ⠘⠁             ⣠⡲⠊                                           
+ ├──────┤ 20 km      ⢀⣸⠁                                             

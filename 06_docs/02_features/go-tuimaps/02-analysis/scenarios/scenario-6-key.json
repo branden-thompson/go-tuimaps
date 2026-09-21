@@ -1,0 +1,34 @@
+{
+ "shapes": [
+  {
+   "place": "Great Falls",
+   "shape": "earthquake",
+   "km": 6,
+   "bearing_deg": 343,
+   "compass": "north",
+   "cells": {
+    "149x38": 1.87,
+    "69x12": 0.86
+   },
+   "frame_answer": {
+    "149x38": "outside",
+    "69x12": "on the edge"
+   }
+  },
+  {
+   "place": "Great Falls",
+   "shape": "fire",
+   "km": 43.4,
+   "bearing_deg": 115,
+   "compass": "south-east",
+   "cells": {
+    "149x38": 27.1,
+    "69x12": 12.39
+   },
+   "frame_answer": {
+    "149x38": "outside",
+    "69x12": "outside"
+   }
+  }
+ ]
+}
