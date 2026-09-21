@@ -16,8 +16,11 @@ import (
 // an image, and one only (FR-6).
 type Overlay = overlay.Overlay
 
-// Feature is one shape of a feature overlay. Its rings are the host's own
-// memory, borrowed and never copied (FR-11).
+// Feature is ONE AREA of a feature overlay: an outline first, then any holes
+// in it. Ground that is separate is a separate feature, because every ring
+// after the first is read as a hole. Its rings are read where they are and not
+// copied again (FR-11); a host holding its own point type converts once with
+// Rings.
 type Feature = overlay.Feature
 
 // FeatureKind is what a feature is.

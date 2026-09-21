@@ -32,6 +32,11 @@ type LonLat struct {
 	Lat float64
 }
 
+// LonLat says where this is, in the same terms a host's own point type does.
+// It is here so that a host already holding the library's point needs no
+// wrapper to use the same conversion call as a host holding its own.
+func (p LonLat) LonLat() (lon, lat float64) { return p.Lon, p.Lat }
+
 // notFinite is the one error this file raises: a number that is not a
 // number, is infinite or lies outside the world must never reach the
 // arithmetic, still less a conversion to an integer.

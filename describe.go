@@ -1,6 +1,9 @@
 package tuimaps
 
 import (
+	"encoding/binary"
+	"hash/fnv"
+	"math"
 	"time"
 
 	"github.com/branden-thompson/go-tuimaps/internal/describe"
@@ -105,12 +108,38 @@ type describeKey struct {
 	places   uint64
 	units    describe.Units
 	stale    bool
-	asked    int
+	asked    uint64
 }
 
 // describeKey is the key for this call.
 func (m *Map) describeKey(asked []Place) describeKey {
-	return describeKey{overlays: m.overlays, places: m.placesVersion, units: m.units, stale: m.staleNow, asked: len(asked)}
+	return describeKey{overlays: m.overlays, places: m.placesVersion, units: m.units, stale: m.staleNow, asked: askedFingerprint(asked)}
+}
+
+// askedFingerprint is what was asked about, not how much of it.
+//
+// **A host may ask about places the map does not store** - that is what the
+// argument to Describe is for, and a station watching several locations uses
+// it for exactly that. `placesVersion` counts changes to the map's OWN places
+// and says nothing about these, so keying on the count alone answered a
+// question about one place with the answer about another (FR-29 requires the
+// key to change whenever the answer would).
+//
+// What an answer depends on is each place's name and where it is, in order.
+func askedFingerprint(asked []Place) uint64 {
+	h := fnv.New64a()
+	var buf [8]byte
+	put := func(v uint64) {
+		binary.LittleEndian.PutUint64(buf[:], v)
+		_, _ = h.Write(buf[:])
+	}
+	put(uint64(len(asked)))
+	for _, p := range asked {
+		_, _ = h.Write([]byte(nameOf(p)))
+		put(math.Float64bits(p.At.Lon))
+		put(math.Float64bits(p.At.Lat))
+	}
+	return h.Sum64()
 }
 
 // rememberedDescription is the description already worked out, when nothing
@@ -168,12 +197,15 @@ func (m *Map) answerOf(place Place, id string, o Overlay) Answer {
 // featureAnswer is the answer for an overlay of features: the area the
 // place is in or out of, or the nearest point or line.
 func (m *Map) featureAnswer(place Place, id string, o Overlay) Answer {
-	var rings [][]project.LonLat
+	// **One entry per feature, not one list of every ring.** A feature is one
+	// area - an outline and its holes - and two areas of the same hazard may
+	// overlap, which even-odd over the lot would cancel (see InAnyArea).
+	var areas [][][]project.LonLat
 	var points, lines []describe.Labelled
 	for _, f := range o.Features {
 		switch f.Kind {
 		case Polygon, Circle:
-			rings = append(rings, f.Rings...)
+			areas = append(areas, f.Rings)
 		case Point:
 			for _, run := range f.Rings {
 				points = append(points, describe.Labelled{Run: run, Label: f.Label})
@@ -184,8 +216,8 @@ func (m *Map) featureAnswer(place Place, id string, o Overlay) Answer {
 			}
 		}
 	}
-	if len(rings) > 0 {
-		return describe.OfArea(nameOf(place), id, place.At, rings, m.units)
+	if len(areas) > 0 {
+		return describe.OfArea(nameOf(place), id, place.At, areas, m.units)
 	}
 	if len(points) > 0 {
 		near, ok := describe.NearestPoint(place.At, points)

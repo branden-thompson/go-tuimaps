@@ -33,10 +33,20 @@ const (
 	Circle
 )
 
-// Feature is one shape of a feature overlay. Its rings are the host's own
-// memory, borrowed and never copied (FR-11): a polygon's outer ring and its
-// holes, a line's one run of positions, a point's one position. A circle has
-// a centre and a radius and no rings.
+// Feature is ONE AREA of a feature overlay: a polygon's outer ring and then
+// its holes, a line's one run of positions, a point's one position. A circle
+// has a centre and a radius and no rings.
+//
+// **The first ring is the outline and every ring after it is a hole**, so
+// ground that is separate is a separate feature. Two features that overlap are
+// two fills, and their overlap is inside (FR-11); two areas poured into one
+// feature would make the second a hole in the first.
+//
+// Its rings are read where they are and not copied again (FR-11): once a
+// feature is handed in, the library holds these slices and a host that edits
+// them is editing what is drawn. A host whose geometry is in its OWN point
+// type converts it once with tuimaps.Rings, which copies at that point and
+// hands over memory nothing else is holding.
 type Feature struct {
 	Kind     FeatureKind
 	Rings    [][]project.LonLat

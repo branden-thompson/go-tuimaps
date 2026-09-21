@@ -158,3 +158,65 @@ The diagrams were updated in the same commit, and the rebuild of the architectur
 showed something worth keeping in mind: **the atlas is built from the mermaid blocks, so a
 change written only in the prose beside a diagram never reaches it.** The label-ordering
 change was moved into the diagram itself for that reason.
+
+## 9 - What the second look at the first host found, and the one thing deferred
+
+The first review of this integration read the library. This round read **both projects against
+each other**, at HUM LEAD's direction, and found three things the first pass could not have:
+two defects in this library, and one design question about its shape.
+
+### 9.1 Two areas of one hazard cancelled each other in the spoken answer
+
+`featureAnswer` gathered the rings of every feature into one list and `InArea` counted crossings
+over all of them by the even-odd rule. **Two overlapping areas then cancel**, so a house inside
+both was reported *outside*. The National Weather Service produces this constantly: one alert
+naming a marine zone and the coastal land zone beside it, or two counties sharing a border.
+
+The fill was always right - each feature is its own fill, so the overlap is drawn (FR-11). Only
+the words were wrong, which is the worse half: **a sighted reader saw the house shaded and a
+screen reader was told it was outside.** The 24-screen acceptance sitting could not have caught
+it, because every scenario in it had one area.
+
+Fixed by `InAnyArea`: each area is asked in turn, and even-odd still applies *within* an area so
+holes still read as holes. Mutating the fix back to a flat list fails the test; single-area
+answers are unchanged, so the sitting's approved frames still stand.
+
+### 9.2 The description memo answered about the wrong place
+
+`describeKey` recorded how MANY places a call asked about, not which. `Describe` takes its places
+as an argument precisely so a host can ask about places the map does not store - **which is what a
+station watching several locations does** - and `placesVersion` tracks only the map's own. So a
+second call about a different place returned the first place's answer, name and all: asked about
+Denver, answered about Fort Wayne, and reported a thousand kilometres away as *inside*.
+
+The comment above the key said it "changes whenever the answer would (FR-29)". It did not. It now
+fingerprints each asked place's name and position.
+
+**Both defects are the same mistake**: a value that stood in for identity - all rings treated as
+one area's, a count treated as a set. Neither was reachable by reading this library alone; both
+took a second project asking it real questions.
+
+### 9.3 Deferred: the host's own point type, and why generics were NOT the answer
+
+A host keeps geometry in its own type, so handing it over costs a copy - 7.7 MB measured on the
+largest alert in the country, once per overlay rebuild. `Feature` claimed its rings were
+"borrowed and never copied", which **no host but a hypothetical one could achieve**. The claim is
+corrected and `Rings`/`Ring` now do the conversion in one call.
+
+Making the library generic so the copy disappears was proposed, approved, and then **withdrawn on
+measurement** - recorded here because the measurements are the useful part:
+
+| Approach | Cost over 2,000,000 positions | Why not |
+|---|---|---|
+| Interface accessor | **2.41 ms, +28%** | Pays every frame to save a per-update copy |
+| Struct-layout constraint | free | **Refuses a tagged struct** - the first host's point carries JSON tags |
+| Type parameters through the API | **1.61 ms, -14%** | Needs `Map[P]`; one point type per map, while `Place.At` stays `LonLat` |
+| Convert once at the seam (**chosen**) | one copy per rebuild | - |
+
+**What makes it due:** a measured workload where the per-rebuild copy matters - a host rebuilding
+overlays at frame rate, or geometry an order of magnitude past a national alert set. Until then
+the copy is a few hundred kilobytes every few minutes and the API stays one type simpler.
+
+`Positioned` asks a point to *say* where it is rather than inspecting how it is laid out, so field
+order, field names and struct tags stay the host's business - and a host's data model satisfies it
+without importing this library at all, which is what the first host's layering required.

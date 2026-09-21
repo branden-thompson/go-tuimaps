@@ -38,10 +38,30 @@ type Edge struct {
 	At      project.LonLat
 }
 
-// InArea reports whether a place is inside a feature's rings, by the
-// even-odd rule the renderer fills with (FR-11): a point in a hole is
-// outside. Longitude is circular, so a ring that crosses the seam at 180
-// degrees is followed round it rather than back across the world.
+// InAnyArea reports whether a place is inside any one of an overlay's areas.
+//
+// **The areas are tested one at a time, and that is the whole point.** One
+// hazard commonly covers several areas that overlap - a marine zone and the
+// coastal land zone beside it, two counties sharing a border - and counting
+// crossings over all of them at once makes an overlap cancel, so a place
+// inside two areas is reported outside. The renderer already fills each area
+// separately, so the overlap is drawn (FR-11); reading it any other way would
+// mean the words and the picture disagreeing about the same house.
+func InAnyArea(at project.LonLat, areas [][][]project.LonLat) Where {
+	for _, rings := range areas {
+		if InArea(at, rings) == Inside {
+			return Inside
+		}
+	}
+	return Outside
+}
+
+// InArea reports whether a place is inside ONE area: its outline and the
+// holes in it, by the even-odd rule the renderer fills with (FR-11), so a
+// point in a hole is outside. Longitude is circular, so a ring that crosses
+// the seam at 180 degrees is followed round it rather than back across the
+// world. **Rings of different areas must not be passed together** - see
+// InAnyArea.
 func InArea(at project.LonLat, rings [][]project.LonLat) Where {
 	if !onGlobe(at) {
 		return Outside // a place that is nowhere is inside nothing

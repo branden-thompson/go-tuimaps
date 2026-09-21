@@ -87,6 +87,8 @@ func Kinds
 func New
 func NewShared
 func RadarImage
+func Ring
+func Rings
 func SharedCaches
 func TemperatureGrid
 func TokenNames
@@ -167,6 +169,7 @@ type MarkerStyle
 type Option
 type Overlay
 type Place
+type Positioned
 type Projection
 type RGB
 type RampCheck

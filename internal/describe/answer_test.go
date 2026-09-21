@@ -29,7 +29,7 @@ func TestUnitsFollowHost(t *testing.T) {
 		t.Errorf("in Fahrenheit it is %v %q", f, word)
 	}
 	// Every answer that carries a distance carries the word for its units.
-	area := OfArea("home", "alerts", project.LonLat{Lon: 0, Lat: 0}, [][]project.LonLat{box(5, -5, 15, 5)}, Units{Miles: true})
+	area := OfArea("home", "alerts", project.LonLat{Lon: 0, Lat: 0}, [][][]project.LonLat{{box(5, -5, 15, 5)}}, Units{Miles: true})
 	if area.Unit != "miles" {
 		t.Errorf("an answer in miles says its units are %q", area.Unit)
 	}
@@ -53,7 +53,7 @@ func TestSpeakable(t *testing.T) {
 		}
 	}
 	// Every string of a real answer passes, and the compass is a word.
-	answer := OfArea("home", "alerts", project.LonLat{Lon: 0, Lat: 0}, [][]project.LonLat{box(5, -5, 15, 5)}, Units{})
+	answer := OfArea("home", "alerts", project.LonLat{Lon: 0, Lat: 0}, [][][]project.LonLat{{box(5, -5, 15, 5)}}, Units{})
 	for _, said := range answer.Said() {
 		if !Speakable(said) {
 			t.Errorf("an answer carries %q, which is not speakable", said)

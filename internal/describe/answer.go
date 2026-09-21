@@ -90,8 +90,17 @@ func compassOf(bearing float64) string {
 }
 
 // OfArea is the answer for one place against one area overlay.
-func OfArea(place, overlay string, at project.LonLat, rings [][]project.LonLat, u Units) Answer {
-	out := Answer{Place: place, Overlay: overlay, Form: AreaForm, Relation: InArea(at, rings)}
+//
+// **It takes the areas apart, not their rings together**: whether the place is
+// inside is asked of each area in turn (InAnyArea), while the nearest edge is
+// the nearest of all of them, which is the same question however they are
+// grouped.
+func OfArea(place, overlay string, at project.LonLat, areas [][][]project.LonLat, u Units) Answer {
+	out := Answer{Place: place, Overlay: overlay, Form: AreaForm, Relation: InAnyArea(at, areas)}
+	var rings [][]project.LonLat
+	for _, a := range areas {
+		rings = append(rings, a...)
+	}
 	edge, ok := NearestEdge(at, rings)
 	if !ok {
 		out.NoData = true
