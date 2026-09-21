@@ -244,3 +244,70 @@ func TestProtobufPitfalls(t *testing.T) {
 		}
 	}
 }
+
+// TestAFeatureFieldCarryingTheWrongKindIsRefused is the disagreement the
+// oracle's fuzzer found (D-126). A feature whose id arrives length-delimited
+// rather than as a number is a damaged stream, and this decoder refuses a
+// damaged stream rather than reading past it (D-75) - the same check its
+// layer has had all along. The proven decoder instead read the id's bytes as
+// though they were geometry and invented a line from them, which is what made
+// the two look as though they disagreed about a feature.
+func TestAFeatureFieldCarryingTheWrongKindIsRefused(t *testing.T) {
+	for _, c := range []struct {
+		what    string
+		feature []byte
+	}{
+		{"an id written as bytes", []byte{0x0a, 0x02, '0', '0', 0x18, 0x02}},
+		{"a type written as bytes", []byte{0x1a, 0x02, '0', '0'}},
+		{"tags written as a number", []byte{0x10, 0x01, 0x18, 0x02}},
+		{"a geometry written as a number", []byte{0x20, 0x01, 0x18, 0x02}},
+	} {
+		layer := append([]byte{0x78, 0x02, 0x0a, 0x05, 'w', 'a', 't', 'e', 'r', 0x12, byte(len(c.feature))}, c.feature...)
+		tile := append([]byte{0x1a, byte(len(layer))}, layer...)
+		if _, err := Decode(tile, Want{Layers: []string{"water"}}, DefaultLimits()); err == nil {
+			t.Errorf("a feature with %s was accepted", c.what)
+		}
+	}
+	// A field the format does not define is still passed over, as before: an
+	// encoder may write what it likes there and a reader must not mind.
+	feature := []byte{0x18, 0x01, 0x30, 0x30, 0x22, 0x03, 0x09, 0x02, 0x02}
+	layer := append([]byte{0x78, 0x02, 0x0a, 0x05, 'w', 'a', 't', 'e', 'r', 0x12, byte(len(feature))}, feature...)
+	tile := append([]byte{0x1a, byte(len(layer))}, layer...)
+	kept, err := Decode(tile, Want{Layers: []string{"water"}}, DefaultLimits())
+	if err != nil {
+		t.Fatalf("a feature with an unknown field was refused: %v", err)
+	}
+	if len(kept.Layers) != 1 || len(kept.Layers[0].Features) != 1 {
+		t.Errorf("the feature beside an unknown field was not kept: %+v", kept)
+	}
+}
+
+// TestAPointDoesNotAcceptALine is the second disagreement the oracle's fuzzer
+// found (D-126). A feature that says it is a point and then runs LineTo or
+// ClosePath is a damaged stream: a point has no line and no ring. This
+// decoder read those commands anyway and grew a single "point" of fifteen
+// positions, where the proven decoder stopped at the point - so the two
+// disagreed about geometry neither should have accepted.
+func TestAPointDoesNotAcceptALine(t *testing.T) {
+	// MoveTo 1 point, then LineTo 2 more.
+	geom := []byte{0x09, 0x02, 0x02, 0x12, 0x02, 0x02, 0x02, 0x02}
+	for _, c := range []struct {
+		what string
+		kind byte
+	}{{"a point that runs a line", 0x01}} {
+		feature := append([]byte{0x18, c.kind, 0x22, byte(len(geom))}, geom...)
+		layer := append([]byte{0x78, 0x02, 0x0a, 0x05, 'w', 'a', 't', 'e', 'r', 0x12, byte(len(feature))}, feature...)
+		tile := append([]byte{0x1a, byte(len(layer))}, layer...)
+		if _, err := Decode(tile, Want{Layers: []string{"water"}}, DefaultLimits()); err == nil {
+			t.Errorf("%s was accepted", c.what)
+		}
+	}
+	// A line that runs a line is of course kept.
+	feature := append([]byte{0x18, 0x02, 0x22, byte(len(geom))}, geom...)
+	layer := append([]byte{0x78, 0x02, 0x0a, 0x05, 'w', 'a', 't', 'e', 'r', 0x12, byte(len(feature))}, feature...)
+	tile := append([]byte{0x1a, byte(len(layer))}, layer...)
+	kept, err := Decode(tile, Want{Layers: []string{"water"}}, DefaultLimits())
+	if err != nil || len(kept.Layers) != 1 || len(kept.Layers[0].Features) != 1 {
+		t.Fatalf("a line of three positions was refused: %v %+v", err, kept)
+	}
+}

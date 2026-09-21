@@ -46,6 +46,9 @@ func (d *layerDecoder) readGeometry(geometry []byte, feature scene.Feature) erro
 // ClosePath with no part open, a ClosePath count other than one, a count of
 // zero, an unknown command, or a pen that leaves the 16-bit range.
 func (d *layerDecoder) runCommands(geometry []byte, kind scene.GeomKind) error {
+	if kind < scene.GeomPoint || kind > scene.GeomPolygon {
+		return malformed() // only the three kinds have commands to run
+	}
 	c := cursor{partStart: -1}
 	rest := geometry
 	for range len(geometry) {
@@ -64,12 +67,18 @@ func (d *layerDecoder) runCommands(geometry []byte, kind scene.GeomKind) error {
 		if id != cmdClosePath && count > uint64(len(rest))/2 {
 			return malformed() // each point is two integers of at least a byte each
 		}
-		switch id {
-		case cmdMoveTo:
+		switch {
+		case id == cmdMoveTo:
 			rest, err = d.moveTo(&c, rest, int(count), kind)
-		case cmdLineTo:
+		case kind == scene.GeomPoint:
+			// **A point has no line and no ring.** Reading these anyway grew
+			// a single point into a run of positions, which the proven
+			// decoder does not do - the second disagreement the oracle's
+			// fuzzer found (D-126). A damaged stream is refused (D-75).
+			err = malformed()
+		case id == cmdLineTo:
 			rest, err = d.lineTo(&c, rest, int(count))
-		case cmdClosePath:
+		case id == cmdClosePath:
 			err = d.closePath(&c, count)
 		default:
 			err = malformed()

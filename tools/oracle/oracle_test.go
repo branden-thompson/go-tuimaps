@@ -50,27 +50,41 @@ func flat(g orb.Geometry) [][]int16 {
 		return out
 	}
 	var parts [][]int16
+	// **A run with no coordinates is not a part** (D-125). The proven decoder
+	// turns a feature that declares a type and carries no geometry field into
+	// a geometry holding one empty run - this decoder drops such a feature,
+	// which a test here pins deliberately - and counting that emptiness as a
+	// part made the two look as though they disagreed about a feature. A
+	// feature with *nil* geometry is already passed over below; this makes an
+	// empty one behave the same. Nothing real is exempted: a feature that was
+	// really drawn always has coordinates.
+	add := func(ps []orb.Point) {
+		if len(ps) == 0 {
+			return
+		}
+		parts = append(parts, line(ps))
+	}
 	switch g := g.(type) {
 	case orb.Point:
-		parts = append(parts, line([]orb.Point{g}))
+		add([]orb.Point{g})
 	case orb.MultiPoint:
 		for _, p := range g {
-			parts = append(parts, line([]orb.Point{p}))
+			add([]orb.Point{p})
 		}
 	case orb.LineString:
-		parts = append(parts, line(g))
+		add(g)
 	case orb.MultiLineString:
 		for _, l := range g {
-			parts = append(parts, line(l))
+			add(l)
 		}
 	case orb.Polygon:
 		for _, r := range g {
-			parts = append(parts, line(r))
+			add(r)
 		}
 	case orb.MultiPolygon:
 		for _, p := range g {
 			for _, r := range p {
-				parts = append(parts, line(r))
+				add(r)
 			}
 		}
 	}

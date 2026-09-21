@@ -138,3 +138,23 @@ palette's token names, no way to ask the deepest drawable zoom, a notice that
 named the wrong cause, the scale mark and credit touching on a narrow map, and
 nothing in the documentation saying which calls move the map and which only
 read it.
+
+## 8 - What the oracle's fuzzer found after the first host, and how it was found
+
+Two defects in this decoder, both of which it used to read past rather than refuse (D-126):
+a field of a *feature* carrying the wrong kind of value - the check its *layer* has always
+had - and a feature that says it is a point and then runs a line or closes a ring. The
+proven decoder read a malformed id's bytes as though they were geometry; this decoder grew
+one point into fifteen positions. Both are now refused (D-75), and 2.3 million fuzz inputs
+have since agreed.
+
+**The method is worth more than either fix.** Three hypotheses were reached by reading the
+tile's bytes by eye and all three were wrong. HUM LEAD stopped it and said to consult the
+diagrams. **L2-tiles named the decoder's two passes** - "count first, then allocate once" -
+which led in minutes to the single line that drops a feature silently, and instrumentation
+written with the decoder's *own* framing then showed both causes without guesswork.
+
+The diagrams were updated in the same commit, and the rebuild of the architecture atlas
+showed something worth keeping in mind: **the atlas is built from the mermaid blocks, so a
+change written only in the prose beside a diagram never reaches it.** The label-ordering
+change was moved into the diagram itself for that reason.

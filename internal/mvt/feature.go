@@ -65,17 +65,41 @@ func featureFields(body []byte) (kind uint64, tags, geometry []byte, err error) 
 		}
 		rest = next
 		switch {
-		case f.num == 3 && f.wire == wireVarint:
+		case wrongWireForFeature(f):
+			return 0, nil, nil, malformed()
+		case f.num == 3:
 			kind = f.value
-		case f.num == 2 && f.wire == wireBytes:
+		case f.num == 2:
 			tags = f.body
-		case f.num == 4 && f.wire == wireBytes:
+		case f.num == 4:
 			geometry = f.body
-		case f.num == 2 || f.num == 4:
-			return 0, nil, nil, malformed() // tags and geometry must be packed
 		}
 	}
 	return kind, tags, geometry, nil
+}
+
+// wrongWireForFeature reports a field of a feature carrying the wrong kind of
+// value: an id or a type that is not a number, tags or geometry that are not
+// packed. **A damaged stream is refused rather than read past** (D-75), which
+// is the check the layer has always had and the feature had only for half its
+// fields.
+//
+// The oracle's fuzzer found the gap (D-126): a feature whose id arrived
+// length-delimited was read by this decoder as a feature with no geometry and
+// dropped, while the proven decoder read the id's own bytes as though they
+// were geometry and made a line out of them. A field the format does not
+// define is still passed over - an encoder may write what it likes there.
+func wrongWireForFeature(f field) bool {
+	if f.num == 0 {
+		return true // a field number of zero is no field at all: numbering starts at one
+	}
+	switch f.num {
+	case 1, 3: // the id and the type are numbers
+		return f.wire != wireVarint
+	case 2, 4: // the tags and the geometry are packed
+		return f.wire != wireBytes
+	}
+	return false
 }
 
 // passOver counts a feature that does not say what it is. Such a feature

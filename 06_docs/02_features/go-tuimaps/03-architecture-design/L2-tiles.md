@@ -29,9 +29,10 @@ flowchart LR
       direction TB
       G1["Body ≤ 2 MiB · gzip or none · decompressed ≤ 8 MiB"]
       G2["Own decoder (D-75): layers ≤ 64 · features ≤ 100,000 · geometry integers ≤ 2,000,000"]
+      G2R["Refused, never read past (D-75, D-126): a field of a layer or a feature carrying the wrong kind of value —<br/>an id or a type that is not a number, tags or geometry that are not packed · a point that runs a line or closes a ring ·<br/>a count of zero, a count beyond the integers left, a pen that leaves the 16-bit range"]
       G3["Drop while decoding: layers the schema mapping does not use (FR-35) · every place-name language but the configured one (D-82)"]
       G4["Count first, then allocate once: each kept layer's geometry is counted without decoding it,<br/>and its slabs are made at their exact size · coordinates as 16-bit integers ·<br/>keys ≤ 4,096 · values ≤ 400,000 · retained ≤ 4 MiB · a host may lower any limit, never raise one"]
-      G1 --> G2 --> G3 --> G4
+      G1 --> G2 --> G2R --> G3 --> G4
     end
     GATE -- "ok" --> STORE["Memory cache (byte-capped)<br/>what a live view draws is never evicted · spares only in the room left (D-90)"]
     GATE -- "ok, and it came from the network" --> WRITE["Write to disk cache<br/>only after a complete successful decode (FR-22a)<br/>temporary file, then rename"]
