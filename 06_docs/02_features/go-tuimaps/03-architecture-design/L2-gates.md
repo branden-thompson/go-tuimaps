@@ -14,7 +14,7 @@ flowchart TB
     MODS --> T0["A module with no packages yet is named and called EMPTY — not failed, not hidden"]
     MODS --> T1["Tests under the race detector, on the floor toolchain"]
     MODS --> T2["A second leg WITHOUT the race detector: the zero-allocation and allocation-count tests live here"]
-    MODS --> T3["Fuzz: every target, 60 s (an hour before a release)"]
+    MODS --> T3["Fuzz: every target, a COUNT of runs calibrated to ~60 s of its own work — not a clock (an hour before a release)<br/>a time budget made the engine report its own deadline as a test failure (L-6.4, v0.2.0 D-9, D-10)<br/>every leg prints its duration, so a target that grows slower is visible"]
     MODS --> T4["Vulnerability scan: each module AND the standard library —<br/>on the machine's NEWEST toolchain, named in the report, not on the floor:<br/>the floor keeps a newer API out, and its standard library carries every vulnerability fixed since"]
     MODS --> T5["Licence file present for every module in each graph"]
     M0 --> A1["Allow-list: with the workspace file off, the library's graph is go-runewidth and uax29 only (D-81)"]

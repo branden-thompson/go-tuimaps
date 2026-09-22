@@ -20,7 +20,64 @@ set -u
 set -o pipefail
 
 FLOOR_TOOLCHAIN="go1.25.0"
-FUZZ_TIME="60s"
+
+# THE FUZZ BUDGET IS A COUNT OF RUNS, NOT A STRETCH OF TIME, and that is the
+# fix for a gate that failed by accident (L-6.4, ruled at D-9).
+#
+# With `-fuzztime <duration>` the engine gives its coordinator a deadline, and
+# at that deadline the coordinator reports `context deadline exceeded` as a
+# test failure unless the error it sees matches its own child context's
+# (go1.25.0 `internal/fuzz/fuzz.go:129`; a parent context closes its done
+# channel before it cancels its children, `context/context.go:565` then
+# `:569`). Three targets in three packages failed that way, minutes apart, on
+# a tree whose every other leg was green - and no input was ever at fault: a
+# one-second watchdog over both of the oracle's decoders never fired across 27
+# million runs. A count budget takes the other exit (`stop(nil)` on the
+# execution limit) and creates no deadline at all, so the failure cannot
+# happen.
+#
+# THE COUNT IS PER TARGET, because one number cannot be right for all of them:
+# the targets here differ by more than a hundred times in runs per second - one
+# renders, another hashes. A single five-million count made the slow targets ten
+# minutes each and the fast ones four seconds, and the whole gate went from
+# eighteen minutes to forty-one. Each count below was set on 2026-09-22 from the
+# leg's own measured duration, so every target gets about the sixty seconds of
+# work the clock used to give it, and the gate costs what it did before.
+#
+# TO RECALIBRATE, one target: run the gate, read that leg's printed duration,
+# and scale its count by sixty over that duration. A short `-fuzztime 8s` run
+# is NOT enough to derive a count from: a leg also re-gathers baseline coverage
+# over the whole cached corpus before it fuzzes, and that overhead does not
+# shrink. Counts derived that way came out seventy per cent high here, and one
+# target (FuzzTable) fifteen times low. The printed duration is the calibration
+# instrument; a leg that no longer takes about a minute is the drift signal,
+# and it is why the durations are printed at all.
+#
+# A TARGET WITH NO ROW IS NAMED AND RUN AT THE DEFAULT, never skipped and never
+# silently under-fuzzed.
+fuzz_execs() {
+  case "$1" in
+    FuzzEveryReturnedStringIsClean) echo "300000x" ;;
+    FuzzPaint)                      echo "520000x" ;;
+    FuzzTable)                      echo "16500000x" ;;
+    FuzzDecode)                     echo "3790000x" ;;
+    FuzzAgree)                      echo "5700000x" ;;
+    FuzzClean)                      echo "4320000x" ;;
+    FuzzCommandLine)                echo "7060000x" ;;
+    FuzzImage)                      echo "12190000x" ;;
+    FuzzArea)                       echo "8320000x" ;;
+    FuzzHandIn)                     echo "9380000x" ;;
+    FuzzDirectory)                  echo "8740000x" ;;
+    FuzzOpenAndFind)                echo "9090000x" ;;
+    FuzzHeader)                     echo "9320000x" ;;
+    FuzzTileJSON)                   echo "11210000x" ;;
+    FuzzStyle)                      echo "11490000x" ;;
+    FuzzKey)                        echo "23620000x" ;;
+    *)                              echo "$FUZZ_EXECS_DEFAULT" ;;
+  esac
+}
+FUZZ_EXECS_DEFAULT="5000000x"
+FUZZ_TIMEOUT="10m"
 TARGETS="darwin/arm64 darwin/amd64 linux/amd64 linux/arm64 windows/amd64"
 
 quick=0
@@ -46,13 +103,19 @@ pass() { echo "  ok      $1"; }
 
 # leg NAME COMMAND... runs one leg and records the outcome. The output of a
 # failing leg is shown; a passing leg is one line.
+# EVERY LEG IS TIMED, and the duration is printed beside it. A fuzz leg is
+# budgeted in runs rather than seconds, so its duration is the only place a
+# target that has grown slower - or a machine that has - becomes visible.
 leg() {
   local name="$1"; shift
-  local out
+  local out started elapsed
+  started=$SECONDS
   if out="$("$@" 2>&1)"; then
-    pass "$name"
+    elapsed=$((SECONDS - started))
+    pass "$name [${elapsed}s]"
   else
-    fail "$name"
+    elapsed=$((SECONDS - started))
+    fail "$name [${elapsed}s]"
     printf '%s\n' "$out" | sed 's/^/          /'
   fi
 }
@@ -116,7 +179,9 @@ for dir in $modules; do
     if [ "$quick" = 0 ]; then
       for pkg in $(go list ./... 2>/dev/null); do
         for target in $(go test -list '^Fuzz' "$pkg" 2>/dev/null | grep '^Fuzz'); do
-          leg "fuzz $target, $FUZZ_TIME" go test -run '^$' -fuzz "^${target}\$" -fuzztime "$FUZZ_TIME" "$pkg"
+          execs="$(fuzz_execs "$target")"
+          [ "$execs" = "$FUZZ_EXECS_DEFAULT" ] && echo "  note    fuzz $target has no calibrated count; running the default $execs"
+          leg "fuzz $target, $execs" go test -run '^$' -fuzz "^${target}\$" -fuzztime "$execs" -timeout "$FUZZ_TIMEOUT" "$pkg"
         done
       done
       if command -v govulncheck >/dev/null 2>&1; then
