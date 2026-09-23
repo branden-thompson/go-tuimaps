@@ -136,7 +136,7 @@ For designers and PMs before engineers, the three visible decisions:
 | L-11.1 | Inside an alert area, **the tint blends over the radar**: each radar cell keeps its class colour shifted toward the tint; outline and label stay on top. Replaces v0.1.0 FR-12 step 4 for images and fields. | D-14 | NO INSTRUMENT YET |
 | L-11.2 | The blend must not wash out: every tinted class stays at least 10 (D-88's measure) from every other class, inside and outside the area, on both grounds. | D-14 | The ramp checker, extended |
 | L-11.3 | The light ground is solved by adjusting the radar ramps or the alert colours. | D-14 | — |
-| L-11.4 | What ships on a light ground if no blend passes. | red team A10, B-6 | **OPEN — R1-6** |
+| L-11.4 | **If no blend passes on a light ground, the light ground uses 29b's order**: radar over the tint, the warning carried by its outline, label and L-8.1's severity word and dash. The dark ground keeps the blend. | D-27 (A10, B-6) | The checker decides which applies |
 
 ## L-12 — Memory
 
@@ -174,7 +174,7 @@ Likelihood and severity are **H / M / L**, judged from the evidence cited.
 |---|---|---|---|---|
 | RK-1 | **A loop that freezes or re-decodes while every unit test passes** — the three changes (frames, renderer, store) land apart | M | H | L-1.6, L-1.7 each held by a test that sees a frame advance |
 | RK-2 | **The MRMS heavy end is wrong on a severe-weather day** — the palette was seen on a quiet day (≤ 48 dBZ) | H | H | L-2.3; the fallback-share test |
-| RK-3 | **No blend passes on a light ground** (every strength tried failed) | M | M | L-11.3; L-11.4 (OPEN) |
+| RK-3 | **No blend passes on a light ground** (every strength tried failed) | M | L | L-11.3; the named fallback L-11.4 (D-27) |
 | RK-4 | **Watchpost's radar slips** because this release does | M | M | watchpost's ship-without-radar rule (its RK-4); a scope split is open (R1-15) |
 | RK-5 | **A provider changes its palette or endpoint** (IEM has no SLA; MRMS no published table) | M | M | The unmatched-colour count is the detector (L-2.2) |
 | RK-6 | **The contract stays wrong** — a names-only test passes with false behavioural claims | H | M | L-4.2, L-4.3 |
