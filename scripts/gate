@@ -6,6 +6,11 @@
 #   scripts/gate --quick    skip the slow legs: fuzzing, the vulnerability
 #                           scan, licences, the cross-compile, the second
 #                           architecture
+#   scripts/gate --docs     the docs lane (v0.2.0 D-15): for a change that is
+#                           Markdown and nothing else, every module's tests -
+#                           which is where documents are read - and no other
+#                           leg. Any other file in the change, tracked or not,
+#                           is refused and sent to the full gate
 #
 # GATE_ROOT names the tree to check; by default, the repository this script
 # is in. Every module in the tree is checked, one by one - not only the
@@ -81,9 +86,11 @@ FUZZ_TIMEOUT="10m"
 TARGETS="darwin/arm64 darwin/amd64 linux/amd64 linux/arm64 windows/amd64"
 
 quick=0
+docs=0
 for arg in "$@"; do
   case "$arg" in
     --quick) quick=1 ;;
+    --docs) docs=1; quick=1 ;;
     *) echo "gate: unknown argument: $arg" >&2; exit 2 ;;
   esac
 done
@@ -93,6 +100,30 @@ if [ -z "$root" ]; then
   root="$(cd "$(dirname "$0")/.." && pwd)"
 fi
 cd "$root" || { echo "gate: cannot enter $root" >&2; exit 2; }
+
+# --- the docs lane decides from the change, not from a promise ---------------
+# THE LANE IS A RULE THE SCRIPT HOLDS, NOT ONE ANYONE HAS TO REMEMBER. The
+# change is everything since the last commit: staged, unstaged, deleted and
+# untracked alike, so a file cannot slip past by not being added yet.
+if [ "$docs" = 1 ]; then
+  if ! git rev-parse --verify -q HEAD >/dev/null 2>&1; then
+    echo "gate: the docs lane needs a commit to compare with; run scripts/gate" >&2
+    exit 2
+  fi
+  changed="$( { git diff --name-only --no-renames HEAD; git ls-files --others --exclude-standard; } | sort -u)"
+  others="$(printf '%s\n' "$changed" | grep -v '\.md$' | grep -v '^$' || true)"
+  if [ -n "$others" ]; then
+    echo "gate: the docs lane is for a change of Markdown and nothing else. Not Markdown:"
+    printf '%s\n' "$others" | sed 's/^/          /'
+    echo "What to do: run scripts/gate, every leg (v0.2.0 D-15)."
+    exit 1
+  fi
+  if [ -z "$changed" ]; then
+    echo "gate: docs lane - nothing has changed since the last commit"
+    exit 0
+  fi
+  echo "gate: docs lane - $(printf '%s\n' "$changed" | wc -l | tr -d ' ') Markdown file(s) changed; every module's tests run, and no other leg (v0.2.0 D-15)"
+fi
 
 export GOTOOLCHAIN="$FLOOR_TOOLCHAIN"
 export GOFLAGS="-mod=readonly"
@@ -173,6 +204,11 @@ for dir in $modules; do
       echo "  empty   no Go packages yet"
       exit 0
     fi
+    if [ "$docs" = 1 ]; then
+      leg "tests (docs lane)" go test -count=1 ./...
+      [ -z "$failures" ]
+      exit
+    fi
     leg "vet" go vet ./...
     leg "tests, race detector on" go test -race ./...
     leg "tests, race detector off (allocation counts live here)" go test ./...
@@ -225,6 +261,11 @@ if [ -n "$failures" ]; then
   printf '%s' "$failures"
   echo "What to do: fix each FAILED leg above and run the gate again. Nothing merges until it is green."
   exit 1
+fi
+if [ "$docs" = 1 ]; then
+  echo "gate: green (docs lane)"
+  echo "NOT RUN, by the docs lane's design: every leg but the tests. A change with any file that is not Markdown needs scripts/gate."
+  exit 0
 fi
 echo "gate: green"
 echo "NOT RUN on this machine, and not assumed: Linux and Windows test runs; real amd64 hardware; the nightly one-hour soak; the contract check against the last tag (none exists yet)."

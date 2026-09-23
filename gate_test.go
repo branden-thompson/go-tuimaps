@@ -120,3 +120,111 @@ func TestGateFailsWhenTheWorkspaceFileIsTracked(t *testing.T) {
 		t.Errorf("the gate's report does not name go.work:\n%s", out)
 	}
 }
+
+// runDocsLane runs the gate's docs lane over a planted tree (v0.2.0 D-15).
+func runDocsLane(t *testing.T, root string) (string, error) {
+	t.Helper()
+	gate, err := filepath.Abs(filepath.Join("scripts", "gate"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.Command(gate, "--docs")
+	cmd.Env = append(os.Environ(), "GATE_ROOT="+root, "GOPROXY=off")
+	out, err := cmd.CombinedOutput()
+	return string(out), err
+}
+
+// plantCommitted plants a tree whose root module has a test that reads a
+// Markdown file, as this repository's own tests do, and commits it: the docs
+// lane decides from what has changed since the last commit.
+func plantCommitted(t *testing.T) string {
+	t.Helper()
+	root := plantTree(t, true)
+	files := map[string]string{
+		"NOTES.md":         "# Notes\n\nFine.\n",
+		"notes_test.go":    "package lib\n\nimport (\n\t\"os\"\n\t\"strings\"\n\t\"testing\"\n)\n\nfunc TestNotes(t *testing.T) {\n\tb, err := os.ReadFile(\"NOTES.md\")\n\tif err != nil || strings.Contains(string(b), \"BROKEN\") {\n\t\tt.Fatal(\"the notes are broken\", err)\n\t}\n}\n",
+	}
+	for rel, src := range files {
+		writeFile(t, root, rel, src)
+	}
+	for _, args := range [][]string{{"init", "-q"}, {"add", "-A"}, {"-c", "user.name=gate", "-c", "user.email=gate@example.com", "commit", "-q", "-m", "planted"}} {
+		cmd := exec.Command("git", args...)
+		cmd.Dir = root
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	return root
+}
+
+func writeFile(t *testing.T, root, rel, src string) {
+	t.Helper()
+	full := filepath.Join(root, filepath.FromSlash(rel))
+	if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(full, []byte(src), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// TestDocsLaneRunsTheTestsThatReadDocuments: a change of Markdown alone is
+// checked by every module's tests, which is where documents are read - so a
+// document a test rejects still turns the lane red.
+func TestDocsLaneRunsTheTestsThatReadDocuments(t *testing.T) {
+	if testing.Short() {
+		t.Skip("runs the gate; skipped with -short")
+	}
+	root := plantCommitted(t)
+	writeFile(t, root, "NOTES.md", "# Notes\n\nStill fine, and longer.\n")
+	writeFile(t, root, "docs/new.md", "# A new page\n")
+	out, err := runDocsLane(t, root)
+	if err != nil {
+		t.Fatalf("the docs lane failed on a Markdown-only change the tests accept: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "docs lane") || !strings.Contains(out, "example.com/lib/tools/t") {
+		t.Errorf("the docs lane must say it is the docs lane and name every module it ran:\n%s", out)
+	}
+	writeFile(t, root, "NOTES.md", "# Notes\n\nBROKEN\n")
+	out, err = runDocsLane(t, root)
+	if err == nil {
+		t.Fatalf("the docs lane passed a Markdown change a test rejects:\n%s", out)
+	}
+}
+
+// TestDocsLaneRefusesAnyOtherFile: one file that is not Markdown - code, a
+// test, a script, a specimen - anywhere in the change means the full gate.
+func TestDocsLaneRefusesAnyOtherFile(t *testing.T) {
+	if testing.Short() {
+		t.Skip("runs the gate; skipped with -short")
+	}
+	for name, other := range map[string]string{
+		"a changed source file":  "lib.go",
+		"a new untracked file":   "specimens/frame.txt",
+		"a deleted tracked file": "",
+	} {
+		t.Run(name, func(t *testing.T) {
+			root := plantCommitted(t)
+			writeFile(t, root, "NOTES.md", "# Notes\n\nFine again.\n")
+			want := other
+			switch other {
+			case "":
+				want = "lib_test.go"
+				if err := os.Remove(filepath.Join(root, want)); err != nil {
+					t.Fatal(err)
+				}
+			case "lib.go":
+				writeFile(t, root, other, "// Package lib is planted.\npackage lib\n\n// Answer is planted.\nfunc Answer() int { return 43 }\n")
+			default:
+				writeFile(t, root, other, "a frame\n")
+			}
+			out, err := runDocsLane(t, root)
+			if err == nil {
+				t.Fatalf("the docs lane accepted a change with %s in it:\n%s", want, out)
+			}
+			if !strings.Contains(out, want) || !strings.Contains(out, "scripts/gate") {
+				t.Errorf("the refusal must name %s and send the change to the full gate:\n%s", want, out)
+			}
+		})
+	}
+}

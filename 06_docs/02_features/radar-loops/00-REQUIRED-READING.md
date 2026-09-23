@@ -31,6 +31,10 @@ Nothing. The fuzz-deadline failure was fixed by construction (D-9, D-10;
 
 ## Machine notes
 
+- **The docs lane (D-15):** a change that is Markdown alone runs `scripts/gate --docs`, which
+  every module's tests pass through. The script refuses any other file. Everything else runs
+  the full `scripts/gate`.
+
 - `govulncheck` lives in `~/go/bin`, which must be on PATH for `scripts/gate`.
 - Never run the gate while watchpost's `make verify` runs: the mutant sweep times out under the load,
   and verify's cache-clean breaks concurrent Go builds.
