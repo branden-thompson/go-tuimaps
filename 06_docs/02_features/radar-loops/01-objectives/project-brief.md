@@ -1,7 +1,7 @@
 ---
 title: "go-tuiMaps v0.2.0 — Radar loops — PROJECT BRIEF"
 date: 2026-09-22
-phase: pre-DISCOVER (intake)
+phase: DISCOVER (RCC)
 report_template: project-brief v1.1.0
 level: LEVEL-1
 sev: SEV-0
@@ -10,7 +10,7 @@ directives: FULL GIT; FULL DOCS; FULL REPORTS; FULL DIAGRAMS; FULL RCC; FULL PLA
 branch: feature/radar-loops
 issue: "branden-thompson/go-tuimaps#2 — this brief is its body (D-7)"
 paired_release: "watchpost 0.18.0 — Observer maps (branden-thompson/watchpost#22); this release ships first (watchpost D-11)"
-status: "APPROVED by the HUM LEAD 2026-09-22 (D-7); AMENDED 2026-09-23 (D-11) for the five host requirements watchpost's red-team rounds added — L-1.5, L-7..L-10.  Problem statement LOCKED (D-5)."
+status: "APPROVED by the HUM LEAD 2026-09-22 (D-7); AMENDED 2026-09-23 (D-11) for the five host requirements watchpost's red-team rounds added — L-1.5, L-7..L-10; CORRECTED 2026-09-23 (D-23): the requirement set is requirements.md, which wins on any conflict.  Problem statement LOCKED (D-5)."
 ---
 
 # Library Release | `go-tuiMaps v0.2.0 — Radar loops`
@@ -48,8 +48,14 @@ person reading the map — because a library's problem always reaches the second
 
 ## Requirements — from the host, and from the record
 
-Watchpost's host requirements (HR-1..HR-5, `watchpost/06_docs/02_features/observer-maps/
-01-objectives/project-brief.md`) plus what this release's own record owes.
+> **The requirement set PLAN designs against is `requirements.md` (D-23).** It extends the L-numbers
+> below with everything ruled since (D-14 to D-22, specimen 29), holds the risk register and the list
+> of owed work, and wins on any conflict. The rows below are the brief as approved, with its stale
+> rows corrected.
+
+Watchpost's host requirements HR-1..HR-10 (`watchpost/06_docs/02_features/observer-maps/
+01-objectives/project-brief.md`) map to L-1 (HR-1, with L-1.5 from HR-9), L-2 (HR-2), L-3 (HR-3),
+L-4 (HR-4), L-5 (HR-5), L-7 (HR-6), L-8 (HR-7), L-9 (HR-8) and L-10 (HR-10). L-6 is this brief's own.
 
 ### L-1 — Loops (HR-1)
 - **L-1.1** An image overlay carries **several frames, each with its own valid time**; zero frames
@@ -89,9 +95,9 @@ Watchpost's host requirements (HR-1..HR-5, `watchpost/06_docs/02_features/observ
   surface so it cannot drift again ("the rule an agent has to remember…", watchpost D-11).
 
 ### L-5 — The after-tag triage (HR-5)
-- **L-5.1** D-123 names a triage of nineteen open items into before-tag and after-tag. No document
-  holds it. It is written, and every after-tag item is dispositioned into this release, a later one,
-  or closed.
+- **L-5.1** *Superseded by D-18.* D-123 named a triage of nineteen open items; wave 1 found it never
+  existed and v0.1.0's close-out never ran. D-18 records that as not recoverable, adds a gate test
+  that refuses a tag while its checklist is unfinished, and makes v0.2.0 the first release.
 
 ### L-6 — Found while preparing this brief
 - **L-6.1** **Hosted CI.** `L2-gates.md:42` says SHIP turns the local gate into the hosted workflow.
@@ -112,8 +118,8 @@ Watchpost's host requirements (HR-1..HR-5, `watchpost/06_docs/02_features/observ
   deadline can be reported as a failure — a race, far likelier with 18 cores. **Candidate fix:** a
   run-count budget (`-fuzztime Nx`) stops through the execution limit and creates no deadline. A
   single 40-second mid-run freeze seen once in `FuzzAgree` is a separate symptom, not explained by
-  this, and stays open. **Every commit here is blocked until the fix lands (D-4); a gate that fails by
-  accident teaches people to re-run it until it passes.**
+  this, and stays open. *Corrected (D-23):* **fixed by construction at D-9 and D-10** (run-count
+  budgets), **not reproduced**, so the cause above stays probable; commits are no longer blocked.
 
 ### L-7 — A host can write a fetcher (HR-6)
 - **L-7.1** `Fetcher` is exported, but its type alias resolves to an **internal** request type that
@@ -128,13 +134,16 @@ Watchpost's host requirements (HR-1..HR-5, `watchpost/06_docs/02_features/observ
   draws a tint with **no second channel** — which breaks the "meaning never by colour alone" promise
   the library makes and the host repeats.
 - **L-8.2** `AlertExtremeTint` and `AlertSevereTint` share the stroke `╳`, differing only by spacing
-  2 versus 3. On a small area that is not a distinction a reader can use.
+  2 versus 3, and **Minor and Unknown share `╱`** (corrected, D-23). On a small area that is not a
+  distinction a reader can use. Ruled at D-17: a severity word and a distinct dash per level.
 
 ### L-9 — Cache retention and a purge call (HR-8)
 - **L-9.1** `CacheRoot(dir, capBytes)` takes bytes only; the disk cache keeps tiles **without
   expiry**, and its file names are a record of where the reader has looked. A host that promises its
   listener a retention cannot keep that promise today.
-- **L-9.2** A host-settable **maximum age**, and a **purge** call the host can offer its listener.
+- **L-9.2** A host-settable **maximum age**. *Corrected (D-23):* **`Map.Purge` already exists**
+  (`tiles.go:145-165`); what is missing is its **scope** — it empties only the current source, not
+  memory, shared caches or decoded pictures.
 
 ### L-10 — The confinement of a source's tiles (HR-10)
 - **L-10.1** The effective tile host comes from the TileJSON document, not from the address a host
@@ -168,8 +177,12 @@ Five paths, measured in watchpost's wave 1 (W1-B): unplaced map → whole world 
 259-260`); resize keeps zoom so ground grows (`:262-263`); invalid view → whole world (`:264-265`);
 `MinZoom = −8` a constant (`view.go:16`).
 
-### C-6 — The gate fails by accident on this machine
-L-6.4. Every commit is blocked until D-4's fix lands.
+### C-6 — The gate failed by accident on this machine
+L-6.4. Fixed by construction at D-9 and D-10; not reproduced.
+
+### C-7 — Every change is additive
+v0.1.0 is published and resolvable, and watchpost will depend on it. A breaking change is a HUM LEAD
+ruling (contract §9).
 
 ### C-8 — Five of these requirements came from a host's review, not from this record
 L-1.5, L-7, L-8, L-9 and L-10 were found by watchpost's accessibility and security reviewers during
@@ -177,10 +190,6 @@ its 0.18.0 DISCOVER (its rounds 2 and 3), not by this library's own rounds. Two 
 brief's requirement set grew by half after it was approved, and the library's own DISCOVER should
 expect its blind spots to be where a host looks and it does not — the host is the only reader that
 uses the contract rather than writing it.
-
-### C-7 — Every change is additive
-v0.1.0 is published and resolvable, and watchpost will depend on it. A breaking change is a HUM LEAD
-ruling (contract §9).
 
 ## Metrics of Success — ADOPTED (D-6)
 

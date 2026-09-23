@@ -34,8 +34,12 @@ across the server's whole time list (60 times, about two hours).
 1. **MRMS draws from a small fixed palette.** Each frame uses 88–101 colours; across 18 frames the
    total reached **111 by the twelfth frame and did not grow after**. That fits the library's
    256-entry table limit. No partly transparent pixels were seen.
-2. **The legend is a 1,232-colour gradient, so no table sampled from it can match exactly.** With
-   exact matching, 71–80 % of rain pixels were unmatched and would draw as nothing.
+2. **The legend is a 1,232-colour gradient, and the library's table holds 256 entries, so a table
+   sampled from the legend misses most frame colours.** About 60 % of rain pixels are exactly *some*
+   legend colour, but with exact matching against the 256-entry sample, **80.0–80.6 %** were unmatched
+   and would draw as nothing. *(Corrected 2026-09-23 after red team round 1: first written as "71–80 %",
+   which nothing in the table supports, and as "no table sampled from it can match exactly", which
+   the 60 % contradicts — the misses come from the 256-entry sample, not from the legend.)*
 3. **The heavy end is the weak point.** The oranges and reds (from about 40 dBZ up) are 3 to 30 from
    any legend colour, and nearest-legend-colour puts several unlike colours at about 47–48 dBZ. The
    rain rates the legend gives the most dangerous colours are the least trustworthy.
