@@ -44,6 +44,7 @@ For designers and PMs before engineers, the three visible decisions:
 | L-1.6 | **A frame advance must be seen by the renderer.** Today the renderer reuses its last frame when the overlays' version is unchanged (`internal/render/frame.go:285-302`), so a loop would freeze while reporting success. | W1-A | NO INSTRUMENT YET |
 | L-1.7 | **A refresh does not re-decode the whole loop.** Today a re-`Set` drops every prepared raster (`internal/overlay/store.go:453`). | W1-A | NO INSTRUMENT YET |
 | L-1.8 | `NextCall` reports the next frame change; the contract's claim that a frame-advance source exists becomes true. | L-1.1, C-2 | NO INSTRUMENT YET |
+| L-1.16 | **`Frame` carries the `Changed` and `FrameTicks` values it was drawn at**, so a host can prove a stored frame is current (watchpost D-41). | D-59 | NO INSTRUMENT YET |
 | L-1.9 | Every frame is validated when handed in, the loop has a total, frame times are in order, and a gap is explicit. | W1-A | NO INSTRUMENT YET |
 | L-1.14 | **Every host slice an image carries — PNG and table, for the single image and every frame alike — is copied at hand-in, and the copy is what is validated.** A later decode reads the size from the copy's header before it allocates, and re-checks the cap and the budget. | D-30 (F1), D-40 (S-1) | NO INSTRUMENT YET; a test that mutates the host's slices after hand-in |
 | L-1.15 | A hard maximum frame count, gaps included; the playback interval is library-owned and floored, never derived from host-supplied times. | D-30 (F2) | NO INSTRUMENT YET |
