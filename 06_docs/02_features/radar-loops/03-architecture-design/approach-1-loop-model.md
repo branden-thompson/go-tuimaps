@@ -4,7 +4,7 @@ date: 2026-09-23
 phase: PLAN
 sev: SEV-0
 authority: HUM LEAD
-status: "PROPOSED — for a HUM LEAD ruling. Signatures and shape only; no implementation (watchpost D-13, v0.2.0 D-52)."
+status: "RULED — D-54: A, declarative. Signatures and shape only; no implementation (watchpost D-13, v0.2.0 D-52)."
 ---
 
 # Approach 1 — the loop's data model and playback API

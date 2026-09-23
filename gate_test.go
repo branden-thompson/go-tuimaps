@@ -562,3 +562,26 @@ func TestGateFailsOnAnUnformattedFile(t *testing.T) {
 		t.Fatalf("an unformatted file must fail the gate and be named:\n%s", out)
 	}
 }
+
+// TestDocsLaneAcceptsTheGeneratedAtlas: a diagram edit regenerates the atlas
+// page, which is not Markdown; the lane takes that one generated file, whose
+// match with the documents the atlas's own test checks, and refuses every
+// other non-Markdown file (v0.2.0 D-53).
+func TestDocsLaneAcceptsTheGeneratedAtlas(t *testing.T) {
+	if testing.Short() {
+		t.Skip("runs the gate; skipped with -short")
+	}
+	root := plantCommitted(t)
+	writeFile(t, root, "NOTES.md", "# Notes\n\nA diagram was edited.\n")
+	writeFile(t, root, "06_docs/architecture-atlas.html", "<html>generated</html>\n")
+	git(t, root, "add", "-A")
+	if out, err := runDocsLane(t, root); err != nil {
+		t.Fatalf("the lane refused the generated atlas page: %v\n%s", err, out)
+	}
+	writeFile(t, root, "06_docs/other.html", "<html>hand-made</html>\n")
+	git(t, root, "add", "-A")
+	out, err := runDocsLane(t, root)
+	if err == nil || !strings.Contains(out, "06_docs/other.html") {
+		t.Fatalf("the lane must still refuse any other non-Markdown file:\n%s", out)
+	}
+}

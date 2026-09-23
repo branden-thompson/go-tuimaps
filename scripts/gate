@@ -6,8 +6,9 @@
 #   scripts/gate --quick    skip the slow legs: fuzzing, the vulnerability
 #                           scan, licences, the cross-compile, the second
 #                           architecture
-#   scripts/gate --docs     the docs lane (v0.2.0 D-15, D-41): for a STAGED
-#                           change that is Markdown and nothing else, every
+#   scripts/gate --docs     the docs lane (v0.2.0 D-15, D-41, D-53): for a
+#                           STAGED change of Markdown (and the generated atlas
+#                           page, which the atlas's test holds), every
 #                           module's tests - which is where documents are read
 #                           - and no other leg. Any other staged file is
 #                           refused and sent to the full gate. Stage, run it,
@@ -175,7 +176,10 @@ if [ "$docs" = 1 ]; then
   fi
   changed="$(printf '%s\n' "$staged" | grep -v '^$' | grep -vx '06_docs/gate-runs.md' | sort -u || true)"
   unstaged="$(printf '%s\n' "$loose" | grep -v '^$' | grep -v '^[MADRC] ' | grep -vc ' 06_docs/gate-runs.md$' || true)"
-  others="$(printf '%s\n' "$changed" | grep -v '\.md$' | grep -v '^$' || true)"
+  # THE GENERATED ATLAS PAGE RIDES WITH ITS DOCUMENTS (D-53): a diagram edit
+  # regenerates it, and the atlas's own test, which this lane runs, fails
+  # unless it is exactly what the documents build. No other file is excused.
+  others="$(printf '%s\n' "$changed" | grep -v '\.md$' | grep -vx '06_docs/architecture-atlas.html' | grep -v '^$' || true)"
   if [ -n "$others" ]; then
     echo "gate: the docs lane is for a change of Markdown and nothing else. Not Markdown:"
     printf '%s\n' "$others" | sed 's/^/          /'
