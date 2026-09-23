@@ -228,12 +228,12 @@ where it stands.
 |---|---|---|---|
 | OW-1 | ~~The row in v0.1.0's record saying its close-out did not run~~ **Done (D-38)**: `go-tuimaps/07-readiness/release-checklist.md` | — | D-18 |
 | OW-2 | The D-17 specimen: severity word and five dashes, at 69×12 and 149×38, NoColour and Colours16, **drawn over specimen 29's radar**, with the frame time and the `stale` word on the same bottom row, so the crowding at 69×12 is seen | before PLAN commits to L-8.1 | D-17, D-40 (A F7, B) |
-| OW-3 | S29-3: the Hamlin marker missing at 69×12 even without radar — diagnose | PLAN | S29-3 |
+| OW-3 | S29-3: the Hamlin marker missing at 69×12 even without radar — diagnose **Widened by S30-3:** at an outbreak the named place's name is drawn at neither size, even in colour | PLAN | S29-3 |
 | OW-4 | The 40-second `FuzzAgree` freeze | PLAN | L-6.4 |
 | OW-5 | ~~Correct wave 2's "71–80 %" and D-19's copy of it~~ **Done 2026-09-23**: 80.0–80.6 %, and wave 2's finding 2 restated | — | round 1 verification |
 | OW-6 | F-2 (a pluggable architecture): its trigger fired; the narrow seam is L-2.5 (D-35); the broad restructure stays with the quality pass | quality pass | D-35 |
 | OW-9 | ~~Diagnose L-8.4~~ **Closed (D-50): no defect** — the round 1 count was wrong | — | D-50 |
-| OW-11 | **A specimen of a past outbreak from IEM's archive**: overlapping warnings over heavy radar, 69×12 and 149×38, with and without colour | PLAN entry | D-44 |
+| OW-11 | ~~A specimen of a past outbreak~~ **Done at PLAN entry: specimen 30** (2011-04-27, west-central Alabama, 20 warnings over IEM archive radar). Findings S30-1..S30-4 | — | D-44 |
 | OW-12 | **A triggered MRMS capture**: when a Storm Prediction Center Moderate or High risk, or a tornado watch, is issued over US radar coverage, capture MRMS frames across the whole two-hour window and extend the palette | when triggered, before SHIP | D-44 |
 | OW-10 | RK-5's detector: count tolerance-fallback matches, not only unmatched pixels, so a palette shift under 10 is seen | PLAN | D-40 (B N-8) |
 | OW-8 | ~~The gate never runs `gofmt`~~ **Closed by D-46**: the gate has a formatting leg | — | D-46 |

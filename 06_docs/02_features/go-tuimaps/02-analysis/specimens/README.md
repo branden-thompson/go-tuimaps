@@ -327,3 +327,25 @@ No earlier specimen drew radar and an alert together: 22 is radar alone, 28 is a
 | S29-7 | **Re-measured with both kinds of pair on both grounds (D-32)**, because S29-5 reported tinted-against-plain on the dark ground and S29-6 tinted-against-tinted on the light. Lowest distance across all five severities: **dark ground** — 20 %: 17.0 tinted/tinted, 11.7 tinted/plain (**both clear 10**); 35 %: 13.9 and 6.2; 50 %: 9.7 and 1.8. **Light ground** — 20 %: 3.9 and 1.9; 35 %: 2.6 and 5.0; 50 %: 1.6 and 4.0 (**nothing clears 10**). Raw output: `radar-loops/02-analysis/programs/output/blend-measure.txt`. | S29-5 and S29-6's conclusions stand: a fixed blend holds only on a dark ground at about 20 %. The light ground is D-27's search, with 29b's order as its fallback |
 
 **Ruled (v0.2.0 D-14, `radar-loops/02-analysis/rulings.md`):** the tint blends over the radar, with the outline and label on top. Blend strength and colours are tuned in PLAN, held by the checker, and must pass on both grounds. HUM LEAD rules the light ground solvable by adjusting the radar ramps or the alert colours.
+
+## Specimen 30 — an outbreak: overlapping warnings over heavy radar (v0.2.0 PLAN entry, OW-11, D-44)
+
+A past severe day, taken from the Iowa Environmental Mesonet's archive: **27 April 2011, 21:00 UTC,
+west-central Alabama**. That is IEM `n0q` archive radar (500×430 for one box) under the 20 NWS
+warnings valid then and in view (17 tornado, 3 flash flood), with Tuscaloosa as the named place. Tornado
+warnings are drawn as Extreme, flash flood as Severe. Drawn by the library's public calls with
+OpenFreeMap tiles, at 69×12 and 149×38; `.ans` is truecolor on a dark ground, `.txt` has no colour.
+The program and its inputs are in `radar-loops/02-analysis/programs/` (`ow11-render.go.txt`,
+`inputs/ow11/`).
+
+| File | What it is |
+|---|---|
+| `30a-outbreak-as-built-*` | The library as built: the tint over the radar |
+| `30b-outbreak-blend-20pct-*` | The D-14 blend at 20 %, the only strength that passed on a dark ground (S29-7), by the scratch patch `spec29d-f-blend.patch` |
+
+| # | Finding | Consequence |
+|---|---|---|
+| S30-1 | **As built, tornado tint covers 1,234 cells at 149×38 and hides the radar in all of them.** With the blend, the radar's classes show through inside the warnings (19 blended colours); bare tint is left only in the warnings' dry cells. | Confirms D-14 on the picture that matters most. |
+| S30-2 | **Labels crowd out in an outbreak:** at 149×38 only 7 of the 17 tornado warnings and none of the 3 flash-flood warnings get a label. | Most warnings on a severe day carry no word. Severity must come from D-17's dash, and L-8.5's fallback and the description (L-13.5) carry the rest. PLAN should weigh the labelling rule for overlapping areas. |
+| S30-3 | **The named place's name, "Tuscaloosa", is drawn at neither size, even in colour.** Whether its ring is drawn cannot be told from the text. | This widens S29-3 (OW-3). On a severe day the one place the listener chose can vanish from the picture. |
+| S30-4 | With no colour, the radar's shades again replace the warnings' outlines and hatch across the rain. | L-8.3 at an outbreak's scale. |

@@ -1,0 +1,114 @@
+// Command ow11 draws OW-11: overlapping tornado and flash-flood warnings over
+// heavy radar on 2011-04-27 21:00Z, from IEM's archive. Throwaway.
+//
+//	ow11 DATA_DIR OUT_PREFIX LABEL
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strconv"
+	"time"
+
+	tuimaps "github.com/branden-thompson/go-tuimaps"
+	"github.com/branden-thompson/go-tuimaps/assets"
+)
+
+var at = time.Date(2011, 4, 27, 21, 0, 0, 0, time.UTC)
+
+type warning struct {
+	Ph   string       `json:"ph"`
+	Ring [][2]float64 `json:"ring"`
+}
+
+func must(err error) {
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
+
+func main() {
+	dir, out, label := os.Args[1], os.Args[2], os.Args[3]
+	var raw [][]string
+	b, err := os.ReadFile(filepath.Join(dir, "n0q-table-raw.json"))
+	must(err)
+	must(json.Unmarshal(b, &raw))
+	var table []tuimaps.TableEntry
+	for _, r := range raw {
+		v, _ := strconv.ParseFloat(r[1], 64)
+		R, _ := strconv.Atoi(r[2])
+		G, _ := strconv.Atoi(r[3])
+		B, _ := strconv.Atoi(r[4])
+		table = append(table, tuimaps.TableEntry{Colour: tuimaps.RGB{R: uint8(R), G: uint8(G), B: uint8(B)}, Value: v})
+	}
+	var ws []warning
+	b, err = os.ReadFile(filepath.Join(dir, "warnings-in-view.json"))
+	must(err)
+	must(json.Unmarshal(b, &ws))
+	var feats []tuimaps.Feature
+	for _, w := range ws {
+		var ring []tuimaps.LonLat
+		for _, c := range w.Ring {
+			ring = append(ring, tuimaps.LonLat{Lon: c[0], Lat: c[1]})
+		}
+		role, name := tuimaps.AlertExtreme, "Tornado Warning"
+		if w.Ph == "FF" {
+			role, name = tuimaps.AlertSevere, "Flash Flood Warning"
+		}
+		feats = append(feats, tuimaps.Feature{Kind: tuimaps.Polygon, Rings: [][]tuimaps.LonLat{ring}, Role: role, Label: name})
+	}
+	png, err := os.ReadFile(filepath.Join(dir, "radar.png"))
+	must(err)
+	tusc := tuimaps.LonLat{Lon: -87.5692, Lat: 33.2098}
+	for _, sz := range []tuimaps.Size{{Cols: 69, Rows: 12}, {Cols: 149, Rows: 38}} {
+		for _, dp := range []struct {
+			name, ext string
+			d         tuimaps.Depth
+		}{{"truecolor", ".ans", tuimaps.Truecolor}, {"no-colour", ".txt", tuimaps.NoColour}} {
+			m, err := tuimaps.New(tuimaps.WithSize(sz.Cols, sz.Rows), tuimaps.Embed(assets.Tile, assets.MaxZoom))
+			must(err)
+			must(m.CacheRoot(filepath.Join(dir, "tilecache"), 256<<20))
+			must(m.Source("https://tiles.openfreemap.org/planet"))
+			m.ColourDepth(dp.d)
+			must(m.Ground(tuimaps.RGB{R: 16, G: 22, B: 28}))
+			m.PaintGround()
+			m.Units(true, true)
+			img := tuimaps.Image{West: -89.0, South: 32.4, East: -86.2, North: 34.8, Projection: tuimaps.PlateCarree,
+				PNG: png, Type: tuimaps.Type{Preset: "radar", Unit: "dBZ"}, Table: table}
+			radar := tuimaps.RadarImage("radar", img, at)
+			radar.Credit = "NOAA/NWS NEXRAD via Iowa Environmental Mesonet archive"
+			_, err = m.Set(radar)
+			must(err)
+			_, err = m.Set(tuimaps.Overlay{ID: "alerts", Valid: at, Keeps: 3 * time.Hour, Credit: "National Weather Service, via IEM archive", Features: feats})
+			must(err)
+			_, err = m.SetPlaces([]tuimaps.Place{{ID: "tuscaloosa", Name: "Tuscaloosa", At: tusc, Marker: tuimaps.MarkerRing}})
+			must(err)
+			must(m.FitTo([]tuimaps.LonLat{{Lon: -88.6, Lat: 32.7}, {Lon: -86.6, Lat: 34.4}}, nil, 0))
+			for i := 0; i < 6; i++ {
+				_, err = m.Settle(context.Background())
+				must(err)
+				if m.Pending() == 0 {
+					break
+				}
+			}
+			fr, err := m.Render(sz, at)
+			must(err)
+			c, z := m.Centre()
+			name := fmt.Sprintf("%s-%dx%d%s", out, sz.Cols, sz.Rows, dp.ext)
+			fh, err := os.Create(name)
+			must(err)
+			fmt.Fprintf(fh, "OW-11 %s · %s · %dx%d · 2011-04-27 21:00Z, west-central Alabama: %d warnings in view (tornado and flash flood) over IEM n0q archive radar · Tuscaloosa marked · centre %.2f,%.2f z%.2f · status %s\n",
+				label, dp.name, sz.Cols, sz.Rows, len(feats), c.Lat, c.Lon, z, fr.Status)
+			for _, l := range fr.Lines {
+				fmt.Fprintln(fh, l)
+			}
+			fh.Close()
+			fmt.Println("wrote", name)
+			m.Close()
+		}
+	}
+}
