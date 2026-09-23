@@ -300,3 +300,29 @@ Unlike every specimen above, these were not drawn by the throwaway program of PL
 
 Four frames, 149 by 38, drawn by the library's own packages from the embedded tiles: five alert areas over the central United States, one of each severity - extreme, severe, moderate, minor, unknown - each its tint, its outline and its label. `28-alert-areas-dark-truecolor`, `-light-truecolor`, `-dark-256`, `-light-256`; the `.txt` beside the first is the same frame without colour. Show them with `cat`. **This is the look task 08.23 asks of HUM LEAD before any reference frame is frozen (RS-26).**
 
+
+## Specimen 29 — radar under a warning (v0.2.0 DISCOVER)
+
+No earlier specimen drew radar and an alert together: 22 is radar alone, 28 is alerts alone. This one uses real weather captured 2026-09-23 14:28Z: a Flash Flood Warning (Severe) over Lincoln and Putnam counties, West Virginia, with heavy rain inside it, and IEM NEXRAD n0q reflectivity read through the provider's published 256-entry table. Hamlin is the selected place. The frames come from the library's public calls, with OpenFreeMap tiles, at 69 by 12 and 149 by 38; `.ans` is truecolor on a painted dark ground and `.txt` has no colour.
+
+| File | What it is |
+|---|---|
+| `29a-radar-under-warning-as-built-*` | The library as built (FR-12): the tint is drawn over the image, so the radar inside the warning is hidden |
+| `29b-radar-under-warning-radar-wins-*` | **A one-line patch to a scratch copy, not the library:** the image is drawn over the tint. It shows the alternative and does not propose an implementation |
+| `29c-warning-without-radar-control-*` | The same warning with no radar: the control |
+
+| # | Finding | Consequence |
+|---|---|---|
+| S29-1 | In colour, 29a draws the warning as a solid block, and the heaviest rain on the map, which falls inside that block, cannot be seen. In 29b the rain shows through; the tint survives only on the label's cells and in dry cells, so on a wet day the outline alone carries the warning. | A HUM LEAD ruling for v0.2.0 |
+| S29-2 | **With no colour, the radar's block shades replace everything else in their cells**: the warning's outline, hatch and label, the place marker, the scale mark and the credit line. 29c shows all of these drawn when the radar is absent. The same happens in both orders. | A defect against FR-18a (outlines go over everything beneath them), not a ruling. It becomes a v0.2.0 requirement |
+| S29-3 | At 69 by 12 the Hamlin marker and name are not drawn even in the control, although the fit includes Hamlin. | Recorded, not diagnosed |
+| S29-4 | The county picture (596 by 546) was refused at the fixed 250,000-byte image cap and had to be cropped to 447 by 348. | Evidence for W1-B: a host cannot raise the cap |
+
+**Added at HUM LEAD's request, 2026-09-23: a blend of the two orders.** HUM LEAD preferred 29b, and asked to see the warning's colour laid over the radar as a partial tint. `29d-*`, `29e-*` and `29f-*` blend it in at 20%, 35% and 50%, composited in linear light. They are made by a small scratch function, not by the library, and are `.ans` only: with no colour they are identical to 29b.
+
+| # | Finding | Consequence |
+|---|---|---|
+| S29-5 | Measured with the library's own checker (D-88: the least Lab distance under four kinds of vision; floor 10). On a dark ground under the Severe tint, 20% keeps every tinted class at least 14.5 from every other plain class. At 35%, tinted heavy rain (class 5) is 9.3 from plain moderate rain (class 3); at 50% it is 1.8. Across all five severities, 20% is the only strength that clears 10 (lowest 11.7). | A fixed blend strength holds only on a dark ground, and only faintly |
+| S29-6 | On a light ground the blend fails at every strength tried: tinted classes 3 and 4 come within 3.9 to 9.6 of each other even at 20%. | A per-class tint chosen by search, as the ramps were, is the only form that might hold, and on a light ground it may have no solution. An option for PLAN, not shown here |
+
+**Ruled (v0.2.0 D-14, `radar-loops/02-analysis/rulings.md`):** the tint blends over the radar, with the outline and label on top. Blend strength and colours are tuned in PLAN, held by the checker, and must pass on both grounds. HUM LEAD rules the light ground solvable by adjusting the radar ramps or the alert colours.
