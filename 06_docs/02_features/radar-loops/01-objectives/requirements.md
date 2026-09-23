@@ -35,7 +35,7 @@ For designers and PMs before engineers, the three visible decisions:
 |---|---|---|---|
 | L-1.1 | An image overlay carries several frames, each with its own valid time; zero frames means the single image of v0.1.0 (additive). | L-1.1, C-1 | NO INSTRUMENT YET |
 | L-1.2 | A frame may be a **gap**: a missing frame is stated as a gap, never replaced by a neighbour. | L-1.2, M2 | NO INSTRUMENT YET |
-| L-1.3 | Each frame's own valid time drives staleness and the description, so an old loop never looks current. | L-1.3, M2 | NO INSTRUMENT YET |
+| L-1.3 | **The newest non-gap frame's valid time drives the `stale` word and the description**, so an old loop never looks current and neither toggles as the loop plays. Stepping changes the picture and the frame-time text (L-1.10a), not the description. | L-1.3, M2, D-39 | NO INSTRUMENT YET |
 | L-1.4 | The library never fetches radar; the host hands in the data, and the library turns it into frames. | L-1.4, watchpost 0.18.0 D-35 | NO INSTRUMENT YET |
 | L-1.5 | Playback is controllable, at least off / slow / normal, for every looped overlay; the control is the library's, exposed to the host and through it to the listener. | L-1.5 (HR-9) | NO INSTRUMENT YET |
 | L-1.6 | **A frame advance must be seen by the renderer.** Today the renderer reuses its last frame when the overlays' version is unchanged (`internal/render/frame.go:285-302`), so a loop would freeze while reporting success. | W1-A | NO INSTRUMENT YET |
