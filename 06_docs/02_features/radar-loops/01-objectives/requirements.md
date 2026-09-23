@@ -42,7 +42,13 @@ For designers and PMs before engineers, the three visible decisions:
 | L-1.7 | **A refresh does not re-decode the whole loop.** Today a re-`Set` drops every prepared raster (`internal/overlay/store.go:453`). | W1-A | NO INSTRUMENT YET |
 | L-1.8 | `NextCall` reports the next frame change; the contract's claim that a frame-advance source exists becomes true. | L-1.1, C-2 | NO INSTRUMENT YET |
 | L-1.9 | Every frame is validated when handed in, the loop has a total, frame times are in order, and a gap is explicit. | W1-A | NO INSTRUMENT YET — OPEN R1-9 (frame count, copy) |
-| L-1.10 | Loop accessibility: frame time or gap as text; step and seek; `ReduceMotion` against playback; a state read; a tick distinguishable from a data change; the still form of Off; a numeric rate ceiling counting every frame change, with no flashed gaps. | red team A2–A6, A15, A16, P-5 | **OPEN — R1-4** |
+| L-1.10a | The shown frame's time, or "gap", is text on the map at every depth, beside the `stale` word. | D-25 (A2) | NO INSTRUMENT YET |
+| L-1.10b | A host can step to the previous, next and newest frame and seek to any frame; the library's animation clock drives the loop. | D-25 (A3) | NO INSTRUMENT YET |
+| L-1.10c | `ReduceMotion(true)` forces playback off; turning it off restores the host's setting. | D-25 (A4) | NO INSTRUMENT YET |
+| L-1.10d | A state read: the playback in effect (including "off because reduce motion is on"), frame index, count, the frame's time, gap. | D-25 (A5) | NO INSTRUMENT YET |
+| L-1.10e | A frame advance is signalled apart from a data change and does not change the description's cache key. | D-25 (A6) | NO INSTRUMENT YET |
+| L-1.10f | Off shows the newest non-gap frame with its age. | D-25 (A15) | NO INSTRUMENT YET |
+| L-1.10g | A library-owned numeric ceiling on frame changes a second, every change counted toward WCAG 2.3.1, bounded by D-56's 2.5 a second; a gap holds the last real frame with its time reading "gap", never an empty frame. Slow and normal speeds are PLAN's, within it. | D-25 (A16, P-5) | NO INSTRUMENT YET |
 | L-1.11 | Default playback state. | red team A14 | **OPEN — R1-5** |
 | L-1.12 | **Storm motion without the animation (D-24).** The description reports observed motion from the frames: for each described place, where the heavier rain was at the oldest usable frame and at the newest (distance, direction, time), whether it came closer, moved away or held, and the span the loop covers. Worded as observation, never forecast. | D-24; red team A1, B-4 | NO INSTRUMENT YET; M1's non-visual arm, scored from the description alone |
 
