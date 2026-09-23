@@ -955,37 +955,37 @@ code{font-family:var(--mono);font-size:.92em}
   J-&gt;&gt;D: (only if unchanged) write
 </pre></div></article><article class="dia" id="radar-loops-3"><div class="meta"><h3>PLAN — the order, in one picture (v0.2.0 ⇄ watchpost 0.18.0, not yet built)</h3><p class="file"><code>06_docs/02_features/radar-loops/03-architecture-design/integration-map.md</code></p></div><div class="canvas"><pre class="mermaid">flowchart TB
   subgraph WP1[&#34;watchpost P1-a — lands on go-tuiMaps v0.1.0&#34;]
-    W1[&#34;Window, size floor, Settings rows&lt;br/&gt;(FR-1, FR-9)&#34;]
-    W2[&#34;Draw in Update, four stale guards&lt;br/&gt;(D-41)&#34;]
-    W3[&#34;Alert areas, partial areas&lt;br/&gt;(FR-4, D-42)&#34;]
-    W4[&#34;Bound held by the host&lt;br/&gt;(FR-2.4 until HR-3)&#34;]
-    W5[&#34;Description via Describe&lt;br/&gt;(FR-7.4)&#34;]
+    W0[&#34;W0 Foundations: the library, fixtures,&lt;br/&gt;the plan-code gate (FR-8.1, FR-8.6)&#34;]
+    W1[&#34;W1 Window, its words, Settings&lt;br/&gt;(FR-1, FR-7.4 renderer, FR-9)&#34;]
+    W2[&#34;W2 Draw in Update, four stale guards&lt;br/&gt;(D-41; guard 4 partial on v0.1.0)&#34;]
+    W3[&#34;W3 Basemap, request gate, clear path&lt;br/&gt;(FR-3)&#34;]
+    W4[&#34;W4 Bound held by the host&lt;br/&gt;(FR-2.4 until HR-3)&#34;]
+    W5[&#34;W5 Alert areas, partial areas&lt;br/&gt;(FR-4, D-42)&#34;]
+    W6[&#34;W6 Fire and quakes (FR-6)&#34;]
+    W7[&#34;W7 Without colour; M1b scored&lt;br/&gt;(FR-7)&#34;]
   end
   subgraph LIB[&#34;go-tuiMaps v0.2.0&#34;]
     L0[&#34;WP-L1 Contract skeleton + surface test (L-4)&#34;]
     L1[&#34;WP-L2 Loops: frames, copy, keys, budget (L-1, L-12)&#34;]
-    L2[&#34;WP-L3 Renderer: frame identity, blend, furniture,&lt;br/&gt;place labels, severity word + dash (L-8, L-11)&#34;]
-    L3[&#34;WP-L4 Playback API + clock (L-1.5, L-1.10, L-1.13, L-1.16)&#34;]
+    L3[&#34;WP-L4 Playback API + clock (L-1.5, L-1.8, L-1.10, L-1.13)&#34;]
+    L2[&#34;WP-L3 Renderer: frame identity, Frame counters, blend,&lt;br/&gt;furniture, place labels, severity word + dash (L-1.6, L-1.16, L-8, L-11)&#34;]
     L4[&#34;WP-L5 Report (L-1.12, L-13)&#34;]
-    L5[&#34;WP-L6 MRMS + table seam (L-2)&#34;]
+    L5[&#34;WP-L6 MRMS, table seam, heavy end (L-2)&#34;]
     L6[&#34;WP-L7 View bound (L-3)&#34;]
     L7[&#34;WP-L8 Fetch options + confinement (L-7, L-10)&#34;]
     L8[&#34;WP-L9 Cache age + purge (L-9)&#34;]
-    L9[&#34;WP-L10 Defects + close-out (L-5, L-6, L-13)&#34;]
-    L0 --&gt; L1 --&gt; L2 --&gt; L3 --&gt; L4
-    L0 --&gt; L5
+    L9[&#34;WP-L10 Defects + close-out (L-5, L-6, L-13, M4, M6)&#34;]
+    L0 --&gt; L1 --&gt; L3 --&gt; L2 --&gt; L4
+    L0 --&gt; L5 --&gt; L4
     L0 --&gt; L6
     L0 --&gt; L7 --&gt; L8
     L4 --&gt; L9
-    L5 --&gt; L9
     L6 --&gt; L9
     L8 --&gt; L9
   end
   subgraph WP2[&#34;watchpost P1-b — lands on the v0.2.0 tag&#34;]
-    W6[&#34;Radar loops, playback Setting&lt;br/&gt;(FR-5, HR-1, HR-9)&#34;]
-    W7[&#34;Library bound replaces the host clamp&lt;br/&gt;(FR-2.4 → HR-3)&#34;]
-    W8[&#34;Report replaces Describe; nearby Setting&lt;br/&gt;(FR-7.4, D-43)&#34;]
-    W9[&#34;Fetch options, cache purge + retention&lt;br/&gt;(HR-6, HR-8)&#34;]
+    W8[&#34;W8 Radar loops, motion Setting, M3, M5, M6&lt;br/&gt;(FR-5, HR-1, HR-9)&#34;]
+    W9[&#34;W9 Library bound, Report, fetch options,&lt;br/&gt;retention + purge, guard 4 full, labels, pattern&lt;br/&gt;(HR-3, HR-6, HR-7, HR-8, HR-10)&#34;]
   end
   WP1 --&gt; WP2
   L9 --&gt;|&#34;v0.2.0 tag (watchpost FR-5.6)&#34;| WP2
