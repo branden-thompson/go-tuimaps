@@ -1,7 +1,7 @@
 // Command atlas builds the architecture atlas from the tracked documents.
 //
 // **The documents are the source of truth and the page is generated from
-// them.** It reads every fenced mermaid block under 06_docs/ and docs/, takes
+// them.** It reads every fenced mermaid block under 06_docs/, takes
 // the heading above each as its title and the paragraph between as its lead,
 // and groups them by the feature they belong to.
 //
@@ -44,6 +44,33 @@ var (
 
 type diagram struct{ feature, file, title, lead, src string }
 
+// safeID is what a feature's directory must look like to become an HTML id
+// and a link target without escaping.
+var safeID = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
+
+// check refuses what would write a broken page rather than writing it: no
+// diagrams at all, a template missing a place the page is filled into, a
+// diagram with nothing to draw, or a feature name that is not safe as an id.
+func check(found []diagram, page string) error {
+	if len(found) == 0 {
+		return fmt.Errorf("no mermaid blocks found")
+	}
+	for _, mark := range []string{"<!--NAV-->", "<!--BODY-->", "<!--COUNT-->"} {
+		if !strings.Contains(page, mark) {
+			return fmt.Errorf("the page template has no %s, so the page would be written without it", mark)
+		}
+	}
+	for _, d := range found {
+		if strings.TrimSpace(d.src) == "" {
+			return fmt.Errorf("%s: a mermaid block with nothing in it", d.file)
+		}
+		if !safeID.MatchString(d.feature) {
+			return fmt.Errorf("%s: feature %q is not safe as an id in the page", d.file, d.feature)
+		}
+	}
+	return nil
+}
+
 func main() {
 	if err := run(); err != nil {
 		fmt.Fprintln(os.Stderr, "atlas:", err)
@@ -69,8 +96,8 @@ func run() error {
 			return err
 		}
 	}
-	if len(found) == 0 {
-		return fmt.Errorf("no mermaid blocks found")
+	if err := check(found, page); err != nil {
+		return err
 	}
 	sort.SliceStable(found, func(i, j int) bool { return found[i].file < found[j].file })
 
