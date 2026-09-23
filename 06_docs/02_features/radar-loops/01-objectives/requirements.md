@@ -63,6 +63,7 @@ For designers and PMs before engineers, the three visible decisions:
 | L-2.2 | Matching is exact first; the tolerance fallback is kept for colours not yet seen, and such pixels are counted and reported. | D-19 | Existing unmatched-colour warning (`kinds.go:50`) |
 | L-2.3 | **PLAN pre-plans the heavy end:** colour affordances for heavy-rain colours not yet observed, and a better way than the nearest legend colour to value the oranges and reds. | D-19 | NO INSTRUMENT YET; a test that fails when the fallback carries a meaningful share of pixels is the candidate |
 | L-2.4 | A table derived from the legend is never called exact. | L-2.2 | — |
+| L-2.5 | **One additive seam for provider colour tables**, with IEM and MRMS as its first entries, so a third provider is added the same way. | D-35 (F-2's trigger) | NO INSTRUMENT YET |
 
 ## L-3 — The view bound
 
@@ -204,5 +205,5 @@ Likelihood and severity are **H / M / L**, judged from the evidence cited.
 | OW-3 | S29-3: the Hamlin marker missing at 69×12 even without radar — diagnose | PLAN | S29-3 |
 | OW-4 | The 40-second `FuzzAgree` freeze | PLAN | L-6.4 |
 | OW-5 | ~~Correct wave 2's "71–80 %" and D-19's copy of it~~ **Done 2026-09-23**: 80.0–80.6 %, and wave 2's finding 2 restated | — | round 1 verification |
-| OW-6 | F-2 (a pluggable architecture): its trigger — a second radar source — has fired | PLAN entry | red team H-10; OPEN R1-14 |
+| OW-6 | F-2 (a pluggable architecture): its trigger fired; the narrow seam is L-2.5 (D-35); the broad restructure stays with the quality pass | quality pass | D-35 |
 | OW-7 | Every **OPEN — R1-n** row above | before DISCOVER exit | round 1 |
