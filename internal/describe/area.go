@@ -87,6 +87,12 @@ func crossingsOf(at project.LonLat, ring []project.LonLat) int {
 	crossings := 0
 	for i := range ring {
 		a, b := ring[i], ring[(i+1)%len(ring)]
+		// An edge with an end that is nowhere is not an edge: NearestEdge
+		// passes it over, and counting it here would let the two disagree
+		// about where the area's boundary is (v0.2.0 D-16).
+		if !onGlobe(a) || !onGlobe(b) {
+			continue
+		}
 		// Measured from the place itself, which sits at zero: turning the
 		// whole world moves every vertex by the same amount and leaves these
 		// two numbers where they were, so the answer does not depend on

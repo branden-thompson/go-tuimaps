@@ -148,7 +148,9 @@ func (d *layerDecoder) lineTo(c *cursor, rest []byte, count int) ([]byte, error)
 }
 
 // closePath re-pushes the ring's first point, as upstream does, and ends
-// the part. The pen does not move.
+// the part. The pen does not move. **A ring whose last point is already its
+// first is closed, and gets nothing more**: repeating the point would add a
+// segment of no length that the proven decoder does not have (v0.2.0 D-16).
 func (d *layerDecoder) closePath(c *cursor, count uint64) error {
 	if count != 1 {
 		return malformed()
@@ -156,7 +158,10 @@ func (d *layerDecoder) closePath(c *cursor, count uint64) error {
 	if c.partStart < 0 || len(d.layer.Coords)-c.partStart < 2 {
 		return malformed()
 	}
-	d.layer.Coords = append(d.layer.Coords, d.layer.Coords[c.partStart], d.layer.Coords[c.partStart+1])
+	first, last := c.partStart, len(d.layer.Coords)-2
+	if d.layer.Coords[last] != d.layer.Coords[first] || d.layer.Coords[last+1] != d.layer.Coords[first+1] {
+		d.layer.Coords = append(d.layer.Coords, d.layer.Coords[first], d.layer.Coords[first+1])
+	}
 	d.endPart(c)
 	return nil
 }
