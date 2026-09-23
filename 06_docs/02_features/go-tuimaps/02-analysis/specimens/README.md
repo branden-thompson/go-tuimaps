@@ -349,3 +349,24 @@ The program and its inputs are in `radar-loops/02-analysis/programs/` (`ow11-ren
 | S30-2 | **Labels crowd out in an outbreak:** at 149×38 only 7 of the 17 tornado warnings and none of the 3 flash-flood warnings get a label. | Most warnings on a severe day carry no word. Severity must come from D-17's dash, and L-8.5's fallback and the description (L-13.5) carry the rest. PLAN should weigh the labelling rule for overlapping areas. |
 | S30-3 | **The named place's name, "Tuscaloosa", is drawn at neither size, even in colour.** Whether its ring is drawn cannot be told from the text. | This widens S29-3 (OW-3). On a severe day the one place the listener chose can vanish from the picture. |
 | S30-4 | With no colour, the radar's shades again replace the warnings' outlines and hatch across the rain. | L-8.3 at an outbreak's scale. |
+
+## Specimen 31 — a partial alert area (watchpost 0.18.0 PLAN, FR-4.4, M4)
+
+Watchpost's DISCOVER asked for "the partial-area ruling, made with a drawing on screen". This is that
+drawing. A live NWS **Flood Watch (Severe) over five West Texas zones**, 2026-09-23, with the
+**Davis Mountains** zone's shape withheld to make it partial, the way a failed or capped zone fetch
+does. **Fort Davis**, the named place, lies inside the missing zone. At 69×12 and 149×38, with and
+without colour. Program and inputs: `radar-loops/02-analysis/programs/partial-render.go.txt`,
+`inputs/partial/`.
+
+| File | What it is |
+|---|---|
+| `31a-whole-*` | All five zones: the truth, for comparison |
+| `31b-found-labelled-*` | Partial, drawn as found; the label says "4 of 5 zones" |
+| `31c-found-labelled-noted-*` | As 31b, plus a line below the map, in watchpost's chrome, naming the missing zone and saying the place is in it |
+| `31d-withheld-*` | Partial, withheld: nothing drawn until every zone is in; the line says why |
+
+| # | Finding | Consequence |
+|---|---|---|
+| S31-1 | **Drawn as found, the picture puts Fort Davis outside the watch it is inside.** The label's "4 of 5" says the area is incomplete, but not where the gap is, and not that the place is in it. | Watchpost knows the selected place's zone and the alert's zone list, so it can say "the place is in the missing zone" — a fact the picture cannot show. |
+| S31-2 | **The named place's name is drawn at neither size**, in any variant. | The third specimen in a row (S29-3, S30-3); OW-3's diagnosis matters. |

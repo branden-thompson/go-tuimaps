@@ -1,0 +1,106 @@
+// Command partial draws specimen 31: a zone-based Flood Watch with one zone's
+// shape missing, four ways. Throwaway.
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"time"
+
+	tuimaps "github.com/branden-thompson/go-tuimaps"
+	"github.com/branden-thompson/go-tuimaps/assets"
+)
+
+type zone struct {
+	ID    string           `json:"id"`
+	Name  string           `json:"name"`
+	Rings [][][2]float64   `json:"rings"`
+}
+type alert struct {
+	Event, Severity, Effective, Expires string
+	Zones                               []zone
+}
+
+func must(err error) {
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
+
+func main() {
+	dir := os.Args[1]
+	var a alert
+	b, err := os.ReadFile(filepath.Join(dir, "flood-watch.json"))
+	must(err)
+	must(json.Unmarshal(b, &a))
+	at := time.Date(2026, 9, 23, 21, 0, 0, 0, time.UTC)
+	fortDavis := tuimaps.LonLat{Lon: -103.894, Lat: 30.588}
+	missing := "TXZ277"
+	variants := []struct{ tag, what, chrome string; drop, draw bool; label string }{
+		{"31a-whole", "WHOLE: all five zones drawn (the truth, for comparison)", "", false, true, "Flood Watch"},
+		{"31b-found-labelled", "PARTIAL, DRAWN AS FOUND, LABELLED: four zones drawn, the label says 4 of 5", "", true, true, "Flood Watch (4 of 5 zones)"},
+		{"31c-found-labelled-noted", "PARTIAL, DRAWN AS FOUND, LABELLED, AND NOTED BELOW THE MAP", "Flood Watch: the Davis Mountains zone could not be drawn (its shape did not arrive). Fort Davis is in that zone.", true, true, "Flood Watch (4 of 5 zones)"},
+		{"31d-withheld", "PARTIAL, WITHHELD: nothing drawn until every zone is in; the note says why", "Flood Watch for 5 zones is not drawn: 1 zone's shape did not arrive (Davis Mountains).", true, false, ""},
+	}
+	for _, v := range variants {
+		var feats []tuimaps.Feature
+		for _, z := range a.Zones {
+			if v.drop && z.ID == missing {
+				continue
+			}
+			var rings [][]tuimaps.LonLat
+			for _, r := range z.Rings {
+				var ring []tuimaps.LonLat
+				for _, c := range r {
+					ring = append(ring, tuimaps.LonLat{Lon: c[0], Lat: c[1]})
+				}
+				rings = append(rings, ring)
+			}
+			feats = append(feats, tuimaps.Feature{Kind: tuimaps.Polygon, Rings: rings, Role: tuimaps.AlertSevere, Label: v.label})
+		}
+		for _, sz := range []tuimaps.Size{{Cols: 69, Rows: 12}, {Cols: 149, Rows: 38}} {
+			for _, dp := range []struct{ name, ext string; d tuimaps.Depth }{{"truecolor", ".ans", tuimaps.Truecolor}, {"no-colour", ".txt", tuimaps.NoColour}} {
+				m, err := tuimaps.New(tuimaps.WithSize(sz.Cols, sz.Rows), tuimaps.Embed(assets.Tile, assets.MaxZoom))
+				must(err)
+				must(m.CacheRoot(filepath.Join(dir, "tilecache"), 256<<20))
+				must(m.Source("https://tiles.openfreemap.org/planet"))
+				m.ColourDepth(dp.d)
+				must(m.Ground(tuimaps.RGB{R: 16, G: 22, B: 28}))
+				m.PaintGround()
+				m.Units(true, true)
+				if v.draw {
+					_, err = m.Set(tuimaps.Overlay{ID: "alerts", Valid: at, Keeps: 6 * time.Hour, Credit: "National Weather Service", Features: feats})
+					must(err)
+				}
+				_, err = m.SetPlaces([]tuimaps.Place{{ID: "fortdavis", Name: "Fort Davis", At: fortDavis, Marker: tuimaps.MarkerRing}})
+				must(err)
+				must(m.FitTo([]tuimaps.LonLat{{Lon: -104.98, Lat: 29.26}, {Lon: -103.07, Lat: 31.24}}, nil, 0))
+				for i := 0; i < 6; i++ {
+					_, err = m.Settle(context.Background())
+					must(err)
+					if m.Pending() == 0 {
+						break
+					}
+				}
+				fr, err := m.Render(sz, at)
+				must(err)
+				fh, err := os.Create(fmt.Sprintf("%s-%dx%d%s", v.tag, sz.Cols, sz.Rows, dp.ext))
+				must(err)
+				fmt.Fprintf(fh, "Specimen %s · %s · %dx%d · %s · live NWS Flood Watch (Severe), 5 West Texas zones, Davis Mountains' shape withheld to make it partial · Fort Davis (inside Davis Mountains) marked\n", v.tag, v.what, sz.Cols, sz.Rows, dp.name)
+				for _, l := range fr.Lines {
+					fmt.Fprintln(fh, l)
+				}
+				if v.chrome != "" {
+					fmt.Fprintln(fh, "[watchpost, below the map] "+v.chrome)
+				}
+				fh.Close()
+				m.Close()
+			}
+		}
+	}
+	fmt.Println("done")
+}
