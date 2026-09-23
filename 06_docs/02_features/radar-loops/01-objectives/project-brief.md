@@ -10,7 +10,7 @@ directives: FULL GIT; FULL DOCS; FULL REPORTS; FULL DIAGRAMS; FULL RCC; FULL PLA
 branch: feature/radar-loops
 issue: "branden-thompson/go-tuimaps#2 — this brief is its body (D-7)"
 paired_release: "watchpost 0.18.0 — Observer maps (branden-thompson/watchpost#22); this release ships first (watchpost D-11)"
-status: "APPROVED by the HUM LEAD 2026-09-22 (D-7); AMENDED 2026-09-23 (D-9) for the five host requirements watchpost's red-team rounds added — L-1.5, L-7..L-10.  Problem statement LOCKED (D-5)."
+status: "APPROVED by the HUM LEAD 2026-09-22 (D-7); AMENDED 2026-09-23 (D-11) for the five host requirements watchpost's red-team rounds added — L-1.5, L-7..L-10.  Problem statement LOCKED (D-5)."
 ---
 
 # Library Release | `go-tuiMaps v0.2.0 — Radar loops`
@@ -26,8 +26,8 @@ time. Nobody reads radar that way. A person looking at precipitation wants to se
 v0.2.0 makes radar a **loop**, and closes the gaps the first real host found in the contract.
 
 **Why now.** Watchpost 0.18.0 draws the library's first real Observer maps, and its HUM LEAD named
-radar the most common view (watchpost D-7) and ruled it must loop (D-10). The paired-release ruling
-(D-11) puts this release first: watchpost's alert drawing proceeds on v0.1.0, and its radar waits for
+radar the most common view (watchpost D-7) and ruled it must loop (watchpost D-10). The paired-release
+ruling (watchpost D-11) puts this release first: watchpost's alert drawing proceeds on v0.1.0, and its radar waits for
 this tag.
 
 **Who benefits.** Every host that draws precipitation — first watchpost's listener, and any other

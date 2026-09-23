@@ -18,18 +18,16 @@ and every lesson that can be a failing test becomes one.**
 | | |
 |---|---|
 | Branch | `feature/radar-loops`, cut from `feature/go-tuimaps` (full history) → squash-merged `release/v0.2.0` at SHIP (D-1) |
-| Phase | Intake closed (D-7); DISCOVER opens. Update this row at every phase transition |
-| Brief | `01-objectives/project-brief.md` — APPROVED (D-7); the body of issue #2 |
+| Phase | **DISCOVER OPEN** since 2026-09-23 (D-12), ahead of watchpost's PLAN. Watchpost's 0.18.0 DISCOVER record is reference material (`watchpost/06_docs/02_features/observer-maps/`). Update this row at every phase transition |
+| Brief | `01-objectives/project-brief.md` — APPROVED (D-7), AMENDED (D-11); the body of issue #2 |
 | Rulings | `02-analysis/rulings.md` — **every ruling lands here the moment it is made** |
-| Host | watchpost 0.18.0 (watchpost#22) — its HR-1..HR-5 are this release's L-1..L-5 |
+| Host | watchpost 0.18.0 (watchpost#22) — its HR-1..HR-10 are this release's L-1..L-10 (L-1.5 is HR-9) |
 | Follow-ups | `06_docs/follow-ups.md` only. F-1 root clutter, F-2 pluggable architecture — quality pass |
 
 ## Blocking right now
 
-**Every commit is blocked by the gate** until D-4's fix lands: fuzz legs fail with "context deadline
-exceeded" at their time budget on this 18-core machine (L-6.4). The fix is test-first — reproduce the
-failure, then change `scripts/gate` — and nothing is exempted meanwhile. Until it lands, this folder
-and `06_docs/follow-ups.md` are **on disk but uncommitted**.
+Nothing. The fuzz-deadline failure was fixed by construction (D-9, D-10;
+`scripts/gate` uses per-target run counts) and the gate is green in about seventeen minutes.
 
 ## Machine notes
 
