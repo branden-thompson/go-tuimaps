@@ -10,7 +10,14 @@
 #                           Markdown and nothing else, every module's tests -
 #                           which is where documents are read - and no other
 #                           leg. Any other file in the change, tracked or not,
-#                           is refused and sent to the full gate
+#                           is refused and sent to the full gate. Run it
+#                           before committing: with nothing to check it fails
+#   scripts/gate --fuzz     the fuzz legs alone
+#
+# EVERY RUN IS LOGGED to 06_docs/gate-runs.md when that file exists - the
+# commit, how many files were uncommitted, the mode, the result and the time
+# it took (v0.2.0 D-31) - so "the gate was green" is a line anyone can read
+# and M6's count of consecutive clean runs has something to count.
 #
 # GATE_ROOT names the tree to check; by default, the repository this script
 # is in. Every module in the tree is checked, one by one - not only the
@@ -26,35 +33,30 @@ set -o pipefail
 
 FLOOR_TOOLCHAIN="go1.25.0"
 
-# THE FUZZ BUDGET IS A COUNT OF RUNS, NOT A STRETCH OF TIME, and that is the
-# fix for a gate that failed by accident (L-6.4, ruled at D-9).
+# THE FUZZ BUDGET IS A COUNT OF RUNS, NOT A STRETCH OF TIME (D-9). With
+# `-fuzztime <duration>` the engine's coordinator can report its own deadline
+# as a failure: a parent context closes its done channel before it cancels its
+# children (go1.25.0 `internal/fuzz/fuzz.go:129`, `context/context.go:565`
+# then `:569`). That cause is PROBABLE, NOT REPRODUCED
+# (06_docs/02_features/radar-loops/02-analysis/gate-fuzz-deadline.md). A count
+# budget stops through the execution limit and creates no deadline.
 #
-# With `-fuzztime <duration>` the engine gives its coordinator a deadline, and
-# at that deadline the coordinator reports `context deadline exceeded` as a
-# test failure unless the error it sees matches its own child context's
-# (go1.25.0 `internal/fuzz/fuzz.go:129`; a parent context closes its done
-# channel before it cancels its children, `context/context.go:565` then
-# `:569`). Three targets in three packages failed that way, minutes apart, on
-# a tree whose every other leg was green - and no input was ever at fault: a
-# one-second watchdog over both of the oracle's decoders never fired across 27
-# million runs. A count budget takes the other exit (`stop(nil)` on the
-# execution limit) and creates no deadline at all, so the failure cannot
-# happen.
+# A COUNT HAS NO WALL CLOCK, so each fuzz leg also runs under FUZZ_LIMIT
+# seconds of real time (D-31) and fails as STALLED when that runs out. `go
+# test -timeout` cannot do this job: the test binary stops its alarm before it
+# starts fuzzing, and `go test` sets no kill timeout while fuzzing (go1.25.0
+# `testing/testing.go:2335-2340`, `cmd/go/internal/test/test.go:807`).
 #
-# THE COUNT IS PER TARGET, because one number cannot be right for all of them:
-# the targets here differ by more than a hundred times in runs per second - one
-# renders, another hashes. A single five-million count made the slow targets ten
-# minutes each and the fast ones four seconds, and the whole gate went from
-# eighteen minutes to forty-one. Each count below was set on 2026-09-22 from the
-# leg's own measured duration, so every target gets about the sixty seconds of
-# work the clock used to give it, and the gate costs what it did before.
+# THE COUNT IS PER TARGET (D-10), because the targets differ by more than a
+# hundred times in runs per second. Each count below was set on 2026-09-22 on
+# this machine (an 18-core Apple M-series Mac) from the leg's own measured
+# duration, so every target does about sixty seconds of work.
 #
 # TO RECALIBRATE, one target: run the gate, read that leg's printed duration,
 # and scale its count by sixty over that duration. A short `-fuzztime 8s` run
 # is NOT enough to derive a count from: a leg also re-gathers baseline coverage
 # over the whole cached corpus before it fuzzes, and that overhead does not
-# shrink. Counts derived that way came out seventy per cent high here, and one
-# target (FuzzTable) fifteen times low. The printed duration is the calibration
+# shrink, so counts derived that way are badly wrong. The printed duration is the calibration
 # instrument; a leg that no longer takes about a minute is the drift signal,
 # and it is why the durations are printed at all.
 #
@@ -78,19 +80,22 @@ fuzz_execs() {
     FuzzTileJSON)                   echo "11210000x" ;;
     FuzzStyle)                      echo "11490000x" ;;
     FuzzKey)                        echo "23620000x" ;;
-    *)                              echo "$FUZZ_EXECS_DEFAULT" ;;
+    *)                              echo "" ;;
   esac
 }
 FUZZ_EXECS_DEFAULT="5000000x"
-FUZZ_TIMEOUT="10m"
+FUZZ_LIMIT="${GATE_FUZZ_LIMIT:-600}"
 TARGETS="darwin/arm64 darwin/amd64 linux/amd64 linux/arm64 windows/amd64"
 
 quick=0
 docs=0
+fuzzonly=0
+mode="full"
 for arg in "$@"; do
   case "$arg" in
-    --quick) quick=1 ;;
-    --docs) docs=1; quick=1 ;;
+    --quick) quick=1; mode="quick" ;;
+    --docs) docs=1; quick=1; mode="docs" ;;
+    --fuzz) fuzzonly=1; mode="fuzz" ;;
     *) echo "gate: unknown argument: $arg" >&2; exit 2 ;;
   esac
 done
@@ -101,6 +106,20 @@ if [ -z "$root" ]; then
 fi
 cd "$root" || { echo "gate: cannot enter $root" >&2; exit 2; }
 
+# --- every run leaves a line -------------------------------------------------
+started_at=$SECONDS
+made_work=0
+log_run() {
+  local rc="$1" result="FAILED" head dirty
+  [ -f "$root/06_docs/gate-runs.md" ] || return 0
+  [ "$rc" = 0 ] && result="green"
+  head="$(git -C "$root" rev-parse --short HEAD 2>/dev/null || echo none)"
+  dirty="$(git -C "$root" status --porcelain 2>/dev/null | grep -vc ' 06_docs/gate-runs.md$' || true)"
+  printf '| %s | %s | %s | %s | %s | %s |\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$head" "$dirty" "$mode" "$result" "$((SECONDS - started_at))" >> "$root/06_docs/gate-runs.md"
+}
+cleanup() { [ "$made_work" = 1 ] && rm -f "$root/go.work" "$root/go.work.sum"; return 0; }
+trap 'rc=$?; cleanup; log_run "$rc"; exit "$rc"' EXIT
+
 # --- the docs lane decides from the change, not from a promise ---------------
 # THE LANE IS A RULE THE SCRIPT HOLDS, NOT ONE ANYONE HAS TO REMEMBER. The
 # change is everything since the last commit: staged, unstaged, deleted and
@@ -110,7 +129,17 @@ if [ "$docs" = 1 ]; then
     echo "gate: the docs lane needs a commit to compare with; run scripts/gate" >&2
     exit 2
   fi
-  changed="$( { git diff --name-only --no-renames HEAD; git ls-files --others --exclude-standard; } | sort -u)"
+  # EACH GIT COMMAND IS CHECKED ON ITS OWN: a failed diff would otherwise leave
+  # only the untracked files to judge, and the lane would pass on half a change.
+  if ! tracked_change="$(git diff --name-only --no-renames HEAD)"; then
+    echo "gate: the docs lane could not read the change (git diff failed); run scripts/gate" >&2
+    exit 2
+  fi
+  if ! untracked="$(git ls-files --others --exclude-standard)"; then
+    echo "gate: the docs lane could not list untracked files; run scripts/gate" >&2
+    exit 2
+  fi
+  changed="$(printf '%s\n%s\n' "$tracked_change" "$untracked" | grep -v '^$' | grep -vx '06_docs/gate-runs.md' | sort -u || true)"
   others="$(printf '%s\n' "$changed" | grep -v '\.md$' | grep -v '^$' || true)"
   if [ -n "$others" ]; then
     echo "gate: the docs lane is for a change of Markdown and nothing else. Not Markdown:"
@@ -119,8 +148,8 @@ if [ "$docs" = 1 ]; then
     exit 1
   fi
   if [ -z "$changed" ]; then
-    echo "gate: docs lane - nothing has changed since the last commit"
-    exit 0
+    echo "gate: docs lane - nothing to check: nothing has changed since the last commit. Run the lane before committing, not after."
+    exit 1
   fi
   echo "gate: docs lane - $(printf '%s\n' "$changed" | wc -l | tr -d ' ') Markdown file(s) changed; every module's tests run, and no other leg (v0.2.0 D-15)"
 fi
@@ -131,6 +160,40 @@ export GOFLAGS="-mod=readonly"
 failures=""
 fail() { failures="${failures}  FAILED  $1"$'\n'; echo "  FAILED  $1"; }
 pass() { echo "  ok      $1"; }
+
+# limited SECONDS COMMAND... runs a command in a process group of its own and
+# stops the whole group when SECONDS of wall-clock time run out, saying so.
+# It exists for the fuzz legs, whose run-count budget has no clock of its own
+# (D-31); perl is used to start the group because macOS has no setsid.
+limited() {
+  local limit="$1" pid dog rc flag
+  shift
+  flag="$(mktemp)" && rm -f "$flag"
+  perl -e 'setpgrp(0, 0); exec @ARGV or die "cannot run $ARGV[0]: $!\n"' -- "$@" &
+  pid=$!
+  (
+    trap 'kill "$nap" 2>/dev/null; exit 0' TERM
+    sleep "$limit" & nap=$!
+    wait "$nap"
+    if kill -0 "$pid" 2>/dev/null; then
+      : > "$flag"
+      kill -TERM -- "-$pid" 2>/dev/null
+      sleep 5
+      kill -KILL -- "-$pid" 2>/dev/null
+    fi
+  ) &
+  dog=$!
+  wait "$pid"
+  rc=$?
+  kill -TERM "$dog" 2>/dev/null
+  wait "$dog" 2>/dev/null
+  if [ -e "$flag" ]; then
+    rm -f "$flag"
+    echo "STALLED: no result after ${limit}s of wall-clock time (FUZZ_LIMIT; GATE_FUZZ_LIMIT overrides it)"
+    return 124
+  fi
+  return "$rc"
+}
 
 # leg NAME COMMAND... runs one leg and records the outcome. The output of a
 # failing leg is shown; a passing leg is one line.
@@ -170,7 +233,6 @@ if [ -z "$modules" ]; then
 fi
 
 # --- the throw-away workspace file ------------------------------------------
-made_work=0
 if [ -z "${tracked:-}" ]; then
   rm -f go.work go.work.sum
   if GOFLAGS= go work init $modules >/dev/null 2>&1; then
@@ -188,9 +250,6 @@ if [ -z "${tracked:-}" ]; then
     fail "could not write the workspace file"
   fi
 fi
-cleanup() { [ "$made_work" = 1 ] && rm -f "$root/go.work" "$root/go.work.sum"; }
-trap cleanup EXIT
-
 for dir in $modules; do
   path="$(cd "$dir" && GOWORK=off go list -m 2>/dev/null)"
   echo
@@ -200,7 +259,14 @@ for dir in $modules; do
     failures=""
     # A module whose packages arrive with a later work package has nothing
     # to check yet. It is named and said to be empty - not failed, not hidden.
-    if [ -z "$(go list ./... 2>/dev/null)" ]; then
+    # A MODULE GO CANNOT LIST IS BROKEN, NOT EMPTY (D-31): its failure is
+    # read, never mistaken for an absence of packages.
+    if ! pkgs="$(go list ./... 2>/dev/null)"; then
+      fail "its packages cannot be listed"
+      go list ./... 2>&1 | sed 's/^/          /'
+      exit 1
+    fi
+    if [ -z "$pkgs" ]; then
       echo "  empty   no Go packages yet"
       exit 0
     fi
@@ -209,17 +275,24 @@ for dir in $modules; do
       [ -z "$failures" ]
       exit
     fi
-    leg "vet" go vet ./...
-    leg "tests, race detector on" go test -race ./...
-    leg "tests, race detector off (allocation counts live here)" go test ./...
+    if [ "$fuzzonly" = 0 ]; then
+      leg "vet" go vet ./...
+      leg "tests, race detector on" go test -race ./...
+      leg "tests, race detector off (allocation counts live here)" go test ./...
+    fi
     if [ "$quick" = 0 ]; then
-      for pkg in $(go list ./... 2>/dev/null); do
+      for pkg in $pkgs; do
         for target in $(go test -list '^Fuzz' "$pkg" 2>/dev/null | grep '^Fuzz'); do
           execs="$(fuzz_execs "$target")"
-          [ "$execs" = "$FUZZ_EXECS_DEFAULT" ] && echo "  note    fuzz $target has no calibrated count; running the default $execs"
-          leg "fuzz $target, $execs" go test -run '^$' -fuzz "^${target}\$" -fuzztime "$execs" -timeout "$FUZZ_TIMEOUT" "$pkg"
+          if [ -z "$execs" ]; then
+            execs="$FUZZ_EXECS_DEFAULT"
+            echo "  note    fuzz $target has no calibrated count; running the default $execs"
+          fi
+          leg "fuzz $target, $execs" limited "$FUZZ_LIMIT" go test -run '^$' -fuzz "^${target}\$" -fuzztime "$execs" "$pkg"
         done
       done
+    fi
+    if [ "$quick" = 0 ] && [ "$fuzzonly" = 0 ]; then
       if command -v govulncheck >/dev/null 2>&1; then
         # The floor toolchain keeps a newer API out; it is not what a release
         # is built with, and its standard library carries every vulnerability
@@ -242,7 +315,7 @@ for dir in $modules; do
 done
 
 # --- the library only ---------------------------------------------------------
-if [ "$quick" = 0 ]; then
+if [ "$quick" = 0 ] && [ "$fuzzonly" = 0 ]; then
   echo
   echo "library"
   for target in $TARGETS; do

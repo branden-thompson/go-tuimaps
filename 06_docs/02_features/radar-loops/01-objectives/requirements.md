@@ -176,7 +176,7 @@ For designers and PMs before engineers, the three visible decisions:
 | NFR-1 | Additive only: a breaking change to the v0.1.0 contract is a HUM LEAD ruling. | C-7 |
 | NFR-2 | Memory within v0.1.0 NFR-3 at the default budget, flat over an hour with a 12-frame loop. | M4, D-20 |
 | NFR-3 | Motion: no flash above D-56's ceiling (2.5 a second); `ReduceMotion` stops all animation. | v0.1.0 D-56, NFR-21 |
-| NFR-4 | The gate is green before every commit that touches anything but Markdown; a Markdown-only change takes the docs lane. | D-15 |
+| NFR-4 | The gate is green before every commit that touches anything but Markdown; a Markdown-only change takes the docs lane, run before committing. Every run is logged in `06_docs/gate-runs.md`. | D-15, D-31 |
 
 ## Risk register
 
@@ -190,7 +190,7 @@ Likelihood and severity are **H / M / L**, judged from the evidence cited.
 | RK-4 | **Watchpost's radar slips** because this release does | M | M | watchpost's ship-without-radar rule (its RK-4); a scope split is open (R1-15) |
 | RK-5 | **A provider changes its palette or endpoint** (IEM has no SLA; MRMS no published table) | M | M | The unmatched-colour count is the detector (L-2.2) |
 | RK-6 | **The contract stays wrong** — a names-only test passes with false behavioural claims | H | M | L-4.2, L-4.3 |
-| RK-7 | **The gate hangs on a fuzz stall** — the count budget has no wall clock and `FUZZ_TIMEOUT` is inert | M | M | OPEN — R1-10 |
+| RK-7 | **The gate hangs on a fuzz stall** — the count budget has no wall clock | L | M | Each fuzz leg runs under a wall-clock limit and fails as STALLED (D-31) |
 | RK-8 | **A listener who cannot watch the animation is excluded** from the release's main point | M | H | L-1.12 (D-24); M1's non-visual arm. Residual: two-frame motion can mislead when cells grow or decay, so it is worded as observation |
 | RK-9 | **Frames change after hand-in** — the library borrows host image bytes | L | H | L-1.14 (D-30) |
 | RK-10 | **Evidence cannot be re-run** — wave 2 and specimen 29's blends came from throwaway programs | H | L | OPEN — R1-11 |

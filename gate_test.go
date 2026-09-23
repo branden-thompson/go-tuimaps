@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // plantTree writes a small repository: a root module and one nested module,
@@ -226,5 +227,106 @@ func TestDocsLaneRefusesAnyOtherFile(t *testing.T) {
 				t.Errorf("the refusal must name %s and send the change to the full gate:\n%s", want, out)
 			}
 		})
+	}
+}
+
+// runGateWith runs the gate with arguments and extra environment over a
+// planted tree.
+func runGateWith(t *testing.T, root string, env []string, args ...string) (string, error) {
+	t.Helper()
+	gate, err := filepath.Abs(filepath.Join("scripts", "gate"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.Command(gate, args...)
+	cmd.Env = append(append(os.Environ(), "GATE_ROOT="+root, "GOPROXY=off"), env...)
+	out, err := cmd.CombinedOutput()
+	return string(out), err
+}
+
+// TestDocsLaneWithNothingToCheckFails: a lane run after the commit, or on a
+// clean tree, checked nothing, and must not read as a pass (v0.2.0 D-31).
+func TestDocsLaneWithNothingToCheckFails(t *testing.T) {
+	if testing.Short() {
+		t.Skip("runs the gate; skipped with -short")
+	}
+	out, err := runDocsLane(t, plantCommitted(t))
+	if err == nil {
+		t.Fatalf("the docs lane passed with nothing to check:\n%s", out)
+	}
+	if !strings.Contains(out, "nothing to check") {
+		t.Errorf("the refusal must say there is nothing to check:\n%s", out)
+	}
+}
+
+// TestGateFailsWhenAModuleCannotBeLoaded: a module whose packages cannot be
+// listed is broken, not empty (v0.2.0 D-31).
+func TestGateFailsWhenAModuleCannotBeLoaded(t *testing.T) {
+	if testing.Short() {
+		t.Skip("runs the gate; skipped with -short")
+	}
+	root := plantTree(t, true)
+	writeFile(t, root, "tools/t/broken.go", "this is not Go\n")
+	out, err := runGate(t, root)
+	if err == nil {
+		t.Fatalf("the gate passed a module that cannot be loaded:\n%s", out)
+	}
+	section := out[strings.Index(out, "module example.com/lib/tools/t"):]
+	if !strings.Contains(section, "cannot be listed") || strings.Contains(section, "no Go packages yet") {
+		t.Errorf("a module that cannot be loaded must be named as failed, not called empty:\n%s", out)
+	}
+}
+
+// TestAStalledFuzzLegFails: a fuzz leg that stops making progress fails when
+// its wall-clock limit runs out, instead of holding the gate forever
+// (v0.2.0 D-31).
+func TestAStalledFuzzLegFails(t *testing.T) {
+	if testing.Short() {
+		t.Skip("runs the gate; skipped with -short")
+	}
+	root := plantTree(t, true)
+	writeFile(t, root, "stall_test.go", "package lib\n\nimport (\n\t\"testing\"\n\t\"time\"\n)\n\nfunc FuzzStall(f *testing.F) {\n\tf.Add(1)\n\tf.Fuzz(func(t *testing.T, n int) { time.Sleep(time.Hour) })\n}\n")
+	started := time.Now()
+	out, err := runGateWith(t, root, []string{"GATE_FUZZ_LIMIT=5"}, "--fuzz")
+	if err == nil {
+		t.Fatalf("the gate passed a fuzz leg that never finished:\n%s", out)
+	}
+	if !strings.Contains(out, "STALLED") || !strings.Contains(out, "FuzzStall") {
+		t.Errorf("the failure must name the leg and say it stalled:\n%s", out)
+	}
+	if took := time.Since(started); took > 90*time.Second {
+		t.Errorf("the limit did not hold: the gate took %v", took)
+	}
+}
+
+// TestEveryRunIsLogged: a run leaves a line - commit, mode, result - in the
+// tracked run log, which M6 counts from (v0.2.0 D-31).
+func TestEveryRunIsLogged(t *testing.T) {
+	if testing.Short() {
+		t.Skip("runs the gate; skipped with -short")
+	}
+	root := plantCommitted(t)
+	writeFile(t, root, "06_docs/gate-runs.md", "# Gate runs\n\n| When (UTC) | Commit | Uncommitted | Mode | Result | Seconds |\n|---|---|---|---|---|---|\n")
+	writeFile(t, root, "NOTES.md", "# Notes\n\nFine, and logged.\n")
+	out, err := runDocsLane(t, root)
+	if err != nil {
+		t.Fatalf("the docs lane failed: %v\n%s", err, out)
+	}
+	log, err := os.ReadFile(filepath.Join(root, "06_docs", "gate-runs.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	head := exec.Command("git", "rev-parse", "--short", "HEAD")
+	head.Dir = root
+	sha, err := head.Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	last := strings.TrimSpace(string(log))
+	last = last[strings.LastIndex(last, "\n")+1:]
+	for _, want := range []string{strings.TrimSpace(string(sha)), "docs", "green"} {
+		if !strings.Contains(last, want) {
+			t.Errorf("the run's line does not carry %q: %q", want, last)
+		}
 	}
 }

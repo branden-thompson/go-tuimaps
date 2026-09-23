@@ -52,12 +52,24 @@ func TestGeometryCommands(t *testing.T) {
 }
 
 func TestParityP38_MVTDecode(t *testing.T) {
-	// ClosePath re-pushes the ring's first point, as upstream does.
+	// ClosePath re-pushes the ring's first point, as upstream does - unless the
+	// ring already ends there, which paulmach/orb's decoder (the oracle's
+	// proven decoder) leaves as it is (v0.2.0 D-16).
 	square := testFeature(3, nil, []uint32{moveTo(1), zz(0), zz(0), lineTo(3), zz(10), zz(0), zz(0), zz(10), zz(-10), zz(0), closePath()})
 	tile := decodeOne(t, testLayer("l", 0, nil, nil, square))
 	got := parts(tile, tile.Layers[0].Features[0])
 	if !reflect.DeepEqual(got, [][]int16{{0, 0, 10, 0, 10, 10, 0, 10, 0, 0}}) {
 		t.Errorf("a closed square: %v", got)
+	}
+	already := testFeature(3, nil, []uint32{moveTo(1), zz(0), zz(0), lineTo(4), zz(10), zz(0), zz(0), zz(10), zz(-10), zz(0), zz(0), zz(-10), closePath()})
+	tile = decodeOne(t, testLayer("l", 0, nil, nil, already))
+	if got := parts(tile, tile.Layers[0].Features[0]); !reflect.DeepEqual(got, [][]int16{{0, 0, 10, 0, 10, 10, 0, 10, 0, 0}}) {
+		t.Errorf("a square that already ends where it began gained a point: %v", got)
+	}
+	point := testFeature(3, nil, []uint32{moveTo(1), zz(3), zz(4), closePath()})
+	tile = decodeOne(t, testLayer("l", 0, nil, nil, point))
+	if got := parts(tile, tile.Layers[0].Features[0]); !reflect.DeepEqual(got, [][]int16{{3, 4}}) {
+		t.Errorf("a one-point ring: %v", got)
 	}
 	if tile.Layers[0].Extent != 4096 {
 		t.Errorf("default extent %d", tile.Layers[0].Extent)
