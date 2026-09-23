@@ -44,7 +44,7 @@ For designers and PMs before engineers, the three visible decisions:
 | L-1.9 | Every frame is validated when handed in, the loop has a total, frame times are in order, and a gap is explicit. | W1-A | NO INSTRUMENT YET — OPEN R1-9 (frame count, copy) |
 | L-1.10 | Loop accessibility: frame time or gap as text; step and seek; `ReduceMotion` against playback; a state read; a tick distinguishable from a data change; the still form of Off; a numeric rate ceiling counting every frame change, with no flashed gaps. | red team A2–A6, A15, A16, P-5 | **OPEN — R1-4** |
 | L-1.11 | Default playback state. | red team A14 | **OPEN — R1-5** |
-| L-1.12 | Storm motion in a form that does not need the animation. | red team A1, B-4 | **OPEN — R1-2** |
+| L-1.12 | **Storm motion without the animation (D-24).** The description reports observed motion from the frames: for each described place, where the heavier rain was at the oldest usable frame and at the newest (distance, direction, time), whether it came closer, moved away or held, and the span the loop covers. Worded as observation, never forecast. | D-24; red team A1, B-4 | NO INSTRUMENT YET; M1's non-visual arm, scored from the description alone |
 
 ## L-2 — The MRMS table
 
@@ -172,7 +172,7 @@ Likelihood and severity are **H / M / L**, judged from the evidence cited.
 | RK-5 | **A provider changes its palette or endpoint** (IEM has no SLA; MRMS no published table) | M | M | The unmatched-colour count is the detector (L-2.2) |
 | RK-6 | **The contract stays wrong** — a names-only test passes with false behavioural claims | H | M | L-4.2, L-4.3 |
 | RK-7 | **The gate hangs on a fuzz stall** — the count budget has no wall clock and `FUZZ_TIMEOUT` is inert | M | M | OPEN — R1-10 |
-| RK-8 | **A listener who cannot watch the animation is excluded** from the release's main point | H | H | OPEN — R1-2 |
+| RK-8 | **A listener who cannot watch the animation is excluded** from the release's main point | M | H | L-1.12 (D-24); M1's non-visual arm. Residual: two-frame motion can mislead when cells grow or decay, so it is worded as observation |
 | RK-9 | **Frames change after hand-in** — the library borrows host image bytes | L | H | OPEN — R1-9 |
 | RK-10 | **Evidence cannot be re-run** — wave 2 and specimen 29's blends came from throwaway programs | H | L | OPEN — R1-11 |
 
