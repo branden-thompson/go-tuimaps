@@ -78,7 +78,7 @@ For designers and PMs before engineers, the three visible decisions:
 | L-4.1 | `contract.md` names nothing the public surface lacks, and the surface nothing the contract lacks. | L-4.1 | NO INSTRUMENT YET (M5) |
 | L-4.2 | The five false behavioural claims are corrected: `Work`/`Settle` released ids; a panicking `Render`'s "failed" frame; `NextCall`'s frame-advance source; `CacheRoot`'s signature; FR-22b's "the library checks what comes back". | W1-B | NO INSTRUMENT YET |
 | L-4.3 | The surface test records signatures, not names only. | W1-B | NO INSTRUMENT YET |
-| L-4.4 | The README's user-agent claim ("a token you set") is made true or corrected. | red team D-3 | **OPEN — R1-13** |
+| L-4.4 | **The README's promises match the code, and are held by the same check as the contract.** Its user-agent and `Purge` sentences were corrected under D-34; L-7.2 and L-9.3 change them again when they land. | D-34 (D-3) | NO INSTRUMENT YET (M5, extended) |
 
 ## L-5 — v0.1.0's close-out (supersedes the brief's L-5.1)
 

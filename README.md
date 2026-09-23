@@ -65,10 +65,12 @@ changed.
 Nothing, until you name a source. With one named:
 
 - tiles are fetched from that source and from nowhere else, over HTTPS;
-- what is sent is the tile address and a user-agent naming this library, its
-  version and a token you set - nothing about your machine;
+- what is sent is the tile address and a user-agent naming this library and
+  its version - nothing about your machine. A name of your own in the
+  user-agent is not yet something you can set;
 - tiles are held in memory, and on disk only if you name a directory with
-  `CacheRoot`. `Purge()` empties it and `Verify()` reads it back.
+  `CacheRoot`. `Purge()` empties the current source's tiles from it, and
+  `Verify()` reads it back.
 
 ## The data
 
