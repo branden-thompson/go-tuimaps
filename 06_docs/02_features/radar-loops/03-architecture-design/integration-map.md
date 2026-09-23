@@ -14,7 +14,7 @@ the order in which their work can land, and traces each host requirement to the 
 and ruling that meet it. Each plan cites the work packages here by name; neither plan restates the
 other's.
 
-## The order, in one picture
+## PLAN — the order, in one picture (v0.2.0 ⇄ watchpost 0.18.0, not yet built)
 
 ```mermaid
 flowchart TB

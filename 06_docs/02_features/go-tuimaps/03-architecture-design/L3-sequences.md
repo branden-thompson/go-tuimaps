@@ -64,6 +64,8 @@ sequenceDiagram
 
 ## 3 · An idle host — how it still learns that something is due (FR-25)
 
+*v0.1.0 as built. v0.2.0 PLAN changes it: `NextCall` also reports the next loop frame (D-54).*
+
 ```mermaid
 sequenceDiagram
     autonumber

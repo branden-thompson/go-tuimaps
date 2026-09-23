@@ -4,6 +4,8 @@ Up: [architecture](architecture.md) · Carries: FR-9, FR-11, FR-13, FR-14, FR-15
 
 ## One path for every overlay
 
+*v0.1.0 as built. v0.2.0 PLAN changes it: an image overlay may carry loop frames (D-54).*
+
 The host hands in a plain struct (D-74). What happens next is the same for every shape; only the "prepare" step differs.
 
 ```mermaid

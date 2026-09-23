@@ -8,6 +8,8 @@ Up: [architecture](architecture.md) · Carries: FR-11, FR-12, FR-14, FR-16, FR-1
 
 ## From a call to a frame
 
+*v0.1.0 as built. v0.2.0 PLAN changes it: radar is blended over alert areas (D-14, D-45), furniture is never erased (L-8.3), place labels are kept (D-60), and each frame carries its counters (D-59).*
+
 ```mermaid
 flowchart TB
     CALL["Render(rectangle, now)"] --> SAME{"Anything that could change a cell changed?<br/>the full list is the contract's, section 5 —<br/>view · size · look · places · overlays · tiles · phase · freshness · status"}

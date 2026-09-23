@@ -143,7 +143,7 @@ to be kept for good.
 radar, for example satellite at full resolution, the per-refresh copy grows with it. B scales
 better there, and A would need B's API added later anyway.
 
-## How the parts fit
+## PLAN v0.2.0 — how the parts fit (ruled D-54, not yet built)
 
 ```mermaid
 flowchart LR

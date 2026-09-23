@@ -118,7 +118,7 @@ code{font-family:var(--mono);font-size:.92em}
     G -- &#34;no colour&#34; --&gt; NONE[&#34;Nothing painted; the terminal&#39;s own foreground on its own background&#34;]
     PAINT --&gt; STYLE1[&#34;dark or bright style chosen by the ground&#39;s luminance (FR-20)&#34;]
     DECL --&gt; STYLE1
-</pre></div></article><article class="dia" id="go-tuimaps-3"><div class="meta"><h3>How it is computed</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-describe.md</code></p></div><div class="canvas"><pre class="mermaid">flowchart TB
+</pre></div></article><article class="dia" id="go-tuimaps-3"><div class="meta"><h3>How it is computed</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-describe.md</code></p><p class="lead"><em>v0.1.0 as built. v0.2.0 PLAN changes it: a structured <code>Report</code> is computed beside <code>Describe</code> (D-57).</em></p></div><div class="canvas"><pre class="mermaid">flowchart TB
     ASK[&#34;Describe(places)&#34;] --&gt; MEMO{&#34;Anything changed since last time?&lt;br/&gt;overlays · places · staleness · colour depth&#34;}
     MEMO -- no --&gt; SAME[&#34;Return the same data — no allocation&#34;]
     MEMO -- yes --&gt; Q[(&#34;Pending work&#34;)]
@@ -187,7 +187,7 @@ code{font-family:var(--mono);font-size:.92em}
     T1 &amp; T2 &amp; T3 &amp; T4 &amp; T5 &amp; A1 &amp; A2 &amp; A3 &amp; A4 &amp; A5 &amp; A6 &amp; A7 --&gt; OK{&#34;All green?&#34;}
     OK -- yes --&gt; MERGE[&#34;Merge allowed&#34;]
     OK -- no --&gt; STOP[&#34;Stop: what failed, why, what to do&#34;]
-</pre></div></article><article class="dia" id="go-tuimaps-7"><div class="meta"><h3>Where the bytes live</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-memory.md</code></p></div><div class="canvas"><pre class="mermaid">flowchart TB
+</pre></div></article><article class="dia" id="go-tuimaps-7"><div class="meta"><h3>Where the bytes live</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-memory.md</code></p><p class="lead"><em>v0.1.0 as built. v0.2.0 PLAN changes it: a loop&#39;s frames count against a per-map image budget, 3 MiB by default (L-12, D-61).</em></p></div><div class="canvas"><pre class="mermaid">flowchart TB
     subgraph HOSTMEM[&#34;The host&#39;s memory — not counted against the library&#34;]
       HG[&#34;Borrowed geometry (FR-11)&lt;br/&gt;synthetic upper bound: 58 zones · 812,058 vertices · 12.4 MiB&lt;br/&gt;measured: ten Gulf-coast counties · 56,827 vertices · 0.9 MB&lt;br/&gt;the library reads it, never copies it&#34;]
       HP[&#34;The PNG the host fetched — may be released once the image is prepared&#34;]
@@ -219,7 +219,7 @@ code{font-family:var(--mono);font-size:.92em}
     TRANS --&gt; PEAK[&#34;Peak ≈ live + one decode + garbage&#34;]
     SUM --&gt; T1[&#34;&lt;b&gt;Tension (NFR-3):&lt;/b&gt; at live = 4 MB the 8 MB peak is reached by garbage alone.&lt;br/&gt;Live must sit near 3 MB — and for three maps it does, with no room to spare. RS-7 stays High.&#34;]
     PEAK --&gt; T1
-</pre></div></article><article class="dia" id="go-tuimaps-8"><div class="meta"><h3>One path for every overlay</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-overlays.md</code></p><p class="lead">The host hands in a plain struct (D-74). What happens next is the same for every shape; only the &#34;prepare&#34; step differs.</p></div><div class="canvas"><pre class="mermaid">flowchart TB
+</pre></div></article><article class="dia" id="go-tuimaps-8"><div class="meta"><h3>One path for every overlay</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-overlays.md</code></p><p class="lead"><em>v0.1.0 as built. v0.2.0 PLAN changes it: an image overlay may carry loop frames (D-54).</em> The host hands in a plain struct (D-74). What happens next is the same for every shape; only the &#34;prepare&#34; step differs.</p></div><div class="canvas"><pre class="mermaid">flowchart TB
     SET[&#34;Set(overlay struct)&#34;] --&gt; VAL{&#34;Validate on hand-in (NFR-20)&#34;}
     VAL -- &#34;refused&#34; --&gt; ERR[&#34;Typed error from a closed list:&lt;br/&gt;what happened · why · what to do&lt;br/&gt;…and a set-refused warning, so a discarded error still shows&#34;]
     VAL -- &#34;accepted with warnings&#34; --&gt; WARN[&#34;Warnings (≤ 64, de-duplicated)&lt;br/&gt;e.g. a ramp that breaks the colour rules — reported, never refused (D-53)&#34;]
@@ -277,7 +277,7 @@ code{font-family:var(--mono);font-size:.92em}
     PO --&gt; OUT
     H --&gt; OUT
     SAFE[&#34;Safe ramps on (D-63)&#34;] -. &#34;forces&#34; .-&gt; P
-</pre></div></article><article class="dia" id="go-tuimaps-11"><div class="meta"><h3>From a call to a frame</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-render.md</code></p></div><div class="canvas"><pre class="mermaid">flowchart TB
+</pre></div></article><article class="dia" id="go-tuimaps-11"><div class="meta"><h3>From a call to a frame</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-render.md</code></p><p class="lead"><em>v0.1.0 as built. v0.2.0 PLAN changes it: radar is blended over alert areas (D-14, D-45), furniture is never erased (L-8.3), place labels are kept (D-60), and each frame carries its counters (D-59).</em></p></div><div class="canvas"><pre class="mermaid">flowchart TB
     CALL[&#34;Render(rectangle, now)&#34;] --&gt; SAME{&#34;Anything that could change a cell changed?&lt;br/&gt;the full list is the contract&#39;s, section 5 —&lt;br/&gt;view · size · look · places · overlays · tiles · phase · freshness · status&#34;}
     SAME -- yes --&gt; REUSE[&#34;Return the previous frame&lt;br/&gt;zero allocations (NFR-4)&#34;]
     SAME -- no --&gt; SNAP[&#34;Take a snapshot of what is on hand&lt;br/&gt;tiles in a fixed order (NFR-6) · prepared overlays · markers&#34;]
@@ -373,7 +373,7 @@ code{font-family:var(--mono);font-size:.92em}
     GATE -- &#34;refused or failed&#34; --&gt; FAIL[&#34;Count the failure; the owner call that follows stamps a not-before time&lt;br/&gt;from the host&#39;s clock: 30 s doubling to 10 min (FR-23)&lt;br/&gt;a bad cached file is deleted and the network asked&#34;]
     STORE --&gt; BUMP[&#34;Change counter +1 · call-me-by = now&#34;]
     FAIL --&gt; DL[&#34;Call-me-by includes the earliest not-before time (FR-25)&#34;]
-</pre></div></article><article class="dia" id="go-tuimaps-17"><div class="meta"><h3>The network edge</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-tiles.md</code></p><p class="lead">Everything that touches the network goes through one package, so the rules are enforced in one place.</p></div><div class="canvas"><pre class="mermaid">flowchart TB
+</pre></div></article><article class="dia" id="go-tuimaps-17"><div class="meta"><h3>The network edge</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-tiles.md</code></p><p class="lead"><em>v0.1.0 as built. v0.2.0 PLAN changes it: the host may supply the transport, user-agent and timeout (D-55); the proxy is checked on each connection (L-10).</em> Everything that touches the network goes through one package, so the rules are enforced in one place.</p></div><div class="canvas"><pre class="mermaid">flowchart TB
     REQ[&#34;A fetch for the named source&#34;] --&gt; SAME{&#34;Same scheme and host as the source,&lt;br/&gt;or a host the options allow?&#34;}
     SAME -- no --&gt; X0[&#34;Refused before anything is sent&#34;]
     SAME -- yes --&gt; T1{&#34;Secure transport?&#34;}
@@ -463,7 +463,7 @@ code{font-family:var(--mono);font-size:.92em}
     M--&gt;&gt;P: done · counter +1
     H-&gt;&gt;M: Render(rect, now)
     M--&gt;&gt;H: frame · &#34;complete&#34;
-</pre></div></article><article class="dia" id="go-tuimaps-23"><div class="meta"><h3>3 · An idle host — how it still learns that something is due (FR-25)</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L3-sequences.md</code></p></div><div class="canvas"><pre class="mermaid">sequenceDiagram
+</pre></div></article><article class="dia" id="go-tuimaps-23"><div class="meta"><h3>3 · An idle host — how it still learns that something is due (FR-25)</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L3-sequences.md</code></p><p class="lead"><em>v0.1.0 as built. v0.2.0 PLAN changes it: <code>NextCall</code> also reports the next loop frame (D-54).</em></p></div><div class="canvas"><pre class="mermaid">sequenceDiagram
     autonumber
     participant H as Host
     participant M as Map
@@ -705,7 +705,7 @@ code{font-family:var(--mono);font-size:.92em}
     GEN --&gt; ARC
     ORA -.checks.-&gt; MVT
     TXT --&gt; U[&#34;uniseg · go-runewidth&lt;br/&gt;(option B or C)&#34;]
-</pre></div></article><article class="dia" id="go-tuimaps-35"><div class="meta"><h3>Level 0 — Context and trust boundary</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/architecture.md</code></p><p class="lead">Who the library talks to, and who it trusts. <strong>The library trusts nothing that arrives as bytes</strong>, including what its own host hands in: the host&#39;s data is validated (NFR-20), everyone else&#39;s is limited, decoded defensively and fuzzed (NFR-10). Nothing crosses back out to a terminal or a host uncleaned (FR-34).</p></div><div class="canvas"><pre class="mermaid">flowchart LR
+</pre></div></article><article class="dia" id="go-tuimaps-35"><div class="meta"><h3>Level 0 — Context and trust boundary</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/architecture.md</code></p><p class="lead"><em>v0.1.0 as built. v0.2.0 PLAN changes it: the host may supply the transport (D-55).</em> Who the library talks to, and who it trusts. <strong>The library trusts nothing that arrives as bytes</strong>, including what its own host hands in: the host&#39;s data is validated (NFR-20), everyone else&#39;s is limited, decoded defensively and fuzzed (NFR-10). Nothing crosses back out to a terminal or a host uncleaned (FR-34).</p></div><div class="canvas"><pre class="mermaid">flowchart LR
     subgraph PEOPLE[&#34; &#34;]
       U([&#34;Person at a terminal&#34;])
       DEV([&#34;Host developer&#34;])
@@ -748,7 +748,7 @@ code{font-family:var(--mono);font-size:.92em}
     USRSTYLE --&gt; GATE
     CORE --&gt; OUTGATE
     OUTGATE -- &#34;frame: cells of glyph + colours&lt;br/&gt;legend · credits · description · warnings&lt;br/&gt;changed? · call-me-by deadline&#34; --&gt; HUI
-</pre></div></article><article class="dia" id="go-tuimaps-36"><div class="meta"><h3>Level 1 — The parts</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/architecture.md</code></p><p class="lead">One public package holds the whole contract (D-74). Everything under <code>internal/</code> can change freely without breaking a host (D-60). The app, examples, generator and test oracle are <strong>separate modules</strong>, so nothing they import appears in a host&#39;s dependency graph (D-75).</p></div><div class="canvas"><pre class="mermaid">flowchart TB
+</pre></div></article><article class="dia" id="go-tuimaps-36"><div class="meta"><h3>Level 1 — The parts</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/architecture.md</code></p><p class="lead"><em>v0.1.0 as built. v0.2.0 PLAN changes it: loop frames and playback (D-54), fetch options (D-55), <code>Report</code> (D-57).</em> One public package holds the whole contract (D-74). Everything under <code>internal/</code> can change freely without breaking a host (D-60). The app, examples, generator and test oracle are <strong>separate modules</strong>, so nothing they import appears in a host&#39;s dependency graph (D-75).</p></div><div class="canvas"><pre class="mermaid">flowchart TB
     subgraph LIB[&#34;Library module&#34;]
       direction TB
       PUB[&#34;&lt;b&gt;tuimaps&lt;/b&gt; — the public contract&lt;br/&gt;Map · overlay structs · presets · palette tokens&lt;br/&gt;Work · Pending · Settle · Close&lt;br/&gt;Frame · Legend · Credits · Description · Warnings&#34;]
@@ -834,7 +834,7 @@ code{font-family:var(--mono);font-size:.92em}
     GEN --&gt; ARC
     GEN --&gt; MVT
     ORA -. &#34;differential tests&#34; .-&gt; MVT
-</pre></div></article><article class="dia" id="go-tuimaps-37"><div class="meta"><h3>Level 1 — The public contract at a glance</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/architecture.md</code></p><p class="lead">Everything a host can call or hand in, grouped by what it is for. Names are illustrative (D-71). <strong>The full statement — what each call promises, which calls are safe together, the pump, the end of a borrow — is [the contract](contract.md).</strong></p></div><div class="canvas"><pre class="mermaid">flowchart LR
+</pre></div></article><article class="dia" id="go-tuimaps-37"><div class="meta"><h3>Level 1 — The public contract at a glance</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/architecture.md</code></p><p class="lead"><em>v0.1.0 as built. v0.2.0 PLAN changes it: <code>SetFetchOptions</code> (D-55), <code>Report</code> beside <code>Describe</code> (D-57), loop frames and playback (D-54), <code>MaxAge</code> (D-56).</em> Everything a host can call or hand in, grouped by what it is for. Names are illustrative (D-71). <strong>The full statement — what each call promises, which calls are safe together, the pump, the end of a borrow — is [the contract](contract.md).</strong></p></div><div class="canvas"><pre class="mermaid">flowchart LR
     subgraph IN[&#34;Host → Map&#34;]
       direction TB
       A1[&#34;&lt;b&gt;Life&lt;/b&gt;&lt;br/&gt;New(options, WithSize) · Close() — closes at once and reports calls still inside&#34;]
@@ -918,7 +918,7 @@ code{font-family:var(--mono);font-size:.92em}
     WP12 --&gt; WP13[&#34;WP-13&lt;br/&gt;app&#34;]
     WP12 --&gt; WP14[&#34;WP-14&lt;br/&gt;reference frames · benchmarks · judging&#34;]
     WP13 --&gt; WP14
-</pre></div></article></section><section class="level" id="radar-loops"><header class="lvl"><h2>radar loops</h2></header><article class="dia" id="radar-loops-0"><div class="meta"><h3>How the parts fit</h3><p class="file"><code>06_docs/02_features/radar-loops/03-architecture-design/approach-1-loop-model.md</code></p></div><div class="canvas"><pre class="mermaid">flowchart LR
+</pre></div></article></section><section class="level" id="radar-loops"><header class="lvl"><h2>radar loops</h2></header><article class="dia" id="radar-loops-0"><div class="meta"><h3>PLAN v0.2.0 — how the parts fit (ruled D-54, not yet built)</h3><p class="file"><code>06_docs/02_features/radar-loops/03-architecture-design/approach-1-loop-model.md</code></p></div><div class="canvas"><pre class="mermaid">flowchart LR
   H[&#34;Host (watchpost)&lt;br/&gt;fetches frames, builds the list&#34;] --&gt;|&#34;Set(RadarImage with Frames)&#34;| V[&#34;Validate + copy&lt;br/&gt;every frame, total, order, gaps&lt;br/&gt;(L-1.9, L-1.14)&#34;]
   V --&gt;|&#34;over budget → refused, says so (L-12.1)&#34;| H
   V --&gt; K[&#34;Key each frame&lt;br/&gt;valid time + hash of bytes&#34;]
@@ -932,7 +932,7 @@ code{font-family:var(--mono);font-size:.92em}
   P --&gt;|&#34;tick&#34;| T[&#34;FrameTicks (not Changed)&#34;]
   S --&gt; D[&#34;Description&lt;br/&gt;newest non-gap frame; motion oldest→newest (D-39, D-42)&#34;]
   P --&gt; NC[&#34;NextCall: next frame change (L-1.8)&#34;]
-</pre></div></article><article class="dia" id="radar-loops-1"><div class="meta"><h3>How the parts fit</h3><p class="file"><code>06_docs/02_features/radar-loops/03-architecture-design/approach-1-loop-model.md</code></p></div><div class="canvas"><pre class="mermaid">stateDiagram-v2
+</pre></div></article><article class="dia" id="radar-loops-1"><div class="meta"><h3>PLAN v0.2.0 — how the parts fit (ruled D-54, not yet built)</h3><p class="file"><code>06_docs/02_features/radar-loops/03-architecture-design/approach-1-loop-model.md</code></p></div><div class="canvas"><pre class="mermaid">stateDiagram-v2
   [*] --&gt; Off: default (D-26)
   Off --&gt; Playing: SetPlayback(slow|normal)
   Playing --&gt; Off: SetPlayback(off)
@@ -944,7 +944,7 @@ code{font-family:var(--mono);font-size:.92em}
   Held --&gt; Held: Step / Seek / ShowNewest
   note right of Off: shows the newest non-gap frame with its age (L-1.10f)
   note right of Frozen: LoopState.Advancing = false (D-40)
-</pre></div></article><article class="dia" id="radar-loops-2"><div class="meta"><h3>Shared by every option — purge and in-flight writes</h3><p class="file"><code>06_docs/02_features/radar-loops/03-architecture-design/approach-3-cache.md</code></p></div><div class="canvas"><pre class="mermaid">sequenceDiagram
+</pre></div></article><article class="dia" id="radar-loops-2"><div class="meta"><h3>PLAN v0.2.0 — shared by every option: purge and in-flight writes (ruled D-56, not yet built)</h3><p class="file"><code>06_docs/02_features/radar-loops/03-architecture-design/approach-3-cache.md</code></p></div><div class="canvas"><pre class="mermaid">sequenceDiagram
   participant J as Fetch job (in Work)
   participant M as Map (generation g)
   participant D as Disk
@@ -953,7 +953,7 @@ code{font-family:var(--mono);font-size:.92em}
   J-&gt;&gt;M: store tile (remembered g)
   M--&gt;&gt;J: g changed: drop it, write nothing
   J-&gt;&gt;D: (only if unchanged) write
-</pre></div></article><article class="dia" id="radar-loops-3"><div class="meta"><h3>The order, in one picture</h3><p class="file"><code>06_docs/02_features/radar-loops/03-architecture-design/integration-map.md</code></p></div><div class="canvas"><pre class="mermaid">flowchart TB
+</pre></div></article><article class="dia" id="radar-loops-3"><div class="meta"><h3>PLAN — the order, in one picture (v0.2.0 ⇄ watchpost 0.18.0, not yet built)</h3><p class="file"><code>06_docs/02_features/radar-loops/03-architecture-design/integration-map.md</code></p></div><div class="canvas"><pre class="mermaid">flowchart TB
   subgraph WP1[&#34;watchpost P1-a — lands on go-tuiMaps v0.1.0&#34;]
     W1[&#34;Window, size floor, Settings rows&lt;br/&gt;(FR-1, FR-9)&#34;]
     W2[&#34;Draw in Update, four stale guards&lt;br/&gt;(D-41)&#34;]

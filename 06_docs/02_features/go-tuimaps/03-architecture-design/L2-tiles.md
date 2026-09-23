@@ -43,6 +43,8 @@ flowchart LR
 
 ## The network edge
 
+*v0.1.0 as built. v0.2.0 PLAN changes it: the host may supply the transport, user-agent and timeout (D-55); the proxy is checked on each connection (L-10).*
+
 Everything that touches the network goes through one package, so the rules are enforced in one place.
 
 ```mermaid

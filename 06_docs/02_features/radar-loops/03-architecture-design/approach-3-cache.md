@@ -22,7 +22,7 @@ least recently read files (`pruneLocked`, `:267`). So:
 - `Purge` empties one source's directory (`Empty`, `:329`), but a fetch already in flight can write
   after it, as can one in flight when `CacheRoot` changes or the map closes (S-4).
 
-## Shared by every option — purge and in-flight writes
+## PLAN v0.2.0 — shared by every option: purge and in-flight writes (ruled D-56, not yet built)
 
 ```go
 // Purge empties everything the map holds from tiles: every source on disk,

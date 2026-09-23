@@ -8,6 +8,8 @@ A screen reader reads braille map characters as noise, and no picture can show a
 
 ## How it is computed
 
+*v0.1.0 as built. v0.2.0 PLAN changes it: a structured `Report` is computed beside `Describe` (D-57).*
+
 ```mermaid
 flowchart TB
     ASK["Describe(places)"] --> MEMO{"Anything changed since last time?<br/>overlays · places · staleness · colour depth"}

@@ -8,6 +8,8 @@ Up: [architecture](architecture.md) · Carries: FR-9, FR-11, FR-37, NFR-3, NFR-4
 
 ## Where the bytes live
 
+*v0.1.0 as built. v0.2.0 PLAN changes it: a loop's frames count against a per-map image budget, 3 MiB by default (L-12, D-61).*
+
 ```mermaid
 flowchart TB
     subgraph HOSTMEM["The host's memory — not counted against the library"]

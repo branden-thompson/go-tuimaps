@@ -48,6 +48,8 @@ Read down for more detail, up for context. Each file's first lines say which rul
 
 ## Level 0 — Context and trust boundary
 
+*v0.1.0 as built. v0.2.0 PLAN changes it: the host may supply the transport (D-55).*
+
 Who the library talks to, and who it trusts. **The library trusts nothing that arrives as bytes**, including what its own host hands in: the host's data is validated (NFR-20), everyone else's is limited, decoded defensively and fuzzed (NFR-10). Nothing crosses back out to a terminal or a host uncleaned (FR-34).
 
 ```mermaid
@@ -111,6 +113,8 @@ flowchart LR
 ---
 
 ## Level 1 — The parts
+
+*v0.1.0 as built. v0.2.0 PLAN changes it: loop frames and playback (D-54), fetch options (D-55), `Report` (D-57).*
 
 One public package holds the whole contract (D-74). Everything under `internal/` can change freely without breaking a host (D-60). The app, examples, generator and test oracle are **separate modules**, so nothing they import appears in a host's dependency graph (D-75).
 
@@ -218,6 +222,8 @@ flowchart TB
 ---
 
 ## Level 1 — The public contract at a glance
+
+*v0.1.0 as built. v0.2.0 PLAN changes it: `SetFetchOptions` (D-55), `Report` beside `Describe` (D-57), loop frames and playback (D-54), `MaxAge` (D-56).*
 
 Everything a host can call or hand in, grouped by what it is for. Names are illustrative (D-71). **The full statement — what each call promises, which calls are safe together, the pump, the end of a borrow — is [the contract](contract.md).**
 
