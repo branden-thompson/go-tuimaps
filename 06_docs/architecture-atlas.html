@@ -55,8 +55,8 @@ code{font-family:var(--mono);font-size:.92em}
 </style>
 <div class="wrap">
   <aside class="side">
-    <h1 class="brand">go-tuiMaps Architecture Atlas<small>41 diagrams, in reading order. What the program is, area by area.</small></h1>
-    <nav aria-label="Areas"><ul><li><a href="#go-tuimaps">The shape of the library<span class="n">41</span></a></li></ul></nav>
+    <h1 class="brand">go-tuiMaps Architecture Atlas<small>43 diagrams, in reading order. What the program is, area by area.</small></h1>
+    <nav aria-label="Areas"><ul><li><a href="#go-tuimaps">The shape of the library<span class="n">41</span></a></li><li><a href="#radar-loops">radar loops<span class="n">2</span></a></li></ul></nav>
     <p class="how"><strong>This page is generated.</strong> The tracked documents are the source of truth; rebuild with <code>cd tools/atlas &amp;&amp; go run . -root ../..</code>. Only fenced mermaid blocks are read — <strong>a change written in the prose beside a diagram never reaches this page</strong>, so put the fact in the diagram.</p>
   </aside>
   <main><section class="level" id="go-tuimaps"><header class="lvl"><h2>The shape of the library</h2></header><article class="dia" id="go-tuimaps-0"><div class="meta"><h3>Level 2 — The standalone app</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-app.md</code></p><p class="lead">Up: [architecture](architecture.md) · Carries: FR-5, FR-34, NFR-15, D-17, D-52, D-65, D-73, D-75, D-94, P-68a, P-68b, P-72a, P-72b, L-16 A separate module (D-75). It is the library&#39;s first host: it writes its own pump, as any host must (D-73), and it is what HUM LEAD judges M1a in.</p></div><div class="canvas"><pre class="mermaid">flowchart TB
@@ -918,6 +918,32 @@ code{font-family:var(--mono);font-size:.92em}
     WP12 --&gt; WP13[&#34;WP-13&lt;br/&gt;app&#34;]
     WP12 --&gt; WP14[&#34;WP-14&lt;br/&gt;reference frames · benchmarks · judging&#34;]
     WP13 --&gt; WP14
+</pre></div></article></section><section class="level" id="radar-loops"><header class="lvl"><h2>radar loops</h2></header><article class="dia" id="radar-loops-0"><div class="meta"><h3>How the parts fit</h3><p class="file"><code>06_docs/02_features/radar-loops/03-architecture-design/approach-1-loop-model.md</code></p></div><div class="canvas"><pre class="mermaid">flowchart LR
+  H[&#34;Host (watchpost)&lt;br/&gt;fetches frames, builds the list&#34;] --&gt;|&#34;Set(RadarImage with Frames)&#34;| V[&#34;Validate + copy&lt;br/&gt;every frame, total, order, gaps&lt;br/&gt;(L-1.9, L-1.14)&#34;]
+  V --&gt;|&#34;over budget → refused, says so (L-12.1)&#34;| H
+  V --&gt; K[&#34;Key each frame&lt;br/&gt;valid time + hash of bytes&#34;]
+  K --&gt;|&#34;key held&#34;| R1[&#34;Reuse decoded picture (L-1.7)&#34;]
+  K --&gt;|&#34;key new&#34;| R2[&#34;Decode in Work (existing pump)&#34;]
+  R1 --&gt; S[&#34;Store: frames of the overlay&#34;]
+  R2 --&gt; S
+  C[&#34;Animation clock&lt;br/&gt;Animate / FollowClock&#34;] --&gt; P[&#34;Playback&lt;br/&gt;off / slow / normal, ceiling per map&#34;]
+  P --&gt;|&#34;shown frame&#34;| RND[&#34;Renderer&lt;br/&gt;frame identity in the reuse test (L-1.6)&#34;]
+  S --&gt; RND
+  P --&gt;|&#34;tick&#34;| T[&#34;FrameTicks (not Changed)&#34;]
+  S --&gt; D[&#34;Description&lt;br/&gt;newest non-gap frame; motion oldest→newest (D-39, D-42)&#34;]
+  P --&gt; NC[&#34;NextCall: next frame change (L-1.8)&#34;]
+</pre></div></article><article class="dia" id="radar-loops-1"><div class="meta"><h3>How the parts fit</h3><p class="file"><code>06_docs/02_features/radar-loops/03-architecture-design/approach-1-loop-model.md</code></p></div><div class="canvas"><pre class="mermaid">stateDiagram-v2
+  [*] --&gt; Off: default (D-26)
+  Off --&gt; Playing: SetPlayback(slow|normal)
+  Playing --&gt; Off: SetPlayback(off)
+  Playing --&gt; Held: ReduceMotion(true)
+  Held --&gt; Playing: ReduceMotion(false) restores the setting (L-1.10c)
+  Playing --&gt; Frozen: host freezes the clock (Animate)
+  Frozen --&gt; Playing: FollowClock
+  Off --&gt; Off: Step / Seek / ShowNewest
+  Held --&gt; Held: Step / Seek / ShowNewest
+  note right of Off: shows the newest non-gap frame with its age (L-1.10f)
+  note right of Frozen: LoopState.Advancing = false (D-40)
 </pre></div></article></section></main>
 </div>
 <script type="module">
