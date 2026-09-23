@@ -121,6 +121,7 @@ For designers and PMs before engineers, the three visible decisions:
 | L-8.2 | The hatch strokes cannot rank five levels: Extreme and Severe share `╳`, **Minor and Unknown share `╱`**. | L-8.2 corrected, W1-C | — (context for L-8.1) |
 | L-8.3 | **An image or field never erases furniture.** Outline, **hatch**, label, marker, `stale` word, the no-tiles notice, frame time, scale and credit survive an image or field **at every depth**. Today they are erased at NoColour **and Colours16**. Inside rain cells, where a shade glyph takes the whole cell and the hatch cannot draw, what carries severity is stated. | S29-2, D-14, red team A7, D-40 (H D-3, A F7) | NO INSTRUMENT YET; tests at NoColour and Colours16 |
 | L-8.4 | ~~At 16 colours, rain classes stay distinguishable; every rain cell draws as `░`.~~ **Withdrawn (D-50):** a miscount; 16 colours draws the same three shades as no colour. | D-50 | — |
+| L-8.9 | **The named place's marker and name are preserved**: the host's places outrank alert labels, basemap labels and furniture where they collide; where the name still cannot fit, a shorter form or the marker alone is drawn, and the frame reports it. | D-60; S29-3, S30-3, S31-2 | NO INSTRUMENT YET; specimens 29, 30 and 31 as tests |
 | L-8.5 | A label that does not fit falls back to the severity word alone; if that does not fit, the description carries it and the frame reports the dropped label to the host. | D-28 (A8) | NO INSTRUMENT YET; the D-17 specimen (OW-2) |
 | L-8.6 | The five outline dashes differ from each other, from the line-overlay dash (5 on, 4 off) and from every basemap stroke. | D-28 (A8) | NO INSTRUMENT YET; the D-17 specimen (OW-2) |
 | L-8.7 | The hatch draws at Colours16 as well as NoColour. | D-28 (A8) | NO INSTRUMENT YET |
@@ -162,7 +163,7 @@ For designers and PMs before engineers, the three visible decisions:
 | L-12.1 | A **total image budget per map**, settable by the host; a hand-in over it is refused with an error that says so. The **per-image** cap (250,000 pixels, C-3) is unchanged in v0.2.0: a host can lower it, not raise it. | D-20, D-40 (B N-9) | NO INSTRUMENT YET |
 | L-12.2 | The default fits v0.1.0 NFR-3 (4 MB live): about **3 MiB** of images — one 12-frame loop at 596×304 (about 2.3 MiB with its PNG bytes), or about five at dot resolution (298×152, about 0.59 MiB each with its PNG bytes, counted as L-12.4 counts). One run on one machine; see wave 2's Limits. | D-20, W2 M-B, D-40 (H D-12) | M4 |
 | L-12.3 | Guidance steers hosts to frames at the dot grid of the view (298×152 at 149×38). A host that raises the budget owns the memory it asks for, and the contract says so. | D-20 | — |
-| L-12.5 | The render cost of each frame advance, the blend included, is measured against a target PLAN sets. | D-37 (P-6) | NO INSTRUMENT YET |
+| L-12.5 | A frame advance costs **≤ 15 ms** at 149×38 on the reference machine, the blend included (D-61). | D-37 (P-6), D-61 | `BenchmarkFrameAdvance` |
 | L-12.6 | `ReadBack` reads through its size limit, as `Load` does; fields and the shared classified set count inside the budget; the classification cache key hashes a table value's exact bits, so two tables never share a key. | D-40 (S-7) | NO INSTRUMENT YET |
 | L-12.4 | The budget counts retained PNG bytes as well as pixels; a frame's file size is capped relative to its pixel count. | D-30 (F2) | NO INSTRUMENT YET |
 
@@ -190,7 +191,7 @@ The brief's M1–M6 (D-6), with round 1's changes. **This table is the normative
 | M1 | Motion seen | Primary | From a loop alone, a reader states a precipitation cell's direction of motion (scripted UAT over loops recorded from real radar); **and a non-visual arm (D-24): from the description alone**, scored by a grader PLAN defines |
 | M2 | Loop honesty | Primary | Zero frames drawn under the wrong valid time; every gap stated; every frame older than the host's stated cadence marked stale |
 | M3 | Bound holds | Primary | With a host bound set, zero frames outside it across resize, fit, pan, zoom and fall-back |
-| M4 | Embed cost with a loop | Primary | Memory with a 12-frame loop within a PLAN-set target, flat over an hour |
+| M4 | Embed cost with a loop | Primary | A 12-frame loop at dot resolution adds **≤ 1 MiB** of heap over an empty map, within ±5 % over an hour (D-61; measured +0.59 MiB) |
 | M5 | Contract truth | Secondary | Zero names in `contract.md` — and promises in the README (D-34) — missing from the code, and none the other way; a test |
 | M6 | Gate trust | Secondary | Zero unattributable gate failures across a stated number of consecutive full runs, counted from `06_docs/gate-runs.md` (D-31, D-40) |
 
@@ -229,7 +230,7 @@ where it stands.
 |---|---|---|---|
 | OW-1 | ~~The row in v0.1.0's record saying its close-out did not run~~ **Done (D-38)**: `go-tuimaps/07-readiness/release-checklist.md` | — | D-18 |
 | OW-2 | The D-17 specimen: severity word and five dashes, at 69×12 and 149×38, NoColour and Colours16, **drawn over specimen 29's radar**, with the frame time and the `stale` word on the same bottom row, so the crowding at 69×12 is seen | before PLAN commits to L-8.1 | D-17, D-40 (A F7, B) |
-| OW-3 | S29-3: the Hamlin marker missing at 69×12 even without radar — diagnose **Widened by S30-3:** at an outbreak the named place's name is drawn at neither size, even in colour | PLAN | S29-3 |
+| OW-3 | ~~Diagnose S29-3~~ **Folded into L-8.9 (D-60)** | — | D-60 |
 | OW-4 | The 40-second `FuzzAgree` freeze | PLAN | L-6.4 |
 | OW-5 | ~~Correct wave 2's "71–80 %" and D-19's copy of it~~ **Done 2026-09-23**: 80.0–80.6 %, and wave 2's finding 2 restated | — | round 1 verification |
 | OW-6 | F-2 (a pluggable architecture): its trigger fired; the narrow seam is L-2.5 (D-35); the broad restructure stays with the quality pass | quality pass | D-35 |
