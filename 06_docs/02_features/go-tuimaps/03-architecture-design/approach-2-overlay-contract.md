@@ -9,6 +9,8 @@
 
 ## What any contract must carry
 
+*v0.1.0 PLAN, as ruled then. v0.2.0 PLAN rules the frames: `Image.Frames` (D-54).*
+
 The same whichever style is chosen. Every box traces to a ruling.
 
 ```mermaid

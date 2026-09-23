@@ -31,6 +31,8 @@ flowchart TB
 
 ## What "prepare" means for each shape
 
+*v0.1.0 as built. v0.2.0 PLAN replaces "Image frames (FR-37)" below: a loop is `Image.Frames`, kept by valid time and hash, played on the library's animation clock, inside a per-map image budget (D-54, D-61).*
+
 ```mermaid
 flowchart LR
     subgraph V010["In v0.1.0 (D-44)"]

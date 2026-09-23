@@ -237,7 +237,7 @@ code{font-family:var(--mono);font-size:.92em}
     STORE --&gt; CRED[&#34;Credits, with the basemap&#39;s (FR-14)&#34;]
     STORE --&gt; DESC[&#34;Description as data (L2-describe)&#34;]
     STORE --&gt; FRESH[&#34;Freshness: valid time · current-for · stale mark (FR-32, L3-states)&#34;]
-</pre></div></article><article class="dia" id="go-tuimaps-9"><div class="meta"><h3>What &#34;prepare&#34; means for each shape</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-overlays.md</code></p></div><div class="canvas"><pre class="mermaid">flowchart LR
+</pre></div></article><article class="dia" id="go-tuimaps-9"><div class="meta"><h3>What &#34;prepare&#34; means for each shape</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-overlays.md</code></p><p class="lead"><em>v0.1.0 as built. v0.2.0 PLAN replaces &#34;Image frames (FR-37)&#34; below: a loop is <code>Image.Frames</code>, kept by valid time and hash, played on the library&#39;s animation clock, inside a per-map image budget (D-54, D-61).</em></p></div><div class="canvas"><pre class="mermaid">flowchart LR
     subgraph V010[&#34;In v0.1.0 (D-44)&#34;]
       direction TB
       subgraph F[&#34;Features — points · lines · polygons · circles&#34;]
@@ -622,7 +622,7 @@ code{font-family:var(--mono);font-size:.92em}
     end
     HOSTPUMP[&#34;Host&#39;s own pump&lt;br/&gt;(runner switched off)&#34;] -.calls.-&gt; WK
     CC --&gt; HOST[Host decides when to draw again]
-</pre></div></article><article class="dia" id="go-tuimaps-32"><div class="meta"><h3>What any contract must carry</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/approach-2-overlay-contract.md</code></p><p class="lead">The same whichever style is chosen. Every box traces to a ruling.</p></div><div class="canvas"><pre class="mermaid">classDiagram
+</pre></div></article><article class="dia" id="go-tuimaps-32"><div class="meta"><h3>What any contract must carry</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/approach-2-overlay-contract.md</code></p><p class="lead"><em>v0.1.0 PLAN, as ruled then. v0.2.0 PLAN rules the frames: <code>Image.Frames</code> (D-54).</em> The same whichever style is chosen. Every box traces to a ruling.</p></div><div class="canvas"><pre class="mermaid">classDiagram
     direction LR
     class Overlay {
       &lt;&lt;every overlay&gt;&gt;
@@ -882,7 +882,7 @@ code{font-family:var(--mono);font-size:.92em}
     J -- yes --&gt; W[&#34;Both maps are marked as waiting on it — no second fetch&#34;]
     Q -- &#34;ANY map&#39;s Work call may run it&#34; --&gt; DONE[&#34;Stored once · every waiting map&#39;s counter moves&#34;]
     Q -- &#34;the view that wanted it moved away in EVERY waiting map&#34; --&gt; DROP[&#34;Dropped&#34;]
-</pre></div></article><article class="dia" id="go-tuimaps-40"><div class="meta"><h3>Work packages and their order</h3><p class="file"><code>06_docs/02_features/go-tuimaps/04-development/implementation-plan.md</code></p></div><div class="canvas"><pre class="mermaid">flowchart LR
+</pre></div></article><article class="dia" id="go-tuimaps-40"><div class="meta"><h3>Work packages and their order</h3><p class="file"><code>06_docs/02_features/go-tuimaps/04-development/implementation-plan.md</code></p><p class="lead"><em>v0.1.0&#39;s plan, built and shipped. v0.2.0&#39;s order is the radar-loops integration map&#39;s.</em></p></div><div class="canvas"><pre class="mermaid">flowchart LR
     WP00[&#34;WP-00&lt;br/&gt;Scaffold, gates,&lt;br/&gt;scene types, parity mapping&#34;] --&gt; WP01[&#34;WP-01&lt;br/&gt;project&#34;]
     WP00 --&gt; WP02[&#34;WP-02&lt;br/&gt;textsafe&#34;]
     WP00 --&gt; WP03[&#34;WP-03&lt;br/&gt;mvt decoder&#34;]

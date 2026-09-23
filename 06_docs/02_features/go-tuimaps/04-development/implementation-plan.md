@@ -69,6 +69,8 @@ tools/oracle/  (own module)    differential tests of internal/mvt against a prov
 
 ## Work packages and their order
 
+*v0.1.0's plan, built and shipped. v0.2.0's order is the radar-loops integration map's.*
+
 ```mermaid
 flowchart LR
     WP00["WP-00<br/>Scaffold, gates,<br/>scene types, parity mapping"] --> WP01["WP-01<br/>project"]
