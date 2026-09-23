@@ -112,7 +112,10 @@ For designers and PMs before engineers, the three visible decisions:
 | L-8.2 | The hatch strokes cannot rank five levels: Extreme and Severe share `╳`, **Minor and Unknown share `╱`**. | L-8.2 corrected, W1-C | — (context for L-8.1) |
 | L-8.3 | **An image or field never erases furniture.** Outline, label, marker, `stale` word, the no-tiles notice, frame time, scale and credit survive an image or field **at every depth**. Today they are erased at NoColour **and Colours16**. | S29-2, red team A7 | NO INSTRUMENT YET; tests at NoColour and Colours16 |
 | L-8.4 | **At 16 colours, rain classes stay distinguishable.** Today every rain cell draws as `░`. | round 1 verification | NO INSTRUMENT YET (cause not yet found) |
-| L-8.5 | A label that does not fit, dashes that must differ from the line-overlay dash, a second cue at 16 colours; outline and label contrast over the blend. | red team A8, A9 | **OPEN — R1-7** |
+| L-8.5 | A label that does not fit falls back to the severity word alone; if that does not fit, the description carries it and the frame reports the dropped label to the host. | D-28 (A8) | NO INSTRUMENT YET; the D-17 specimen (OW-2) |
+| L-8.6 | The five outline dashes differ from each other, from the line-overlay dash (5 on, 4 off) and from every basemap stroke. | D-28 (A8) | NO INSTRUMENT YET; the D-17 specimen (OW-2) |
+| L-8.7 | The hatch draws at Colours16 as well as NoColour. | D-28 (A8) | NO INSTRUMENT YET |
+| L-8.8 | Outlines hold 3:1 (WCAG 1.4.11) and labels 4.5:1 against the blended inside and the plain radar outside, on both grounds, at truecolor and 256 colours, and at 16 against its reference table. | D-28 (A9) | The checker, extended |
 
 ## L-9 — Cache retention and purge
 
