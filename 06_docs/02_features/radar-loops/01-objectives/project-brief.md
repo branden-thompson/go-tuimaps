@@ -10,7 +10,7 @@ directives: FULL GIT; FULL DOCS; FULL REPORTS; FULL DIAGRAMS; FULL RCC; FULL PLA
 branch: feature/radar-loops
 issue: "branden-thompson/go-tuimaps#2 — this brief is its body (D-7)"
 paired_release: "watchpost 0.18.0 — Observer maps (branden-thompson/watchpost#22); this release ships first (watchpost D-11)"
-status: "APPROVED by the HUM LEAD 2026-09-22 (D-7).  Problem statement LOCKED (D-5)."
+status: "APPROVED by the HUM LEAD 2026-09-22 (D-7); AMENDED 2026-09-23 (D-9) for the five host requirements watchpost's red-team rounds added — L-1.5, L-7..L-10.  Problem statement LOCKED (D-5)."
 ---
 
 # Library Release | `go-tuiMaps v0.2.0 — Radar loops`
@@ -61,6 +61,13 @@ Watchpost's host requirements (HR-1..HR-5, `watchpost/06_docs/02_features/observ
   never looks current.
 - **L-1.4** The library never fetches radar. The host hands in finished frames (D-65: nothing is
   fetched until the host says so; tile-image providers stay deferred unless ruled in).
+- **L-1.5 (HR-9)** **Playback of an overlay's loop is controllable — at least off / slow / normal** —
+  and the control is the library's, exposed to the host and through it to the listener. The host
+  supplies the data; this library turns it into frames and plays them, so the rate belongs where the
+  frames are, and a host must not have to fake a slower loop by withholding data. Applies to every
+  looped overlay, not only radar. A **stated maximum rate** rides with it: `ReduceMotion` is a
+  boolean about markers and the clock, and nothing yet says what it means over a twelve-frame loop.
+  *(Watchpost's motion Settings row and its FR-5.9 ceiling have no mechanism without this.)*
 
 ### L-2 — The MRMS table (HR-2)
 - **L-2.1** A colour-to-intensity table for NOAA/NCEP MRMS `conus_bref_qcd`, owned here (watchpost
@@ -108,6 +115,33 @@ Watchpost's host requirements (HR-1..HR-5, `watchpost/06_docs/02_features/observ
   this, and stays open. **Every commit here is blocked until the fix lands (D-4); a gate that fails by
   accident teaches people to re-run it until it passes.**
 
+### L-7 — A host can write a fetcher (HR-6)
+- **L-7.1** `Fetcher` is exported, but its type alias resolves to an **internal** request type that
+  cannot be named outside the module, so a host cannot supply one without reflection. Export the
+  request type and its options — a user-agent token, allowed hosts, a timeout, roots.
+- **L-7.2** Until it lands, tiles go out as **this library's** user-agent, naming neither the host
+  nor a contact, against sources whose terms the host is asked to honour. That is stated in
+  watchpost's NFR-4 as an exemption; it should not need one.
+
+### L-8 — An alert pattern that does not depend on colour depth (HR-7)
+- **L-8.1** The hatch runs only at `NoColour` depth, so a host's colour-on monochrome or light theme
+  draws a tint with **no second channel** — which breaks the "meaning never by colour alone" promise
+  the library makes and the host repeats.
+- **L-8.2** `AlertExtremeTint` and `AlertSevereTint` share the stroke `╳`, differing only by spacing
+  2 versus 3. On a small area that is not a distinction a reader can use.
+
+### L-9 — Cache retention and a purge call (HR-8)
+- **L-9.1** `CacheRoot(dir, capBytes)` takes bytes only; the disk cache keeps tiles **without
+  expiry**, and its file names are a record of where the reader has looked. A host that promises its
+  listener a retention cannot keep that promise today.
+- **L-9.2** A host-settable **maximum age**, and a **purge** call the host can offer its listener.
+
+### L-10 — The confinement of a source's tiles (HR-10)
+- **L-10.1** The effective tile host comes from the TileJSON document, not from the address a host
+  configures. The library confines it today — a source's tiles must come from that source's host —
+  and that confinement is **contract**, stated and kept, because a host's closed source list is only
+  as good as it.
+
 ## Technical Constraints
 
 **Measured against `feature/radar-loops` at `650f267`, not assumed.**
@@ -136,6 +170,13 @@ Five paths, measured in watchpost's wave 1 (W1-B): unplaced map → whole world 
 
 ### C-6 — The gate fails by accident on this machine
 L-6.4. Every commit is blocked until D-4's fix lands.
+
+### C-8 — Five of these requirements came from a host's review, not from this record
+L-1.5, L-7, L-8, L-9 and L-10 were found by watchpost's accessibility and security reviewers during
+its 0.18.0 DISCOVER (its rounds 2 and 3), not by this library's own rounds. Two consequences: this
+brief's requirement set grew by half after it was approved, and the library's own DISCOVER should
+expect its blind spots to be where a host looks and it does not — the host is the only reader that
+uses the contract rather than writing it.
 
 ### C-7 — Every change is additive
 v0.1.0 is published and resolvable, and watchpost will depend on it. A breaking change is a HUM LEAD
@@ -175,9 +216,9 @@ PROJECT BRIEF — COMPLETENESS CHECK
   [✓] Directives          — LEVEL-1, SEV-0, full set (D-2)
   [✓] Summary / Intent    — What, why now, who benefits, cost of not building
   [✓] Problem statement   — LOCKED (D-5), 4.5/5
-  [✓] Requirements        — L-1..L-6, from HR-1..HR-5 and four new findings
+  [✓] Requirements        — L-1..L-10, from watchpost's HR-1..HR-10 and four findings of this brief's own
   [✓] Metrics of Success  — M1–M4 primary, M5–M6 secondary (D-6)
-  [✓] Tech Constraints    — C-1..C-7, measured at 650f267
+  [✓] Tech Constraints    — C-1..C-8, measured at 650f267
   [✓] Considerations      — quality pass, principles, additivity, issue of record
 
   [✓] Approval            — APPROVED as presented (D-7)
