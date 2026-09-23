@@ -1,0 +1,205 @@
+// Command mrmsmeasure: how well live MRMS frames match a table sampled from
+// the server's own legend. Throwaway; kept outside the repository.
+package main
+
+import (
+	"context"
+	"fmt"
+	"image"
+	"image/color"
+	"image/png"
+	"math"
+	"os"
+	"sort"
+	"strings"
+	"time"
+
+	tuimaps "github.com/branden-thompson/go-tuimaps"
+	"github.com/branden-thompson/go-tuimaps/assets"
+)
+
+type lab struct{ L, A, B float64 }
+
+func lin(c uint8) float64 {
+	x := float64(c) / 255
+	if x <= 0.04045 {
+		return x / 12.92
+	}
+	return math.Pow((x+0.055)/1.055, 2.4)
+}
+
+func toLab(c color.NRGBA) lab {
+	r, g, b := lin(c.R), lin(c.G), lin(c.B)
+	x := (0.4124*r + 0.3576*g + 0.1805*b) / 0.95047
+	y := 0.2126*r + 0.7152*g + 0.0722*b
+	z := (0.0193*r + 0.1192*g + 0.9505*b) / 1.08883
+	f := func(t float64) float64 {
+		if t > 0.008856 {
+			return math.Cbrt(t)
+		}
+		return 7.787*t + 16.0/116
+	}
+	return lab{116*f(y) - 16, 500 * (f(x) - f(y)), 200 * (f(y) - f(z))}
+}
+
+func dist(a, b lab) float64 { return math.Sqrt((a.L-b.L)*(a.L-b.L) + (a.A-b.A)*(a.A-b.A) + (a.B-b.B)*(a.B-b.B)) }
+
+type entry struct {
+	c   color.NRGBA
+	l   lab
+	dbz float64
+}
+
+func load(p string) image.Image {
+	f, err := os.Open(p)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	im, err := png.Decode(f)
+	if err != nil {
+		panic(err)
+	}
+	return im
+}
+
+func nrgba(im image.Image, x, y int) color.NRGBA { return color.NRGBAModel.Convert(im.At(x, y)).(color.NRGBA) }
+
+func class(dbz float64) int {
+	n := 0
+	for _, f := range []float64{10, 20, 30, 40, 50, 60} {
+		if dbz >= f {
+			n++
+		}
+	}
+	return n
+}
+
+func main() {
+	leg := load("../legend.png")
+	w := leg.Bounds().Dx()
+	// gradient rows: those with a distinct colour in most columns
+	var rows []int
+	for y := 0; y < leg.Bounds().Dy(); y++ {
+		seen := map[color.NRGBA]bool{}
+		for x := 0; x < w; x++ {
+			seen[nrgba(leg, x, y)] = true
+		}
+		if len(seen) > w/2 {
+			rows = append(rows, y)
+		}
+	}
+	fmt.Printf("legend %dx%d, gradient rows %v\n", w, leg.Bounds().Dy(), rows)
+	dbzAt := func(x int) float64 { return -20 + (float64(x)+0.5)*90/float64(w) }
+	all := map[color.NRGBA]float64{}
+	var entries []entry
+	for _, y := range rows {
+		for x := 0; x < w; x++ {
+			c := nrgba(leg, x, y)
+			if _, ok := all[c]; !ok {
+				all[c] = dbzAt(x)
+				entries = append(entries, entry{c, toLab(c), dbzAt(x)})
+			}
+		}
+	}
+	fmt.Printf("distinct legend colours %d\n", len(all))
+
+	mid := rows[len(rows)/2]
+	var table []tuimaps.TableEntry
+	for i := 0; i < 256; i++ {
+		x := int(math.Round(float64(i) * float64(w-1) / 255))
+		c := nrgba(leg, x, mid)
+		table = append(table, tuimaps.TableEntry{Colour: tuimaps.RGB{R: c.R, G: c.G, B: c.B}, Value: dbzAt(x)})
+	}
+
+	for _, sc := range []struct {
+		name       string
+		w, s, e, n float64
+	}{{"national", -125, 24, -66, 50}, {"region", -84.5, 36.8, -79.5, 39.8}, {"state", -82.7, 37.2, -77.7, 40.6}} {
+		im := load("../" + sc.name + ".png")
+		b := im.Bounds()
+		var clear, opaque, partial, exact, near10, ambiguous int
+		var gaps []float64
+		distinct := map[color.NRGBA]bool{}
+		for y := b.Min.Y; y < b.Max.Y; y++ {
+			for x := b.Min.X; x < b.Max.X; x++ {
+				c := nrgba(im, x, y)
+				switch {
+				case c.A == 0:
+					clear++
+					continue
+				case c.A < 255:
+					partial++
+				default:
+					opaque++
+				}
+				rgb := color.NRGBA{c.R, c.G, c.B, 255}
+				distinct[rgb] = true
+				if _, ok := all[rgb]; ok {
+					exact++
+					continue
+				}
+				l := toLab(rgb)
+				best, second := math.Inf(1), math.Inf(1)
+				var bestE entry
+				for _, e := range entries {
+					d := dist(l, e.l)
+					if d < best {
+						second, best, bestE = best, d, e
+					} else if d < second {
+						second = d
+					}
+				}
+				_ = second
+				gaps = append(gaps, best)
+				if best <= 10 {
+					near10++
+					// ambiguity: another legend colour within 10 of the pixel in a different class
+					for _, e := range entries {
+						if dist(l, e.l) <= 10 && class(e.dbz) != class(bestE.dbz) {
+							ambiguous++
+							break
+						}
+					}
+				}
+			}
+		}
+		sort.Float64s(gaps)
+		pct := func(q float64) float64 {
+			if len(gaps) == 0 {
+				return 0
+			}
+			return gaps[int(q*float64(len(gaps)-1))]
+		}
+		drawn := opaque + partial
+		fmt.Printf("\n%s %dx%d: clear %d, drawn %d (opaque %d, partly transparent %d), distinct colours %d\n", sc.name, b.Dx(), b.Dy(), clear, drawn, opaque, partial, len(distinct))
+		if drawn > 0 {
+			fmt.Printf("  exactly a legend colour: %d (%.1f%%); within dE 10 of one: %d (%.1f%%); beyond: %d (%.1f%%)\n", exact, 100*float64(exact)/float64(drawn), near10, 100*float64(near10)/float64(drawn), drawn-exact-near10, 100*float64(drawn-exact-near10)/float64(drawn))
+			fmt.Printf("  nearest-legend gap for non-exact pixels: median %.2f p90 %.2f p99 %.2f max %.2f\n", pct(0.5), pct(0.9), pct(0.99), pct(1))
+			fmt.Printf("  near-matched pixels with a different class also within dE 10: %d\n", ambiguous)
+		}
+		pngBytes, _ := os.ReadFile("../" + sc.name + ".png")
+		for _, exactMode := range []bool{true, false} {
+			m, err := tuimaps.New(tuimaps.WithSize(80, 24), tuimaps.Embed(assets.Tile, assets.MaxZoom))
+			if err != nil {
+				panic(err)
+			}
+			img := tuimaps.Image{West: sc.w, South: sc.s, East: sc.e, North: sc.n, Projection: tuimaps.PlateCarree, PNG: pngBytes,
+				Type: tuimaps.Type{Preset: "radar", Unit: "dBZ"}, Table: table, Exact: exactMode}
+			if _, err := m.Set(tuimaps.RadarImage("mrms", img, time.Now())); err != nil {
+				fmt.Println("  library refused:", err)
+				m.Close()
+				continue
+			}
+			if _, err := m.Settle(context.Background()); err != nil {
+				fmt.Println("  settle:", err)
+			}
+			var ws []string
+			for _, wv := range m.Warnings() {
+				ws = append(ws, fmt.Sprint(wv))
+			}
+			fmt.Printf("  library, 256-entry table, Exact=%v: warnings %q\n", exactMode, strings.Join(ws, " | "))
+			m.Close()
+		}
+	}
+}

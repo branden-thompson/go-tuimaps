@@ -1,0 +1,35 @@
+package main
+
+import (
+	"fmt"
+	"image"
+	"image/png"
+	"math"
+	"os"
+)
+
+type sub interface{ SubImage(image.Rectangle) image.Image }
+
+func main() {
+	f, _ := os.Open("radar-county.png")
+	im, err := png.Decode(f)
+	if err != nil {
+		panic(err)
+	}
+	W, S, E, N := -82.55, 37.75, -81.35, 38.85
+	w, h := float64(im.Bounds().Dx()), float64(im.Bounds().Dy())
+	px := func(lon, lat float64) (int, int) {
+		return int(math.Round((lon - W) / (E - W) * w)), int(math.Round((N - lat) / (N - S) * h))
+	}
+	x0, y0 := px(-82.40, 38.65)
+	x1, y1 := px(-81.50, 37.95)
+	c := im.(sub).SubImage(image.Rect(x0, y0, x1, y1))
+	// re-base to origin so the encoder writes only the crop
+	out, _ := os.Create("radar-crop.png")
+	if err := png.Encode(out, c); err != nil {
+		panic(err)
+	}
+	out.Close()
+	fmt.Printf("%T %dx%d=%d bbox %.6f,%.6f,%.6f,%.6f\n", im, x1-x0, y1-y0, (x1-x0)*(y1-y0),
+		W+float64(x0)*(E-W)/w, N-float64(y1)*(N-S)/h, W+float64(x1)*(E-W)/w, N-float64(y0)*(N-S)/h)
+}

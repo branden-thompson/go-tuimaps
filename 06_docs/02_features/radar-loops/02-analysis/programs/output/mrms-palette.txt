@@ -1,0 +1,18 @@
+frames 18 distinct per frame [95 93 92 94 96 95 95 98 94 94 93 95 88 90 94 94 101 90]
+cumulative distinct [95 100 100 101 103 103 105 108 109 109 110 111 111 111 111 111 111 111]
+alpha values among palette colours map[255:111]
+palette 111 colours, dBZ -2.99..48.49, step median 0.36 min 0.00 max 5.40
+  far from legend: ffd300/ff n=86 nearest 40.0 dBZ gap 3.4
+  far from legend: ffce00/ff n=70 nearest 40.4 dBZ gap 4.7
+  far from legend: ffca00/ff n=60 nearest 40.8 dBZ gap 5.8
+  far from legend: ffc500/ff n=50 nearest 41.3 dBZ gap 7.2
+  far from legend: ffbb00/ff n=44 nearest 46.7 dBZ gap 4.9
+  far from legend: ffc000/ff n=44 nearest 46.7 dBZ gap 7.7
+  far from legend: ff7c00/ff n=21 nearest 47.4 dBZ gap 30.3
+  far from legend: ff9f00/ff n=33 nearest 47.4 dBZ gap 10.6
+  far from legend: ff8e00/ff n=24 nearest 47.4 dBZ gap 20.3
+  far from legend: ff2300/ff n=3 nearest 47.6 dBZ gap 3.7
+  far from legend: ff3500/ff n=11 nearest 47.8 dBZ gap 7.6
+  far from legend: ff4700/ff n=8 nearest 47.9 dBZ gap 13.1
+  far from legend: ff5900/ff n=13 nearest 48.3 dBZ gap 19.9
+  far from legend: ff6a00/ff n=14 nearest 48.5 dBZ gap 27.5

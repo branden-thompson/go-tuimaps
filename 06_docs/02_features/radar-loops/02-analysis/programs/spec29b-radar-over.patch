@@ -1,0 +1,12 @@
+--- internal/render/frame.go	2026-09-21 11:28:18
++++ internal/render/frame.go	2026-09-23 07:32:48
+@@ -658,7 +658,8 @@
+ 	if area, ok := r.painter.Colour(c.area, in.Palette, kind, in.Depth); ok {
+ 		bg = area
+ 	}
+-	if under, ok := r.painter.Colour(c.under, in.Palette, kind, in.Depth); ok && !tinted {
++	if under, ok := r.painter.Colour(c.under, in.Palette, kind, in.Depth); ok { // SPECIMEN 29 SCRATCH PATCH: the image wins over an alert tint
++		_ = tinted
+ 		bg = under
+ 	}
+ 	own, ok := r.painter.Colour(c.ink, in.Palette, kind, in.Depth)

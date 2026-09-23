@@ -193,7 +193,7 @@ Likelihood and severity are **H / M / L**, judged from the evidence cited.
 | RK-7 | **The gate hangs on a fuzz stall** — the count budget has no wall clock | L | M | Each fuzz leg runs under a wall-clock limit and fails as STALLED (D-31) |
 | RK-8 | **A listener who cannot watch the animation is excluded** from the release's main point | M | H | L-1.12 (D-24); M1's non-visual arm. Residual: two-frame motion can mislead when cells grow or decay, so it is worded as observation |
 | RK-9 | **Frames change after hand-in** — the library borrows host image bytes | L | H | L-1.14 (D-30) |
-| RK-10 | **Evidence cannot be re-run** — wave 2 and specimen 29's blends came from throwaway programs | H | L | OPEN — R1-11 |
+| RK-10 | **Evidence cannot be re-run** — wave 2 and specimen 29's blends came from throwaway programs | L | L | Filed with inputs and output in `02-analysis/programs/` (D-32); they may go stale as the API changes |
 
 ## Owed
 

@@ -46,6 +46,17 @@ across the server's whole time list (60 times, about two hours).
 4. **The palette seen is incomplete.** The day's heaviest rain was about 48 dBZ. Colours for heavier
    storms have not been observed.
 
+**Limits (D-32).**
+- One afternoon, one weather regime (2026-09-23, rain up to about 48 dBZ). Nothing here speaks for a
+  severe-weather day.
+- "18 frames" is 16 distinct times: the newest time appears three times, once per scale. The palette
+  stopped growing across those 16 times, not across 18 independent frames.
+- One server, one layer (`conus_bref_qcd`), EPSG:4326 at these sizes. Another projection or size may
+  resample differently and add colours.
+- Lab distances use the library's sRGB-to-Lab conversion under normal vision only; the "near a class
+  edge" count is a bound on ambiguity, not a count of misclassified pixels.
+- Programs, inputs and raw output: `programs/`.
+
 ## M-B — what twelve radar frames cost today
 
 **Inputs.** Twelve real IEM `n0q` frames, the current one and `-m05m`…`-m55m`, over the continental
@@ -63,8 +74,8 @@ A first render with all twelve composited took about 27 ms a map at either size.
 
 **Findings.**
 
-1. **The measurement agrees with wave 1's arithmetic** (0.54 MB and 2.17 MB at one byte a pixel);
-   the host's PNG bytes account for the rest.
+1. **The measurement roughly agrees with wave 1's arithmetic** (one byte a pixel), within the
+   limits below.
 2. **Against NFR-3 (4 MB live):** one loop at 298×152 uses about a sixth of it, and one at 596×304
    more than half. Two sources at 596×304 on one map (5.1 MB) do not fit. Three maps, each with one
    loop at 596×304, use 8.7 MB.
@@ -74,3 +85,18 @@ A first render with all twelve composited took about 27 ms a map at either size.
 4. **A host that names frames by index trips the near-duplicate-id warning** ("frame-1" beside
    "frame-10" and "frame-11"). It stops mattering once a loop is one overlay, but it is a trap for
    any host that builds loops out of separate overlays today.
+
+
+**Limits (D-32).**
+- One run a size, on one 18-core Apple M-series Mac. No spread, no repeat.
+- "MB" is Go heap bytes (`HeapAlloc` after two collections) in MiB, not the process's resident size.
+- **Units differ between the waves.** Wave 1's arithmetic (0.54 and 2.17 MB) is decimal megabytes;
+  these measurements are MiB, in which the same pixels are 0.52 and 2.07. With the host's PNG bytes
+  added (0.07 and 0.24 MiB), the expectation is 0.58 and 2.31 MiB against 0.59 and 2.19 measured:
+  it closes at 298×152 and **not at 596×304**, where the heap is 0.12 MiB below it. Heap accounting
+  at this grain is approximate; the per-frame pixel cost is the reliable part.
+- The 27 ms first render is on this machine only, and it composites all twelve frames at once, which
+  a loop never does. It is not a per-frame playback cost; that is unmeasured (R1-15).
+- Twelve frames were twelve separate overlays, because no loop exists yet. A real loop's cost is
+  PLAN's to measure against M4.
+- Programs, inputs and raw output: `programs/`.

@@ -1,0 +1,55 @@
+package colour
+
+import (
+	"fmt"
+	"math"
+	"testing"
+)
+
+func blendLin(img, tint RGB, a float64) RGB {
+	enc := func(x float64) uint8 {
+		if x <= 0.0031308 {
+			x *= 12.92
+		} else {
+			x = 1.055*math.Pow(x, 1/2.4) - 0.055
+		}
+		return uint8(math.Round(math.Max(0, math.Min(1, x)) * 255))
+	}
+	m := func(i, t uint8) uint8 { return enc((1-a)*linear(i) + a*linear(t)) }
+	return RGB{m(img.R, tint.R), m(img.G, tint.G), m(img.B, tint.B)}
+}
+
+func TestSpecimenBlend(t *testing.T) {
+	names := []string{"Extreme", "Severe", "Moderate", "Minor", "Unknown"}
+	for _, g := range []GroundKind{Dark, Light} {
+		ramp, _ := Ramp(Radar, g, Truecolor)
+		_, tints := alertColours(g, Truecolor)
+		fmt.Printf("ground %v radar ramp %v\n", g, ramp)
+		for _, a := range []float64{0.20, 0.35, 0.50} {
+			for s, tint := range tints {
+				bl := make([]RGB, len(ramp))
+				for i, c := range ramp {
+					bl[i] = blendLin(c, tint, a)
+				}
+				within, cross, fromTint := math.Inf(1), math.Inf(1), math.Inf(1)
+				wi, ci := "", ""
+				for i := range bl {
+					fromTint = math.Min(fromTint, Difference(bl[i], tint))
+					for j := range bl {
+						if i < j {
+							if d := Difference(bl[i], bl[j]); d < within {
+								within, wi = d, fmt.Sprintf("%d/%d", i+1, j+1)
+							}
+						}
+						if i != j {
+							if d := Difference(bl[i], ramp[j]); d < cross {
+								cross, ci = d, fmt.Sprintf("tinted %d vs plain %d", i+1, j+1)
+							}
+						}
+					}
+				}
+				fmt.Printf("  a=%.2f %-8s tint %v  classes-inside min %.1f (%s)  inside-vs-outside min %.1f (%s)  from bare tint %.1f\n", a, names[s], tint, within, wi, cross, ci, fromTint)
+			}
+		}
+	}
+}

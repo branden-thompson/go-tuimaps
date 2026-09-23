@@ -1,0 +1,37 @@
+package main
+
+import (
+	"fmt"
+	"image/png"
+	"os"
+)
+
+func main() {
+	f, _ := os.Open(os.Args[1])
+	im, err := png.Decode(f)
+	if err != nil {
+		panic(err)
+	}
+	b := im.Bounds()
+	for _, y := range []int{0, 5, 10, 15, 20, 25, 29} {
+		runs, prev, start := 0, "", 0
+		out := ""
+		for x := b.Min.X; x <= b.Max.X; x++ {
+			cur := "END"
+			if x < b.Max.X {
+				r, g, bb, a := im.At(x, y).RGBA()
+				cur = fmt.Sprintf("%02x%02x%02x/%02x", r>>8, g>>8, bb>>8, a>>8)
+			}
+			if cur != prev {
+				if prev != "" {
+					runs++
+					if runs <= 6 {
+						out += fmt.Sprintf(" [%d-%d %s]", start, x-1, prev)
+					}
+				}
+				prev, start = cur, x
+			}
+		}
+		fmt.Printf("row %d: %d runs;%s\n", y, runs, out)
+	}
+}

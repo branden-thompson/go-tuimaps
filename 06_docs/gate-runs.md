@@ -7,3 +7,5 @@ consecutive clean full runs from this table. A line is written by the script, ne
 | When (UTC) | Commit | Uncommitted | Mode | Result | Seconds |
 |---|---|---|---|---|---|
 | 2026-09-23T18:47:45Z | 7288375 | 6 | full | green | 1091 |
+| 2026-09-23T18:53:50Z | a3dd98e | 6 | docs | FAILED | 1 |
+| 2026-09-23T19:11:50Z | a3dd98e | 6 | full | green | 1072 |
