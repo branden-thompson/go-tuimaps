@@ -8,13 +8,13 @@ Up: [architecture](architecture.md) · Carries: NFR-22, D-19, D-81, D-86
 flowchart TB
     subgraph MODS["Every module in the repository, one by one — not only the library"]
       direction LR
-      M0["library"] --- M1["cmd/tuimaps"] --- M2["examples"] --- M3["tools/gen-assets"] --- M4["tools/answer-key"] --- M5["tools/oracle"]
+      M0["library"] --- M1["cmd/tuimaps"] --- M2["examples"] --- M3["tools/gen-assets"] --- M4["tools/answer-key"] --- M5["tools/oracle"] --- M6["tools/atlas"]
     end
     GATE["The gate script<br/>writes a throw-away workspace file so the nested modules resolve the library from this tree —<br/>with a replace for the library at exactly v0.0.0 inside that throw-away file —<br/>the tracked module files carry no replace line"] --> MODS
-    MODS --> T0["A module with no packages yet is named and called EMPTY — not failed, not hidden;<br/>a module go cannot list FAILS (v0.2.0 D-31)"]
+    MODS --> T0["A module with no packages yet is named and called EMPTY — not failed, not hidden;<br/>a module go cannot list FAILS (v0.2.0 D-31);<br/>tests or a module graph that cannot be listed FAIL (D-40)"]
     MODS --> T1["Tests under the race detector, on the floor toolchain"]
     MODS --> T2["A second leg WITHOUT the race detector: the zero-allocation and allocation-count tests live here"]
-    MODS --> T3["Fuzz: every target, a COUNT of runs calibrated to ~60 s of its own work — not a clock<br/>(an hour-long run before a release is NOT BUILT)<br/>a time budget PROBABLY made the engine report its own deadline as a failure — not reproduced (L-6.4, v0.2.0 D-9, D-10)<br/>each leg also has a wall-clock limit and fails as STALLED (v0.2.0 D-31) · every leg prints its duration"]
+    MODS --> T3["Fuzz: every target, a COUNT of runs calibrated to ~60 s of its own work — not a clock<br/>(an hour-long run before a release is NOT BUILT)<br/>a time budget PROBABLY made the engine report its own deadline as a failure — not reproduced (L-6.4, v0.2.0 D-9, D-10)<br/>each leg also has a wall-clock limit, TERM then KILL, and fails as TIME LIMIT (v0.2.0 D-31, D-40) · every leg prints its duration"]
     MODS --> T4["Vulnerability scan: each module AND the standard library —<br/>on the machine's NEWEST toolchain, named in the report, not on the floor:<br/>the floor keeps a newer API out, and its standard library carries every vulnerability fixed since"]
     MODS --> T5["Licence file present for every module in each graph"]
     M0 --> A1["Allow-list: with the workspace file off, the library's graph is go-runewidth and uax29 only (D-81)"]

@@ -18,17 +18,18 @@ func plantTree(t *testing.T, nestedPasses bool) string {
 	// The nested module requires the root at a version that was never
 	// published, and imports it: what every separate module of this
 	// repository does before a remote exists.
-	body := "if lib.Answer() != 42 { t.Fatal(\"the nested module did not reach the root module\") }"
+	body := "if lib.Answer() != 42 {\n\t\tt.Fatal(\"the nested module did not reach the root module\")\n\t}"
 	if !nestedPasses {
 		body = "t.Fatal(\"planted failure\", lib.Answer())"
 	}
 	files := map[string]string{
 		"go.mod":               "module example.com/lib\n\ngo 1.25.0\n",
+		"LICENSE":              "Planted licence.\n",
 		"lib.go":               "// Package lib is planted.\npackage lib\n\n// Answer is planted.\nfunc Answer() int { return 42 }\n",
 		"lib_test.go":          "package lib\n\nimport \"testing\"\n\nfunc TestRoot(t *testing.T) { t.Log(\"ok\") }\n",
 		"tools/t/go.mod":       "module example.com/lib/tools/t\n\ngo 1.25.0\n\nrequire example.com/lib v0.0.0\n",
 		"tools/t/t.go":         "// Package t is planted.\npackage t\n",
-		"tools/t/t_test.go":    "package t\n\nimport (\n\t\"testing\"\n\n\t\"example.com/lib\"\n)\n\nfunc TestNested(t *testing.T) { " + body + " }\n",
+		"tools/t/t_test.go":    "package t\n\nimport (\n\t\"testing\"\n\n\t\"example.com/lib\"\n)\n\nfunc TestNested(t *testing.T) {\n\t" + body + "\n}\n",
 		"cmd/later/go.mod":     "module example.com/lib/cmd/later\n\ngo 1.25.0\n",
 		"testdata/x/go.mod":    "module example.com/ignored\n\ngo 1.25.0\n",
 		"testdata/x/x_test.go": "package x\n\nimport \"testing\"\n\nfunc TestIgnored(t *testing.T) { t.Fatal(\"test data is not a module of the repository\") }\n",
@@ -139,6 +140,18 @@ func plantCommitted(t *testing.T) string {
 	return root
 }
 
+// git runs one git command in a planted tree and fails the test if it fails.
+func git(t *testing.T, root string, args ...string) string {
+	t.Helper()
+	cmd := exec.Command("git", append([]string{"-c", "user.name=gate", "-c", "user.email=gate@example.com"}, args...)...)
+	cmd.Dir = root
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("git %v: %v\n%s", args, err, out)
+	}
+	return strings.TrimSpace(string(out))
+}
+
 func writeFile(t *testing.T, root, rel, src string) {
 	t.Helper()
 	full := filepath.Join(root, filepath.FromSlash(rel))
@@ -160,6 +173,7 @@ func TestDocsLaneRunsTheTestsThatReadDocuments(t *testing.T) {
 	root := plantCommitted(t)
 	writeFile(t, root, "NOTES.md", "# Notes\n\nStill fine, and longer.\n")
 	writeFile(t, root, "docs/new.md", "# A new page\n")
+	git(t, root, "add", "-A")
 	out, err := runDocsLane(t, root)
 	if err != nil {
 		t.Fatalf("the docs lane failed on a Markdown-only change the tests accept: %v\n%s", err, out)
@@ -168,6 +182,7 @@ func TestDocsLaneRunsTheTestsThatReadDocuments(t *testing.T) {
 		t.Errorf("the docs lane must say it is the docs lane and name every module it ran:\n%s", out)
 	}
 	writeFile(t, root, "NOTES.md", "# Notes\n\nBROKEN\n")
+	git(t, root, "add", "-A")
 	out, err = runDocsLane(t, root)
 	if err == nil {
 		t.Fatalf("the docs lane passed a Markdown change a test rejects:\n%s", out)
@@ -182,7 +197,7 @@ func TestDocsLaneRefusesAnyOtherFile(t *testing.T) {
 	}
 	for name, other := range map[string]string{
 		"a changed source file":  "lib.go",
-		"a new untracked file":   "specimens/frame.txt",
+		"a new staged file":      "specimens/frame.txt",
 		"a deleted tracked file": "",
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -200,6 +215,7 @@ func TestDocsLaneRefusesAnyOtherFile(t *testing.T) {
 			default:
 				writeFile(t, root, other, "a frame\n")
 			}
+			git(t, root, "add", "-A")
 			out, err := runDocsLane(t, root)
 			if err == nil {
 				t.Fatalf("the docs lane accepted a change with %s in it:\n%s", want, out)
@@ -273,7 +289,7 @@ func TestAStalledFuzzLegFails(t *testing.T) {
 	if err == nil {
 		t.Fatalf("the gate passed a fuzz leg that never finished:\n%s", out)
 	}
-	if !strings.Contains(out, "STALLED") || !strings.Contains(out, "FuzzStall") {
+	if !strings.Contains(out, "TIME LIMIT") || !strings.Contains(out, "FuzzStall") {
 		t.Errorf("the failure must name the leg and say it stalled:\n%s", out)
 	}
 	if took := time.Since(started); took > 90*time.Second {
@@ -290,7 +306,9 @@ func TestEveryRunIsLogged(t *testing.T) {
 	root := plantCommitted(t)
 	writeFile(t, root, "06_docs/gate-runs.md", "# Gate runs\n\n| When (UTC) | Commit | Uncommitted | Mode | Result | Seconds |\n|---|---|---|---|---|---|\n")
 	writeFile(t, root, "NOTES.md", "# Notes\n\nFine, and logged.\n")
-	out, err := runDocsLane(t, root)
+	git(t, root, "add", "NOTES.md")
+	tree := git(t, root, "write-tree")[:12]
+	out, err := runGateWith(t, root, []string{"GATE_FUZZ_LIMIT=77"}, "--docs")
 	if err != nil {
 		t.Fatalf("the docs lane failed: %v\n%s", err, out)
 	}
@@ -306,10 +324,25 @@ func TestEveryRunIsLogged(t *testing.T) {
 	}
 	last := strings.TrimSpace(string(log))
 	last = last[strings.LastIndex(last, "\n")+1:]
-	for _, want := range []string{strings.TrimSpace(string(sha)), "docs", "green"} {
+	for _, want := range []string{strings.TrimSpace(string(sha)), tree, "docs", "green", "GATE_FUZZ_LIMIT=77"} {
 		if !strings.Contains(last, want) {
 			t.Errorf("the run's line does not carry %q: %q", want, last)
 		}
+	}
+	// A run that fails is logged as failed: M6 counts the Result column.
+	writeFile(t, root, "NOTES.md", "# Notes\n\nBROKEN\n")
+	git(t, root, "add", "NOTES.md")
+	if out, err := runDocsLane(t, root); err == nil {
+		t.Fatalf("the docs lane passed a note a test rejects:\n%s", out)
+	}
+	log, err = os.ReadFile(filepath.Join(root, "06_docs", "gate-runs.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	last = strings.TrimSpace(string(log))
+	last = last[strings.LastIndex(last, "\n")+1:]
+	if !strings.Contains(last, "FAILED") || strings.Contains(last, "green") {
+		t.Errorf("a failed run must be logged as FAILED: %q", last)
 	}
 }
 
@@ -370,17 +403,162 @@ func TestNotRunNamesTheLastTag(t *testing.T) {
 	if testing.Short() {
 		t.Skip("runs the gate; skipped with -short")
 	}
+	// Releases are squash-merged (D-1), so the last release's tag is never an
+	// ancestor of a work branch: tag a commit on a branch of its own.
 	root := plantCommitted(t)
-	tag := exec.Command("git", "tag", "v9.9.9")
-	tag.Dir = root
-	if out, err := tag.CombinedOutput(); err != nil {
-		t.Fatalf("git tag: %v\n%s", err, out)
-	}
+	work := git(t, root, "rev-parse", "--abbrev-ref", "HEAD")
+	git(t, root, "checkout", "-q", "-b", "release")
+	writeFile(t, root, "RELEASE.md", "# Released\n")
+	git(t, root, "add", "-A")
+	git(t, root, "commit", "-q", "-m", "squashed release")
+	git(t, root, "tag", "v9.9.9")
+	git(t, root, "checkout", "-q", work)
 	out, err := runGate(t, root)
 	if err != nil {
 		t.Fatalf("the gate failed: %v\n%s", err, out)
 	}
 	if !strings.Contains(out, "v9.9.9") || strings.Contains(out, "none exists yet") {
 		t.Errorf("the NOT RUN line must name the last tag:\n%s", out)
+	}
+}
+
+// TestDocsLaneJudgesOnlyWhatIsStaged: the lane checks what the commit will
+// record; an unstaged code change and an untracked file are not part of it
+// (v0.2.0 D-41).
+func TestDocsLaneJudgesOnlyWhatIsStaged(t *testing.T) {
+	if testing.Short() {
+		t.Skip("runs the gate; skipped with -short")
+	}
+	root := plantCommitted(t)
+	writeFile(t, root, "NOTES.md", "# Notes\n\nStaged.\n")
+	git(t, root, "add", "NOTES.md")
+	writeFile(t, root, "lib.go", "// Package lib is planted, and edited without being staged.\npackage lib\n\n// Answer is planted.\nfunc Answer() int { return 42 }\n")
+	writeFile(t, root, "scratch.txt", "not part of the commit\n")
+	out, err := runDocsLane(t, root)
+	if err != nil {
+		t.Fatalf("the lane refused a staged Markdown change because of files that are not staged: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "not staged") {
+		t.Errorf("the lane must say how many files it left out as not staged:\n%s", out)
+	}
+}
+
+// TestDocsLaneFailsWhenGitCannotRead: a change the lane cannot read is not a
+// change it may pass (v0.2.0 D-31, D-40).
+func TestDocsLaneFailsWhenGitCannotRead(t *testing.T) {
+	if testing.Short() {
+		t.Skip("runs the gate; skipped with -short")
+	}
+	root := plantCommitted(t)
+	if err := os.WriteFile(filepath.Join(root, ".git", "index"), []byte("not an index"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, err := runDocsLane(t, root)
+	if err == nil {
+		t.Fatalf("the lane passed a change git could not read:\n%s", out)
+	}
+	if !strings.Contains(out, "could not read") {
+		t.Errorf("the refusal must say the change could not be read:\n%s", out)
+	}
+}
+
+// TestGateRefusesTwoModes: two mode flags together skipped every leg and
+// printed green (v0.2.0 D-40).
+func TestGateRefusesTwoModes(t *testing.T) {
+	for _, args := range [][]string{{"--quick", "--fuzz"}, {"--docs", "--fuzz"}, {"--docs", "--quick"}} {
+		out, err := runGateWith(t, plantTree(t, true), nil, args...)
+		if err == nil || !strings.Contains(out, "one mode") {
+			t.Errorf("%v must be refused as more than one mode:\n%s", args, out)
+		}
+	}
+}
+
+// TestFuzzModeFailsWithNothingToRun: a fuzz run that ran no fuzz leg checked
+// nothing, and must not read as green (v0.2.0 D-40).
+func TestFuzzModeFailsWithNothingToRun(t *testing.T) {
+	if testing.Short() {
+		t.Skip("runs the gate; skipped with -short")
+	}
+	out, err := runGateWith(t, plantTree(t, true), nil, "--fuzz")
+	if err == nil || !strings.Contains(out, "no fuzz leg") {
+		t.Fatalf("a fuzz run with no fuzz target must fail and say so:\n%s", out)
+	}
+}
+
+// TestFuzzModeFailsWhenTestsCannotBeListed: a package whose tests do not
+// compile has fuzz targets nobody can list, and that is a failure, not an
+// absence (v0.2.0 D-40).
+func TestFuzzModeFailsWhenTestsCannotBeListed(t *testing.T) {
+	if testing.Short() {
+		t.Skip("runs the gate; skipped with -short")
+	}
+	root := plantTree(t, true)
+	writeFile(t, root, "bad_test.go", "package lib\n\nimport \"testing\"\n\nfunc FuzzBad(f *testing.F) { undefinedHere() }\n")
+	out, err := runGateWith(t, root, nil, "--fuzz")
+	if err == nil || !strings.Contains(out, "cannot be listed") {
+		t.Fatalf("a package whose tests do not compile must fail the fuzz run:\n%s", out)
+	}
+}
+
+// TestLicenceCheckFailsWhenTheGraphCannotBeListed: a module graph the licence
+// check cannot list was a loop over nothing, and passed (v0.2.0 D-40).
+func TestLicenceCheckFailsWhenTheGraphCannotBeListed(t *testing.T) {
+	if testing.Short() {
+		t.Skip("runs the gate; skipped with -short")
+	}
+	root := plantTree(t, true)
+	writeFile(t, root, "tools/t/go.mod", "module example.com/lib/tools/t\n\ngo 1.25.0\n\nrequire (\n\texample.com/lib v0.0.0\n\texample.com/nowhere v1.2.3\n)\n")
+	out, err := runGate(t, root)
+	if err == nil || !strings.Contains(out, "licence") {
+		t.Fatalf("a module graph that cannot be listed must fail the licence check:\n%s", out)
+	}
+}
+
+// TestALegThatIgnoresTermIsStillStopped: a process that ignores TERM is
+// killed when the limit runs out, so the limit is a limit (v0.2.0 D-40).
+func TestALegThatIgnoresTermIsStillStopped(t *testing.T) {
+	if testing.Short() {
+		t.Skip("runs the gate; skipped with -short")
+	}
+	root := plantTree(t, true)
+	writeFile(t, root, "stubborn_test.go", "package lib\n\nimport (\n\t\"os/exec\"\n\t\"testing\"\n)\n\nfunc FuzzStubborn(f *testing.F) {\n\tf.Add(1)\n\tf.Fuzz(func(t *testing.T, n int) { _ = exec.Command(\"sh\", \"-c\", \"trap '' TERM; exec sleep 3607\").Run() })\n}\n")
+	started := time.Now()
+	out, err := runGateWith(t, root, []string{"GATE_FUZZ_LIMIT=3"}, "--fuzz")
+	if err == nil || !strings.Contains(out, "TIME LIMIT") {
+		t.Fatalf("a leg that ignores TERM must still fail at its limit:\n%s", out)
+	}
+	if took := time.Since(started); took > 60*time.Second {
+		t.Errorf("the limit did not hold against a process that ignores TERM: %v", took)
+	}
+	// Nothing of the leg may outlive it: a survivor would keep running, and
+	// would hold the leg's output open if it wrote to it.
+	time.Sleep(time.Second)
+	if left, _ := exec.Command("pgrep", "-f", "sleep 3607").Output(); len(strings.TrimSpace(string(left))) > 0 {
+		_ = exec.Command("pkill", "-9", "-f", "sleep 3607").Run()
+		t.Errorf("a process that ignored TERM outlived the leg: pid %s", strings.TrimSpace(string(left)))
+	}
+}
+
+// TestGateRefusesABadFuzzLimit: the limit is a number of seconds, or the gate
+// does not start (v0.2.0 D-40).
+func TestGateRefusesABadFuzzLimit(t *testing.T) {
+	out, err := runGateWith(t, plantTree(t, true), []string{"GATE_FUZZ_LIMIT=soon"}, "--fuzz")
+	if err == nil || !strings.Contains(out, "GATE_FUZZ_LIMIT") {
+		t.Fatalf("a limit that is not a whole number of seconds must be refused:\n%s", out)
+	}
+}
+
+// TestGateFailsOnAnUnformattedFile: a Go file gofmt would change fails the
+// gate; one sat unformatted through several green runs before this leg
+// existed (v0.2.0 D-46).
+func TestGateFailsOnAnUnformattedFile(t *testing.T) {
+	if testing.Short() {
+		t.Skip("runs the gate; skipped with -short")
+	}
+	root := plantTree(t, true)
+	writeFile(t, root, "lib.go", "// Package lib is planted.\npackage lib\n\n// Answer is planted.\nfunc Answer() int {    return 42 }\n")
+	out, err := runGate(t, root)
+	if err == nil || !strings.Contains(out, "lib.go") || !strings.Contains(out, "gofmt") {
+		t.Fatalf("an unformatted file must fail the gate and be named:\n%s", out)
 	}
 }

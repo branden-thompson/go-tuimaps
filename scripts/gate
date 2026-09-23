@@ -6,18 +6,19 @@
 #   scripts/gate --quick    skip the slow legs: fuzzing, the vulnerability
 #                           scan, licences, the cross-compile, the second
 #                           architecture
-#   scripts/gate --docs     the docs lane (v0.2.0 D-15): for a change that is
-#                           Markdown and nothing else, every module's tests -
-#                           which is where documents are read - and no other
-#                           leg. Any other file in the change, tracked or not,
-#                           is refused and sent to the full gate. Run it
-#                           before committing: with nothing to check it fails
+#   scripts/gate --docs     the docs lane (v0.2.0 D-15, D-41): for a STAGED
+#                           change that is Markdown and nothing else, every
+#                           module's tests - which is where documents are read
+#                           - and no other leg. Any other staged file is
+#                           refused and sent to the full gate. Stage, run it,
+#                           commit: with nothing staged it fails
 #   scripts/gate --fuzz     the fuzz legs alone
 #
-# EVERY RUN IS LOGGED to 06_docs/gate-runs.md when that file exists - the
-# commit, how many files were uncommitted, the mode, the result and the time
-# it took (v0.2.0 D-31) - so "the gate was green" is a line anyone can read
-# and M6's count of consecutive clean runs has something to count.
+# One mode at most a run. EVERY RUN IS LOGGED to 06_docs/gate-runs.md when
+# that file exists - HEAD, the git tree that was tested, the mode, the result,
+# the seconds it took and any override of the gate's settings (v0.2.0 D-31,
+# D-40) - so "the gate was green" is a line anyone can check and M6's count of
+# consecutive clean runs has something to count.
 #
 # GATE_ROOT names the tree to check; by default, the repository this script
 # is in. Every module in the tree is checked, one by one - not only the
@@ -42,7 +43,7 @@ FLOOR_TOOLCHAIN="go1.25.0"
 # budget stops through the execution limit and creates no deadline.
 #
 # A COUNT HAS NO WALL CLOCK, so each fuzz leg also runs under FUZZ_LIMIT
-# seconds of real time (D-31) and fails as STALLED when that runs out. `go
+# seconds of real time (D-31) and fails as TIME LIMIT when that runs out. `go
 # test -timeout` cannot do this job: the test binary stops its alarm before it
 # starts fuzzing, and `go test` sets no kill timeout while fuzzing (go1.25.0
 # `testing/testing.go:2335-2340`, `cmd/go/internal/test/test.go:807`).
@@ -85,20 +86,30 @@ fuzz_execs() {
 }
 FUZZ_EXECS_DEFAULT="5000000x"
 FUZZ_LIMIT="${GATE_FUZZ_LIMIT:-600}"
+case "$FUZZ_LIMIT" in
+  ''|*[!0-9]*|0) echo "gate: GATE_FUZZ_LIMIT must be a whole number of seconds above zero, not '$FUZZ_LIMIT'" >&2; exit 2 ;;
+esac
 TARGETS="darwin/arm64 darwin/amd64 linux/amd64 linux/arm64 windows/amd64"
 
 quick=0
 docs=0
 fuzzonly=0
 mode="full"
+modes=0
 for arg in "$@"; do
   case "$arg" in
-    --quick) quick=1; mode="quick" ;;
-    --docs) docs=1; quick=1; mode="docs" ;;
-    --fuzz) fuzzonly=1; mode="fuzz" ;;
+    --quick) quick=1; mode="quick"; modes=$((modes + 1)) ;;
+    --docs) docs=1; quick=1; mode="docs"; modes=$((modes + 1)) ;;
+    --fuzz) fuzzonly=1; mode="fuzz"; modes=$((modes + 1)) ;;
     *) echo "gate: unknown argument: $arg" >&2; exit 2 ;;
   esac
 done
+# TWO MODES TOGETHER SKIPPED EVERY LEG AND PRINTED GREEN (D-40): each mode
+# turns legs off, and nothing was left on. One mode a run.
+if [ "$modes" -gt 1 ]; then
+  echo "gate: give one mode at most (--quick, --docs or --fuzz), not $modes" >&2
+  exit 2
+fi
 
 root="${GATE_ROOT:-}"
 if [ -z "$root" ]; then
@@ -109,21 +120,44 @@ cd "$root" || { echo "gate: cannot enter $root" >&2; exit 2; }
 # --- every run leaves a line -------------------------------------------------
 started_at=$SECONDS
 made_work=0
+# THE LINE NAMES THE TREE THAT WAS TESTED (D-40), not only the commit below
+# it: the git tree of what was checked, leaving this log out - the staged
+# change for the docs lane, the whole working tree otherwise. A commit made
+# from exactly that is the same tree less this file, so a reader can match the
+# two. Every override of the gate's own settings is written beside it.
+tested_tree() {
+  local index tree
+  index="$(mktemp -d)/index" || return 1
+  if [ "$docs" = 1 ]; then
+    cp "$(git -C "$root" rev-parse --git-path index)" "$index" 2>/dev/null || return 1
+  else
+    GIT_INDEX_FILE="$index" git -C "$root" read-tree HEAD 2>/dev/null || return 1
+    GIT_INDEX_FILE="$index" git -C "$root" add -A 2>/dev/null || return 1
+  fi
+  GIT_INDEX_FILE="$index" git -C "$root" rm -q --cached --ignore-unmatch 06_docs/gate-runs.md >/dev/null 2>&1
+  tree="$(GIT_INDEX_FILE="$index" git -C "$root" write-tree 2>/dev/null)" || return 1
+  rm -rf "$(dirname "$index")"
+  printf '%s' "${tree:0:12}"
+}
 log_run() {
-  local rc="$1" result="FAILED" head dirty
+  local rc="$1" result="FAILED" head tree overrides=""
   [ -f "$root/06_docs/gate-runs.md" ] || return 0
   [ "$rc" = 0 ] && result="green"
   head="$(git -C "$root" rev-parse --short HEAD 2>/dev/null || echo none)"
-  dirty="$(git -C "$root" status --porcelain 2>/dev/null | grep -vc ' 06_docs/gate-runs.md$' || true)"
-  printf '| %s | %s | %s | %s | %s | %s |\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$head" "$dirty" "$mode" "$result" "$((SECONDS - started_at))" >> "$root/06_docs/gate-runs.md"
+  tree="$(tested_tree || echo unknown)"
+  [ -n "${GATE_FUZZ_LIMIT:-}" ] && overrides="GATE_FUZZ_LIMIT=$GATE_FUZZ_LIMIT"
+  [ -n "${GATE_ROOT:-}" ] && overrides="${overrides:+$overrides }GATE_ROOT set"
+  printf '| %s | %s | %s | %s | %s | %s | %s |\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$head" "$tree" "$mode" "$result" "$((SECONDS - started_at))" "${overrides:--}" >> "$root/06_docs/gate-runs.md"
 }
-cleanup() { [ "$made_work" = 1 ] && rm -f "$root/go.work" "$root/go.work.sum"; return 0; }
+fuzz_legs="$(mktemp)" || exit 2
+cleanup() { [ "$made_work" = 1 ] && rm -f "$root/go.work" "$root/go.work.sum"; rm -f "$fuzz_legs"; return 0; }
 trap 'rc=$?; cleanup; log_run "$rc"; exit "$rc"' EXIT
 
 # --- the docs lane decides from the change, not from a promise ---------------
 # THE LANE IS A RULE THE SCRIPT HOLDS, NOT ONE ANYONE HAS TO REMEMBER. The
-# change is everything since the last commit: staged, unstaged, deleted and
-# untracked alike, so a file cannot slip past by not being added yet.
+# change it judges is what is STAGED - exactly what `git commit` records
+# (D-41). Stage, run the lane, commit. Files that are not staged are not part
+# of the commit and are left out, and the lane says how many.
 if [ "$docs" = 1 ]; then
   if ! git rev-parse --verify -q HEAD >/dev/null 2>&1; then
     echo "gate: the docs lane needs a commit to compare with; run scripts/gate" >&2
@@ -131,15 +165,16 @@ if [ "$docs" = 1 ]; then
   fi
   # EACH GIT COMMAND IS CHECKED ON ITS OWN: a failed diff would otherwise leave
   # only the untracked files to judge, and the lane would pass on half a change.
-  if ! tracked_change="$(git diff --name-only --no-renames HEAD)"; then
-    echo "gate: the docs lane could not read the change (git diff failed); run scripts/gate" >&2
+  if ! staged="$(git diff --cached --name-only --no-renames HEAD)"; then
+    echo "gate: the docs lane could not read the staged change (git diff failed); run scripts/gate" >&2
     exit 2
   fi
-  if ! untracked="$(git ls-files --others --exclude-standard)"; then
-    echo "gate: the docs lane could not list untracked files; run scripts/gate" >&2
+  if ! loose="$(git status --porcelain --untracked-files=all)"; then
+    echo "gate: the docs lane could not read what is not staged (git status failed); run scripts/gate" >&2
     exit 2
   fi
-  changed="$(printf '%s\n%s\n' "$tracked_change" "$untracked" | grep -v '^$' | grep -vx '06_docs/gate-runs.md' | sort -u || true)"
+  changed="$(printf '%s\n' "$staged" | grep -v '^$' | grep -vx '06_docs/gate-runs.md' | sort -u || true)"
+  unstaged="$(printf '%s\n' "$loose" | grep -v '^$' | grep -v '^[MADRC] ' | grep -vc ' 06_docs/gate-runs.md$' || true)"
   others="$(printf '%s\n' "$changed" | grep -v '\.md$' | grep -v '^$' || true)"
   if [ -n "$others" ]; then
     echo "gate: the docs lane is for a change of Markdown and nothing else. Not Markdown:"
@@ -148,10 +183,13 @@ if [ "$docs" = 1 ]; then
     exit 1
   fi
   if [ -z "$changed" ]; then
-    echo "gate: docs lane - nothing to check: nothing has changed since the last commit. Run the lane before committing, not after."
+    echo "gate: docs lane - nothing to check: nothing is staged. Stage the change, run the lane, then commit."
     exit 1
   fi
-  echo "gate: docs lane - $(printf '%s\n' "$changed" | wc -l | tr -d ' ') Markdown file(s) changed; every module's tests run, and no other leg (v0.2.0 D-15)"
+  echo "gate: docs lane - $(printf '%s\n' "$changed" | wc -l | tr -d ' ') Markdown file(s) staged; every module's tests run, and no other leg (v0.2.0 D-15, D-41)"
+  if [ "$unstaged" -gt 0 ]; then
+    echo "gate: docs lane - $unstaged file(s) not staged were left out of the judgement; the tests still run on the working tree"
+  fi
 fi
 
 export GOTOOLCHAIN="$FLOOR_TOOLCHAIN"
@@ -161,38 +199,68 @@ failures=""
 fail() { failures="${failures}  FAILED  $1"$'\n'; echo "  FAILED  $1"; }
 pass() { echo "  ok      $1"; }
 
-# limited SECONDS COMMAND... runs a command in a process group of its own and
-# stops the whole group when SECONDS of wall-clock time run out, saying so.
-# It exists for the fuzz legs, whose run-count budget has no clock of its own
-# (D-31); perl is used to start the group because macOS has no setsid.
+# limited SECONDS COMMAND... runs a command in a process group of its own and,
+# when SECONDS of wall-clock time run out, stops the whole group - TERM, then
+# KILL five seconds later for anything that ignored TERM - and says so. It
+# exists for the fuzz legs, whose run-count budget has no clock of its own
+# (D-31). perl starts the group because macOS has no setsid; `exec {$ARGV[0]}`
+# never hands a lone argument to a shell.
+#
+# THE WATCHDOG REPORTS THROUGH ITS EXIT STATUS (124 when it fired), not a
+# file (D-40). Once it has fired it ignores the TERM the caller sends at the
+# end, so the KILL always happens: a group member that survived TERM would
+# otherwise hold the output pipe open and the limit would not be one.
 limited() {
-  local limit="$1" pid dog rc flag
+  local limit="$1" pid dog rc dogrc
   shift
-  flag="$(mktemp)" && rm -f "$flag"
-  perl -e 'setpgrp(0, 0); exec @ARGV or die "cannot run $ARGV[0]: $!\n"' -- "$@" &
+  perl -e 'setpgrp(0, 0); exec { $ARGV[0] } @ARGV or die "cannot run $ARGV[0]: $!\n"' -- "$@" &
   pid=$!
   (
-    trap 'kill "$nap" 2>/dev/null; exit 0' TERM
-    sleep "$limit" & nap=$!
+    fired=0
+    nap=""
+    trap 'if [ "$fired" = 0 ]; then [ -n "$nap" ] && kill "$nap" 2>/dev/null; exit 0; fi' TERM
+    sleep "$limit" &
+    nap=$!
     wait "$nap"
     if kill -0 "$pid" 2>/dev/null; then
-      : > "$flag"
+      fired=1
       kill -TERM -- "-$pid" 2>/dev/null
-      sleep 5
+      sleep 5 &
+      nap=$!
+      wait "$nap" || wait "$nap"
       kill -KILL -- "-$pid" 2>/dev/null
+      exit 124
     fi
+    exit 0
   ) &
   dog=$!
   wait "$pid"
   rc=$?
   kill -TERM "$dog" 2>/dev/null
-  wait "$dog" 2>/dev/null
-  if [ -e "$flag" ]; then
-    rm -f "$flag"
-    echo "STALLED: no result after ${limit}s of wall-clock time (FUZZ_LIMIT; GATE_FUZZ_LIMIT overrides it)"
+  wait "$dog"
+  dogrc=$?
+  if [ "$dogrc" = 124 ]; then
+    echo "TIME LIMIT: stopped after ${limit}s of wall-clock time - slow or stalled, it did not finish (FUZZ_LIMIT; GATE_FUZZ_LIMIT overrides it)"
     return 124
   fi
   return "$rc"
+}
+
+# gofmt_clean fails, naming the files, when gofmt would change any Go file in
+# this module outside testdata.
+gofmt_clean() {
+  local files
+  # This module's own files: testdata, and any nested module (a directory with
+  # a go.mod of its own), are left to themselves.
+  files="$(find . \( -type d \( -name testdata -o -name vendor \) -prune \) -o \( -type d ! -path . -exec test -e '{}/go.mod' \; -prune \) -o \( -name '*.go' -print \))" || return 1
+  [ -n "$files" ] || return 0
+  local unformatted
+  unformatted="$(printf '%s\n' "$files" | xargs gofmt -l)" || return 1
+  if [ -n "$unformatted" ]; then
+    echo "gofmt would change these files; run gofmt -w on them:"
+    printf '%s\n' "$unformatted"
+    return 1
+  fi
 }
 
 # leg NAME COMMAND... runs one leg and records the outcome. The output of a
@@ -276,13 +344,41 @@ for dir in $modules; do
       exit
     fi
     if [ "$fuzzonly" = 0 ]; then
+      # FORMATTING IS CHECKED (D-46): a test file once sat unformatted through
+      # several green runs because no leg asked.
+      leg "gofmt" gofmt_clean
       leg "vet" go vet ./...
       leg "tests, race detector on" go test -race ./...
       leg "tests, race detector off (allocation counts live here)" go test ./...
+      # A licence file for every module in this module's graph. A module of
+      # this repository is covered by the repository's own licence file. A
+      # GRAPH THAT CANNOT BE LISTED FAILS (D-40): it used to be a loop over
+      # nothing, which passed, in every module that requires the library.
+      if ! graph="$(go list -m -f '{{.Dir}}' all 2>&1)"; then
+        fail "the licence check cannot list this module's graph"
+        printf '%s\n' "$graph" | sed 's/^/          /'
+      elif [ -z "$graph" ]; then
+        fail "the licence check found no module in this module's graph"
+      else
+        for mdir in $graph; do
+          case "$mdir" in "$root"|"$root"/*) mdir="$root" ;; esac
+          if ! ls "$mdir"/LICEN[SC]E* >/dev/null 2>&1; then
+            fail "no licence file in $mdir"
+          fi
+        done
+      fi
     fi
     if [ "$quick" = 0 ]; then
       for pkg in $pkgs; do
-        for target in $(go test -list '^Fuzz' "$pkg" 2>/dev/null | grep '^Fuzz'); do
+        # TESTS THAT CANNOT BE LISTED ARE A FAILURE, not an absence of fuzz
+        # targets (D-40).
+        if ! listing="$(go test -list '^Fuzz' "$pkg" 2>&1)"; then
+          fail "the tests of $pkg cannot be listed, so its fuzz targets cannot be found"
+          printf '%s\n' "$listing" | sed 's/^/          /'
+          continue
+        fi
+        for target in $(printf '%s\n' "$listing" | grep '^Fuzz'); do
+          echo "$target" >> "$fuzz_legs"
           execs="$(fuzz_execs "$target")"
           if [ -z "$execs" ]; then
             execs="$FUZZ_EXECS_DEFAULT"
@@ -301,18 +397,15 @@ for dir in $modules; do
       else
         fail "govulncheck is not installed: go install golang.org/x/vuln/cmd/govulncheck@latest"
       fi
-      # A licence file for every module in this module's graph. A module
-      # of this repository is covered by the repository's own licence file.
-      for mdir in $(GOWORK=off go list -m -f '{{.Dir}}' all 2>/dev/null); do
-        case "$mdir" in "$root"|"$root"/*) mdir="$root" ;; esac
-        if ! ls "$mdir"/LICEN[SC]E* >/dev/null 2>&1; then
-          fail "no licence file in $mdir"
-        fi
-      done
     fi
     [ -z "$failures" ]
   ) || failures="${failures}  FAILED  module ${path:-$dir}"$'\n'
 done
+
+# A FUZZ RUN THAT RAN NO FUZZ LEG CHECKED NOTHING (D-40).
+if [ "$fuzzonly" = 1 ] && [ ! -s "$fuzz_legs" ]; then
+  fail "no fuzz leg ran: no module has a fuzz target that could be listed"
+fi
 
 # --- the library only ---------------------------------------------------------
 if [ "$quick" = 0 ] && [ "$fuzzonly" = 0 ]; then
@@ -341,5 +434,12 @@ if [ "$docs" = 1 ]; then
   exit 0
 fi
 echo "gate: green"
-last_tag="$(git -C "$root" describe --tags --abbrev=0 2>/dev/null || true)"
+# THE LAST RELEASE TAG IS NEVER IN A WORK BRANCH'S HISTORY: releases are
+# squash-merged (D-1), so `git describe` finds nothing; the tags are listed
+# instead (D-40).
+last_tag="$(git -C "$root" tag --list 'v*' --sort=-v:refname 2>/dev/null | head -1)"
+case "$mode" in
+  quick) echo "NOT RUN in this mode (--quick): fuzzing, the vulnerability scan, the cross-compiles and the second architecture." ;;
+  fuzz) echo "NOT RUN in this mode (--fuzz): vet, the tests, licences, the vulnerability scan, the cross-compiles and the second architecture." ;;
+esac
 echo "NOT RUN on this machine, and not assumed: Linux and Windows test runs; real amd64 hardware; the nightly one-hour soak; the contract check against the last tag (${last_tag:-none exists yet}${last_tag:+: not built yet, v0.2.0 L-4})."

@@ -3,9 +3,10 @@
 The programs behind wave 2 (`../wave2-measurements.md`) and specimen 29's radar and blend findings,
 filed with the exact inputs they ran on and their raw output, **so every number can be re-run**.
 They are **reference files, not built by the gate**: the `.go.txt` suffix keeps them out of the
-build. They were written against the library at `ca24461`–`7288375`. **If the API has changed since,
-they may no longer compile, and nothing will say so** (the accepted cost of D-32). Update a program
-when you re-run it.
+build. They were written against the library's public calls as released at the **`v0.1.0` tag**, which were
+unchanged through D-32 (`public-surface.txt` is identical); the work branch they ran on is deleted
+after release (D-33), so no work-branch hash is given. **If the API has changed since, they may no longer compile, and nothing
+will say so** (the accepted cost of D-32). Update a program when you re-run it.
 
 | Program | What it measures | Inputs | Output |
 |---|---|---|---|
@@ -31,7 +32,8 @@ when you re-run it.
    - `mrms-measure` and `mrms-palette` run in a subdirectory of a copy of `inputs/mrms/`.
    - `loopmem` runs in a directory holding `frames/`, a copy of `inputs/loopmem/`, and has
      `../spec29/n0q-table-raw.json` beside it.
-   - `spec29-render` takes the inputs directory as its first argument.
+   - `spec29-render` takes three arguments: the inputs directory, an output prefix, and a label for
+     the frames' header line.
 4. `GOWORK=off go run .`, then compare with `output/`.
 
 Specimen 29's frames also need the network: they draw OpenFreeMap tiles for the basemap.

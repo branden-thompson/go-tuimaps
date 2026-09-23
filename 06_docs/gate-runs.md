@@ -1,8 +1,13 @@
 # Gate runs
 
-`scripts/gate` appends one line here per run (v0.2.0 D-31): the commit it ran at, how many files were
-uncommitted, the mode (`full`, `quick`, `docs`, `fuzz`), the result and the seconds it took. M6 counts
-consecutive clean full runs from this table. A line is written by the script, never by hand.
+`scripts/gate` appends one line here per run. M6 counts consecutive clean full runs from the current
+table. A line is written by the script, never by hand. The log starts at v0.2.0 D-31; commits before it
+have no line.
+
+## D-31 to D-40
+
+**Commit** here is HEAD while the run happened, and **Uncommitted** counts changed files, so these lines
+cannot say exactly which tree was tested.
 
 | When (UTC) | Commit | Uncommitted | Mode | Result | Seconds |
 |---|---|---|---|---|---|
@@ -16,3 +21,15 @@ consecutive clean full runs from this table. A line is written by the script, ne
 | 2026-09-23T19:50:08Z | aabfcea | 18 | full | green | 1257 |
 | 2026-09-23T20:05:07Z | 11d986a | 2 | docs | green | 48 |
 | 2026-09-23T20:07:34Z | 1998e52 | 3 | docs | green | 46 |
+
+## From D-40
+
+**HEAD** is the commit the run sat on — the parent of any commit made from it. **Tree** is the git tree
+that was tested, leaving this file out: the staged change for `docs`, the whole working tree otherwise.
+A commit made from exactly that has the same tree less this file, so the two can be matched.
+**Overrides** names any setting of the gate that was changed for the run.
+
+| When (UTC) | HEAD | Tree | Mode | Result | Seconds | Overrides |
+|---|---|---|---|---|---|---|
+| 2026-09-23T20:41:41Z | acd5ca3 | 74f68071c141 | full | FAILED | 1231 | - |
+| 2026-09-23T21:05:52Z | acd5ca3 | dbcd52b9d83f | full | green | 1234 | - |

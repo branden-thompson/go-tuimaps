@@ -8,8 +8,9 @@ status: "COMPLETE — the two measurements wave 1 left for the machine (synthesi
 
 # Wave 2 — the two measurements that needed the machine
 
-Both were run on 2026-09-23 against live data, through the library's public calls at `ca24461`,
-by throwaway programs kept outside the repository. Nothing here is read from source alone.
+Both were run on 2026-09-23 against live data, through the library's public calls, by small programs
+now filed with their inputs and raw output under `programs/` (D-32). Nothing here is read from source
+alone.
 
 ## M-A — MRMS colours against the server's legend (L-2; ruled D-19)
 
@@ -32,7 +33,8 @@ across the server's whole time list (60 times, about two hours).
 **Findings.**
 
 1. **MRMS draws from a small fixed palette.** Each frame uses 88–101 colours; across 18 frames the
-   total reached **111 by the twelfth frame and did not grow after**. That fits the library's
+   total reached **111 by the twelfth frame read and did not grow after**. The frames were read in
+file-name order (1, 10, 11 … 15, 2 …), not time order, so "the twelfth" is not a point in time. That fits the library's
    256-entry table limit. No partly transparent pixels were seen.
 2. **The legend is a 1,232-colour gradient, and the library's table holds 256 entries, so a table
    sampled from the legend misses most frame colours.** About 60 % of rain pixels are exactly *some*

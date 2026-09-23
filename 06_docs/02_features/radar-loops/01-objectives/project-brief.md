@@ -54,7 +54,7 @@ person reading the map — because a library's problem always reaches the second
 ## Requirements — from the host, and from the record
 
 > **The requirement set PLAN designs against is `requirements.md` (D-23).** It extends the L-numbers
-> below with everything ruled since (D-14 to D-22, specimen 29), holds the risk register and the list
+> below with everything ruled since (D-14 onward, specimen 29), holds the risk register and the list
 > of owed work, and wins on any conflict. The rows below are the brief as approved, with its stale
 > rows corrected.
 
@@ -85,8 +85,8 @@ L-4 (HR-4), L-5 (HR-5), L-7 (HR-6), L-8 (HR-7), L-9 (HR-8) and L-10 (HR-10). L-6
   D-9).
 - **L-2.2** **MRMS publishes no exact table** (W1-A §5: no `ColorMapEntry`; a 500×30 picture legend,
   −20…70 dBZ). An exact table like IEM's needs the source colour map; a table derived from the legend
-  is approximate. **Which to ship is a HUM LEAD ruling** — the Designed-for vs Validated-on
-  calibration forbids calling an approximate table exact.
+  is approximate. *Ruled at D-19:* the palette MRMS actually uses, valued from the legend, labelled
+  approximate — the Designed-for vs Validated-on calibration forbids calling it exact.
 
 ### L-3 — The view bound (HR-3)
 - **L-3.1** A host can set a **minimum zoom and a bounding box once**, and the library holds the view
@@ -200,7 +200,7 @@ uses the contract rather than writing it.
 
 | # | Metric | Type | Definition | The anti-solution it closes |
 |---|---|---|---|---|
-| M1 | Motion seen | Primary | From a loop alone, a reader states a precipitation cell's direction of motion — scripted UAT over loops recorded from real radar | Blinking one frame; the loops carry real motion |
+| M1 | Motion seen | Primary | From a loop alone, a reader states a precipitation cell's direction of motion — scripted UAT over loops recorded from real radar; **plus a non-visual arm from the description alone (D-24; `requirements.md` holds the normative metrics)** | Blinking one frame; the loops carry real motion |
 | M2 | Loop honesty | Primary | Zero frames drawn under the wrong valid time; every gap stated; every frame older than the host's stated cadence marked stale | Dropping gaps and old frames — a missing frame is **shown as a gap**, not skipped |
 | M3 | Bound holds | Primary | With a host bound set, zero frames outside it across resize, fit, pan, zoom and fall-back | Refusing to draw — a blank frame with data on hand fails M4 |
 | M4 | Embed cost with a loop | Primary | Memory with a 12-frame loop within a PLAN-set target, flat over an hour | A tiny loop — measured at 12 frames, the host's largest box |
@@ -212,7 +212,8 @@ uses the contract rather than writing it.
 - **Quality pass, F-1 and F-2** (`06_docs/follow-ups.md`): root clutter, and a pluggable
   architecture like watchpost's. HUM LEAD: *"No action at this time"*. Recorded here because v0.2.0
   adds a second radar source's table — the first new source since the seam question was raised.
-  Whether v0.2.0 builds on a seam or leaves one to the quality pass is a PLAN question.
+  *Ruled at D-35:* v0.2.0 builds one narrow seam, for provider colour tables; the broad
+  restructure stays with the quality pass.
 - **Standing principles** (watchpost D-23): P-1 performance and structure; P-2 host and user choice
   by default; P-3 never architect into a corner. For a library, P-2 reads as *the host chooses*.
 - **Additive only.** Every change is additive to the v0.1.0 contract (contract §9); a breaking

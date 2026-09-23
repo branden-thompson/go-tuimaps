@@ -65,8 +65,9 @@ changed.
 Nothing, until you name a source. With one named:
 
 - tiles are fetched from that source and from nowhere else, over HTTPS;
-- what is sent is the tile address and a user-agent naming this library and
-  its version - nothing about your machine. A name of your own in the
+- what is sent is the tile address and a user-agent naming this library and a
+  fixed development version string (the real version arrives with v0.2.0) -
+  nothing about your machine. A name of your own in the
   user-agent is not yet something you can set;
 - tiles are held in memory, and on disk only if you name a directory with
   `CacheRoot`. `Purge()` empties the current source's tiles from it, and
@@ -100,11 +101,14 @@ Every change is checked by `scripts/gate`, which is what stands before a merge:
   (`go install golang.org/x/vuln/cmd/govulncheck@latest`), and a machine that can run the other
   architecture's tests (an Apple silicon Mac runs amd64 under emulation).
 - `scripts/gate --quick` skips fuzzing, the vulnerability scan, licences and the cross-compiles.
-- `scripts/gate --docs` is for a change of Markdown and nothing else, run before committing; it
-  refuses anything else.
+- `scripts/gate --docs` is for a staged change of Markdown and nothing else: stage, run it, commit.
+  It refuses any other staged file.
 - `scripts/gate --fuzz` runs the fuzz legs alone.
 
-Every run leaves a line in `06_docs/gate-runs.md`.
+Give one mode at most. Every run leaves a line in `06_docs/gate-runs.md`. The gate also needs `perl`
+(present on macOS and most Linux systems) for the fuzz legs' time limit, and it writes a throw-away
+`go.work` so the nested modules (`cmd/tuimaps`, `examples`, `tools/*`) resolve the library from this
+tree; outside the gate, build those from their own directory with a workspace of your own.
 
 ## Licence
 

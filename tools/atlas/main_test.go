@@ -40,7 +40,7 @@ func TestCheckRefusesWhatWouldWriteABrokenPage(t *testing.T) {
 
 // TestThePageMatchesTheDocuments: the committed page is what the documents
 // build, so a diagram edited in Markdown cannot leave the page stale
-// (v0.2.0 D-38). Run go run ./tools/atlas from the repository root to rebuild it.
+// (v0.2.0 D-38). Rebuild it with: cd tools/atlas && go run . -root ../..
 func TestThePageMatchesTheDocuments(t *testing.T) {
 	root := filepath.Join("..", "..")
 	want, _, err := build(root)
@@ -52,6 +52,6 @@ func TestThePageMatchesTheDocuments(t *testing.T) {
 		t.Fatal(err)
 	}
 	if string(got) != want {
-		t.Fatalf("%s is stale: rebuild it with `go run ./tools/atlas` from the repository root", dest)
+		t.Fatalf("%s is stale: rebuild it with `cd tools/atlas && go run . -root ../..`", dest)
 	}
 }

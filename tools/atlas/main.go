@@ -11,11 +11,13 @@
 // in the reading order below is still built, after the named ones, so nothing
 // is silently dropped.
 //
-// Run from the repository root: go run ./tools/atlas
+// tools/atlas is a module of its own, so it runs from its own directory with
+// the repository root named: cd tools/atlas && go run . -root ../..
 package main
 
 import (
 	_ "embed"
+	"flag"
 	"fmt"
 	"html"
 	"os"
@@ -72,7 +74,9 @@ func check(found []diagram, page string) error {
 }
 
 func main() {
-	if err := run(); err != nil {
+	root := flag.String("root", ".", "the repository root, whose 06_docs/ is read and written")
+	flag.Parse()
+	if err := run(*root); err != nil {
 		fmt.Fprintln(os.Stderr, "atlas:", err)
 		os.Exit(1)
 	}
@@ -81,16 +85,17 @@ func main() {
 // dest is where the page is written, relative to the repository root.
 var dest = filepath.Join("06_docs", "architecture-atlas.html")
 
-func run() error {
-	out, count, err := build(".")
+func run(root string) error {
+	out, count, err := build(root)
 	if err != nil {
 		return err
 	}
-	if err := os.WriteFile(dest, []byte(out), 0o644); err != nil {
+	path := filepath.Join(root, dest)
+	if err := os.WriteFile(path, []byte(out), 0o644); err != nil {
 		return err
 	}
-	fmt.Printf("%d diagrams -> %s\n", count, dest)
-	return nil
+	_, err = fmt.Printf("%d diagrams -> %s\n", count, path)
+	return err
 }
 
 // build makes the page from the documents under root/06_docs, with every
@@ -134,7 +139,9 @@ func collect(root string) ([]diagram, error) {
 }
 
 // compose lays the diagrams out as the page's navigation and body.
-func compose(found []diagram) (string, string) {
+// It sorts a copy, so the caller's slice is left as it was.
+func compose(given []diagram) (string, string) {
+	found := append([]diagram(nil), given...)
 	sort.SliceStable(found, func(i, j int) bool { return found[i].file < found[j].file })
 
 	seen := map[string]bool{}
