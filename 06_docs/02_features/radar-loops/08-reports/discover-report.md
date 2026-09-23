@@ -140,7 +140,8 @@ QUALITY GATE REPORT | go-tuiMaps v0.2.0 | SEV-0 | DISCOVER exit
    blend strength and the visibility floor, the frame-rate ceiling, the per-advance render cost and
    M4's target.
 4. **Owed at or before PLAN**: the archive outbreak specimen (OW-11), the D-17 specimen over radar
-   (OW-2), and diagnosing why 16 colours draws every rain class as `░` (OW-9).
+   (OW-2). *(OW-9, "why 16 colours draws every rain class as `░`", was closed at PLAN entry: a
+   miscount, no defect — D-50.)*
 5. **The contract rewrite** (L-4), which every other requirement lands in.
 
 ## Recommendation

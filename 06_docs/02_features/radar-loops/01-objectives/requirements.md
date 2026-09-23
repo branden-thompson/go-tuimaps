@@ -119,7 +119,7 @@ For designers and PMs before engineers, the three visible decisions:
 | L-8.1 | An alert area's label carries its **severity as a word**, and each of the five levels has **its own outline dash**, at every colour depth; the hatch stays as a secondary cue. | D-17 | Specimen owed before PLAN (OW-2) |
 | L-8.2 | The hatch strokes cannot rank five levels: Extreme and Severe share `╳`, **Minor and Unknown share `╱`**. | L-8.2 corrected, W1-C | — (context for L-8.1) |
 | L-8.3 | **An image or field never erases furniture.** Outline, **hatch**, label, marker, `stale` word, the no-tiles notice, frame time, scale and credit survive an image or field **at every depth**. Today they are erased at NoColour **and Colours16**. Inside rain cells, where a shade glyph takes the whole cell and the hatch cannot draw, what carries severity is stated. | S29-2, D-14, red team A7, D-40 (H D-3, A F7) | NO INSTRUMENT YET; tests at NoColour and Colours16 |
-| L-8.4 | **At 16 colours, rain classes stay distinguishable.** Today every rain cell draws as `░`. | round 1 verification | NO INSTRUMENT YET (cause not yet found) |
+| L-8.4 | ~~At 16 colours, rain classes stay distinguishable; every rain cell draws as `░`.~~ **Withdrawn (D-50):** a miscount; 16 colours draws the same three shades as no colour. | D-50 | — |
 | L-8.5 | A label that does not fit falls back to the severity word alone; if that does not fit, the description carries it and the frame reports the dropped label to the host. | D-28 (A8) | NO INSTRUMENT YET; the D-17 specimen (OW-2) |
 | L-8.6 | The five outline dashes differ from each other, from the line-overlay dash (5 on, 4 off) and from every basemap stroke. | D-28 (A8) | NO INSTRUMENT YET; the D-17 specimen (OW-2) |
 | L-8.7 | The hatch draws at Colours16 as well as NoColour. | D-28 (A8) | NO INSTRUMENT YET |
@@ -232,7 +232,7 @@ where it stands.
 | OW-4 | The 40-second `FuzzAgree` freeze | PLAN | L-6.4 |
 | OW-5 | ~~Correct wave 2's "71–80 %" and D-19's copy of it~~ **Done 2026-09-23**: 80.0–80.6 %, and wave 2's finding 2 restated | — | round 1 verification |
 | OW-6 | F-2 (a pluggable architecture): its trigger fired; the narrow seam is L-2.5 (D-35); the broad restructure stays with the quality pass | quality pass | D-35 |
-| OW-9 | L-8.4's cause — every rain cell drawn as `░` at 16 colours — diagnosed | PLAN | round 1 verification, D-40 (B R1-1e) |
+| OW-9 | ~~Diagnose L-8.4~~ **Closed (D-50): no defect** — the round 1 count was wrong | — | D-50 |
 | OW-11 | **A specimen of a past outbreak from IEM's archive**: overlapping warnings over heavy radar, 69×12 and 149×38, with and without colour | PLAN entry | D-44 |
 | OW-12 | **A triggered MRMS capture**: when a Storm Prediction Center Moderate or High risk, or a tornado watch, is issued over US radar coverage, capture MRMS frames across the whole two-hour window and extend the palette | when triggered, before SHIP | D-44 |
 | OW-10 | RK-5's detector: count tolerance-fallback matches, not only unmatched pixels, so a palette shift under 10 is seen | PLAN | D-40 (B N-8) |
