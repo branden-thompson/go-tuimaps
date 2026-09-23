@@ -8,7 +8,7 @@ authority: HUM LEAD
 directives: FULL GIT; FULL DOCS; FULL REPORTS; FULL DIAGRAMS; FULL RCC; FULL PLAN; FULL TDD; FULL INST
 branch: feature/radar-loops
 issue: "branden-thompson/go-tuimaps#2"
-status: "PRESENTED for HUM LEAD approval"
+status: "APPROVED by the HUM LEAD 2026-09-23 (D-49) as presented; the DISCOVER phase artefact"
 ---
 
 # go-tuiMaps v0.2.0 — Radar loops — DISCOVERY REPORT
@@ -125,7 +125,8 @@ QUALITY GATE REPORT | go-tuiMaps v0.2.0 | SEV-0 | DISCOVER exit
   [PASS] a2dh validate               : 100 % (16/16)
   [PASS] scripts/gate                : green — see 06_docs/gate-runs.md
   [PASS] p10                         : 0 live findings
-  [    ] human_approval              : pending
+  [PASS] human_approval              : D-49, 2026-09-23 — "approved; GO 4 PLAN"
+  OVERALL: ALL PASS — DISCOVER closed
 -------------------------------------------------------------
 ```
 

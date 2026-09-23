@@ -18,7 +18,7 @@ and every lesson that can be a failing test becomes one.**
 | | |
 |---|---|
 | Branch | `feature/radar-loops`, cut from `feature/go-tuimaps` (full history) → squash-merged `release/v0.2.0` at SHIP (D-1) |
-| Phase | **DISCOVER OPEN** since 2026-09-23 (D-12), ahead of watchpost's PLAN. Watchpost's 0.18.0 DISCOVER record is reference material (`watchpost/06_docs/02_features/observer-maps/`). Update this row at every phase transition |
+| Phase | **PLAN OPEN** since 2026-09-23 (D-49). DISCOVER closed: `08-reports/discover-report.md` (APPROVED). The plan designs against `01-objectives/requirements.md`; **no code in PLAN** — signatures and API shape only. Update this row at every phase transition |
 | Brief | `01-objectives/project-brief.md` — APPROVED (D-7), AMENDED (D-11), CORRECTED (D-23); with `requirements.md`, the body of issue #2 |
 | Rulings | `02-analysis/rulings.md` — **every ruling lands here the moment it is made** |
 | Requirements | `01-objectives/requirements.md` — **NORMATIVE** (D-23); wins over the brief on any conflict |
@@ -27,9 +27,8 @@ and every lesson that can be a failing test becomes one.**
 
 ## Blocking right now
 
-**DISCOVER exit is gated by:** the DISCOVER exit red team (`08-reports/red-team-discover.md`) — round 1
-dispositioned, further rounds until reviewers converge; then the DISCOVER report and HUM LEAD
-approval. The D-17 specimen (OW-2) is due before PLAN commits to L-8.1, not before exit. The full gate takes about eighteen minutes; every run's time is in
+Nothing blocks PLAN. Owed at or before PLAN: the archive outbreak specimen (OW-11, at PLAN entry), the
+D-17 specimen over radar (OW-2, before PLAN commits to L-8.1), and OW-9's diagnosis. The full gate takes about eighteen minutes; every run's time is in
 `06_docs/gate-runs.md`.
 
 ## Machine notes
