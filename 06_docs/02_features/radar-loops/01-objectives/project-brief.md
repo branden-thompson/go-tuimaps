@@ -30,8 +30,13 @@ radar the most common view (watchpost D-7) and ruled it must loop (watchpost D-1
 ruling (watchpost D-11) puts this release first: watchpost's alert drawing proceeds on v0.1.0, and its radar waits for
 this tag.
 
-**Who benefits.** Every host that draws precipitation — first watchpost's listener, and any other
-terminal application that embeds the library.
+**Who benefits.** Watchpost's listener: watchpost is the only host, and no other was consulted, so
+benefit to other terminal applications is hypothetical (corrected, D-37).
+
+**Scope (D-37).** Three parts, of which the locked problem below names the first: **loops**, with
+playback and their accessibility; **the contract repaired**, so a host's reading of it is true; and
+**the library's first reviewed release** (D-18), carrying the accessibility and security work the
+DISCOVER red team added. Nothing is split out to a later release (D-36); there is no target date.
 
 **What happens if this is not built.** Watchpost ships radar as a still frame the HUM LEAD has
 already ruled is "not the product", or ships no radar at all in the release whose most common view

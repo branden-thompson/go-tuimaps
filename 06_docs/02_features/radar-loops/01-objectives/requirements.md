@@ -61,7 +61,7 @@ For designers and PMs before engineers, the three visible decisions:
 |---|---|---|---|
 | L-2.1 | A table for NOAA/NCEP MRMS `conus_bref_qcd` ships, built from **the colours MRMS actually uses** (111 seen across 18 frames), each valued from its position on the legend, labelled **approximate**. | D-19, W2 M-A | NO INSTRUMENT YET |
 | L-2.2 | Matching is exact first; the tolerance fallback is kept for colours not yet seen, and such pixels are counted and reported. | D-19 | Existing unmatched-colour warning (`kinds.go:50`) |
-| L-2.3 | **PLAN pre-plans the heavy end:** colour affordances for heavy-rain colours not yet observed, and a better way than the nearest legend colour to value the oranges and reds. | D-19 | NO INSTRUMENT YET; a test that fails when the fallback carries a meaningful share of pixels is the candidate |
+| L-2.3 | **PLAN pre-plans the heavy end:** colour affordances for heavy-rain colours not yet observed, and a better way than the nearest legend colour to value the oranges and reds. **Required and tested before SHIP**; if the palette is still incomplete at SHIP, the release notes say so. | D-19, D-37 | NO INSTRUMENT YET; a test that fails when the fallback carries a meaningful share of pixels is the candidate |
 | L-2.4 | A table derived from the legend is never called exact. | L-2.2 | — |
 | L-2.5 | **One additive seam for provider colour tables**, with IEM and MRMS as its first entries, so a third provider is added the same way. | D-35 (F-2's trigger) | NO INSTRUMENT YET |
 
@@ -90,6 +90,7 @@ For designers and PMs before engineers, the three visible decisions:
 | L-5.3 | A gate test refuses a release tag while its checklist is unfinished. | D-18 | NO INSTRUMENT YET |
 | L-5.4 | v0.2.0 is the library's first release: its REVIEW and close-out cover everything v0.1.0 shipped. The `v0.1.0` tag stays. | D-18 | — |
 | L-5.5 | The release checklist records a pinned `govulncheck` at the tag commit. | D-30 (F9) | The release checklist |
+| L-5.6 | v0.2.0's `go.mod` retracts v0.1.0; the tag is untouched. | D-37 (B-8) | NO INSTRUMENT YET |
 
 ## L-6 — Found while preparing the brief
 
@@ -156,6 +157,7 @@ For designers and PMs before engineers, the three visible decisions:
 | L-12.1 | A **total image budget per map**, settable by the host; a hand-in over it is refused with an error that says so. | D-20 | NO INSTRUMENT YET |
 | L-12.2 | The default fits v0.1.0 NFR-3 (4 MB live): about 3 MB of images — one 12-frame loop at 596×304, or about five at dot resolution (298×152). | D-20, W2 M-B | M4 |
 | L-12.3 | Guidance steers hosts to frames at the dot grid of the view (298×152 at 149×38). A host that raises the budget owns the memory it asks for, and the contract says so. | D-20 | — |
+| L-12.5 | The render cost of each frame advance, the blend included, is measured against a target PLAN sets. | D-37 (P-6) | NO INSTRUMENT YET |
 | L-12.4 | The budget counts retained PNG bytes as well as pixels; a frame's file size is capped relative to its pixel count. | D-30 (F2) | NO INSTRUMENT YET |
 
 ## L-13 — v0.1.0 defects fixed in this release
@@ -188,7 +190,7 @@ Likelihood and severity are **H / M / L**, judged from the evidence cited.
 | RK-1 | **A loop that freezes or re-decodes while every unit test passes** — the three changes (frames, renderer, store) land apart | M | H | L-1.6, L-1.7 each held by a test that sees a frame advance |
 | RK-2 | **The MRMS heavy end is wrong on a severe-weather day** — the palette was seen on a quiet day (≤ 48 dBZ) | H | H | L-2.3; the fallback-share test |
 | RK-3 | **No blend passes on a light ground** (every strength tried failed) | M | L | L-11.3; the named fallback L-11.4 (D-27) |
-| RK-4 | **Watchpost's radar slips** because this release does | M | M | watchpost's ship-without-radar rule (its RK-4); a scope split is open (R1-15) |
+| RK-4 | **Watchpost's radar slips** because this release does | H | M | Accepted: no split and no date (D-36, D-37); watchpost's ship-without-radar rule (its RK-4) is the fallback |
 | RK-5 | **A provider changes its palette or endpoint** (IEM has no SLA; MRMS no published table) | M | M | The unmatched-colour count is the detector (L-2.2) |
 | RK-6 | **The contract stays wrong** — a names-only test passes with false behavioural claims | H | M | L-4.2, L-4.3 |
 | RK-7 | **The gate hangs on a fuzz stall** — the count budget has no wall clock | L | M | Each fuzz leg runs under a wall-clock limit and fails as STALLED (D-31) |
