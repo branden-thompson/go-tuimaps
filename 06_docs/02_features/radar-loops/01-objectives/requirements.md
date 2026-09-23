@@ -49,7 +49,8 @@ For designers and PMs before engineers, the three visible decisions:
 | L-1.10e | A frame advance is signalled apart from a data change and does not change the description's cache key. | D-25 (A6) | NO INSTRUMENT YET |
 | L-1.10f | Off shows the newest non-gap frame with its age. | D-25 (A15) | NO INSTRUMENT YET |
 | L-1.10g | A library-owned numeric ceiling on frame changes a second, every change counted toward WCAG 2.3.1, bounded by D-56's 2.5 a second; a gap holds the last real frame with its time reading "gap", never an empty frame. Slow and normal speeds are PLAN's, within it. | D-25 (A16, P-5) | NO INSTRUMENT YET |
-| L-1.11 | Default playback state. | red team A14 | **OPEN — R1-5** |
+| L-1.11 | **Playback defaults to off** until the host chooses; the state read says "off (default)". | D-26 (A14) | NO INSTRUMENT YET |
+| L-1.13 | **One standard playback API** a host wires straight to its own controls and Settings: every control of L-1.10 (play/pause, slow/normal, step, seek, newest), the state read and a change signal, one consistent shape across every looped overlay. | D-26 | NO INSTRUMENT YET; measure: a host wires controls and a Settings row with no playback state of its own (the example, and watchpost) |
 | L-1.12 | **Storm motion without the animation (D-24).** The description reports observed motion from the frames: for each described place, where the heavier rain was at the oldest usable frame and at the newest (distance, direction, time), whether it came closer, moved away or held, and the span the loop covers. Worded as observation, never forecast. | D-24; red team A1, B-4 | NO INSTRUMENT YET; M1's non-visual arm, scored from the description alone |
 
 ## L-2 — The MRMS table
