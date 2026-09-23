@@ -4,7 +4,7 @@ date: 2026-09-23
 phase: PLAN
 sev: SEV-0
 authority: HUM LEAD
-status: "DRAFT, revised after the internal plan check — for the PLAN red team, then HUM LEAD approval. Two items wait on rulings, marked PENDING. No code: signatures, shapes, test descriptions, file paths and order only (watchpost D-13, v0.2.0 D-52)."
+status: "DRAFT, revised after the internal plan check — for the PLAN red team, then HUM LEAD approval. One item waits on a ruling, marked PENDING. No code: signatures, shapes, test descriptions, file paths and order only (watchpost D-13, v0.2.0 D-52)."
 ---
 
 # Implementation plan
@@ -205,7 +205,7 @@ L4 comes before L3 in the build order, because L3.1 and L3.2 need to advance the
 | # | Task | Files | Shape | Test first (RED) |
 |---|---|---|---|---|
 | L8.1 | `FetchOptions`, taking effect at once (L-7.1, L-7.2, L-7.4) | `tiles.go`, `internal/fetch/fetch.go` | `type FetchOptions struct{ Transport http.RoundTripper; UserAgent string; Timeout time.Duration; AllowHTTP []string }`; `(*Map).SetFetchOptions(FetchOptions) error` | A transport set after `Source` is the one used for the next fetch |
-| L8.2 | **PENDING a ruling.** `Fetcher` (`tiles.go:13`, `:70`) removed, and `fetch.Checked` with it | `tiles.go`, `internal/fetch/get.go` | — | The surface test records the removal; the changelog row exists |
+| L8.2 | `Fetcher` (`tiles.go:13`, `:70`) removed, and `fetch.Checked` with it (D-62) | `tiles.go`, `internal/fetch/get.go` | — | The surface test records the removal; the changelog row exists |
 | L8.3 | Bytes bounded; late answers dropped; time bounded while the context is honoured (L-7.3) | `internal/fetch/get.go` | The library reads the body through its limit; checks the deadline after the transport returns | An endless-body transport is cut at the limit; a transport that ignores its context blocks only its own `Work` call, and its late answer is discarded |
 | L8.4 | `CheckedDialer`, exported at the root (L-10.3) | `tiles.go` (wrapper), `internal/fetch/fetch.go` | `func CheckedDialer() func(context.Context, string, string) (net.Conn, error)` | A host transport using it refuses a private address |
 | L8.5 | One allow-list; scheme, host, port; plain http refused unless allowed (L-10.2) | `internal/fetch/fetch.go`, `internal/tiles/remote.go` | One list feeds both | Through `Map.Source`, with the library's and a host's transport: another host, another port and http each refused |
@@ -249,7 +249,7 @@ L6.4 → L6.5, L6.6 → L6.9 · L8.1 → L8.2, L8.3; L8.5 → L8.6 · L9.3 needs
 
 | Requirement | Task | | Requirement | Task |
 |---|---|---|---|---|
-| L-1.1 | L2.1 | | L-7.1, L-7.2, L-7.4, L-13.2 | L8.1, L8.2 (pending) |
+| L-1.1 | L2.1 | | L-7.1, L-7.2, L-7.4, L-13.2 | L8.1, L8.2 |
 | L-1.2, L-1.10a, L-1.10f | L4.8 | | L-7.3 | L8.3, L1.6 |
 | L-1.3 | L4.9 | | L-8.1, L-8.5–L-8.7 | L3.9–L3.11 (pending OW-2) |
 | L-1.4 | L2.10 | | L-8.3 | L3.3–L3.5, L1.6 |
@@ -288,5 +288,4 @@ L6.4 → L6.5, L6.6 → L6.9 · L8.1 → L8.2, L8.3; L8.5 → L8.6 · L9.3 needs
 
 - **L-7.3's time promise** is what a library that starts no goroutine can keep (D-55).
 - **L-8.4 withdrawn** (D-50): the 16-colour shade defect was a miscount.
-- **L-7.1's wording** ("supply a fetcher … request type exported") is met by `SetFetchOptions` if the
-  `Fetcher` removal is ruled (L8.2); the row is reworded by that ruling.
+- **`Fetcher` and `fetch.Checked` are removed** and L-7.1 reworded (D-62).

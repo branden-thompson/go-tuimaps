@@ -108,7 +108,7 @@ For designers and PMs before engineers, the three visible decisions:
 
 | # | Requirement | Source | Instrument |
 |---|---|---|---|
-| L-7.1 | A host can supply a fetcher without reflection: the request type and its options are exported. | L-7.1 | NO INSTRUMENT YET |
+| L-7.1 | A host supplies its own transport, user-agent and timeout through `SetFetchOptions`, with no reflection; `Fetcher` and `fetch.Checked` are removed (D-62). | L-7.1, D-55, D-62 | NO INSTRUMENT YET |
 | L-7.2 | Tiles can go out under the host's own user-agent. | L-7.2 | NO INSTRUMENT YET |
 | L-7.3 | **Host fetches are bounded as far as a library that starts no goroutine can bound them** (D-55, a recorded deviation from D-40): **bytes** are bounded whatever the host code does — the library reads the body itself, through its limit; **a late answer is never used**; **time** is bounded while the host's code honours its context, and the contract says so. The host supplies a transport (`SetFetchOptions`), and the library keeps its client: request shape, redirect confinement, headers, the body limit. | D-30 (F3), D-40 (S-2), D-55 | NO INSTRUMENT YET; a test with a transport that streams without end, and one that ignores its context |
 | L-7.4 | Setting a fetcher takes effect at once. | D-30 (F4) | NO INSTRUMENT YET |
