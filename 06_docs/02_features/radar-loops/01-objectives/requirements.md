@@ -41,7 +41,9 @@ For designers and PMs before engineers, the three visible decisions:
 | L-1.6 | **A frame advance must be seen by the renderer.** Today the renderer reuses its last frame when the overlays' version is unchanged (`internal/render/frame.go:285-302`), so a loop would freeze while reporting success. | W1-A | NO INSTRUMENT YET |
 | L-1.7 | **A refresh does not re-decode the whole loop.** Today a re-`Set` drops every prepared raster (`internal/overlay/store.go:453`). | W1-A | NO INSTRUMENT YET |
 | L-1.8 | `NextCall` reports the next frame change; the contract's claim that a frame-advance source exists becomes true. | L-1.1, C-2 | NO INSTRUMENT YET |
-| L-1.9 | Every frame is validated when handed in, the loop has a total, frame times are in order, and a gap is explicit. | W1-A | NO INSTRUMENT YET — OPEN R1-9 (frame count, copy) |
+| L-1.9 | Every frame is validated when handed in, the loop has a total, frame times are in order, and a gap is explicit. | W1-A | NO INSTRUMENT YET |
+| L-1.14 | **Frames are copied at hand-in, never borrowed;** decode re-checks the size cap and the budget. | D-30 (F1) | NO INSTRUMENT YET |
+| L-1.15 | A hard maximum frame count, gaps included; the playback interval is library-owned and floored, never derived from host-supplied times. | D-30 (F2) | NO INSTRUMENT YET |
 | L-1.10a | The shown frame's time, or "gap", is text on the map at every depth, beside the `stale` word. | D-25 (A2) | NO INSTRUMENT YET |
 | L-1.10b | A host can step to the previous, next and newest frame and seek to any frame; the library's animation clock drives the loop. | D-25 (A3) | NO INSTRUMENT YET |
 | L-1.10c | `ReduceMotion(true)` forces playback off; turning it off restores the host's setting. | D-25 (A4) | NO INSTRUMENT YET |
@@ -86,6 +88,7 @@ For designers and PMs before engineers, the three visible decisions:
 | L-5.2 | One row in v0.1.0's record says its close-out did not run, with pointers to the evidence that does exist. | D-18 | Owed (OW-1) |
 | L-5.3 | A gate test refuses a release tag while its checklist is unfinished. | D-18 | NO INSTRUMENT YET |
 | L-5.4 | v0.2.0 is the library's first release: its REVIEW and close-out cover everything v0.1.0 shipped. The `v0.1.0` tag stays. | D-18 | — |
+| L-5.5 | The release checklist records a pinned `govulncheck` at the tag commit. | D-30 (F9) | The release checklist |
 
 ## L-6 — Found while preparing the brief
 
@@ -102,7 +105,8 @@ For designers and PMs before engineers, the three visible decisions:
 |---|---|---|---|
 | L-7.1 | A host can supply a fetcher without reflection: the request type and its options are exported. | L-7.1 | NO INSTRUMENT YET |
 | L-7.2 | Tiles can go out under the host's own user-agent. | L-7.2 | NO INSTRUMENT YET |
-| L-7.3 | What a host fetcher still gets from the library, and what it takes on, is stated in the contract. | W1-B | **OPEN — R1-9** (whether `Checked` wraps every host fetcher; when a new fetcher takes effect) |
+| L-7.3 | **Every host fetcher is wrapped by `fetch.Checked`** (read limit, timeouts); the contract states what a host fetcher takes on (TLS, redirects, private addresses). | D-30 (F3), W1-B | NO INSTRUMENT YET |
+| L-7.4 | Setting a fetcher takes effect at once. | D-30 (F4) | NO INSTRUMENT YET |
 
 ## L-8 — Meaning without colour
 
@@ -123,14 +127,17 @@ For designers and PMs before engineers, the three visible decisions:
 |---|---|---|---|
 | L-9.1 | A host-settable **maximum age** for the disk cache. | L-9.1 | NO INSTRUMENT YET |
 | L-9.2 | ~~A purge call.~~ **`Map.Purge` exists** (`tiles.go:145-165`); the gap is its **scope**: it empties only the current source, not memory, shared caches or decoded pictures. | L-9.2 corrected, W1-C | NO INSTRUMENT YET |
-| L-9.3 | In-flight writes after a purge, future-dated file times, swallowed cache errors. | red team F5, F6 | **OPEN — R1-9** |
+| L-9.3 | **Purge empties everything**: every source, the memory caches, decoded pictures; in-flight writes cannot land after it. | D-30 (F5) | NO INSTRUMENT YET |
+| L-9.4 | Maximum age is enforced at `CacheRoot` and in every job; future-dated files count as expired. | D-30 (F5) | NO INSTRUMENT YET |
+| L-9.5 | `cache-write-failed` is raised; only removals that succeeded are counted. | D-30 (F6) | NO INSTRUMENT YET |
+| L-9.6 | Contract guidance: the cache root under the OS user cache directory, owner-only; purge is not secure erasure. | D-30 (F8) | — |
 
 ## L-10 — Tile-host confinement
 
 | # | Requirement | Source | Instrument |
 |---|---|---|---|
 | L-10.1 | A source's tiles come only from that source's host; this is contract, stated and kept. | L-10.1 | `TestTileJSONAddressesObeyFetchRules`, `FuzzTileJSON`; a root-package test through `Map.Source` owed |
-| L-10.2 | One allow-list, and scheme as well as host and port, under any fetcher. | red team F7 | **OPEN — R1-9** |
+| L-10.2 | **One allow-list** for fetching and TileJSON, covering scheme, host and port under any fetcher; plain http refused unless the host allows it. | D-30 (F7) | NO INSTRUMENT YET; a root-package test through `Map.Source` with both fetchers |
 
 ## L-11 — Alerts over radar
 
@@ -148,7 +155,7 @@ For designers and PMs before engineers, the three visible decisions:
 | L-12.1 | A **total image budget per map**, settable by the host; a hand-in over it is refused with an error that says so. | D-20 | NO INSTRUMENT YET |
 | L-12.2 | The default fits v0.1.0 NFR-3 (4 MB live): about 3 MB of images — one 12-frame loop at 596×304, or about five at dot resolution (298×152). | D-20, W2 M-B | M4 |
 | L-12.3 | Guidance steers hosts to frames at the dot grid of the view (298×152 at 149×38). A host that raises the budget owns the memory it asks for, and the contract says so. | D-20 | — |
-| L-12.4 | What the budget counts (retained PNG bytes as well as pixels), and a bound on frame count. | red team F2 | **OPEN — R1-9** |
+| L-12.4 | The budget counts retained PNG bytes as well as pixels; a frame's file size is capped relative to its pixel count. | D-30 (F2) | NO INSTRUMENT YET |
 
 ## L-13 — v0.1.0 defects fixed in this release
 
@@ -185,7 +192,7 @@ Likelihood and severity are **H / M / L**, judged from the evidence cited.
 | RK-6 | **The contract stays wrong** — a names-only test passes with false behavioural claims | H | M | L-4.2, L-4.3 |
 | RK-7 | **The gate hangs on a fuzz stall** — the count budget has no wall clock and `FUZZ_TIMEOUT` is inert | M | M | OPEN — R1-10 |
 | RK-8 | **A listener who cannot watch the animation is excluded** from the release's main point | M | H | L-1.12 (D-24); M1's non-visual arm. Residual: two-frame motion can mislead when cells grow or decay, so it is worded as observation |
-| RK-9 | **Frames change after hand-in** — the library borrows host image bytes | L | H | OPEN — R1-9 |
+| RK-9 | **Frames change after hand-in** — the library borrows host image bytes | L | H | L-1.14 (D-30) |
 | RK-10 | **Evidence cannot be re-run** — wave 2 and specimen 29's blends came from throwaway programs | H | L | OPEN — R1-11 |
 
 ## Owed
