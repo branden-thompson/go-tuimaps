@@ -4,7 +4,7 @@ Authorised by ruling D-31. Every overlay *rendering approach* in this project is
 
 ## How these were made
 
-A throwaway program, kept **outside this repository**, built from off-the-shelf libraries. It is not the start of the implementation and none of it is copied into the project; FULL TDD is untouched. Only the specimen files and the findings below enter the repo.
+A throwaway program, kept **outside this repository**, built from off-the-shelf libraries. It is not the start of the implementation and none of it is copied into the project; FULL TDD is untouched. Only the specimen files and the findings below enter the repo. **Specimens 26 onward are different**: they were drawn by the library's own public calls, and specimen 29's programs are filed under `radar-loops/02-analysis/programs/` (v0.2.0 D-32).
 
 | File type | What it is | How to judge it |
 |---|---|---|
@@ -316,7 +316,7 @@ No earlier specimen drew radar and an alert together: 22 is radar alone, 28 is a
 | S29-1 | In colour, 29a draws the warning as a solid block, and the heaviest rain on the map, which falls inside that block, cannot be seen. In 29b the rain shows through; the tint survives only on the label's cells and in dry cells, so on a wet day the outline alone carries the warning. | A HUM LEAD ruling for v0.2.0 |
 | S29-2 | **With no colour, the radar's block shades replace everything else in their cells**: the warning's outline, hatch and label, the place marker, the scale mark and the credit line. 29c shows all of these drawn when the radar is absent. The same happens in both orders. | A defect against FR-18a (outlines go over everything beneath them), not a ruling. It becomes a v0.2.0 requirement |
 | S29-3 | At 69 by 12 the Hamlin marker and name are not drawn even in the control, although the fit includes Hamlin. | Recorded, not diagnosed |
-| S29-4 | The county picture (596 by 546) was refused at the fixed 250,000-byte image cap and had to be cropped to 447 by 348. | Evidence for W1-B: a host cannot raise the cap |
+| S29-4 | The county picture (596 by 546) was refused at the fixed 250,000-byte image cap and had to be cropped to 447 by 348. | Evidence for C-3 (wave 1, W1-A): a host cannot raise the cap |
 
 **Added at HUM LEAD's request, 2026-09-23: a blend of the two orders.** HUM LEAD preferred 29b, and asked to see the warning's colour laid over the radar as a partial tint. `29d-*`, `29e-*` and `29f-*` blend it in at 20%, 35% and 50%, composited in linear light. They are made by a small scratch function, not by the library, and are `.ans` only: with no colour they are identical to 29b.
 

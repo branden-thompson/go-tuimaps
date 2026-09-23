@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -33,13 +34,7 @@ func plantTree(t *testing.T, nestedPasses bool) string {
 		"testdata/x/x_test.go": "package x\n\nimport \"testing\"\n\nfunc TestIgnored(t *testing.T) { t.Fatal(\"test data is not a module of the repository\") }\n",
 	}
 	for rel, src := range files {
-		full := filepath.Join(root, filepath.FromSlash(rel))
-		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(full, []byte(src), 0o644); err != nil {
-			t.Fatal(err)
-		}
+		writeFile(t, root, rel, src)
 	}
 	return root
 }
@@ -47,14 +42,7 @@ func plantTree(t *testing.T, nestedPasses bool) string {
 // runGate runs the gate's quick legs over a planted tree.
 func runGate(t *testing.T, root string) (string, error) {
 	t.Helper()
-	gate, err := filepath.Abs(filepath.Join("scripts", "gate"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	cmd := exec.Command(gate, "--quick")
-	cmd.Env = append(os.Environ(), "GATE_ROOT="+root, "GOPROXY=off") // the gate must not need the network to find the root module
-	out, err := cmd.CombinedOutput()
-	return string(out), err
+	return runGateWith(t, root, nil, "--quick")
 }
 
 // TestGateIsGreenOnAPassingTree is the "green run" of plan task 00.7.
@@ -125,14 +113,7 @@ func TestGateFailsWhenTheWorkspaceFileIsTracked(t *testing.T) {
 // runDocsLane runs the gate's docs lane over a planted tree (v0.2.0 D-15).
 func runDocsLane(t *testing.T, root string) (string, error) {
 	t.Helper()
-	gate, err := filepath.Abs(filepath.Join("scripts", "gate"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	cmd := exec.Command(gate, "--docs")
-	cmd.Env = append(os.Environ(), "GATE_ROOT="+root, "GOPROXY=off")
-	out, err := cmd.CombinedOutput()
-	return string(out), err
+	return runGateWith(t, root, nil, "--docs")
 }
 
 // plantCommitted plants a tree whose root module has a test that reads a
@@ -142,8 +123,8 @@ func plantCommitted(t *testing.T) string {
 	t.Helper()
 	root := plantTree(t, true)
 	files := map[string]string{
-		"NOTES.md":         "# Notes\n\nFine.\n",
-		"notes_test.go":    "package lib\n\nimport (\n\t\"os\"\n\t\"strings\"\n\t\"testing\"\n)\n\nfunc TestNotes(t *testing.T) {\n\tb, err := os.ReadFile(\"NOTES.md\")\n\tif err != nil || strings.Contains(string(b), \"BROKEN\") {\n\t\tt.Fatal(\"the notes are broken\", err)\n\t}\n}\n",
+		"NOTES.md":      "# Notes\n\nFine.\n",
+		"notes_test.go": "package lib\n\nimport (\n\t\"os\"\n\t\"strings\"\n\t\"testing\"\n)\n\nfunc TestNotes(t *testing.T) {\n\tb, err := os.ReadFile(\"NOTES.md\")\n\tif err != nil || strings.Contains(string(b), \"BROKEN\") {\n\t\tt.Fatal(\"the notes are broken\", err)\n\t}\n}\n",
 	}
 	for rel, src := range files {
 		writeFile(t, root, rel, src)
@@ -239,6 +220,7 @@ func runGateWith(t *testing.T, root string, env []string, args ...string) (strin
 		t.Fatal(err)
 	}
 	cmd := exec.Command(gate, args...)
+	// The gate must not need the network to find the root module.
 	cmd.Env = append(append(os.Environ(), "GATE_ROOT="+root, "GOPROXY=off"), env...)
 	out, err := cmd.CombinedOutput()
 	return string(out), err
@@ -328,5 +310,77 @@ func TestEveryRunIsLogged(t *testing.T) {
 		if !strings.Contains(last, want) {
 			t.Errorf("the run's line does not carry %q: %q", want, last)
 		}
+	}
+}
+
+// TestFuzzCountTableMatchesTheTargets: every row of the gate's per-target
+// count table names a fuzz target that exists, and every target has a row, so
+// a rename cannot leave a stale row and an uncalibrated target (v0.2.0 D-38).
+func TestFuzzCountTableMatchesTheTargets(t *testing.T) {
+	script, err := os.ReadFile(filepath.Join("scripts", "gate"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	rows := map[string]bool{}
+	for _, m := range regexp.MustCompile(`(?m)^\s+(Fuzz\w+)\)\s+echo "\d+x"`).FindAllStringSubmatch(string(script), -1) {
+		rows[m[1]] = true
+	}
+	if len(rows) < 10 {
+		t.Fatalf("found %d rows in the count table; the table's shape has changed and this test has lost its subject", len(rows))
+	}
+	targets := map[string]bool{}
+	fuzzFunc := regexp.MustCompile(`(?m)^func (Fuzz\w+)\(`)
+	err = filepath.WalkDir(".", func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() && path != "." && (d.Name() == "testdata" || strings.HasPrefix(d.Name(), ".") || d.Name() == "_a2dh") {
+			return filepath.SkipDir
+		}
+		if !strings.HasSuffix(path, "_test.go") {
+			return nil
+		}
+		body, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		for _, m := range fuzzFunc.FindAllStringSubmatch(string(body), -1) {
+			targets[m[1]] = true
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name := range rows {
+		if !targets[name] {
+			t.Errorf("the count table has a row for %s, and no such fuzz target exists", name)
+		}
+	}
+	for name := range targets {
+		if !rows[name] {
+			t.Errorf("fuzz target %s has no row in the count table", name)
+		}
+	}
+}
+
+// TestNotRunNamesTheLastTag: the gate's closing NOT RUN line names the last
+// tag rather than claiming none exists (v0.2.0 D-38).
+func TestNotRunNamesTheLastTag(t *testing.T) {
+	if testing.Short() {
+		t.Skip("runs the gate; skipped with -short")
+	}
+	root := plantCommitted(t)
+	tag := exec.Command("git", "tag", "v9.9.9")
+	tag.Dir = root
+	if out, err := tag.CombinedOutput(); err != nil {
+		t.Fatalf("git tag: %v\n%s", err, out)
+	}
+	out, err := runGate(t, root)
+	if err != nil {
+		t.Fatalf("the gate failed: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "v9.9.9") || strings.Contains(out, "none exists yet") {
+		t.Errorf("the NOT RUN line must name the last tag:\n%s", out)
 	}
 }

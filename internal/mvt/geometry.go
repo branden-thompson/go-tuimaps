@@ -150,7 +150,8 @@ func (d *layerDecoder) lineTo(c *cursor, rest []byte, count int) ([]byte, error)
 // closePath re-pushes the ring's first point, as upstream does, and ends
 // the part. The pen does not move. **A ring whose last point is already its
 // first is closed, and gets nothing more**: repeating the point would add a
-// segment of no length that the proven decoder does not have (v0.2.0 D-16).
+// segment of no length that paulmach/orb's decoder - the proven decoder the
+// oracle compares against (tools/oracle) - does not have (v0.2.0 D-16).
 func (d *layerDecoder) closePath(c *cursor, count uint64) error {
 	if count != 1 {
 		return malformed()

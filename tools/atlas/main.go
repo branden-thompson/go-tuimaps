@@ -78,27 +78,63 @@ func main() {
 	}
 }
 
+// dest is where the page is written, relative to the repository root.
+var dest = filepath.Join("06_docs", "architecture-atlas.html")
+
 func run() error {
+	out, count, err := build(".")
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(dest, []byte(out), 0o644); err != nil {
+		return err
+	}
+	fmt.Printf("%d diagrams -> %s\n", count, dest)
+	return nil
+}
+
+// build makes the page from the documents under root/06_docs, with every
+// path in it relative to root, so a test can build it from anywhere and
+// compare it with the page that is committed.
+func build(root string) (string, int, error) {
+	found, err := collect(root)
+	if err != nil {
+		return "", 0, err
+	}
+	if err := check(found, page); err != nil {
+		return "", 0, err
+	}
+	nav, body := compose(found)
+	return strings.NewReplacer(
+		"<!--NAV-->", nav,
+		"<!--BODY-->", body,
+		"<!--COUNT-->", fmt.Sprint(len(found)),
+	).Replace(page), len(found), nil
+}
+
+// collect reads every diagram under root/06_docs.
+func collect(root string) ([]diagram, error) {
 	var found []diagram
-	for _, root := range []string{"06_docs"} {
-		err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-			if err != nil || info.IsDir() || !strings.HasSuffix(path, ".md") {
-				return err
-			}
-			raw, err := os.ReadFile(path)
-			if err != nil {
-				return err
-			}
-			found = append(found, read(path, string(raw))...)
-			return nil
-		})
+	err := filepath.Walk(filepath.Join(root, "06_docs"), func(path string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() || !strings.HasSuffix(path, ".md") {
+			return err
+		}
+		raw, err := os.ReadFile(path)
 		if err != nil {
 			return err
 		}
-	}
-	if err := check(found, page); err != nil {
-		return err
-	}
+		rel, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+		found = append(found, read(rel, string(raw))...)
+		return nil
+	})
+	return found, err
+}
+
+// compose lays the diagrams out as the page's navigation and body.
+func compose(found []diagram) (string, string) {
 	sort.SliceStable(found, func(i, j int) bool { return found[i].file < found[j].file })
 
 	seen := map[string]bool{}
@@ -145,17 +181,7 @@ func run() error {
 		body.WriteString("</section>")
 	}
 
-	out := strings.NewReplacer(
-		"<!--NAV-->", nav.String(),
-		"<!--BODY-->", body.String(),
-		"<!--COUNT-->", fmt.Sprint(len(found)),
-	).Replace(page)
-	dest := filepath.Join("06_docs", "architecture-atlas.html")
-	if err := os.WriteFile(dest, []byte(out), 0o644); err != nil {
-		return err
-	}
-	fmt.Printf("%d diagrams -> %s\n", len(found), dest)
-	return nil
+	return nav.String(), body.String()
 }
 
 // read pulls every diagram out of one document.

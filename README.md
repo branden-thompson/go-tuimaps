@@ -91,6 +91,21 @@ Flash and pulse markers, camera tours, the block renderer, a wind overlay,
 timed image sequences, 16-colour ramps. Each is designed and none is
 promised for a date.
 
+## Working on the library
+
+Every change is checked by `scripts/gate`, which is what stands before a merge:
+
+- `scripts/gate` runs every leg, about eighteen minutes on the machine it was calibrated on. It needs
+  the go1.25.0 toolchain (downloaded on first use), `govulncheck` on `PATH`
+  (`go install golang.org/x/vuln/cmd/govulncheck@latest`), and a machine that can run the other
+  architecture's tests (an Apple silicon Mac runs amd64 under emulation).
+- `scripts/gate --quick` skips fuzzing, the vulnerability scan, licences and the cross-compiles.
+- `scripts/gate --docs` is for a change of Markdown and nothing else, run before committing; it
+  refuses anything else.
+- `scripts/gate --fuzz` runs the fuzz legs alone.
+
+Every run leaves a line in `06_docs/gate-runs.md`.
+
 ## Licence
 
 MIT. Both upstream notices are carried: TerminalMap, which this is a port

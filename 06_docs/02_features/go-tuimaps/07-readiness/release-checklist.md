@@ -4,7 +4,7 @@ Up: [readiness](.) · Plan task 14.14 · Carries: D-19, D-13, D-50, NFR-1, NFR-9
 
 | Field | Value |
 |---|---|
-| Status | **Not started.** Nothing here is done until SHIP, and SHIP is HUM LEAD's to open |
+| Status | **Not started, and never run.** v0.1.0 was tagged and published before this checklist, the integration review's measurement, M1 and recommendation sections, or the UAT findings were done, and no ruling authorised the tag. **Recorded as not recoverable** (v0.2.0 D-18): no review is written after the fact. The evidence that does exist is the gate as it stood at the tag, the first host's spike (`spike/tuimaps-first-host` in watchpost) and the v0.2.0 DISCOVER record's wave 1. **v0.2.0 is the library's first reviewed release**, and its close-out covers everything v0.1.0 shipped. |
 | Who runs it | The coordinator prepares each line and shows the result; HUM LEAD approves the tag |
 | The rule that shapes it | **No remote exists until SHIP (D-19).** Every line below is run against a *fresh clone* of the repository, never against the working tree, so that what is released is what is committed and nothing else |
 

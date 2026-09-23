@@ -341,4 +341,5 @@ if [ "$docs" = 1 ]; then
   exit 0
 fi
 echo "gate: green"
-echo "NOT RUN on this machine, and not assumed: Linux and Windows test runs; real amd64 hardware; the nightly one-hour soak; the contract check against the last tag (none exists yet)."
+last_tag="$(git -C "$root" describe --tags --abbrev=0 2>/dev/null || true)"
+echo "NOT RUN on this machine, and not assumed: Linux and Windows test runs; real amd64 hardware; the nightly one-hour soak; the contract check against the last tag (${last_tag:-none exists yet}${last_tag:+: not built yet, v0.2.0 L-4})."

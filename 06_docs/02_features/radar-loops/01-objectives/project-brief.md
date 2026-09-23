@@ -70,7 +70,7 @@ L-4 (HR-4), L-5 (HR-5), L-7 (HR-6), L-8 (HR-7), L-9 (HR-8) and L-10 (HR-10). L-6
   frames with a success code). A missing frame is a stated gap, never a duplicated neighbour.
 - **L-1.3** Each frame carries its own valid time into staleness and description, so an old loop
   never looks current.
-- **L-1.4** The library never fetches radar. The host hands in finished frames (D-65: nothing is
+- **L-1.4** The library never fetches radar. The host hands in finished frames (v0.1.0 D-65: nothing is
   fetched until the host says so; tile-image providers stay deferred unless ruled in).
 - **L-1.5 (HR-9)** **Playback of an overlay's loop is controllable — at least off / slow / normal** —
   and the control is the library's, exposed to the host and through it to the listener. The host
@@ -100,7 +100,7 @@ L-4 (HR-4), L-5 (HR-5), L-7 (HR-6), L-8 (HR-7), L-9 (HR-8) and L-10 (HR-10). L-6
   surface so it cannot drift again ("the rule an agent has to remember…", watchpost D-11).
 
 ### L-5 — The after-tag triage (HR-5)
-- **L-5.1** *Superseded by D-18.* D-123 named a triage of nineteen open items; wave 1 found it never
+- **L-5.1** *Superseded by D-18.* v0.1.0 D-123 named a triage of nineteen open items; wave 1 found it never
   existed and v0.1.0's close-out never ran. D-18 records that as not recoverable, adds a gate test
   that refuses a tag while its checklist is unfinished, and makes v0.2.0 the first release.
 
@@ -178,7 +178,7 @@ of classified pixels — the number M4 is measured against, and the first questi
 contract. That is how it drifted (L-4).
 
 ### C-5 — The view can widen without the host
-Five paths, measured in watchpost's wave 1 (W1-B): unplaced map → whole world (`map.go:214-215,
+Watchpost's wave 1 (W1-B) counted five paths; the four this record traces are: unplaced map → whole world (`map.go:214-215,
 259-260`); resize keeps zoom so ground grows (`:262-263`); invalid view → whole world (`:264-265`);
 `MinZoom = −8` a constant (`view.go:16`).
 

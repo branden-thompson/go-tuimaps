@@ -87,9 +87,11 @@ func crossingsOf(at project.LonLat, ring []project.LonLat) int {
 	crossings := 0
 	for i := range ring {
 		a, b := ring[i], ring[(i+1)%len(ring)]
-		// An edge with an end that is nowhere is not an edge: NearestEdge
-		// passes it over, and counting it here would let the two disagree
-		// about where the area's boundary is (v0.2.0 D-16).
+		// An edge with an end that is nowhere is passed over, as NearestEdge
+		// passes it over, so the two never disagree about where the area's
+		// boundary is (v0.2.0 D-16). A ring with such an edge is left open, and
+		// "inside" is then defined only by that agreement; the public calls
+		// refuse such a vertex before it gets here.
 		if !onGlobe(a) || !onGlobe(b) {
 			continue
 		}

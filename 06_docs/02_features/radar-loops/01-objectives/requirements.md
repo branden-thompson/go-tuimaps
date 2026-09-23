@@ -50,7 +50,7 @@ For designers and PMs before engineers, the three visible decisions:
 | L-1.10d | A state read: the playback in effect (including "off because reduce motion is on"), frame index, count, the frame's time, gap. | D-25 (A5) | NO INSTRUMENT YET |
 | L-1.10e | A frame advance is signalled apart from a data change and does not change the description's cache key. | D-25 (A6) | NO INSTRUMENT YET |
 | L-1.10f | Off shows the newest non-gap frame with its age. | D-25 (A15) | NO INSTRUMENT YET |
-| L-1.10g | A library-owned numeric ceiling on frame changes a second, every change counted toward WCAG 2.3.1, bounded by D-56's 2.5 a second; a gap holds the last real frame with its time reading "gap", never an empty frame. Slow and normal speeds are PLAN's, within it. | D-25 (A16, P-5) | NO INSTRUMENT YET |
+| L-1.10g | A library-owned numeric ceiling on frame changes a second, every change counted toward WCAG 2.3.1, bounded by v0.1.0 D-56's 2.5 a second; a gap holds the last real frame with its time reading "gap", never an empty frame. Slow and normal speeds are PLAN's, within it. | D-25 (A16, P-5) | NO INSTRUMENT YET |
 | L-1.11 | **Playback defaults to off** until the host chooses; the state read says "off (default)". | D-26 (A14) | NO INSTRUMENT YET |
 | L-1.13 | **One standard playback API** a host wires straight to its own controls and Settings: every control of L-1.10 (play/pause, slow/normal, step, seek, newest), the state read and a change signal, one consistent shape across every looped overlay. | D-26 | NO INSTRUMENT YET; measure: a host wires controls and a Settings row with no playback state of its own (the example, and watchpost) |
 | L-1.12 | **Storm motion without the animation (D-24).** The description reports observed motion from the frames: for each described place, where the heavier rain was at the oldest usable frame and at the newest (distance, direction, time), whether it came closer, moved away or held, and the span the loop covers. Worded as observation, never forecast, and relative to a named place, never "you" (D-29). | D-24, D-29; red team A1, B-4 | NO INSTRUMENT YET; M1's non-visual arm, scored from the description alone |
@@ -86,7 +86,7 @@ For designers and PMs before engineers, the three visible decisions:
 | # | Requirement | Source | Instrument |
 |---|---|---|---|
 | L-5.1 | ~~The nineteen-item triage is written.~~ **Superseded by D-18:** the triage never existed and is recorded as not recoverable. | D-18 | — |
-| L-5.2 | One row in v0.1.0's record says its close-out did not run, with pointers to the evidence that does exist. | D-18 | Owed (OW-1) |
+| L-5.2 | One row in v0.1.0's record says its close-out did not run, with pointers to the evidence that does exist. | D-18 | Done: `release-checklist.md`'s status row (D-38) |
 | L-5.3 | A gate test refuses a release tag while its checklist is unfinished. | D-18 | NO INSTRUMENT YET |
 | L-5.4 | v0.2.0 is the library's first release: its REVIEW and close-out cover everything v0.1.0 shipped. The `v0.1.0` tag stays. | D-18 | — |
 | L-5.5 | The release checklist records a pinned `govulncheck` at the tag commit. | D-30 (F9) | The release checklist |
@@ -146,7 +146,7 @@ For designers and PMs before engineers, the three visible decisions:
 | # | Requirement | Source | Instrument |
 |---|---|---|---|
 | L-11.1 | Inside an alert area, **the tint blends over the radar**: each radar cell keeps its class colour shifted toward the tint; outline and label stay on top. Replaces v0.1.0 FR-12 step 4 for images and fields. | D-14 | NO INSTRUMENT YET |
-| L-11.2 | The blend must not wash out: every tinted class stays at least 10 (D-88's measure) from every other class, inside and outside the area, on both grounds. | D-14 | The ramp checker, extended |
+| L-11.2 | The blend must not wash out: every tinted class stays at least 10 (v0.1.0 D-88's measure) from every other class, inside and outside the area, on both grounds. | D-14 | The ramp checker, extended |
 | L-11.3 | The light ground is solved by adjusting the radar ramps or the alert colours. | D-14 | — |
 | L-11.4 | **If no blend passes on a light ground, the light ground uses 29b's order**: radar over the tint, the warning carried by its outline, label and L-8.1's severity word and dash. The dark ground keeps the blend. | D-27 (A10, B-6) | The checker decides which applies |
 
@@ -166,7 +166,7 @@ For designers and PMs before engineers, the three visible decisions:
 |---|---|---|---|
 | L-13.1 | The library identifies itself with its real version, not `0.1.0-dev` (`fetch.go:24`). | D-18, W1-B | NO INSTRUMENT YET |
 | L-13.2 | `fetch.Checked` is wired, or removed. | W1-B | NO INSTRUMENT YET |
-| L-13.3 | The gate's NOT RUN line is current. | W1-B | — |
+| L-13.3 | The gate's NOT RUN line is current. | W1-B | Done: it names the last tag (D-38), held by `TestNotRunNamesTheLastTag` |
 | L-13.4 | The drifted cache doc comments and `ReduceMotion`'s overstated comment are corrected. | W1-B, W1-A | `make lint`-class review |
 | L-13.5 | **The description lists the alerts being shown**, each with its name, severity word and valid time or stale mark, independent of any place. | D-29 (A11) | NO INSTRUMENT YET |
 | L-13.6 | **The description never says "you."** For a discrete place the host names, it says whether that place is inside, outside or nearby, as v0.1.0 does. | D-29 | NO INSTRUMENT YET |
@@ -178,7 +178,7 @@ For designers and PMs before engineers, the three visible decisions:
 |---|---|---|
 | NFR-1 | Additive only: a breaking change to the v0.1.0 contract is a HUM LEAD ruling. | C-7 |
 | NFR-2 | Memory within v0.1.0 NFR-3 at the default budget, flat over an hour with a 12-frame loop. | M4, D-20 |
-| NFR-3 | Motion: no flash above D-56's ceiling (2.5 a second); `ReduceMotion` stops all animation. | v0.1.0 D-56, NFR-21 |
+| NFR-3 | Motion: no flash above v0.1.0 D-56's ceiling (2.5 a second); `ReduceMotion` stops all animation. | v0.1.0 D-56, NFR-21 |
 | NFR-4 | The gate is green before every commit that touches anything but Markdown; a Markdown-only change takes the docs lane, run before committing. Every run is logged in `06_docs/gate-runs.md`. | D-15, D-31 |
 
 ## Risk register
@@ -202,10 +202,11 @@ Likelihood and severity are **H / M / L**, judged from the evidence cited.
 
 | # | What | Due | Source |
 |---|---|---|---|
-| OW-1 | The row in v0.1.0's record saying its close-out did not run | before DISCOVER exit | D-18 |
+| OW-1 | ~~The row in v0.1.0's record saying its close-out did not run~~ **Done (D-38)**: `go-tuimaps/07-readiness/release-checklist.md` | — | D-18 |
 | OW-2 | The D-17 specimen: severity word and five dashes, at 69×12 and 149×38, NoColour and Colours16 | before PLAN commits to L-8.1 | D-17 |
 | OW-3 | S29-3: the Hamlin marker missing at 69×12 even without radar — diagnose | PLAN | S29-3 |
 | OW-4 | The 40-second `FuzzAgree` freeze | PLAN | L-6.4 |
 | OW-5 | ~~Correct wave 2's "71–80 %" and D-19's copy of it~~ **Done 2026-09-23**: 80.0–80.6 %, and wave 2's finding 2 restated | — | round 1 verification |
 | OW-6 | F-2 (a pluggable architecture): its trigger fired; the narrow seam is L-2.5 (D-35); the broad restructure stays with the quality pass | quality pass | D-35 |
 | OW-7 | Every **OPEN — R1-n** row above | before DISCOVER exit | round 1 |
+| OW-8 | **The gate never runs `gofmt`**: `gate_test.go` sat unformatted from `0665ae7` to the D-38 batch with every gate green. Found by the coordinator, not the red team | PLAN (a gate leg, test-first) | D-38 batch |
