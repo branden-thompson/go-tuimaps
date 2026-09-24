@@ -141,6 +141,11 @@ func (m *Map) Set(o Overlay) (res SetResult, err error) {
 	if m.shut {
 		return SetResult{}, closed()
 	}
+	if o.Image != nil {
+		if err := overlay.CheckFrameTimes(o.Image, m.wallClock); err != nil {
+			return SetResult{}, err
+		}
+	}
 	res, err = m.store.HandIn(o)
 	if err != nil {
 		return res, err

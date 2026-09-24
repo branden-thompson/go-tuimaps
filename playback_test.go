@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"image/color"
+	"strings"
 	"testing"
 	"time"
 
@@ -475,5 +476,99 @@ func TestAFrameAdvanceIsATickNotAChange(t *testing.T) {
 	}
 	if m.FrameTicks() != ticks {
 		t.Errorf("a step moved FrameTicks from %d to %d", ticks, m.FrameTicks())
+	}
+}
+
+// topRow renders the map and returns its top row as plain text.
+func topRow(t *testing.T, m *tuimaps.Map, wall time.Time) string {
+	t.Helper()
+	f, err := m.Render(tuimaps.Size{Cols: 80, Rows: 24}, wall)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return strings.ReplaceAll(plainText(f.Lines[0]), "\u2800", " ") // an empty cell is the braille blank
+}
+
+// TestTheFrameTimeIsOnTheMap is L4.8 (L-1.2, L-1.10a, L-1.10f, L-1.10g,
+// D-67): the moment shown is text on the map beside the stale word; a gap
+// reads "gap" with its own time; a forecast frame reads as one; with two
+// loops, the newest loop's time; with no loop, nothing.
+func TestTheFrameTimeIsOnTheMap(t *testing.T) {
+	m := world(t, 80, 24)
+	if row := topRow(t, m, noon); strings.Contains(row, ":") {
+		t.Errorf("no loop, and the top row reads %q", row)
+	}
+	mustSet(t, m, loopAt(t, "radar", []int{-10, -5, 0, 5}, map[int]bool{5: true}, map[int]bool{-5: true}))
+	settle(t, m)
+	for _, c := range []struct {
+		step int
+		want string
+	}{
+		{0, "12:00"}, {-1, "gap 11:55"}, {-1, "11:50"}, {3, "forecast 12:05"},
+	} {
+		must(t, m.Step(c.step))
+		row := topRow(t, m, noon)
+		if !strings.HasSuffix(strings.TrimRight(row, " ⠀"), c.want) {
+			t.Errorf("after a step of %d the top row ends %q; want %q", c.step, row[max(0, len(row)-30):], c.want)
+		}
+	}
+	// Stale: the time sits to the left of the word.
+	row := topRow(t, m, noon.Add(time.Hour))
+	if !strings.Contains(row, "forecast 12:05 stale") {
+		t.Errorf("stale, the top row reads %q; want the time beside the word", row)
+	}
+	// Two loops: the newest loop's time.
+	two := world(t, 80, 24)
+	mustSet(t, two, loopAt(t, "west", []int{-10, 0}, nil, nil))
+	mustSet(t, two, loopAt(t, "east", []int{-12, -2}, nil, nil))
+	settle(t, two)
+	must(t, two.Step(-1)) // the merged timeline is -12, -10, -2, 0: one back from right now is -2
+	if row := topRow(t, two, noon); !strings.Contains(row, "11:58") {
+		t.Errorf("two loops at -2: the top row reads %q; want the newer loop's 11:58", row)
+	}
+}
+
+// TestTheNewestObservedFrameDrivesStale is L4.9 (L-1.3, D-39, D-67): a loop
+// is stale by its newest observed picture, never by the frame shown and never
+// by a forecast.
+func TestTheNewestObservedFrameDrivesStale(t *testing.T) {
+	fresh := world(t, 80, 24)
+	mustSet(t, fresh, loopAt(t, "radar", []int{-30, -20, -10, 0}, nil, nil))
+	must(t, fresh.Step(-3))
+	if row := topRow(t, fresh, noon.Add(10*time.Minute)); strings.Contains(row, "stale") {
+		t.Errorf("stepped back to a frame 40 minutes old, with the newest 10: %q", row)
+	}
+	old := world(t, 80, 24)
+	mustSet(t, old, loopAt(t, "radar", []int{-40, -30, -20}, nil, nil)) // handed in as valid at noon
+	if row := topRow(t, old, noon.Add(10*time.Minute)); !strings.Contains(row, "stale") {
+		t.Errorf("a loop whose newest picture is 30 minutes old, kept 15: %q; want stale", row)
+	}
+	forecast := world(t, 80, 24)
+	mustSet(t, forecast, loopAt(t, "radar", []int{-40, -20, 0, 5}, map[int]bool{0: true, 5: true}, nil))
+	if row := topRow(t, forecast, noon.Add(10*time.Minute)); !strings.Contains(row, "stale") {
+		t.Errorf("observed up to -20 with forecast frames after: %q; a forecast never counts as newest", row)
+	}
+	if due, ok := old.NextCall(noon.Add(-10 * time.Minute)); !ok || !due.Before(noon) {
+		t.Errorf("the loop goes stale at 11:35 by its newest picture; NextCall says %v", due)
+	}
+}
+
+// TestOnlyAForecastMayBeInTheFuture is L4.9a (D-67): once the map has a wall
+// clock, an observed frame dated past it by more than the skew allowed is
+// refused, naming the frame; a forecast frame so dated is accepted.
+func TestOnlyAForecastMayBeInTheFuture(t *testing.T) {
+	m := world(t, 80, 24)
+	if _, err := m.Render(tuimaps.Size{Cols: 80, Rows: 24}, noon); err != nil {
+		t.Fatal(err)
+	}
+	_, err := m.Set(loopAt(t, "radar", []int{-5, 0, 10}, nil, nil))
+	if !isKind(err, fault.ImageRefused) || !strings.Contains(err.Error(), "frame 3") {
+		t.Errorf("an observed frame ten minutes ahead of the clock: %v; want it refused, naming frame 3", err)
+	}
+	if _, err := m.Set(loopAt(t, "radar", []int{-5, 0, 4}, nil, nil)); err != nil {
+		t.Errorf("an observed frame four minutes ahead, inside the skew allowed: %v", err)
+	}
+	if _, err := m.Set(loopAt(t, "radar", []int{-5, 0, 10}, map[int]bool{10: true}, nil)); err != nil {
+		t.Errorf("a forecast frame ten minutes ahead: %v", err)
 	}
 }

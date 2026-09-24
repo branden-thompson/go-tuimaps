@@ -66,7 +66,7 @@ func (m *Map) stale(wall time.Time) bool {
 		}
 		o := reader.Overlay()
 		reader.Done()
-		if overlay.FreshnessAt(o.Valid, o.Keeps, wall).DrawnStale() {
+		if overlay.FreshnessAt(overlay.Valid(o), o.Keeps, wall).DrawnStale() {
 			return true
 		}
 	}
@@ -106,7 +106,7 @@ func (m *Map) NextCall(wall time.Time) (time.Time, bool) {
 			}
 			o := reader.Overlay()
 			reader.Done()
-			if at, ok := overlay.NextChange(o.Valid, o.Keeps, wall); ok {
+			if at, ok := overlay.NextChange(overlay.Valid(o), o.Keeps, wall); ok {
 				due = soonest(due, at)
 			}
 		}

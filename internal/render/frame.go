@@ -110,9 +110,14 @@ type Input struct {
 	// Stale says that the data of an overlay on the frame is no longer
 	// current, which the frame marks in a word (FR-32); Footer is the
 	// host's own line of text, drawn only when it is given (P-57).
-	Stale  bool
-	Footer textsafe.Text
-	Credit textsafe.Text
+	Stale bool
+	// FrameTime is the moment a loop shows, as text beside the stale word:
+	// its time, "gap" and its time, or "forecast" and its time (L-1.10a).
+	// It changes only with the moment or the overlays, and each of those
+	// already makes a frame be drawn again, so reuse need not compare it.
+	FrameTime textsafe.Text
+	Footer    textsafe.Text
+	Credit    textsafe.Text
 }
 
 // Frame is a drawn map: one string a row, each exactly the view's width in
@@ -596,9 +601,17 @@ func (r *Renderer) furniture(in Input, status Status) {
 		fit := textsafe.Fit(notice, g.cols)
 		g.write((g.cols-textsafe.Width(fit))/2, g.rows/2, fit, uint8(colour.Notice))
 	}
+	right := g.cols // the top row fills from the right: the stale word, then the frame time
 	if in.Stale {
 		mark := textsafe.Fit(textsafe.Const(staleMark), g.cols)
-		g.write(g.cols-textsafe.Width(mark), 0, mark, uint8(colour.Stale))
+		right -= textsafe.Width(mark)
+		g.write(right, 0, mark, uint8(colour.Stale))
+		right-- // a space between them
+	}
+	if right > 0 {
+		if when := textsafe.Fit(in.FrameTime, right); textsafe.Width(when) > 0 {
+			g.write(right-textsafe.Width(when), 0, when, uint8(colour.Stale))
+		}
 	}
 	credit := textsafe.Fit(in.Credit, g.cols)
 	if w := textsafe.Width(credit); w > 0 {

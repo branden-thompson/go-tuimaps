@@ -364,3 +364,22 @@ func indexOf(timeline []overlay.Moment, at time.Time) int {
 	}
 	return i
 }
+
+// frameTimeLocked is the text the map shows for the moment on screen: the
+// newest loop's frame time, "gap" before it when the moment falls on a gap,
+// "forecast" when it is one. It is written in the zone of the times the host
+// handed in: the library has no clock and no zone of its own.
+func (m *Map) frameTimeLocked() textsafe.Text {
+	label, ok := m.store.LabelAt(m.shownLocked())
+	if !ok {
+		return textsafe.Text{}
+	}
+	when := label.Valid.Format("15:04")
+	switch {
+	case label.Gap:
+		when = "gap " + when
+	case label.Forecast:
+		when = "forecast " + when
+	}
+	return textsafe.Clean(when)
+}

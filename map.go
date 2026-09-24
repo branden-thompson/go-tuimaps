@@ -389,6 +389,7 @@ func (m *Map) Render(size Size, now time.Time) (frame Frame, err error) {
 	in.MarkerPhase = m.motion.Phase(m.animationAt(now))
 	m.noteWallClock(now)
 	in.Stale = m.staleNow
+	in.FrameTime = m.frameTimeLocked()
 	in.Markers = m.markers()
 	m.draw(&in)
 	in.Tiles, in.Missing = m.onHand()

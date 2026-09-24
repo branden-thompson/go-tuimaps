@@ -180,7 +180,7 @@ func (m *Map) staleOverlay(o Overlay) bool {
 	if m.wallClock.IsZero() {
 		return false
 	}
-	return overlay.FreshnessAt(o.Valid, o.Keeps, m.wallClock).DrawnStale()
+	return overlay.FreshnessAt(overlay.Valid(o), o.Keeps, m.wallClock).DrawnStale()
 }
 
 // answerOf is the one answer for a place and an overlay, by its shape.
