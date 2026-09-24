@@ -36,7 +36,7 @@ flowchart TB
     PAINT --> FG["Choose each cell's foreground (FR-16, D-77)<br/>the line's own colour where it meets 3:1 on this cell; otherwise whichever of black and white contrasts more"]
     FG --> DEPTH["Map colours to the depth in use<br/>truecolor · 256 (indices 16–255 only) · 16 · none (L2-colour)"]
     DEPTH --> EMIT["Emit lines<br/>each exactly the requested width (NFR-8)<br/>colour sequences and cleaned text, nothing else (FR-34)"]
-    EMIT --> STATUS["Frame + status<br/>complete · still sharpening · no tiles · failed<br/>(failed: a panic was recovered — the last good rows are kept)"]
+    EMIT --> STATUS["Frame + status<br/>complete · still sharpening · no tiles<br/>(a recovered panic returns an empty frame and an internal error)"]
 ```
 
 ## The braille canvas

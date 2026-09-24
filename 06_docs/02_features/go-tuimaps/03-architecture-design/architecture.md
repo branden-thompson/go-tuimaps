@@ -241,7 +241,7 @@ flowchart LR
     end
     subgraph OUTB["Map → Host"]
       direction TB
-      B1["<b>The picture</b><br/>Render(size, now) → Frame: exactly-sized rows (NFR-8), valid until the next Render<br/>status: complete · still sharpening · no tiles · failed"]
+      B1["<b>The picture</b><br/>Render(size, now) → Frame: exactly-sized rows (NFR-8), valid until the next Render<br/>status: complete · still sharpening · no tiles; a recovered panic returns an empty frame and an internal error"]
       B2["<b>When to call again</b><br/>Changed() counter · NextCall(wallClock): the earliest of a marker phase, a retry time, an overlay going stale (FR-25, FR-32)"]
       B3["<b>The same facts as data</b><br/>Legend() · Credits() · Scale() (FR-13, FR-14, FR-33)<br/>Footer(): centre and zoom in upstream's wording (P-57)<br/>Describe(places): each part ready or pending (D-52) · Focused()"]
       B4["<b>What went wrong</b><br/>errors of a closed list of kinds · Warnings() ≤ 64 (NFR-20)<br/>CheckRamp(ramp, ground) for a host's own tests (D-53, D-88)"]

@@ -20,10 +20,10 @@ One public package. Everything a host hands in is a plain struct (D-74); everyth
 | Places and markers | `SetPlaces(places)` · `AddPlace(place)` · `RemovePlace(id)` — each place a name, a position, a marker style and an id | Places are what `Describe` answers for and what `FitTo` can fit; markers are how they are drawn (FR-26). Separate from overlays: they are the host's "my places", not data. **As upstream (P-61):** an id left empty defaults to the position written to six decimal places, and `RemovePlace` removes every place with that id |
 | Overlays | `Set(overlay)` · `Remove(id)` · `InUse(id)` | Section 4 |
 | Look | `SetPalette(tokens)` · `SafeRamps(on)` · `Ground(painted or declared)` · `ColourDepth(hint)` · `ReduceMotion(on)` · `Layers(on, off)` · `LabelLanguage(code)` | All take effect at the next `Render`; none re-parses a tile, except the language, which is part of the tile cache key (D-82) |
-| Tiles | `Source(named source)` · `CacheRoot(path)` · `Fetcher(replacement)` · `SharedCaches(handle)` · `CacheUse()` · `Purge()` · `Verify()` | Nothing is reached until `Source` is called (D-65). Section 8 for shared caches. `CacheUse` reports, for each memory cache, the bytes live views need, the bytes held, and the cap (D-90). `Purge` and `Verify` are the disk cache's two maintenance calls (FR-22a) |
+| Tiles | `Source(named source)` · `CacheRoot(dir, capBytes)` · `Fetcher(replacement)` · `SharedCaches(handle)` · `CacheUse()` · `Purge()` · `Verify()` | Nothing is reached until `Source` is called (D-65). Section 8 for shared caches. `CacheUse` reports, for each memory cache, the bytes live views need, the bytes held, and the cap (D-90). `Purge` and `Verify` are the disk cache's two maintenance calls (FR-22a) |
 | Running the work | `Pending()` · `Work(ctx)` · `Settle(ctx)` · `OnPending(func)` | Section 2 |
 | The picture | `Render(size, now)` → `Frame` | Section 5. **`now` is the wall clock (D-114).** Markers move on it too, unless the host takes the animation clock over with `Animate(at)` and gives it back with `FollowClock()`. Staleness is always the wall clock's, so a frozen animation clock cannot hide old data (FR-32). *A host that passes a fixed instant for reproducibility sees data that is never stale: that is the cost of A, put to HUM LEAD and taken.* |
-| When to call again | `Changed()` · `NextCall(wallClock)` | The counter moves whenever a redraw would differ. `NextCall` is the earliest of: the next marker phase, a failed tile's retry time, an overlay going stale — on the wall clock, which is passed in separately from animation time (FR-25, FR-32) |
+| When to call again | `Changed()` · `NextCall(wallClock)` | The counter moves on every call that changes an input — `Set`, `Remove`, the look, places, the view — and inside `Render` when the frame differs. **A tile or picture that `Work` lands reaches it only at the next `Render`** (v0.2.0 closes this: D-66). `NextCall` is the earliest of: the next marker phase, a failed tile's retry time, an overlay going stale — on the wall clock, which is passed in separately from animation time (FR-25, FR-32) |
 | The same facts as data | `Legend()` · `Credits()` · `Scale()` · `Footer()` · `Describe(places)` | `Footer` is the centre and zoom in upstream's own wording, cut with floor as upstream cuts it (P-57); it is drawn inside the map only if the host turns that furniture layer on, and it is off by default. `Describe` returns what it has at once, with each part marked **ready** or **pending**; the pending parts are computed by `Work` (FR-29) |
 | What went wrong | errors of a closed list of kinds · `Warnings()` · `CheckRamp(ramp, ground)` | Section 7 |
 
@@ -45,7 +45,7 @@ sequenceDiagram
     loop while Work reports it did something
         P->>M: Work(ctx)
         Note over M: one job, on the pump's goroutine: fetch, gate, decode, store.<br/>No lock is held while it fetches or decodes.
-        M-->>P: did work · released ids, if any (D-86) · error, if any (kind 'cancelled' when ctx ends)
+        M-->>P: did work · error, if any (kind 'cancelled' when ctx ends)
         P-)U: "map changed" — the host's own message
     end
     U->>M: Render(size, now)
@@ -83,10 +83,9 @@ As first drawn, tiles became wanted only when `Render` noticed them missing, yet
 | `Set(overlay)` | created or replaced · **old geometry released: yes or no** · an error of a closed kind if refused — and a refused `Set` also leaves a warning, so a discarded error is still visible | blocks |
 | `Remove(id)` | found or not · released: yes or no | blocks |
 | `InUse(id)` | whether any host call is still reading that id's old geometry | blocks |
-| `Work`, `Settle` | among their results: the ids whose old geometry this call was the last to read | — |
 
 - With **one goroutine** making every call, "released" is always yes.
-- *The coordinator's reading, not a ruling:* D-86's record says the release is reported by "`Work` or `Render`". Under section 6 `Render` never runs beside `Set` or `Remove`, so it is never the last reader and has nothing to report; only `Work` and `Settle` carry released ids. Listed for HUM LEAD in the Plan of Record.
+- `Set` and `Remove` report the release at once. `Work` and `Settle` carry no released ids: with one goroutine making every owner call, nothing is still reading when `Set` or `Remove` returns.
 - The old shape keeps drawing from the library's **own simplified copy** until the new one is prepared.
 - **A shape large enough that it might have to be drawn straight from the host's memory** (FR-11's fallback) cannot rely on such a copy. So for any feature overlay of more than **30,303 vertices at the default shape cap** — the most whose unsimplified form *and* run index fit the cap together (constants, section 3) — **`Set` itself makes one linear pass and builds the run index that drawing from memory needs** (D-92). For these shapes this bullet, not the one above, governs a replacement: the new shape is drawn from the host's memory on the next frame, the old shape's copy and index are dropped, and the old geometry is released at once. Nothing vanishes. When a `Work` call has simplified the new shape for the view's bucket and that form fits the cache, drawing moves to it.
 - **The run index** is one bounding box — 16 bytes — for each run of 64 vertices: 0.25 byte a vertex, 203 KB for the synthetic 812,058-vertex worst case, 500 KB at the 2,000,000-vertex cap. It lives with the overlay for as long as the overlay is set, so the shape is drawable from memory at **any** later zoom without another `Set`. It counts as need (D-90): it is never evicted, and where it alone is over the shape cap the cache says so, as for tiles.
@@ -100,7 +99,7 @@ As first drawn, tiles became wanted only when `Render` noticed them missing, yet
 | Question | Answer |
 |---|---|
 | What is it | The rendered rows, each exactly the requested width, held as bytes the map owns; `Frame.Lines`, one string a row; plus its `Status` |
-| How long is it valid | **Until the next `Render` on the same map.** The buffers are reused; a host that keeps a frame copies it. `String()` copies |
+| How long is it valid | **Until the next `Render` on the same map.** The buffers are reused; a host that keeps a frame copies its `Lines` |
 | When is it reused unchanged, at no cost | When nothing that could change a cell has changed: view, size, depth, palette, safe ramps, ground, layers, language, focus, **the places**, reduce-motion, the overlays' versions, the tiles on hand, the marker phase, **each overlay's freshness**, and the frame's status. This list is the key; L2 Render's diagram points here rather than repeating it |
 | What does a changed frame cost | Only the rows that changed are rebuilt; a marker blink rebuilds the marker's row |
 
@@ -121,7 +120,7 @@ One map is used from two kinds of goroutine: the **owner** — the host's interf
 1. One lock guards the map's state. **It is never held across a fetch, a decode, a simplification or a description.** A job copies what it needs under the lock, works with the lock released, and publishes its result under the lock. **A shared-caches handle has a lock of its own.** Each map publishes what its view needs to the handle at the owner call that changes its view or size, and at `Close`; an eviction, in whichever map's `Work` it happens, reads only the handle. The order is always map, then handle — never the reverse — and `CacheUse` takes the handle's lock alone.
 2. `Render` takes the lock only to snapshot what is on hand and to note what is missing.
 3. `OnPending` is called with the lock released. It must not call the map. An **owner** call made from inside a hook **that an owner call fired** is detected — owner calls are one at a time, so a second one arriving while that hook runs can only be re-entry or misuse — and refused with the `reentrant-call` kind. A hook fired from inside a `Work` (section 2's one exception) arms nothing, because the owner may legally be mid-call. A pump call made from inside any hook cannot be told from a legal concurrent one and is not detected; the rule is documentation there.
-4. A panic inside any public call is recovered at that call's edge and returned as an error of the "internal" kind (or, for `Render`, a frame whose status is "failed" with the last good rows kept); the map stays usable. Out-of-memory is not recoverable and is not claimed to be.
+4. A panic inside any public call is recovered at that call's edge and returned as an error of the "internal" kind (for `Render` too: an empty frame with the error — there is no "failed" status and no last good rows); the map stays usable. Out-of-memory is not recoverable and is not claimed to be.
 
 ## 7 · Errors and warnings
 
@@ -165,7 +164,7 @@ The contract is designed for all of v1 and built for v0.1.0. Each deferred part 
 | Deferred | How it arrives | What v0.1.0 must already leave room for |
 |---|---|---|
 | Wind (vector grid) | A new overlay struct holding two grids | Nothing; the preset's name is reserved |
-| Image loops (FR-37) | `Image` gains `Frames []Frame`, each with its own valid time; zero frames means today's single image | **`NextCall` already has a frame-advance source** — it is simply absent when there are no frames. **Bytes:** frames share the map's image cap (0.25 MB by default, D-85), so a loop needs the host to raise it — ten 300×200 frames are 0.6 MB — and the over-cap error says what would fit |
+| Image loops (FR-37) | `Image` gains `Frames []Frame`, each with its own valid time; zero frames means today's single image | **`NextCall` gains a frame-advance source in v0.2.0** (L4.3); in v0.1.0 its sources are the marker blink, an overlay going stale and a failed tile's retry time. **Bytes:** frames share the map's image cap (0.25 MB by default, D-85), so a loop needs the host to raise it — ten 300×200 frames are 0.6 MB — and the over-cap error says what would fit |
 | Tile-image provider | A new overlay struct whose one non-data field is a function the host supplies. **It is called only from inside `Work`, on the host's goroutine, with `Work`'s context**; its failures take the same retry times as tiles; each tile it returns takes the image path | D-74's "plain data" holds for everything in v0.1.0; this is the one stated exception, and it is why the queue's job kinds are an open set internally |
 | Block renderer | A renderer option; the frame type does not change | The closed glyph list and the terminal matrix already cover its characters |
 | PMTiles source | A named source, wrapping the archive reader already inside v0.1.0 (D-58) | — |

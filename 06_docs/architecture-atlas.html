@@ -302,7 +302,7 @@ code{font-family:var(--mono);font-size:.92em}
     PAINT --&gt; FG[&#34;Choose each cell&#39;s foreground (FR-16, D-77)&lt;br/&gt;the line&#39;s own colour where it meets 3:1 on this cell; otherwise whichever of black and white contrasts more&#34;]
     FG --&gt; DEPTH[&#34;Map colours to the depth in use&lt;br/&gt;truecolor · 256 (indices 16–255 only) · 16 · none (L2-colour)&#34;]
     DEPTH --&gt; EMIT[&#34;Emit lines&lt;br/&gt;each exactly the requested width (NFR-8)&lt;br/&gt;colour sequences and cleaned text, nothing else (FR-34)&#34;]
-    EMIT --&gt; STATUS[&#34;Frame + status&lt;br/&gt;complete · still sharpening · no tiles · failed&lt;br/&gt;(failed: a panic was recovered — the last good rows are kept)&#34;]
+    EMIT --&gt; STATUS[&#34;Frame + status&lt;br/&gt;complete · still sharpening · no tiles&lt;br/&gt;(a recovered panic returns an empty frame and an internal error)&#34;]
 </pre></div></article><article class="dia" id="go-tuimaps-12"><div class="meta"><h3>The braille canvas</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-render.md</code></p></div><div class="canvas"><pre class="mermaid">flowchart LR
     G[&#34;Geometry in tile units&lt;br/&gt;small integers (D-75)&#34;] --&gt; P[&#34;Project to dot space&lt;br/&gt;2 dots across × 4 down per cell&#34;]
     P --&gt; C[&#34;Clip to the rectangle&lt;br/&gt;nothing is ever drawn outside it (FR-11)&#34;]
@@ -847,7 +847,7 @@ code{font-family:var(--mono);font-size:.92em}
     end
     subgraph OUTB[&#34;Map → Host&#34;]
       direction TB
-      B1[&#34;&lt;b&gt;The picture&lt;/b&gt;&lt;br/&gt;Render(size, now) → Frame: exactly-sized rows (NFR-8), valid until the next Render&lt;br/&gt;status: complete · still sharpening · no tiles · failed&#34;]
+      B1[&#34;&lt;b&gt;The picture&lt;/b&gt;&lt;br/&gt;Render(size, now) → Frame: exactly-sized rows (NFR-8), valid until the next Render&lt;br/&gt;status: complete · still sharpening · no tiles; a recovered panic returns an empty frame and an internal error&#34;]
       B2[&#34;&lt;b&gt;When to call again&lt;/b&gt;&lt;br/&gt;Changed() counter · NextCall(wallClock): the earliest of a marker phase, a retry time, an overlay going stale (FR-25, FR-32)&#34;]
       B3[&#34;&lt;b&gt;The same facts as data&lt;/b&gt;&lt;br/&gt;Legend() · Credits() · Scale() (FR-13, FR-14, FR-33)&lt;br/&gt;Footer(): centre and zoom in upstream&#39;s wording (P-57)&lt;br/&gt;Describe(places): each part ready or pending (D-52) · Focused()&#34;]
       B4[&#34;&lt;b&gt;What went wrong&lt;/b&gt;&lt;br/&gt;errors of a closed list of kinds · Warnings() ≤ 64 (NFR-20)&lt;br/&gt;CheckRamp(ramp, ground) for a host&#39;s own tests (D-53, D-88)&#34;]
@@ -866,7 +866,7 @@ code{font-family:var(--mono);font-size:.92em}
     loop while Work reports it did something
         P-&gt;&gt;M: Work(ctx)
         Note over M: one job, on the pump&#39;s goroutine: fetch, gate, decode, store.&lt;br/&gt;No lock is held while it fetches or decodes.
-        M--&gt;&gt;P: did work · released ids, if any (D-86) · error, if any (kind &#39;cancelled&#39; when ctx ends)
+        M--&gt;&gt;P: did work · error, if any (kind &#39;cancelled&#39; when ctx ends)
         P-)U: &#34;map changed&#34; — the host&#39;s own message
     end
     U-&gt;&gt;M: Render(size, now)
