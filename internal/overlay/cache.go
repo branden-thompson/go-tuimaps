@@ -98,38 +98,6 @@ func boxOf(west, south, east, north float64) Box {
 	return Box{MinX: fixed(x0), MinY: fixed(y0), MaxX: fixed(x1), MaxY: fixed(y1)}
 }
 
-// fingerprint is a sum of one run's coordinates, bit for bit.
-func fingerprint(ring []project.LonLat, run int) uint64 {
-	if run < 0 || run*runLength >= len(ring) {
-		return 0
-	}
-	sum := uint64(14695981039346656037)
-	for _, p := range ring[run*runLength : min((run+1)*runLength, len(ring))] {
-		// A word at a time: this guards against a host changing what it lent
-		// by mistake, not against someone trying to fool it.
-		sum = (sum ^ math.Float64bits(p.Lon)) * 1099511628211
-		sum = (sum ^ math.Float64bits(p.Lat)) * 1099511628211
-	}
-	return sum
-}
-
-// fingerprints are taken run by run at hand-in: the same runs as the index,
-// so that a read re-checks what it reads and no more.
-func fingerprints(o Overlay) map[[2]int][]uint64 {
-	out := map[[2]int][]uint64{}
-	for fi, f := range o.Features {
-		for ri, ring := range f.Rings {
-			runs := (len(ring) + runLength - 1) / runLength
-			sums := make([]uint64, runs)
-			for run := range runs {
-				sums[run] = fingerprint(ring, run)
-			}
-			out[[2]int{fi, ri}] = sums
-		}
-	}
-	return out
-}
-
 // Index is the run index of the version this reader holds, or nil if the
 // overlay is small enough never to need one.
 func (r *Reader) Index() []Box {
@@ -137,29 +105,6 @@ func (r *Reader) Index() []Box {
 		return nil
 	}
 	return r.h.index
-}
-
-// CheckRuns re-checks the runs a read is about to use against the
-// fingerprints taken at hand-in. A change while in use is a warning naming
-// the overlay, and false. With the borrow check off it checks nothing.
-func (r *Reader) CheckRuns(feature, ring, fromRun, toRun int) bool {
-	if r == nil || r.h == nil || r.h.prints == nil {
-		return true
-	}
-	sums, ok := r.h.prints[[2]int{feature, ring}]
-	if !ok || feature >= len(r.h.overlay.Features) || ring >= len(r.h.overlay.Features[feature].Rings) {
-		return true
-	}
-	borrowed := r.h.overlay.Features[feature].Rings[ring]
-	for run := max(fromRun, 0); run <= min(toRun, len(sums)-1); run++ {
-		if fingerprint(borrowed, run) != sums[run] {
-			r.store.mu.Lock()
-			r.store.warnLocked(fault.BorrowChanged, textsafe.Quote(r.id))
-			r.store.mu.Unlock()
-			return false
-		}
-	}
-	return true
 }
 
 // Register adds a live view of the overlays. It needs nothing until it

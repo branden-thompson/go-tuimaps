@@ -54,7 +54,6 @@ const (
 	NearDuplicateID       = fault.NearDuplicateID
 	UnknownToken          = fault.UnknownToken
 	SetRefused            = fault.SetRefused
-	BorrowChanged         = fault.BorrowChanged
 	NoWorkCalled          = fault.NoWorkCalled
 	TileFailed            = fault.TileFailed
 	CacheWriteFailed      = fault.CacheWriteFailed

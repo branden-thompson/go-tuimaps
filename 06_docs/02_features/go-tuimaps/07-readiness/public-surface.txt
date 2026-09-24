@@ -5,7 +5,6 @@ const AlertSevere
 const AlertUnknown
 const BadCurrency
 const BorderLayer
-const BorrowChanged
 const CacheRefused
 const CacheUnderNeed
 const CacheWriteFailed

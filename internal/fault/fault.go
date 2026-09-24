@@ -74,7 +74,6 @@ const (
 	NearDuplicateID
 	UnknownToken
 	SetRefused
-	BorrowChanged
 	NoWorkCalled
 	TileFailed
 	CacheWriteFailed
@@ -91,7 +90,7 @@ func (k WarningKind) String() string {
 	}
 	return [...]string{
 		"ramp-rule-broken", "unmatched-image-colours", "stale-overlay", "future-valid-time",
-		"implausible-unit", "near-duplicate-id", "unknown-token", "set-refused", "borrow-changed", "no-work-called",
+		"implausible-unit", "near-duplicate-id", "unknown-token", "set-refused", "no-work-called",
 		"tile-failed", "cache-write-failed", "render-failed", "cache-under-need",
 	}[k-1]
 }

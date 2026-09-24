@@ -70,11 +70,10 @@ type Overlay struct {
 
 // Caps are a store's limits, fixed when it is made.
 type Caps struct {
-	OverlayVertices int  // zero means 2,000,000
-	StoreVertices   int  // zero means 4,000,000
-	ShapeBytes      int  // the shape cache's cap; zero means 250,000
-	ImageBytes      int  // the image cap, at one byte a pixel; zero means 250,000
-	BorrowCheck     bool // fingerprint borrowed geometry at hand-in, and re-check what is read
+	OverlayVertices int // zero means 2,000,000
+	StoreVertices   int // zero means 4,000,000
+	ShapeBytes      int // the shape cache's cap; zero means 250,000
+	ImageBytes      int // the image cap, at one byte a pixel; zero means 250,000
 	// Classified is the pictures the maps of a shared set have already
 	// read. Nil means this store reads its own and shares them with nobody
 	// (D-116).
@@ -98,11 +97,10 @@ type held struct {
 	overlay  Overlay
 	vertices int
 	readers  int
-	retired  bool                // replaced or removed: released when its last reader leaves
-	kind     Kind                // a grid's type, resolved at hand-in
-	box      project.Box         // where it is, recorded at hand-in so fit-to needs no work (D-76)
-	index    []Box               // built inside Set for a shape that may be drawn from memory (D-92)
-	prints   map[[2]int][]uint64 // fingerprints by feature, ring and run, if the borrow check is on
+	retired  bool        // replaced or removed: released when its last reader leaves
+	kind     Kind        // a grid's type, resolved at hand-in
+	box      project.Box // where it is, recorded at hand-in so fit-to needs no work (D-76)
+	index    []Box       // built inside Set for a shape that may be drawn from memory (D-92)
 }
 
 // Store holds a map's overlays. Set and Remove never wait: a version that is
@@ -446,9 +444,6 @@ func (s *Store) HandIn(o Overlay) (SetResult, error) {
 	}
 	if vertices > s.IndexFrom() {
 		next.index = buildIndex(o) // one linear pass, inside Set, so the shape draws next frame (D-92)
-	}
-	if s.caps.BorrowCheck {
-		next.prints = fingerprints(o)
 	}
 	s.dropPreparedLocked(o.ID) // what was prepared from the old geometry is not this overlay's
 	s.current[o.ID] = next

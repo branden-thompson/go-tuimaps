@@ -68,45 +68,6 @@ func TestRunIndexBuiltInsideSet(t *testing.T) {
 	}
 }
 
-// TestBorrowCheckByRun and TestBorrowCheckWarnsOnMutation (10.5, 10.26):
-// geometry is fingerprinted run by run at hand-in, and a read re-checks only
-// the runs it reads.
-func TestBorrowCheckByRun(t *testing.T) {
-	s, err := NewStore(Caps{BorrowCheck: true})
-	if err != nil {
-		t.Fatal(err)
-	}
-	ring := circle(project.LonLat{Lon: -95, Lat: 38}, 3, 999)
-	s.HandIn(alert("warnings", ring))
-	r, _ := s.Read("warnings")
-	defer r.Done()
-	if !r.CheckRuns(0, 0, 0, 15) {
-		t.Fatal("untouched geometry failed its own check")
-	}
-	ring[700].Lat += 0.5 // the host changes what it lent, in run 10
-	if !r.CheckRuns(0, 0, 0, 9) {
-		t.Error("runs 0 to 9 were not touched, and the check of them failed")
-	}
-	if len(s.TakeWarnings()) != 0 {
-		t.Error("a warning with nothing wrong in what was read")
-	}
-	if r.CheckRuns(0, 0, 10, 10) {
-		t.Error("run 10 was changed while in use, and the check passed")
-	}
-	w := s.TakeWarnings()
-	if len(w) != 1 || w[0].Kind != fault.BorrowChanged || w[0].Subject.String() != "warnings" {
-		t.Errorf("warnings %+v; want one naming the overlay", w)
-	}
-	off := store(t)
-	off.HandIn(alert("warnings", ring))
-	quiet, _ := off.Read("warnings")
-	defer quiet.Done()
-	ring[5].Lat += 0.5
-	if !quiet.CheckRuns(0, 0, 0, 15) {
-		t.Error("with the check off nothing is fingerprinted and nothing fails")
-	}
-}
-
 // TestFallbackChosenByWholeCap and TestShapePinsNeverEvicted are plan task
 // 10.10 (D-90): a prepared form is cached when its vertices times 8.25 fit
 // the shape cap, and drawn from the host's memory when they do not; what a
