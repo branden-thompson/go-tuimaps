@@ -15,17 +15,22 @@ import (
 // Class is one step of a legend: the values it covers, the words for them,
 // and the colour it is drawn in where there is one.
 type Class struct {
-	Label  string // the range in words, in the overlay's own unit
+	Label  string // the range in words, in the overlay's own unit; for an alert, its severity
 	Colour RGB
-	Drawn  bool // false where the depth in use draws no colour at all
+	Drawn  bool   // false where the depth in use draws no colour at all
+	Mark   string // for an alert, the digit its outline repeats (D-65); empty otherwise
 }
 
 // LegendEntry is what one overlay puts on the map, as data (FR-18).
 type LegendEntry struct {
 	ID      string
 	Unit    string
-	Preset  string // "temperature", "radar", or empty for a host's own type
+	Preset  string // "temperature", "radar", "alert", or empty for a host's own type
 	Classes []Class
+	// Blended is, for an image or a field, the severities whose alert tint
+	// blends over it (L-11.1); under the others it is drawn over the tint,
+	// the warning carried by the outline, label and digit (L-11.4, D-27).
+	Blended []Severity
 }
 
 // Scaled is the scale of the map as data, in the terms the mark on the frame
@@ -77,14 +82,62 @@ func (m *Map) legendOf(id string) (LegendEntry, bool) {
 	case o.Image != nil:
 		kind = o.Image.Type
 	default:
-		return LegendEntry{}, false
+		return m.alertLegend(id, o)
 	}
 	resolved, err := overlay.ResolveType(kind)
 	if err != nil {
 		return LegendEntry{}, false
 	}
 	return LegendEntry{ID: id, Unit: kind.Unit, Preset: kind.Preset,
-		Classes: m.classesOf(resolved)}, true
+		Classes: m.classesOf(resolved), Blended: m.blendedUnder(resolved.Preset)}, true
+}
+
+// severities are the alert severities as the legend lists them, extreme
+// first, with the outline token each is drawn in.
+var severities = [5]struct {
+	severity Severity
+	outline  Token
+}{
+	{SeverityExtreme, colour.AlertExtremeOutline}, {SeveritySevere, colour.AlertSevereOutline},
+	{SeverityModerate, colour.AlertModerateOutline}, {SeverityMinor, colour.AlertMinorOutline},
+	{SeverityUnknown, colour.AlertUnknownOutline},
+}
+
+// alertLegend is an alert overlay's legend: the digit key (D-65), every
+// severity with its digit, its word and its outline's colour. A feature
+// overlay with no alert in it has no legend: it carries its own labels.
+func (m *Map) alertLegend(id string, o overlay.Overlay) (LegendEntry, bool) {
+	alert := false
+	for _, f := range o.Features {
+		alert = alert || overlay.SeverityOf(f) != 0
+	}
+	if !alert {
+		return LegendEntry{}, false
+	}
+	depth := m.depthInEffect()
+	ground := m.look.ground.Kind(m.look.palette)
+	entry := LegendEntry{ID: id, Preset: "alert"}
+	for _, s := range severities {
+		one := Class{Label: strings.ToLower(s.severity.Word()), Mark: s.severity.Digit()}
+		if depth != NoColour {
+			one.Colour, one.Drawn = m.look.palette.ResolveAt(s.outline, ground, depth)
+		}
+		entry.Classes = append(entry.Classes, one)
+	}
+	return entry, true
+}
+
+// blendedUnder is the severities whose tint blends over a preset's images,
+// as the map's blend search found it (L3.8).
+func (m *Map) blendedUnder(preset colour.Preset) []Severity {
+	m.searchBlendsLocked(m.depthInEffect())
+	var out []Severity
+	for tint, s := range severities {
+		if _, ok := m.look.blends.Strength(preset, tint); ok {
+			out = append(out, s.severity)
+		}
+	}
+	return out
 }
 
 // classesOf is one type's classes: one more than its breaks, each labelled

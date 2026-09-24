@@ -24,6 +24,8 @@ const (
 type Label struct {
 	X, Y       int // its first vertex
 	Name       textsafe.Text
+	Short      textsafe.Text // an alert's severity word, placed when the name does not fit (L-8.5)
+	Overlay    string        // the overlay an alert's label belongs to, for Frame.Dropped
 	Rank       int32
 	Ink        uint8
 	fromPoint  bool // placed from its point, not centred on it: a marker's label (P-60)
@@ -205,7 +207,11 @@ func (p *Painter) Shape(v project.View, s scene.Shape) error {
 	}
 	p.lines.Forcing(false)
 	if s.Label != "" && len(p.overlayLabels) < maxLabels {
-		p.overlayLabels = append(p.overlayLabels, Label{X: (box[0] + box[2]) / 2, Y: (box[1] + box[3]) / 2, Name: textsafe.Clean(s.Label), Ink: s.Role})
+		l := Label{X: (box[0] + box[2]) / 2, Y: (box[1] + box[3]) / 2, Name: textsafe.Clean(s.Label), Ink: s.Role}
+		if s.Word != "" {
+			l.Short, l.Overlay = textsafe.Clean(s.Word), s.Overlay
+		}
+		p.overlayLabels = append(p.overlayLabels, l)
 	}
 	return nil
 }

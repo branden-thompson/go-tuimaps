@@ -95,8 +95,9 @@ func Prepare(o Overlay, bucket int) ([]scene.Shape, error) {
 		}
 		shape := scene.Shape{Kind: kind, Role: uint8(f.Role), Label: LabelOf(f)}
 		if kind == scene.ShapeArea {
-			shape.Mark = SeverityOf(f).Digit()
+			shape.Mark, shape.Word = SeverityOf(f).Digit(), SeverityOf(f).Word()
 		}
+		shape.Overlay = o.ID
 		for _, ring := range rings {
 			prepared, err := prepareRing(ring, kind, tolerance)
 			if err != nil {

@@ -5,6 +5,7 @@ package tuimaps_test
 // its outline, at every depth.
 
 import (
+	"image/color"
 	"strings"
 	"testing"
 	"time"
@@ -118,5 +119,125 @@ func TestTheOutlineCarriesTheSeverityDigit(t *testing.T) {
 	}
 	if !strings.Contains(strings.Join(rows[1:len(rows)-1], "\n"), "1") {
 		t.Errorf("an area a few cells across carries no digit:\n%s", strings.Join(rows, "\n"))
+	}
+}
+
+// alertMap is the five alerts on a map with no tiles, drawn once.
+func alertMap(t *testing.T, cols, rows int, depth tuimaps.Depth) (*tuimaps.Map, tuimaps.Frame) {
+	t.Helper()
+	m, err := tuimaps.New(tuimaps.WithSize(cols, rows))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { m.Close() })
+	m.ColourDepth(depth)
+	must(t, m.Recentre(tuimaps.LonLat{Lon: -91, Lat: 35}))
+	must(t, m.Zoom(3.3-float64(149-cols)/80))
+	mustSet(t, m, fiveAlerts())
+	settle(t, m)
+	f, err := m.Render(tuimaps.Size{Cols: cols, Rows: rows}, noon)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return m, f
+}
+
+// TestALabelThatDoesNotFitFallsBackAndIsReported is L3.11 (L-8.5, L-8.7):
+// the hatch draws at sixteen colours as at none; at 69x12 a label that does
+// not fit falls back to its severity word, and Frame.Dropped names each label
+// the frame shortened or left out, with what stood in for it. At 149x38,
+// where every label fits, nothing is dropped.
+func TestALabelThatDoesNotFitFallsBackAndIsReported(t *testing.T) {
+	_, wide := alertMap(t, 149, 38, tuimaps.Colours16)
+	if !strings.ContainsAny(plainText(strings.Join(wide.Lines, "\n")), "╱╲╳") {
+		t.Error("no hatch at sixteen colours")
+	}
+	if wide.Dropped != nil {
+		t.Errorf("every label fits at 149x38, and the frame says %v were dropped", wide.Dropped)
+	}
+	_, small := alertMap(t, 69, 12, tuimaps.NoColour)
+	text := strings.Join(small.Lines, "\n")
+	if len(small.Dropped) == 0 {
+		t.Fatal("at 69x12 nothing was dropped, so this proves nothing")
+	}
+	fellBack := 0 // the five-alert scene at 69x12 drops only areas out of view
+	for _, d := range small.Dropped {
+		if d.Kind != tuimaps.DropAlertLabel || d.Overlay != "alerts" || !strings.Contains(d.Label, " · ") {
+			t.Errorf("a drop that does not name its alert: %+v", d)
+		}
+		if d.Shown != "" {
+			fellBack++
+			if !strings.HasSuffix(d.Label, d.Shown) || !strings.Contains(plainText(text), d.Shown) {
+				t.Errorf("%+v: the word shown is not the label's, or is not on the frame", d)
+			}
+		}
+	}
+	if fellBack != 0 {
+		t.Errorf("the areas dropped here lie outside the view, and a word was shown for one: %+v", small.Dropped)
+	}
+	// A label longer than the map is wide, on an area in the middle of it:
+	// its word stands in.
+	long := fiveAlerts()
+	long.Features = long.Features[1:2]
+	long.Features[0].Label = "Severe Thunderstorm Warning including the city of Little Rock and its suburbs until 9 PM"
+	long.Features[0].Rings = [][]tuimaps.LonLat{{{Lon: -95, Lat: 33}, {Lon: -87, Lat: 33}, {Lon: -87, Lat: 38}, {Lon: -95, Lat: 38}, {Lon: -95, Lat: 33}}}
+	m, err := tuimaps.New(tuimaps.WithSize(69, 12))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer m.Close()
+	must(t, m.Recentre(tuimaps.LonLat{Lon: -91, Lat: 35.5}))
+	must(t, m.Zoom(3.3))
+	mustSet(t, m, long)
+	settle(t, m)
+	f, err := m.Render(tuimaps.Size{Cols: 69, Rows: 12}, noon)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(f.Dropped) != 1 || f.Dropped[0].Shown != "SEVERE" || !strings.HasPrefix(f.Dropped[0].Label, "Severe Thunderstorm Warning") {
+		t.Fatalf("a label wider than the map: %+v; want it dropped with SEVERE shown", f.Dropped)
+	}
+	if !strings.Contains(plainText(strings.Join(f.Lines, "\n")), "SEVERE") {
+		t.Error("the word that stood in is not on the frame")
+	}
+}
+
+// TestTheLegendCarriesTheDigitKeyAndTheBlend is L3.11a (D-65) and L3.8's
+// legend report: an alert overlay's legend lists the five severities, each
+// with its digit and word, extreme first; an image's entry says which
+// severities' tints blend over it - all five for radar on the dark ground,
+// none on the light.
+func TestTheLegendCarriesTheDigitKeyAndTheBlend(t *testing.T) {
+	m, _ := alertMap(t, 80, 24, tuimaps.Truecolor)
+	mustSet(t, m, rainOver(t, -110, 20, -70, 50, color.NRGBA{R: 200, A: 255}))
+	var alert, radar *tuimaps.LegendEntry
+	for _, e := range m.Legend() {
+		switch e.Preset {
+		case "alert":
+			alert = &e
+		case "radar":
+			radar = &e
+		}
+	}
+	if alert == nil || radar == nil {
+		t.Fatalf("the legend has no alert entry or no radar entry: %+v", m.Legend())
+	}
+	want := [][2]string{{"4", "extreme"}, {"3", "severe"}, {"2", "moderate"}, {"1", "minor"}, {"?", "unknown"}}
+	if len(alert.Classes) != 5 {
+		t.Fatalf("the alert legend has %d classes: %+v", len(alert.Classes), alert.Classes)
+	}
+	for i, c := range alert.Classes {
+		if c.Mark != want[i][0] || c.Label != want[i][1] || !c.Drawn {
+			t.Errorf("class %d: %+v; want %s %s", i, c, want[i][0], want[i][1])
+		}
+	}
+	if len(radar.Blended) != 5 {
+		t.Errorf("radar on the dark ground: blended under %v; want all five", radar.Blended)
+	}
+	must(t, m.Ground(tuimaps.RGB{R: 250, G: 250, B: 245}))
+	for _, e := range m.Legend() {
+		if e.Preset == "radar" && len(e.Blended) != 0 {
+			t.Errorf("radar on the light ground: blended under %v; want none", e.Blended)
+		}
 	}
 }

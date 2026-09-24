@@ -72,7 +72,7 @@ type DropKind uint8
 
 // The things a frame may leave out (v0.2.0 L3.11, L3.13).
 const (
-	DropAlertLabel DropKind = iota + 1 // an alert's label did not fit, and nothing stood in for it
+	DropAlertLabel DropKind = iota + 1 // an alert's label did not fit; Shown is its severity word if that fitted, else empty
 	DropPlaceName                      // a place's name did not fit; Shown is what stood in for it, if anything
 )
 
@@ -422,7 +422,11 @@ func (m *Map) Render(size Size, now time.Time) (frame Frame, err error) {
 	if err != nil {
 		return Frame{}, err
 	}
-	return Frame{Lines: drawn.Lines, Status: Status(drawn.Status), Changed: m.changed, FrameTicks: m.play.ticks}, nil
+	frame = Frame{Lines: drawn.Lines, Status: Status(drawn.Status), Changed: m.changed, FrameTicks: m.play.ticks}
+	for _, d := range drawn.Dropped {
+		frame.Dropped = append(frame.Dropped, Drop{Kind: DropAlertLabel, Overlay: d.Overlay, Label: d.Label, Shown: d.Shown})
+	}
+	return frame, nil
 }
 
 // onHand is what can be drawn for the view now: each wanted tile, or what

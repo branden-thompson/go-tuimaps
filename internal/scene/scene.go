@@ -123,6 +123,10 @@ type Shape struct {
 	Role  uint8
 	Label string
 	Mark  string // an alert's severity digit, repeated along its outline (D-65); empty for anything else
+	Word  string // an alert's severity word: what its label falls back to when it does not fit (L-8.5)
+	// Overlay is the id of the overlay the shape came from, so that a label
+	// the frame drops can be named to the host.
+	Overlay string
 }
 
 // Field is a prepared scalar grid: each value classified once, on the host's

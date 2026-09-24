@@ -127,8 +127,15 @@ type Input struct {
 // Frame is a drawn map: one string a row, each exactly the view's width in
 // cells, holding colour sequences and cleaned text and nothing else.
 type Frame struct {
-	Lines  []string
-	Status Status
+	Lines   []string
+	Status  Status
+	Dropped []Drop // alert labels the frame shortened to their word or left out (L-8.5)
+}
+
+// Drop is one alert label the frame could not show whole: the overlay it
+// belongs to, the label, and the word that stood in for it, or empty.
+type Drop struct {
+	Overlay, Label, Shown string
 }
 
 // cell is one cell of the frame being composed.
@@ -264,6 +271,7 @@ type Renderer struct {
 	grid    *grid
 	order   []Drawn
 	labels  []Label
+	drops   []Drop    // this frame's dropped alert labels, the backing kept from frame to frame
 	lons    []float64 // the longitude of each dot column's centre, for this frame
 	lats    []float64 // the latitude of each dot row's
 	line    strings.Builder
@@ -383,7 +391,7 @@ func (r *Renderer) Draw(in Input) (Frame, error) {
 		return Frame{}, err
 	}
 	r.compose(in, status)
-	r.held = Frame{Lines: r.emit(in), Status: status}
+	r.held = Frame{Lines: r.emit(in), Status: status, Dropped: r.drops} // valid, as the lines are, until the next frame is composed
 	r.lastTiles = append(r.lastTiles[:0], in.Tiles...)
 	r.last, r.drawn = in, true
 	r.last.Tiles = nil
@@ -517,16 +525,29 @@ func (r *Renderer) compose(in Input, status Status) {
 	// a place name never hides a warning's word; they are not the basemap's
 	// labels and do not go when those are turned off.
 	g.world = box{}
+	r.drops = r.drops[:0]
 	for _, l := range r.painter.OverlayLabels() {
-		g.label(l)
+		if g.labelAt(l, []Point{{X: l.X, Y: l.Y}}) || textsafe.Width(l.Short) == 0 {
+			continue
+		}
+		// An alert's label that does not fit falls back to its severity word;
+		// either way the host is told (L-8.5). The outline's digit carries
+		// the severity whatever happens to the label (D-65).
+		short := l
+		short.Name = l.Short
+		shown := ""
+		if g.labelAt(short, []Point{{X: l.X, Y: l.Y}}) {
+			shown = l.Short.String()
+		}
+		r.drops = append(r.drops, Drop{Overlay: l.Overlay, Label: l.Name.String(), Shown: shown})
 	}
 	r.digits(in) // after the overlays' labels, before any name of the basemap's (D-65)
 	if !in.Labels {
 		r.markerNames() // the host's own places are not the basemap's names
 		r.bandNames()
 		r.shades()
-		if colourless(in.Depth) {
-			r.hatch()
+		if rampless(in.Depth) {
+			r.hatch() // at sixteen colours as at none (L-8.7)
 		}
 		return
 	}
@@ -568,8 +589,8 @@ func (r *Renderer) compose(in Input, status Status) {
 		r.markerNames() // P-60's own place, on every frame with no field on it
 	}
 	r.shades()
-	if colourless(in.Depth) {
-		r.hatch() // last of all: it fills what nothing else has taken (FR-18a)
+	if rampless(in.Depth) {
+		r.hatch() // last of all, at sixteen colours as at none (FR-18a, L-8.7): it fills what nothing else has taken
 	}
 }
 
