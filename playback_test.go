@@ -602,3 +602,57 @@ func TestThePathThroughThePublicMap(t *testing.T) {
 		t.Error("a loop played forward and FrameTicks did not move")
 	}
 }
+
+// TestAStepIsRedrawnNotReused is L3.1 (L-1.6): stepping the shown frame with
+// nothing else changed draws the new picture; below the top row, where the
+// frame time is, the rows differ.
+func TestAStepIsRedrawnNotReused(t *testing.T) {
+	m := world(t, 60, 18)
+	mustSet(t, m, flickerLoop(t, "radar", []int{-10, -5, 0}, -40, 60))
+	settle(t, m)
+	size := tuimaps.Size{Cols: 60, Rows: 18}
+	must(t, m.Step(-1)) // -5: rain
+	f, err := m.Render(size, noon)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rain := append([]string(nil), f.Lines[1:]...)
+	must(t, m.Step(1)) // 0: clear
+	f, err = m.Render(size, noon)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fmt.Sprint(f.Lines[1:]) == fmt.Sprint(rain) {
+		t.Error("a step from a rain frame to a clear one drew the same picture")
+	}
+}
+
+// TestTheFrameCarriesItsCounters is L3.2 (L-1.16, D-59, D-72): a frame
+// carries the Changed and FrameTicks it was drawn at.
+func TestTheFrameCarriesItsCounters(t *testing.T) {
+	m := world(t, 60, 18)
+	size := tuimaps.Size{Cols: 60, Rows: 18}
+	mustSet(t, m, flickerLoop(t, "radar", []int{-10, -5, 0}, -40, 60))
+	f, err := m.Render(size, noon)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if f.Changed != m.Changed() || f.Changed == 0 {
+		t.Errorf("a render after a Set carries Changed %d; the map says %d", f.Changed, m.Changed())
+	}
+	settle(t, m)
+	must(t, m.SetPlayback(tuimaps.PlaybackOn))
+	m.Animate(noon)
+	must(t, m.Play())
+	m.Animate(noon.Add(500 * time.Millisecond))
+	f, err = m.Render(size, noon)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if f.FrameTicks != m.FrameTicks() || f.FrameTicks == 0 {
+		t.Errorf("a render after an advance carries FrameTicks %d; the map says %d", f.FrameTicks, m.FrameTicks())
+	}
+	if f.Dropped != nil {
+		t.Errorf("nothing was dropped, and the frame says %v", f.Dropped)
+	}
+}

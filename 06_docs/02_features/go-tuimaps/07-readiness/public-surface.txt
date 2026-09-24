@@ -16,6 +16,8 @@ const Colours16
 const Colours256
 const Complete Status
 const Distinct
+const DropAlertLabel DropKind
+const DropPlaceName
 const Fahrenheit
 const FetchFailed
 const FetchRefused
@@ -167,11 +169,13 @@ type Caches struct{ Tiles CacheUse; Shapes CacheUse; Disk CacheUse }
 type Class struct{ Label string; Colour RGB; Drawn bool }
 type Depth = colour.Depth
 type Description struct{ Place string; Answers []Answer; Pending bool }
+type Drop struct{ Kind DropKind; Overlay string; Label string; Shown string }
+type DropKind uint8
 type Feature = overlay.Feature
 type FeatureKind = overlay.FeatureKind
 type Fetcher = fetch.Func
 type Finding = colour.Finding
-type Frame struct{ Lines []string; Status Status }
+type Frame struct{ Lines []string; Status Status; Changed uint64; FrameTicks uint64; Dropped []Drop }
 type Grid = overlay.Grid
 type Image = overlay.Image
 type Kind = fault.Kind

@@ -197,11 +197,7 @@ func (r *Renderer) image(in Input, ra *scene.Raster) {
 			} else if 3*int(class) > ra.ClassCount-1 {
 				shade = shadeMedium
 			}
-			area, owned := r.painter.Area(col, row)
-			if !owned {
-				area = 0
-			}
-			*c = cell{text: shade, ink: uint8(colour.LabelRegion), taken: true, area: area}
+			c.shade = max(c.shade, shade) // laid last, by shades: it claims nothing now (L-8.3)
 		}
 	}
 }

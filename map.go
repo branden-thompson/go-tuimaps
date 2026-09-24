@@ -55,9 +55,34 @@ func (s Status) String() string {
 
 // Frame is a drawn map: one string a row, each exactly the map's width in
 // cells. It is valid until the next Render.
+//
+// Changed and FrameTicks are the map's counters as this frame was drawn at
+// them (L-1.16), so a host can tell which frame is which without calling
+// again. Dropped is what the frame could not show and left out, each named:
+// nil when nothing was dropped.
 type Frame struct {
-	Lines  []string
-	Status Status
+	Lines               []string
+	Status              Status
+	Changed, FrameTicks uint64
+	Dropped             []Drop
+}
+
+// DropKind is what a frame left out.
+type DropKind uint8
+
+// The things a frame may leave out (v0.2.0 L3.11, L3.13).
+const (
+	DropAlertLabel DropKind = iota + 1 // an alert's label did not fit, and nothing stood in for it
+	DropPlaceName                      // a place's name did not fit; Shown is what stood in for it, if anything
+)
+
+// Drop is one thing a frame left out: what kind, the overlay or place it
+// belongs to, the text that was dropped, and what was shown instead.
+type Drop struct {
+	Kind    DropKind
+	Overlay string
+	Label   string
+	Shown   string
 }
 
 // SettleResult is what one Settle did.
@@ -397,7 +422,7 @@ func (m *Map) Render(size Size, now time.Time) (frame Frame, err error) {
 	if err != nil {
 		return Frame{}, err
 	}
-	return Frame{Lines: drawn.Lines, Status: Status(drawn.Status)}, nil
+	return Frame{Lines: drawn.Lines, Status: Status(drawn.Status), Changed: m.changed, FrameTicks: m.play.ticks}, nil
 }
 
 // onHand is what can be drawn for the view now: each wanted tile, or what

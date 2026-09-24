@@ -156,7 +156,7 @@ L4 comes before L3 in the build order, because L3.1 and L3.2 need to advance the
 
 | # | Task | Files | Shape | Test first (RED) |
 |---|---|---|---|---|
-| L3.1 | The frame-reuse test sees the shown frame (L-1.6) | `internal/render/frame.go` (`sameOverlays`), `internal/render/raster.go` | `scene.Raster` gains the shown frame's key; reuse compares it | `Step` the shown frame with nothing else changed: the frame is redrawn, not reused |
+| L3.1 | The frame-reuse test sees the shown frame (L-1.6) | `internal/render/frame.go` (`sameOverlays`), `internal/render/raster.go` | `scene.Raster` gains the shown frame's key; reuse compares it. *As built (L4.2): the map raises the renderer's overlays version whenever the moment shown changes, so reuse sees it without a key on the raster; the description's key reads the overlays' own version only (L-1.10e)* | `Step` the shown frame with nothing else changed: the frame is redrawn, not reused |
 | L3.2 | `Frame` carries `Changed` and `FrameTicks` (L-1.16) | `map.go` | `type Frame struct{ Lines []string; Status Status; Changed, FrameTicks uint64; Dropped []Drop }` (named as the methods, D-72); `type Drop struct{ Kind DropKind; Overlay, Label, Shown string }`, kinds `DropAlertLabel`, `DropPlaceName` | A render after a `Set` carries the new `Changed`; after a frame advance, the new `FrameTicks` |
 | L3.3 | Furniture is never erased by an image or field at NoColour: outline, hatch, label, marker (L-8.3) | `internal/render/field.go`, `internal/render/frame.go` | Shade cells yield to them | Specimen 29's scene at NoColour: each present (today they vanish) |
 | L3.4 | The same at NoColour for the `stale` word, the notice, the frame time, the scale and the credit (L-8.3) | same | — | Specimen 29's scene: each present |

@@ -132,10 +132,11 @@ type cell struct {
 	text   string // a cluster of text, which wins over dots (P-10); empty for a dot cell
 	glyph  rune
 	ink    uint8
-	area   uint8 // the ink of the area that owns the cell's background, or 0
-	under  uint8 // the ink of the field or image class that colours the cell, or 0
-	taken  bool  // text occupies the cell: a label, or the second half of a wide character
-	strict bool  // the cell holds text, held to the text contrast
+	area   uint8  // the ink of the area that owns the cell's background, or 0
+	under  uint8  // the ink of the field or image class that colours the cell, or 0
+	taken  bool   // text occupies the cell: a label, or the second half of a wide character
+	strict bool   // the cell holds text, held to the text contrast
+	shade  string // with no ramp, an image's shade: laid last, only where nothing else claimed the cell (L-8.3)
 }
 
 type box struct{ left, right, top, bottom int }
@@ -515,6 +516,7 @@ func (r *Renderer) compose(in Input, status Status) {
 	if !in.Labels {
 		r.markerNames() // the host's own places are not the basemap's names
 		r.bandNames()
+		r.shades()
 		if colourless(in.Depth) {
 			r.hatch()
 		}
@@ -557,8 +559,32 @@ func (r *Renderer) compose(in Input, status Status) {
 	if len(r.painter.BandLabels()) == 0 {
 		r.markerNames() // P-60's own place, on every frame with no field on it
 	}
+	r.shades()
 	if colourless(in.Depth) {
 		r.hatch() // last of all: it fills what nothing else has taken (FR-18a)
+	}
+}
+
+// shades lays an image's shade, with no ramp to colour it by, in every cell
+// nothing else has claimed: the outline, the hatch's alert label, a marker,
+// a name and the frame's own furniture all come first, so an image never
+// erases them (L-8.3). Inside rain the shade fills the cell and the hatch
+// cannot draw there; the outline carries the severity (D-65).
+func (r *Renderer) shades() {
+	g := r.grid
+	for i := range g.cells {
+		c := &g.cells[i]
+		// Text written into a cell replaces it whole, pending shade and all,
+		// so a cell with a shade still pending holds no text; a line's dots
+		// are the one claim left to yield to.
+		if c.shade == "" || c.glyph != blank {
+			continue
+		}
+		area, owned := r.painter.Area(i%g.cols, i/g.cols)
+		if !owned {
+			area = 0
+		}
+		*c = cell{text: c.shade, ink: uint8(colour.LabelRegion), taken: true, area: area}
 	}
 }
 

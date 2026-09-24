@@ -99,7 +99,7 @@ As first drawn, tiles became wanted only when `Render` noticed them missing, yet
 
 | Question | Answer |
 |---|---|
-| What is it | The rendered rows, each exactly the requested width, held as bytes the map owns; `Frame.Lines`, one string a row; plus its `Status` |
+| What is it | The rendered rows, each exactly the requested width, held as bytes the map owns; `Frame.Lines`, one string a row; plus its `Status`; **`Frame.Changed` and `Frame.FrameTicks`, the counters it was drawn at** (v0.2.0 L3.2); and **`Frame.Dropped`**, what it left out, each a `Drop` of a `DropKind` (`DropAlertLabel`, `DropPlaceName`) naming the overlay or place, the text dropped and what stood in for it, nil when nothing was (filled by L3.11 and L3.13) |
 | How long is it valid | **Until the next `Render` on the same map.** The buffers are reused; a host that keeps a frame copies its `Lines` |
 | When is it reused unchanged, at no cost | When nothing that could change a cell has changed: view, size, depth, palette, safe ramps, ground, layers, language, focus, **the places**, reduce-motion, the overlays' versions, **the moment a loop shows** (v0.2.0 L4.2), the tiles on hand, the marker phase, **each overlay's freshness**, and the frame's status. This list is the key; L2 Render's diagram points here rather than repeating it |
 | What does a changed frame cost | Only the rows that changed are rebuilt; a marker blink rebuilds the marker's row |
@@ -182,7 +182,7 @@ its doc comment and in the sections above.
 |---|---|
 | The map | `Map`, `New`, `Option`, `WithSize`, `Embed`, `SharedCaches`, `NewShared`, `Shared`, `Shared.Use`, `Size`, `Frame`, `Status` (`Complete`, `Sharpening`, `NoTiles`; `Status.String`), `SettleResult`, `MinZoom`, `MaxZoom` |
 | Running the work | `Map.Work`, `Map.Pending`, `Map.Settle`, `Map.OnPending`, `Map.InFlight`, `Map.Close` |
-| The picture | `Map.Render`, `Map.Changed`, `Map.FrameTicks`, `Map.NextCall`, `Map.Animate`, `Map.FollowClock` |
+| The picture | `Map.Render`, `Frame`, `Drop`, `DropKind` (`DropAlertLabel`, `DropPlaceName`), `Map.Changed`, `Map.FrameTicks`, `Map.NextCall`, `Map.Animate`, `Map.FollowClock` |
 | Playback (v0.2.0 WP-L4) | `Playback` (`PlaybackOff`, `PlaybackOn`), `Map.SetPlayback`, `Map.SetPlaybackStep`, `Map.Play`, `Map.Stop`, `Map.Reset`, `Map.Step`, `Map.Loop`, `LoopState`, `OffReason` (`OffReduceMotion`, `OffByHost`, `OffByDefault`) |
 | The view | `Map.Centre`, `Map.Zoom`, `Map.ZoomBy`, `Map.PanCells`, `Map.Recentre`, `Map.FitWorld`, `Map.FitTo`, `Map.DeepestZoom` |
 | Places and markers | `Place`, `Positioned`, `LonLat`, `MarkerStyle` (`MarkerDot`, `MarkerCross`, `MarkerDiamond`, `MarkerRing`, `MarkerDisc`, `MarkerGlyph`), `Map.SetPlaces`, `Map.AddPlace`, `Map.RemovePlace`, `Map.Places` |
