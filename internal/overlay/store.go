@@ -101,6 +101,7 @@ type held struct {
 	kind     Kind        // a grid's type, resolved at hand-in
 	box      project.Box // where it is, recorded at hand-in so fit-to needs no work (D-76)
 	index    []Box       // built inside Set for a shape that may be drawn from memory (D-92)
+	charge   int64       // what it costs the image budget: an image's files and pixels, a grid's field
 }
 
 // Store holds a map's overlays. Set and Remove never wait: a version that is
@@ -120,6 +121,7 @@ type Store struct {
 	pictures   map[string][]picture            // decoded pictures, by overlay id, one a frame
 	spare      map[string]map[[32]byte]picture // a replaced loop's decoded frames, by key, for its refresh to keep (L-1.7)
 	decodes    int                             // pictures decoded, counted so a test can see a refresh reuse them
+	budget     int64                           // what the images may hold in all (L-12.1)
 	fromMemory map[string]bool                 // overlays whose prepared form is larger than the whole cap
 	views      map[*ShapeView]int              // live views, and the bucket each draws at
 	released   []string
@@ -148,7 +150,7 @@ func NewStore(c Caps) (*Store, error) {
 	if c.ImageBytes == 0 {
 		c.ImageBytes = defaultImageBytes
 	}
-	return &Store{caps: c, current: map[string]*held{}, retiring: map[string]int{}, prepared: map[string]map[int]*prepared{}, fields: map[string]scene.Field{}, pictures: map[string][]picture{}, spare: map[string]map[[32]byte]picture{}, fromMemory: map[string]bool{}, views: map[*ShapeView]int{}}, nil
+	return &Store{budget: defaultImageBudget, caps: c, current: map[string]*held{}, retiring: map[string]int{}, prepared: map[string]map[int]*prepared{}, fields: map[string]scene.Field{}, pictures: map[string][]picture{}, spare: map[string]map[[32]byte]picture{}, fromMemory: map[string]bool{}, views: map[*ShapeView]int{}}, nil
 }
 
 func refused(kind fault.Kind, why, todo textsafe.Text) error {
@@ -424,6 +426,10 @@ func (s *Store) HandIn(o Overlay) (SetResult, error) {
 				textsafe.Const("remove an overlay first, or simplify the geometry before handing it in"))
 		}
 	}
+	charge := chargeOf(o)
+	if err == nil {
+		err = s.fitsBudgetLocked(o.ID, charge)
+	}
 	if err != nil {
 		s.warnLocked(fault.SetRefused, textsafe.Quote(o.ID)) // a discarded error still shows
 		return SetResult{}, err
@@ -440,7 +446,7 @@ func (s *Store) HandIn(o Overlay) (SetResult, error) {
 			}
 		}
 	}
-	next := &held{overlay: o, vertices: vertices, box: boxOfOverlay(o)}
+	next := &held{overlay: o, vertices: vertices, box: boxOfOverlay(o), charge: charge}
 	if o.Image != nil {
 		next.kind, _ = ResolveType(o.Image.Type) // it resolved a moment ago, in check
 	}
@@ -458,6 +464,72 @@ func (s *Store) HandIn(o Overlay) (SetResult, error) {
 	s.current[o.ID] = next
 	s.vertices += vertices
 	return res, nil
+}
+
+// chargeOf is what an overlay costs the image budget: an image's files and
+// pixels, or a grid's field at one byte a cell. Features cost it nothing:
+// the shape cache has its own cap.
+func chargeOf(o Overlay) int64 {
+	if o.Grid != nil {
+		return int64(o.Grid.Cols) * int64(o.Grid.Rows)
+	}
+	return imageCharge(o.Image)
+}
+
+// SetBudget sets what the map's images may hold in all. Zero or less is the
+// library's own, 6 MiB. Lowering it below what is held drops nothing; the
+// next hand-in that does not fit is refused (D-72). A host that raises it
+// owns the memory it asks for.
+func (s *Store) SetBudget(bytes int64) {
+	if s == nil {
+		return
+	}
+	if bytes <= 0 {
+		bytes = defaultImageBudget
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.budget = bytes
+}
+
+// ImageUse is what the budget counts now: every image's and grid's charge,
+// and the shared classified set. The shared set counts in full, even where it
+// holds this map's own pictures, so the count errs high, never low (L-12.6).
+func (s *Store) ImageUse() int64 {
+	if s == nil {
+		return 0
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.imageUseLocked()
+}
+
+func (s *Store) imageUseLocked() int64 {
+	total := int64(0)
+	for _, h := range s.current {
+		total += h.charge
+	}
+	shared, _ := s.caps.Classified.Bytes()
+	return total + shared
+}
+
+// fitsBudgetLocked refuses a hand-in that would take the images over the
+// budget, saying by how much. The version it replaces is not counted.
+func (s *Store) fitsBudgetLocked(id string, charge int64) error {
+	if charge == 0 {
+		return nil
+	}
+	use := s.imageUseLocked() + charge
+	if old, ok := s.current[id]; ok {
+		use -= old.charge
+	}
+	if use <= s.budget {
+		return nil
+	}
+	return refused(fault.OverImageCap,
+		textsafe.Join(textsafe.Const("with it the map's images would come to "), textsafe.Clean(grouped(int(use))), textsafe.Const(" bytes, "),
+			textsafe.Clean(grouped(int(use-s.budget))), textsafe.Const(" over its image budget of "), textsafe.Clean(grouped(int(s.budget)))),
+		textsafe.Const("hand in fewer or smaller frames, remove an image, or raise the budget with SetImageBudget"))
 }
 
 // spareFramesLocked keeps, by key, the decoded frames of the loop an overlay

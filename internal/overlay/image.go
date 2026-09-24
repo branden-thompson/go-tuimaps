@@ -25,6 +25,10 @@ const (
 	maxPNGBytes = 8 << 20
 	// defaultImageBytes is the map's image cap, at one byte a pixel (D-85, D-36).
 	defaultImageBytes = 250_000
+	// defaultImageBudget is what a map's images may hold in all (L-12.1, D-68).
+	defaultImageBudget = 6 << 20
+	// fileSlack is what a picture's file may carry beyond four bytes a pixel (L-12.4).
+	fileSlack = 64 << 10
 	// maxTable, defaultTolerance, maxTolerance and maxSamples are FR-9's bounds.
 	maxTable         = 256
 	defaultTolerance = 10.0
@@ -119,6 +123,11 @@ func checkPNG(file []byte, imageCap int) error {
 	pixels := uint64(w) * uint64(h)
 	if w > maxPixels || h > maxPixels || pixels > maxPixels {
 		return refused(fault.OverImageCap, textsafe.Const("it has more than 1,048,576 pixels"), textsafe.Const("hand in a smaller image: a terminal map shows a few thousand cells"))
+	}
+	if uint64(len(file)) > 4*pixels+fileSlack {
+		return refused(fault.OverImageCap,
+			textsafe.Join(textsafe.Const("its file is "), textsafe.Clean(grouped(len(file))), textsafe.Const(" bytes, more than four bytes a pixel and 64 KiB for its "), textsafe.Clean(grouped(int(pixels))), textsafe.Const(" pixels")),
+			textsafe.Const("hand in the picture without the padding or extra chunks it carries"))
 	}
 	if pixels > uint64(imageCap) {
 		return refused(fault.OverImageCap,
@@ -223,6 +232,32 @@ func copied(img *Image) (*Image, error) {
 		own.Frames[i] = f
 	}
 	return &own, nil
+}
+
+// imageCharge is what an image costs the map's budget (L-12.4): every
+// picture's retained file, and its classified pixels at one byte a pixel,
+// read from the header it was checked by. A gap costs nothing.
+func imageCharge(img *Image) int64 {
+	if img == nil {
+		return 0
+	}
+	one := func(file []byte) int64 {
+		w, h, _, err := header(file)
+		if err != nil {
+			return int64(len(file))
+		}
+		return int64(len(file)) + int64(w)*int64(h)
+	}
+	if len(img.Frames) == 0 {
+		return one(img.PNG)
+	}
+	total := int64(0)
+	for _, f := range img.Frames {
+		if !f.Gap {
+			total += one(f.PNG)
+		}
+	}
+	return total
 }
 
 func cloneBytes(b []byte) []byte {

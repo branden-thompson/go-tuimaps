@@ -132,6 +132,7 @@ method Map.Render(Size, time.Time) (Frame, error)
 method Map.SafeRamps(bool)
 method Map.Scale() (Scaled, bool)
 method Map.Set(Overlay) (SetResult, error)
+method Map.SetImageBudget(int64) error
 method Map.SetPalette(map[string]RGB) ([]string, error)
 method Map.SetPlaces([]Place) ([]string, error)
 method Map.SetStyle([]byte) error

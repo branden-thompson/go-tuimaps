@@ -296,3 +296,94 @@ func TestTheKeyHoldsAValuesExactBits(t *testing.T) {
 		t.Error("two images a nanodegree apart share a key")
 	}
 }
+
+// TestTheBudgetRefusesAndSaysByHowMuch is L2.6 (L-12.1, D-72): a hand-in
+// over the budget is refused, saying by how much; lowering the budget below
+// what is held drops nothing, and refuses the next hand-in that does not fit.
+func TestTheBudgetRefusesAndSaysByHowMuch(t *testing.T) {
+	s := store(t)
+	loop := loopOf(frameAt(t, 1, rain), frameAt(t, 0, storm))
+	need := imageCharge(loop.Image)
+	s.SetBudget(need - 10)
+	_, err := s.HandIn(loop)
+	if !isKind(err, fault.OverImageCap) || !strings.Contains(err.Error(), "10 over") {
+		t.Fatalf("a loop 10 bytes over the budget: %v; want a refusal that says it is 10 over", err)
+	}
+	s.SetBudget(need)
+	if _, err := s.HandIn(loop); err != nil {
+		t.Fatalf("a loop that fits exactly: %v", err)
+	}
+	classesOf(t, s, "loop")
+	s.SetBudget(1)
+	if _, _, ok := s.Raster("loop"); !ok {
+		t.Error("lowering the budget dropped what was held")
+	}
+	if s.ImageUse() != need {
+		t.Errorf("after lowering the budget the store counts %d, want the %d it held", s.ImageUse(), need)
+	}
+	other := loopOf(frameAt(t, 0, rain))
+	other.ID = "second"
+	if _, err := s.HandIn(other); !isKind(err, fault.OverImageCap) {
+		t.Errorf("the next hand-in over a lowered budget: %v", err)
+	}
+	// A refresh of the same id is counted without the version it replaces.
+	s.SetBudget(need)
+	if _, err := s.HandIn(loop); err != nil {
+		t.Errorf("a refresh of the same size under a budget that holds one: %v", err)
+	}
+}
+
+// TestTheBudgetCountsEveryPart is L2.7 (L-12.4, L-12.6): the budget counts
+// each frame's retained PNG bytes and its classified pixels, a grid's field,
+// and the shared classified set, checked against a hand count.
+func TestTheBudgetCountsEveryPart(t *testing.T) {
+	shared := NewClassified(0)
+	s, err := NewStore(Caps{Classified: shared})
+	if err != nil {
+		t.Fatal(err)
+	}
+	frames := []LoopFrame{frameAt(t, 2, rain), gapAt(1), frameAt(t, 0, storm)}
+	if _, err := s.HandIn(loopOf(frames...)); err != nil {
+		t.Fatal(err)
+	}
+	byHand := int64(len(frames[0].PNG) + len(frames[2].PNG) + 2*8*6) // two pictures of 8x6, one byte a pixel; the gap is nothing
+	if got := s.ImageUse(); got != byHand {
+		t.Errorf("a loop before any work: counted %d, by hand %d", got, byHand)
+	}
+	classesOf(t, s, "loop")
+	held, _ := shared.Bytes()
+	if held == 0 {
+		t.Fatal("the shared set holds nothing, so this proves nothing")
+	}
+	byHand += held
+	grid := Overlay{ID: "temps", Valid: noon, Keeps: time.Hour, Grid: &Grid{West: -90, South: 30, East: -80, North: 40, Cols: 5, Rows: 4, Values: make([]float64, 20), Type: Type{Preset: "temperature", Unit: "C"}}}
+	if _, err := s.HandIn(grid); err != nil {
+		t.Fatal(err)
+	}
+	byHand += 5 * 4
+	if got := s.ImageUse(); got != byHand {
+		t.Errorf("a loop, the shared set and a grid: counted %d, by hand %d", got, byHand)
+	}
+}
+
+// TestAFramesFileIsCappedByItsPixels is L2.8 (L-12.4): a picture's file may
+// be at most four bytes a pixel and 64 KiB; a padded one is refused, and an
+// honest one of the same size passes.
+func TestAFramesFileIsCappedByItsPixels(t *testing.T) {
+	honest := picturePNG(t, 500, 500, func(x, y int) color.Color {
+		if (x/50+y/50)%2 == 0 {
+			return rain
+		}
+		return storm
+	})
+	if err := checkPNG(honest, defaultImageBytes); err != nil {
+		t.Fatalf("an honest 250,000-pixel picture: %v", err)
+	}
+	padded := append(append([]byte(nil), honest...), make([]byte, 4*250_000+64<<10+1-len(honest))...)
+	if err := checkPNG(padded, defaultImageBytes); !isKind(err, fault.OverImageCap) {
+		t.Errorf("a 250,000-pixel picture padded one byte past four bytes a pixel and 64 KiB: %v", err)
+	}
+	if err := checkPNG(padded[:len(padded)-1], defaultImageBytes); err != nil {
+		t.Errorf("padded to exactly the limit: %v", err)
+	}
+}

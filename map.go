@@ -455,3 +455,25 @@ func (m *Map) Close() int {
 	}
 	return int(m.inside.Load())
 }
+
+// SetImageBudget sets what the map's images and grids may hold in all: each
+// picture's file and its pixels at a byte each, each grid's field, and the
+// shared classified set (L-12.1). Zero or less is the library's own, 6 MiB.
+// A Set that would go over it is refused, saying by how much; lowering it
+// below what is held drops nothing. A host that raises it owns the memory it
+// asks for.
+func (m *Map) SetImageBudget(bytes int64) (err error) {
+	defer guard("SetImageBudget", &err)
+	m.plant("SetImageBudget")
+
+	if m == nil {
+		return closed()
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.shut {
+		return closed()
+	}
+	m.store.SetBudget(bytes)
+	return nil
+}
