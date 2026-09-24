@@ -8,7 +8,7 @@ authority: HUM LEAD
 directives: FULL GIT; FULL DOCS; FULL REPORTS; FULL DIAGRAMS; FULL RCC; FULL PLAN; FULL TDD; FULL INST
 branch: feature/radar-loops
 issue: "branden-thompson/go-tuimaps#2"
-status: "FOR THE HUM LEAD'S APPROVAL — PLAN's exit artefact"
+status: "APPROVED by the HUM LEAD 2026-09-23 (D-73) as presented; the PLAN phase artefact"
 ---
 
 # go-tuiMaps v0.2.0 — Radar loops — PLAN REPORT
@@ -122,7 +122,8 @@ QUALITY GATE REPORT | go-tuiMaps v0.2.0 | SEV-0 | PLAN exit
   [PASS] specimens                  : OW-2 drawn twice (32, 33) and ruled (D-65); OW-11 (30)
   [PASS] critical_analysis_complete : internal plan check + 1 red-team round, every finding dispositioned
   [PASS] scripts/gate               : green — see 06_docs/gate-runs.md
-  [PEND] human_approval             : this report
+  [PASS] human_approval             : D-73, 2026-09-23 — "APPROVED for BOTH; GO 4 BUILD"
+  OVERALL: ALL PASS — PLAN closed
 -------------------------------------------------------------
 ```
 

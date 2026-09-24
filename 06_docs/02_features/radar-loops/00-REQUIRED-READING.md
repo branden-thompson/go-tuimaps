@@ -18,7 +18,7 @@ and every lesson that can be a failing test becomes one.**
 | | |
 |---|---|
 | Branch | `feature/radar-loops`, cut from `feature/go-tuimaps` (full history) → squash-merged `release/v0.2.0` at SHIP (D-1) |
-| Phase | **PLAN OPEN** since 2026-09-23 (D-49). DISCOVER closed: `08-reports/discover-report.md` (APPROVED). The plan designs against `01-objectives/requirements.md`; **no code in PLAN** — signatures and API shape only. Update this row at every phase transition |
+| Phase | **BUILD OPEN** since 2026-09-23 (D-73). PLAN closed: `08-reports/plan-report.md` (APPROVED); the plan is `04-development/implementation-plan.md`, test-first, starting with WP-L1; release candidates per landed package (D-69). Update this row at every phase transition |
 | Brief | `01-objectives/project-brief.md` — APPROVED (D-7), AMENDED (D-11), CORRECTED (D-23); with `requirements.md`, the body of issue #2 |
 | Rulings | `02-analysis/rulings.md` — **every ruling lands here the moment it is made** |
 | Requirements | `01-objectives/requirements.md` — **NORMATIVE** (D-23); wins over the brief on any conflict |
@@ -27,8 +27,7 @@ and every lesson that can be a failing test becomes one.**
 
 ## Blocking right now
 
-Nothing blocks PLAN. Owed at or before PLAN: the archive outbreak specimen (OW-11, at PLAN entry), the
-D-17 specimen over radar (OW-2, before PLAN commits to L-8.1), and OW-9's diagnosis. The full gate takes about eighteen minutes; every run's time is in
+Nothing blocks BUILD. The full gate takes about twenty minutes (run it as `export PATH="$HOME/go/bin:$PATH" && scripts/gate`); every run's time is in
 `06_docs/gate-runs.md`.
 
 ## Machine notes
