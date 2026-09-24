@@ -115,6 +115,7 @@ method Map.FitTo([]LonLat, []string, int) error
 method Map.FitWorld() error
 method Map.FollowClock()
 method Map.Footer() string
+method Map.FrameTicks() uint64
 method Map.Ground(RGB) error
 method Map.InFlight() int
 method Map.InUse(string) bool

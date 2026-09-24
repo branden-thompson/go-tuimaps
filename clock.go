@@ -23,8 +23,7 @@ func (m *Map) Animate(at time.Time) {
 		return
 	}
 	m.driven, m.animation = true, at
-	m.giveLocked(at)
-	m.changed++
+	m.giveLocked(at) // time, not an input: it moves FrameTicks when a frame advances, never Changed (D-66)
 }
 
 // FollowClock gives the animation clock back to Render's own: markers move
@@ -42,7 +41,6 @@ func (m *Map) FollowClock() {
 		return
 	}
 	m.driven = false
-	m.changed++
 }
 
 // animationAt is the moment the markers are drawn at: the host's own if it

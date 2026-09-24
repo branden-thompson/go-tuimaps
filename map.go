@@ -344,7 +344,9 @@ func (m *Map) Settle(ctx context.Context) (res SettleResult, err error) {
 	if err != nil {
 		return SettleResult{}, err
 	}
+	before := m.landed()
 	done, err := m.member.Drain(ctx)
+	m.noteLanded(before)
 	return SettleResult{Ran: done.Ran, Failed: done.Failed, InFlight: done.InFlight, Why: done.Why}, err
 }
 
@@ -390,13 +392,9 @@ func (m *Map) Render(size Size, now time.Time) (frame Frame, err error) {
 	in.Markers = m.markers()
 	m.draw(&in)
 	in.Tiles, in.Missing = m.onHand()
-	was := m.renderer.Redraws()
 	drawn, err := m.renderer.Draw(in)
 	if err != nil {
 		return Frame{}, err
-	}
-	if m.renderer.Redraws() != was {
-		m.changed++ // the frame differs from the one before it
 	}
 	return Frame{Lines: drawn.Lines, Status: Status(drawn.Status)}, nil
 }

@@ -530,6 +530,7 @@ func (s *Store) keepPictures(r *Reader, pictures []picture) {
 		return
 	}
 	s.pictures[r.id] = pictures
+	s.landed++
 	delete(s.spare, r.id) // what the new version kept, it now holds
 	unmatched := 0
 	for _, p := range pictures {

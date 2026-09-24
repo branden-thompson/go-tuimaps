@@ -407,3 +407,73 @@ func TestEveryAdvanceIsDrawn(t *testing.T) {
 		}
 	}
 }
+
+// TestAFrameAdvanceIsATickNotAChange is L4.7 (L-1.10e, D-66): ten frame
+// advances move FrameTicks by ten, leave Changed alone, and leave the
+// description where it was, remembered.
+func TestAFrameAdvanceIsATickNotAChange(t *testing.T) {
+	m := world(t, 60, 18)
+	var minutes []int
+	for i := -55; i <= 0; i += 5 {
+		minutes = append(minutes, i)
+	}
+	mustSet(t, m, flickerLoop(t, "radar", minutes, -40, 60))
+	settle(t, m)
+	must(t, m.SetPlayback(tuimaps.PlaybackOn))
+	size := tuimaps.Size{Cols: 60, Rows: 18}
+	m.Animate(noon)
+	if _, err := m.Render(size, noon); err != nil {
+		t.Fatal(err)
+	}
+	before := m.FrameTicks()
+	must(t, m.Play()) // the jump to the oldest frame is the listener's input, not an advance
+	if _, err := m.Render(size, noon); err != nil {
+		t.Fatal(err)
+	}
+	if m.FrameTicks() != before {
+		t.Errorf("Play's jump to the oldest frame moved FrameTicks from %d to %d", before, m.FrameTicks())
+	}
+	places := []tuimaps.Place{{ID: "home", Name: "Home", At: tuimaps.LonLat{Lon: 0, Lat: 10}}}
+	if _, err := m.Describe(places); err != nil {
+		t.Fatal(err)
+	}
+	// The advances come from the animation clock at one wall time: a new
+	// wall time is itself a reason to work a description out again (D-114),
+	// and this is about the advance alone.
+	changed, ticks := m.Changed(), m.FrameTicks()
+	for i := 1; i <= 10; i++ {
+		m.Animate(noon.Add(time.Duration(i) * 500 * time.Millisecond))
+		if _, err := m.Render(size, noon); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if got := m.FrameTicks() - ticks; got != 10 {
+		t.Errorf("ten advances moved FrameTicks by %d", got)
+	}
+	if m.Changed() != changed {
+		t.Errorf("ten advances moved Changed from %d to %d; an advance is not an input", changed, m.Changed())
+	}
+	if !tuimaps.DescriptionRemembered(m, places) {
+		t.Error("an advance changed the description's key")
+	}
+	// A refresh while playing is an input too: the moment it moves the loop
+	// to is not an advance.
+	ticks = m.FrameTicks()
+	mustSet(t, m, flickerLoop(t, "radar", minutes[3:], -40, 60))
+	if _, err := m.Render(size, noon); err != nil {
+		t.Fatal(err)
+	}
+	if m.FrameTicks() != ticks {
+		t.Errorf("a refresh while playing moved FrameTicks from %d to %d", ticks, m.FrameTicks())
+	}
+	// A control is an input: it moves Changed, not FrameTicks.
+	ticks = m.FrameTicks()
+	must(t, m.Step(-1))
+	m.Animate(noon.Add(6 * time.Second))
+	if _, err := m.Render(size, noon); err != nil {
+		t.Fatal(err)
+	}
+	if m.FrameTicks() != ticks {
+		t.Errorf("a step moved FrameTicks from %d to %d", ticks, m.FrameTicks())
+	}
+}

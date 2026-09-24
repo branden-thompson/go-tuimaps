@@ -18,9 +18,6 @@ func (m *Map) Work(ctx context.Context) (did bool, err error) {
 	defer guard("Work", &err)
 	m.plant("Work")
 
-	defer guard("Work", &err)
-	m.plant("Work")
-
 	if m == nil {
 		return false, closed()
 	}
@@ -36,7 +33,30 @@ func (m *Map) Work(ctx context.Context) (did bool, err error) {
 	if shut {
 		return false, closed()
 	}
-	return m.member.RunOne(ctx)
+	before := m.landed()
+	did, err = m.member.RunOne(ctx)
+	m.noteLanded(before)
+	return did, err
+}
+
+// landed counts what work has landed: tiles into the cache and prepared
+// overlays into the store. Each has its own lock; the map's is not needed.
+func (m *Map) landed() uint64 {
+	return m.pipe.Landed() + m.store.Landed()
+}
+
+// noteLanded raises Changed when work landed something since before: a host
+// that renders when Changed moves then draws it, with no Render needed to
+// find out (D-66). Anything landed counts, since the view asked for it.
+func (m *Map) noteLanded(before uint64) {
+	if m.landed() == before {
+		return
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if !m.shut {
+		m.changed++
+	}
 }
 
 // OnPending sets a hook called when this map's pending work goes from none
@@ -44,9 +64,6 @@ func (m *Map) Work(ctx context.Context) (did bool, err error) {
 // called on whichever goroutine made the work pending, so it should do no
 // more than wake a pump.
 func (m *Map) OnPending(hook func()) (err error) {
-	defer guard("OnPending", &err)
-	m.plant("OnPending")
-
 	defer guard("OnPending", &err)
 	m.plant("OnPending")
 
@@ -64,9 +81,6 @@ func (m *Map) OnPending(hook func()) (err error) {
 // InFlight is how many units of work are inside a Work call somewhere else.
 // Settle never waits for them (D-86).
 func (m *Map) InFlight() int {
-	defer m.guardQuiet("InFlight")
-	m.plant("InFlight")
-
 	defer m.guardQuiet("InFlight")
 	m.plant("InFlight")
 

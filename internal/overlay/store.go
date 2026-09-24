@@ -122,6 +122,7 @@ type Store struct {
 	spare      map[string]map[[32]byte]picture // a replaced loop's decoded frames, by key, for its refresh to keep (L-1.7)
 	decodes    int                             // pictures decoded, counted so a test can see a refresh reuse them
 	budget     int64                           // what the images may hold in all (L-12.1)
+	landed     uint64                          // prepared forms kept, for Work to see (D-66)
 	fromMemory map[string]bool                 // overlays whose prepared form is larger than the whole cap
 	views      map[*ShapeView]int              // live views, and the bucket each draws at
 	released   []string
@@ -464,6 +465,17 @@ func (s *Store) HandIn(o Overlay) (SetResult, error) {
 	s.current[o.ID] = next
 	s.vertices += vertices
 	return res, nil
+}
+
+// Landed counts the prepared shapes, fields and pictures kept: what a Work
+// call compares before and after, to know it landed something (D-66).
+func (s *Store) Landed() uint64 {
+	if s == nil {
+		return 0
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.landed
 }
 
 // chargeOf is what an overlay costs the image budget: an image's files and

@@ -98,6 +98,7 @@ type track struct {
 // owner calls; a job's Run may be on any goroutine. Its lock is never held
 // across a fetch or a decode.
 type Pipeline struct {
+	landed   uint64 // tiles that passed the gate into the cache, for Work to see (D-66)
 	mu       sync.Mutex
 	opts     Options
 	pins     *PinSet
@@ -249,6 +250,17 @@ func (p *Pipeline) maxZoomLocked() uint8 {
 	}
 	_, hi := p.opts.Network.zooms()
 	return hi
+}
+
+// Landed counts the tiles that have passed the gate into the cache: what a
+// Work call compares before and after, to know it landed something (D-66).
+func (p *Pipeline) Landed() uint64 {
+	if p == nil {
+		return 0
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.landed
 }
 
 // Deepest is the deepest tile zoom this pipeline can actually draw at: the
@@ -584,6 +596,7 @@ func (j *tileJob) Run(ctx context.Context) error {
 	switch {
 	case err == nil:
 		o.Cache.Put(j.k, tile)
+		p.landed++
 		tr.state, _ = Next(tr.state, PassedGate)
 		tr.failures, tr.notBefore = 0, time.Time{}
 	case isKind(err, fault.Cancelled):

@@ -76,6 +76,25 @@ type playback struct {
 	previous time.Time // and the one before it
 	aligned  bool      // the blink is on the loop's grid
 	drawn    time.Time // the moment the last frame drew
+	moved    uint64    // the moment drawn changed: the renderer's reason to redraw
+	seen     time.Time // the moment as of the last time the map was given, or a control moved it
+	ticks    uint64    // frame advances (D-66)
+}
+
+// FrameTicks counts frame advances as of the last time the map was given an
+// animation time, by Render or Animate (D-66). An advance is not an input:
+// it leaves Changed and the description's key alone (L-1.10e). A control the
+// listener uses is an input, and moves Changed instead.
+func (m *Map) FrameTicks() uint64 {
+	defer m.guardQuiet("FrameTicks")
+	m.plant("FrameTicks")
+
+	if m == nil {
+		return 0
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.play.ticks
 }
 
 // SetPlayback sets whether the map's loops may play. Off stops a loop that is
@@ -99,6 +118,7 @@ func (m *Map) SetPlayback(p Playback) (err error) {
 		m.holdLocked()
 	}
 	m.play.setting, m.play.chosen = p, true
+	m.play.seen = m.shownLocked()
 	m.changed++
 	return nil
 }
@@ -181,6 +201,7 @@ func (m *Map) control(name string, do func()) (err error) {
 		return closed()
 	}
 	do()
+	m.play.seen = m.shownLocked() // a control's move is an input, not an advance
 	m.changed++
 	return nil
 }
@@ -253,6 +274,12 @@ func (m *Map) giveLocked(at time.Time) {
 	m.play.previous, m.play.given = m.play.given, at
 	if m.play.playing && m.play.from.IsZero() {
 		m.play.from = at
+	}
+	if m.play.playing {
+		if shown := m.shownLocked(); !shown.Equal(m.play.seen) {
+			m.play.ticks++
+			m.play.seen = shown
+		}
 	}
 }
 

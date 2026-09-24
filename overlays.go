@@ -147,6 +147,7 @@ func (m *Map) Set(o Overlay) (res SetResult, err error) {
 	}
 	m.overlays++
 	m.described = nil
+	m.play.seen = m.shownLocked() // a refresh that moves the moment is an input, not an advance
 	m.changed++
 	return res, nil
 }
@@ -171,6 +172,7 @@ func (m *Map) Remove(id string) (res RemoveResult, err error) {
 	}
 	m.overlays++
 	m.described = nil
+	m.play.seen = m.shownLocked() // a refresh that moves the moment is an input, not an advance
 	m.changed++
 	return res, nil
 }
@@ -258,7 +260,7 @@ func (m *Map) draw(in *render.Input) {
 	bucket := m.bucket()
 	shown := m.shownLocked()
 	if !shown.Equal(m.play.drawn) {
-		m.overlays++ // another frame of a loop is drawn: the last frame cannot be reused
+		m.play.moved++ // another frame of a loop is drawn: the last frame cannot be reused
 		m.play.drawn = shown
 	}
 	m.shapes, m.fields, m.rasters, m.borrowed = m.shapes[:0], m.fields[:0], m.rasters[:0], m.borrowed[:0]
@@ -280,7 +282,7 @@ func (m *Map) draw(in *render.Input) {
 		}
 	}
 	in.Shapes, in.Fields, in.Rasters, in.Borrowed = m.shapes, m.fields, m.rasters, m.borrowed
-	in.OverlaysVersion = m.overlays
+	in.OverlaysVersion = m.overlays + m.play.moved // the description's key reads only the first (L-1.10e)
 }
 
 // borrow reads one overlay where it lies, through its run index: the frame

@@ -13,3 +13,12 @@ func PlantPanic(m *Map, call string) {
 
 // ClearPanic takes the planted panic away again.
 func ClearPanic(m *Map) { m.planted = nil }
+
+// DescriptionRemembered reports whether a description for these places is
+// already worked out and would be returned from memory.
+func DescriptionRemembered(m *Map, asked []Place) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	_, ok := m.rememberedDescription(asked)
+	return ok
+}

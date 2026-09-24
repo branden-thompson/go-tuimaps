@@ -7,6 +7,7 @@ package tuimaps_test
 
 import (
 	"context"
+	"image/color"
 	"io/fs"
 	"path/filepath"
 	"testing"
@@ -58,12 +59,11 @@ func TestSetAndRemoveReportTheRelease(t *testing.T) {
 	}
 }
 
-// TestChangedMissesWhatWorkLands holds contract section 1 as v0.1.0 has it:
-// the counter moves on every host call that changes an input (Set, the look,
-// places, the view) and inside Render when the frame differs — but NOT when
-// Work lands a tile, which reaches the counter only at the next Render. That
-// last is the gap v0.2.0 closes (D-66, L4.7), and this test changes with it.
-func TestChangedMissesWhatWorkLands(t *testing.T) {
+// TestChangedCountsInputsAndWhatWorkLands holds contract section 1 as
+// v0.2.0 has it (D-66, L4.7): the counter moves on every host call that
+// changes an input and when Work lands something, with no Render; Render
+// never moves it, whether or not the frame it draws differs.
+func TestChangedCountsInputsAndWhatWorkLands(t *testing.T) {
 	m := world(t, 40, 12)
 	size := tuimaps.Size{Cols: 40, Rows: 12}
 	before := m.Changed()
@@ -79,10 +79,13 @@ func TestChangedMissesWhatWorkLands(t *testing.T) {
 	if _, err := m.Render(size, noon); err != nil { // notes the tiles zoom 3 wants
 		t.Fatal(err)
 	}
+	quiet := m.Changed()
 	if _, err := m.Render(size, noon); err != nil {
 		t.Fatal(err)
 	}
-	settled := m.Changed()
+	if m.Changed() != quiet {
+		t.Errorf("a Render of unchanged inputs moved the counter from %d to %d", quiet, m.Changed())
+	}
 	did, err := m.Work(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -90,14 +93,41 @@ func TestChangedMissesWhatWorkLands(t *testing.T) {
 	if !did {
 		t.Fatal("zoom 3 wanted no tile, so this proves nothing: pick a zoom that needs one")
 	}
-	if m.Changed() != settled {
-		t.Errorf("Work landed a tile and moved the counter from %d to %d; in v0.1.0 it does not", settled, m.Changed())
+	landed := m.Changed()
+	if landed == quiet {
+		t.Error("Work landed a tile and the counter did not move: a host would not know to render")
 	}
 	if _, err := m.Render(size, noon); err != nil {
 		t.Fatal(err)
 	}
-	if m.Changed() == settled {
-		t.Error("the render that drew the landed tile did not move the counter")
+	if m.Changed() != landed {
+		t.Errorf("the Render that drew the landed tile moved the counter from %d to %d; Render never does", landed, m.Changed())
+	}
+	// A picture the work prepares counts as a tile does. The tiles are all
+	// landed first, so the picture is the only work left.
+	if _, err := m.Settle(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	loop := tuimaps.RadarImage("radar", tuimaps.Image{PNG: solidPNG(t, 8, 6, color.NRGBA{R: 200, A: 255}), West: -90, South: 30, East: -80, North: 40,
+		Projection: tuimaps.PlateCarree, Table: []tuimaps.TableEntry{{Colour: tuimaps.RGB{R: 200}, Value: 25}}, Exact: true}, noon)
+	if _, err := m.Set(loop); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Render(size, noon); err != nil { // notes the picture as wanted
+		t.Fatal(err)
+	}
+	set := m.Changed()
+	for {
+		did, err := m.Work(context.Background())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !did {
+			break
+		}
+	}
+	if m.Changed() == set {
+		t.Error("Work prepared a picture and the counter did not move")
 	}
 }
 

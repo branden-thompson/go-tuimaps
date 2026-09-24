@@ -322,6 +322,7 @@ func (s *Store) keepField(r *Reader, field scene.Field) {
 	defer s.mu.Unlock()
 	if !r.h.retired {
 		s.fields[r.id] = field
+		s.landed++
 	}
 }
 
@@ -346,6 +347,7 @@ func (s *Store) keep(r *Reader, bucket int, shapes []scene.Shape) {
 	bytes := int64(math.Ceil(float64(vertices) * bytesPerVertex))
 	if bytes > int64(s.caps.ShapeBytes) {
 		s.fromMemory[r.id] = true
+		s.landed++
 		return
 	}
 	if s.prepared[r.id] == nil {
@@ -357,5 +359,6 @@ func (s *Store) keep(r *Reader, bucket int, shapes []scene.Shape) {
 	s.clock++
 	s.prepared[r.id][bucket] = &prepared{shapes: shapes, bytes: bytes, used: s.clock}
 	s.shapeHeld += bytes
+	s.landed++
 	s.settleLocked()
 }
