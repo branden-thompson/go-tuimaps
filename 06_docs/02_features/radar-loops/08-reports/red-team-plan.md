@@ -69,4 +69,12 @@ fetches at six, and NFR-4 asks for "sequential or bounded".
 
 ## Dispositions
 
-*Pending — each ruling lands in the owning repository's rulings log the moment it is made.*
+Each ruling lands in the owning repository's rulings log the moment it is made; watchpost's are listed
+in its `observer-maps/08-reports/red-team-plan.md`.
+
+| # | Ruling | Outcome |
+|---|---|---|
+| P-1 | **D-66** here, watchpost **D-45** | `Changed()` counts inputs and is raised by `Work`, never by `Render`; `NextCall` is the time signal; `Frame` carries its counters. Watchpost renders on every event it owns; a freshness property replaces the memo key and guard 4 |
+| P-2 | watchpost **D-46** | M5 keeps "complete" as every alert's area, ≤ 3.5 s p90; W3.9 reverted to the bound of six |
+| P-3 | watchpost **D-47** | Radar requested per fixed state-regional region, never per view |
+| P-4 | **D-67** here, watchpost **D-48** (and D-49) | The listener's control flow is the API: one playback per map; play from the oldest through observed to forecast; stop; reset to "right now"; step; position by valid time; forecast frames. Pan and zoom came into 0.18.0 |

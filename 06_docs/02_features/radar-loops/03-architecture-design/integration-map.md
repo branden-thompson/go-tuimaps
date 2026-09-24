@@ -21,7 +21,7 @@ flowchart TB
   subgraph WP1["watchpost P1-a — lands on go-tuiMaps v0.1.0"]
     W0["W0 Foundations: the library, fixtures,<br/>the plan-code gate (FR-8.1, FR-8.6)"]
     W1["W1 Window, its words, Settings<br/>(FR-1, FR-7.4 renderer, FR-9)"]
-    W2["W2 Draw in Update, four stale guards<br/>(D-41; guard 4 partial on v0.1.0)"]
+    W2["W2 Draw in Update on every event,<br/>the freshness property (D-41, D-45)"]
     W3["W3 Basemap, request gate, clear path<br/>(FR-3)"]
     W4["W4 Bound held by the host<br/>(FR-2.4 until HR-3)"]
     W5["W5 Alert areas, partial areas<br/>(FR-4, D-42)"]
@@ -66,8 +66,8 @@ version). Watchpost's ship-without-radar rule (its RK-4) is P1-a on its own.
 | Watchpost | Needs from go-tuiMaps | Library requirement | Ruling | Work package |
 |---|---|---|---|---|
 | HR-1 loops | frames, one overlay per source | L-1.1–L-1.4, L-1.7, L-1.9, L-1.14, L-1.15 (WP-L2); L-1.6 (WP-L3); L-1.5, L-1.8 (WP-L4) | D-54 | WP-L2, WP-L3, WP-L4 |
-| HR-9 playback, FR-5.8/5.9 | one playback API; rates | L-1.5, L-1.10, L-1.11, L-1.13 | D-25, D-26, D-54, watchpost D-43 | WP-L4 |
-| D-41 stale-frame guards | `Frame` carries its counters; `FrameTicks`; `NextCall` | L-1.16 (WP-L3, L3.2), L-1.10e, L-1.8 (WP-L4) | D-59, D-54 | WP-L3, WP-L4 |
+| HR-9 playback, FR-5.8/5.9 | one playback per map: play, stop, reset, step; position by valid time; forecast frames | L-1.5, L-1.10, L-1.11, L-1.13 | D-25, D-26, D-54, D-67, watchpost D-43, D-48 | WP-L4 |
+| D-41/D-45 never an old frame | `Changed()` counts inputs, raised by `Work`; `FrameTicks`; `NextCall`; `Frame` carries its counters | L-1.16 (WP-L3, L3.2), L-1.10e, L-1.8 (WP-L4) | D-59, D-54, D-66 | WP-L3, WP-L4 |
 | HR-2 MRMS | the observed-palette table | L-2.1–L-2.5 | D-19, D-35, D-44 | WP-L6 |
 | HR-3 bound | min zoom and a box, held | L-3.1, L-3.2 | — | WP-L7 |
 | HR-4 contract | contract matches the code | L-4.1–L-4.4 | D-34 | WP-L1 |

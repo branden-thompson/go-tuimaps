@@ -53,18 +53,19 @@ Set here because D-49 item 3 gives them to PLAN; each goes to the HUM LEAD in th
 
 | File | New or changed | Tasks |
 |---|---|---|
-| `overlays.go` | changed | L2.1, L5.1, L6.1 |
-| `map.go` | changed | L2.6, L3.2, L3.11, L7.1, L7.2, L9.3 |
+| `overlays.go` | changed | L2.1, L4.9a, L5.1, L6.1 |
+| `map.go` | changed | L2.6, L3.2, L3.11, L4.7, L7.1, L7.2, L9.3 |
 | `playback.go` | **new** | L4.1, L4.4, L4.5, L4.7 |
 | `clock.go` | changed | L4.2, L4.3, L4.9 |
 | `look.go` | changed | L4.6, L10.2 |
 | `report.go` | **new** | L5.2, L5.3, L5.4, L5.5 |
-| `facts.go` | changed | L5.6 |
+| `facts.go` | changed | L3.11a, L5.6 |
 | `tables.go` | **new** | L6.1, L6.2, L6.3, L6.5, L6.7, L6.9 |
 | `view.go` | changed | L7.1, L7.2 |
 | `tiles.go` | changed | L8.1, L8.2, L8.4, L9.2, L9.4 |
+| `work.go` | changed | L4.7 |
 | `describe.go` | changed | L4.7, L4.9 |
-| `internal/overlay/image.go`, `store.go`, `cache.go`, `classified.go`, `fresh.go` | changed | L2.1, L2.2, L2.3, L2.4, L2.5, L2.6, L2.7, L2.8, L2.9, L4.9, L5.1, L6.4, L6.6 |
+| `internal/overlay/image.go`, `store.go`, `cache.go`, `classified.go`, `fresh.go` | changed | L2.1, L2.2, L2.3, L2.4, L2.5, L2.6, L2.7, L2.8, L2.9, L4.9, L4.9a, L5.1, L6.4, L6.6 |
 | `internal/render/frame.go`, `raster.go`, `field.go`, `hatch.go`, `marker.go`, `motion.go` | changed | L3.1, L3.3, L3.6, L3.9, L3.10, L3.11, L3.13, L4.1, L4.2, L4.8 |
 | `internal/render/profile_test.go` | changed | L3.14 |
 | `internal/colour/check.go`, `preset.go` | changed | L3.7, L3.8, L3.12 |
@@ -109,16 +110,16 @@ frame, which L4 gives). L6, L7 and L8 → L9 run beside it once L1 lands.
 |---|---|---|---|---|
 | L1.1 | The surface snapshot records signatures and struct fields, not names only (L-4.3) | `surface_test.go`, `public-surface.txt` | The snapshot line becomes `func (*Map) Render(Size, time.Time) (Frame, error)`, and `type Frame struct{ Lines []string; Status Status; … }` | Change one exported signature in a scratch copy: today's test passes; the new one must fail |
 | L1.2 | A test holds `contract.md` to the surface both ways (L-4.1) | `contract_test.go`, `contract.md` | Every exported name in the snapshot appears in `contract.md`, and every code span in `contract.md` naming a Go identifier exists | Today it fails, listing `SetSize`, `Pan`, `ZoomAround`, `Focused`, `BorrowCheck`, `Frame.Line`, `WriteTo` (W1-B) |
-| L1.3 | The five false behavioural claims are corrected (L-4.2) | `contract.md` | Text only | L1.2 green; a checklist row for each claim in the PLAN report |
+| L1.3 | The five false behavioural claims are corrected (L-4.2), and a sixth: `Changed()` "moves whenever a redraw would differ" (D-66) | `contract.md` | Text only | L1.2 green; a checklist row for each claim in the PLAN report |
 | L1.4 | The README's promises join the check (L-4.4, D-34) | `readme_test.go` | The README's user-agent, `Purge` and "nothing until you name a source" sentences are asserted against behaviour | Change one sentence: the test fails |
-| L1.5 | A changelog section in `contract.md` for v0.2.0's breaks (D-58), including `CacheRoot` gaining options (L9.2) | `contract.md` | One row per break: what changed, why, and what a host does instead | L1.2 requires the section to exist |
+| L1.5 | A changelog section in `contract.md` for v0.2.0's breaks (D-58), including `CacheRoot` gaining options (L9.2), `Changed()` redefined (D-66) and playback made map-wide (D-67) | `contract.md` | One row per break: what changed, why, and what a host does instead | L1.2 requires the section to exist |
 | L1.6 | The contract states what a host needs to know: the loop's name is the host's (L-1.10d); the time bound holds only if the host's transport honours its context, and what `CheckedDialer` does and does not cover (L-7.3, L-10.3); `Purge` does not reach a released root (L-9.3); cache-root guidance (L-9.6); dot-grid guidance and "a host that raises the budget owns the memory" (L-12.3); what carries severity inside rain cells (L-8.3) | `contract.md`, `contract_test.go` | Text | A test holds one sentence for each named row, as L1.4 does for the README |
 
 ## WP-L2 — Loops (D-54)
 
 | # | Task | Files | Shape | Test first (RED) |
 |---|---|---|---|---|
-| L2.1 | `LoopFrame`; `Image.Frames` | `overlays.go`, `internal/overlay/image.go` | `type LoopFrame struct{ Valid time.Time; PNG []byte; Gap bool }`; `Image.Frames []LoopFrame`; a single picture is `PNG` with no `Frames` | `Set` of an image with three frames is accepted; with both `PNG` and `Frames` set it is refused with a clear error |
+| L2.1 | `LoopFrame`; `Image.Frames` | `overlays.go`, `internal/overlay/image.go` | `type LoopFrame struct{ Valid time.Time; PNG []byte; Gap, Forecast bool }` (forecast from D-67); `Image.Frames []LoopFrame`; a single picture is `PNG` with no `Frames` | `Set` of an image with three frames is accepted; with both `PNG` and `Frames` set it is refused with a clear error |
 | L2.2 | Validation at hand-in (L-1.9, L-1.15) | `internal/overlay/image.go` | Every frame's header and size checked; times strictly increasing; a gap has no bytes; `const MaxFrames = 36`, exported, gaps included | A table test: out-of-order times, a duplicate time, a gap with bytes, frame 37, a bad PNG in frame 7: each refused, naming the frame |
 | L2.3 | Copy at hand-in, for the single image and every frame (L-1.14) | `internal/overlay/image.go`, `internal/overlay/store.go` | The store keeps its own copies of `PNG` and `Table`; the host's slices are never read after `Set` returns | Mutate the host's PNG and table after `Set`: the drawn picture and classes are unchanged |
 | L2.4 | Decode reads the size from the copy before it allocates, and re-checks the cap and the budget (L-1.14) | `internal/overlay/image.go` (`rasterise`) | The header is checked before `png.Decode` | A header claiming 4× the cap is refused without the allocation (the allocation counter stays under a bound) |
@@ -135,17 +136,18 @@ L4 comes before L3 in the build order, because L3.1 and L3.2 need to advance the
 
 | # | Task | Files | Shape | Test first (RED) |
 |---|---|---|---|---|
-| L4.1 | Playback state per looped overlay; off by default (L-1.5, L-1.11) | `playback.go`, `internal/render/motion.go` | `type Playback uint8` (`PlaybackOff`, `PlaybackSlow`, `PlaybackNormal`); `(*Map).SetPlayback(id string, p Playback) error` | A new loop reads `PlaybackOff` |
-| L4.2 | The loop advances on the animation clock at 1 and 2 frames a second and holds the newest 2 s; **one change ceiling per map** (L-1.10g, watchpost D-43). Every loop's advances and the blink share one tick grid per map, so advances that fall together count as one change | `clock.go`, `internal/render/motion.go` | The frame shown is a function of the animation time, as the blink phase is | A table over animation times: the index shown at each; two loops at normal plus blink never exceed 2.5 changes a second |
-| L4.3 | `NextCall` includes the next frame change (L-1.8) | `clock.go` | A fourth source | With a loop playing, `NextCall` returns the next advance time |
-| L4.4 | Stepping and seeking (L-1.10b) | `playback.go` | `Step(id string, by int) error`, `Seek(id string, index int) error`, `ShowNewest(id string) error` | Step at each end, seek out of range, step with playback on |
-| L4.5 | The state read (L-1.10d) | `playback.go` | `type LoopState struct{…}` as approach 1; `Loop(id string) (LoopState, bool)`; `Advancing` false when the clock is frozen; the precedence of off reasons | Freeze with `Animate`: `Advancing` false; reduce motion over a host "normal": off because of reduce motion |
+| L4.1 | Playback is one per map, and persists across `Set`; off by default (L-1.5, L-1.11, D-67) | `playback.go`, `internal/render/motion.go` | `type Playback uint8` (`PlaybackOff`, `PlaybackSlow`, `PlaybackNormal`); `(*Map).SetPlayback(p Playback) error` | A new map reads `PlaybackOff`; a refresh `Set` leaves the setting as it was |
+| L4.2 | The loop advances on the animation clock at 1 and 2 frames a second, holds the last frame 2 s and repeats; **one change ceiling per map**: every loop's advances and the blink share one tick grid, so advances that fall together count as one change (L-1.10g, watchpost D-43) | `clock.go`, `internal/render/motion.go` | The frame shown is a function of the animation time since `Play`, as the blink phase is | A table over animation times: the frame shown at each; two loops at normal plus blink never exceed 2.5 changes a second |
+| L4.3 | `NextCall` includes the next frame change (L-1.8, D-66) | `clock.go` | A fourth source; the signal that time has something due | With a loop playing, `NextCall` returns the next advance time |
+| L4.4 | **The listener's controls** (L-1.10b, D-67): `Play()` from the oldest held frame through "right now" and on through forecast frames; `Stop()` holds; `Reset()` returns to "right now", the newest observed frame; `Step(by int)` moves by frames and stops playback; **position is a valid time** | `playback.go` | `(*Map).Play() error`, `Stop() error`, `Reset() error`, `Step(by int) error` | Open → "right now"; play → oldest first, then in time order, then forecast; stop → held; step at each end; reset; **a refresh `Set` that drops the oldest frame keeps the same moment on screen** |
+| L4.5 | The state read (L-1.10d) | `playback.go` | `type LoopState struct{ At, Now time.Time; Playing, Advancing, Forecast bool; Playback Playback; Off OffReason }`; `(*Map).Loop() LoopState`; `Advancing` false when the clock is frozen; the precedence of off reasons | Freeze with `Animate`: `Advancing` false; reduce motion over a host "normal": off because of reduce motion |
 | L4.6 | `ReduceMotion` forces off and restores (L-1.10c) | `look.go` | Existing call, new effect | Normal → reduce on → off → reduce off → normal |
-| L4.7 | `FrameTicks`, apart from `Changed` (L-1.10e) | `playback.go`, `describe.go` | `FrameTicks() uint64`; a tick changes neither `Changed()` nor the description's key | Advance ten frames: `Changed()` unchanged, `FrameTicks()` +10, the description cached |
-| L4.8 | Gaps: hold the last real frame, the time reads "gap"; the shown frame's time on the map; with two loops, the newest loop's time (L-1.2, L-1.10a, L-1.10f, L-1.10g) | `internal/render/frame.go` (furniture) | Frame-time text beside `stale` | Golden: a gap shows the previous frame's picture with "gap 14:10"; two loops show the newer one's time |
-| L4.9 | The newest non-gap frame drives `stale` and the description (L-1.3, D-39) | `internal/overlay/fresh.go`, `clock.go` (`stale`), `describe.go` | — | Stepping to an old frame does not raise `stale`; an old newest frame does |
-| L4.10 | **Correct parts, correctly connected** (RK-1): the whole path through the public `Map` | `playback_test.go` | — | `Set` a loop, `SetPlayback`, `Animate` forward, `Render`: the lines differ from the first render and `FrameTicks` moved |
-| L4.11 | One standard playback API a host wires with no state of its own (L-1.13) | `examples/example_playback_test.go` | An example host: controls and a Settings row driven only by `SetPlayback`, `Step`, `Seek`, `ShowNewest` and `Loop`, woken by `FrameTicks` and `NextCall` | The example's output; a rules test that the example declares no playback state |
+| L4.7 | **The counters, one job each** (L-1.10e, D-66): `Changed()` counts inputs, raised by `Work` when it lands something visible and never by `Render`; `FrameTicks()` counts frame advances as of the last time given | `map.go`, `work.go`, `playback.go`, `describe.go` | `FrameTicks() uint64`; a tick changes neither `Changed()` nor the description's key | A tile landed by `Work` raises `Changed()` with no `Render`; a `Render` of unchanged inputs leaves it alone; advance ten frames: `Changed()` unchanged, `FrameTicks()` +10, the description cached |
+| L4.8 | Gaps hold the last real frame, the time reads "gap"; the shown frame's time is on the map, marked when it is a forecast; with two loops, the newest loop's time (L-1.2, L-1.10a, L-1.10f, L-1.10g, D-67) | `internal/render/frame.go` (furniture) | Frame-time text beside `stale` | Golden: a gap shows the previous frame's picture with "gap 14:10"; a forecast frame's time reads as a forecast; two loops show the newer one's time |
+| L4.9 | The newest observed non-gap frame drives `stale` and the description (L-1.3, D-39, D-67) | `internal/overlay/fresh.go`, `clock.go` (`stale`), `describe.go` | — | Stepping to an old frame does not raise `stale`; an old newest frame does; a forecast frame never counts as newest |
+| L4.9a | Forecast frames (D-67): `LoopFrame.Forecast`; only a forecast frame may carry a future valid time | `overlays.go`, `internal/overlay/image.go` | `LoopFrame{Valid time.Time; PNG []byte; Gap, Forecast bool}` | An observed frame dated past now plus a small skew is refused; a forecast frame so dated is accepted and drawn after "right now" |
+| L4.10 | **Correct parts, correctly connected** (RK-1): the whole path through the public `Map` | `playback_test.go` | — | `Set` a loop, `SetPlayback`, `Play`, `Animate` forward, `Render`: the lines differ from the first render and `FrameTicks` moved |
+| L4.11 | One standard playback API a host wires with no state of its own (L-1.13) | `examples/example_playback_test.go` | An example host: controls and a Settings row driven only by `SetPlayback`, `Play`, `Stop`, `Reset`, `Step` and `Loop`, woken by `Changed` and `NextCall` | The example's output; a rules test that the example declares no playback state |
 
 ## WP-L3 — Renderer (D-14, D-17, D-28, D-45, D-59, D-60)
 
