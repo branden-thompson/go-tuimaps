@@ -72,6 +72,11 @@ const RingTooShort
 const RiverLayer
 const RoadLayer
 const SetRefused
+const SeverityExtreme
+const SeverityMinor
+const SeverityModerate
+const SeveritySevere
+const SeverityUnknown
 const Sharpening
 const SizeMismatch
 const StaleOverlay
@@ -200,6 +205,7 @@ type Rule = colour.Rule
 type Scaled struct{ KmPerCell float64; Km float64; Cells int }
 type SetResult = overlay.SetResult
 type SettleResult struct{ Ran int; Failed int; InFlight int; Why error }
+type Severity = overlay.Severity
 type Shared struct{  }
 type Size struct{ Cols int; Rows int }
 type Status uint8

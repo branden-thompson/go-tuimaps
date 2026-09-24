@@ -122,6 +122,7 @@ type Shape struct {
 	Rings [][]Vertex
 	Role  uint8
 	Label string
+	Mark  string // an alert's severity digit, repeated along its outline (D-65); empty for anything else
 }
 
 // Field is a prepared scalar grid: each value classified once, on the host's

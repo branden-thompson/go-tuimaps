@@ -54,6 +54,69 @@ type Feature struct {
 	RadiusKm float64
 	Role     colour.Token // the token it is drawn in; for an alert, its outline's
 	Label    string
+	// Severity is an alert's, as data; zero means the one its role implies
+	// (L-13.9). Valid and Expires are its times, zero when not given.
+	Severity       Severity
+	Valid, Expires time.Time
+}
+
+// Severity is how severe an alert is. The zero value means "as the role
+// says": a feature drawn in an alert's colours has that alert's severity.
+type Severity uint8
+
+// The severities, least first.
+const (
+	SeverityUnknown Severity = iota + 1
+	SeverityMinor
+	SeverityModerate
+	SeveritySevere
+	SeverityExtreme
+)
+
+// Word is a severity as the label says it (L-8.1), and Digit as the outline
+// repeats it (D-65): extreme 4, severe 3, moderate 2, minor 1, unknown ?.
+func (s Severity) Word() string {
+	return [...]string{"", "UNKNOWN", "MINOR", "MODERATE", "SEVERE", "EXTREME"}[min(int(s), 5)]
+}
+
+// Digit is the severity's digit, or empty for no severity.
+func (s Severity) Digit() string {
+	return [...]string{"", "?", "1", "2", "3", "4"}[min(int(s), 5)]
+}
+
+// LabelOf is what an alert's label says on the map: the host's label and the
+// severity as a word, "Tornado Warning · EXTREME", or the word alone when
+// there is no label (L-8.1). Any other feature's label is its own.
+func LabelOf(f Feature) string {
+	word := SeverityOf(f).Word()
+	switch {
+	case word == "":
+		return f.Label
+	case f.Label == "":
+		return word
+	}
+	return f.Label + " · " + word
+}
+
+// SeverityOf is a feature's severity: the one it states, or the one its role
+// implies; zero for a feature that is no alert.
+func SeverityOf(f Feature) Severity {
+	if f.Severity != 0 {
+		return f.Severity
+	}
+	switch f.Role {
+	case colour.AlertExtremeOutline, colour.AlertExtremeTint:
+		return SeverityExtreme
+	case colour.AlertSevereOutline, colour.AlertSevereTint:
+		return SeveritySevere
+	case colour.AlertModerateOutline, colour.AlertModerateTint:
+		return SeverityModerate
+	case colour.AlertMinorOutline, colour.AlertMinorTint:
+		return SeverityMinor
+	case colour.AlertUnknownOutline, colour.AlertUnknownTint:
+		return SeverityUnknown
+	}
+	return 0
 }
 
 // Overlay is what a host hands in: an id, when its data was valid and how
@@ -189,6 +252,10 @@ func checkFeature(f Feature) (int, error) {
 	if f.Role.Name() == "" {
 		return 0, refused(fault.UnknownPreset, textsafe.Const("one of its features names a role that is no token"),
 			textsafe.Const("give each feature one of the library's tokens, such as an alert's outline"))
+	}
+	if f.Severity > SeverityExtreme {
+		return 0, refused(fault.UnknownPreset, textsafe.Const("one of its features gives a severity that is none of the library's"),
+			textsafe.Const("give unknown, minor, moderate, severe or extreme, or none for the one its role implies"))
 	}
 	if f.Kind == Circle && len(f.Rings) != 0 {
 		return 0, refused(fault.InvalidCoordinates, textsafe.Const("a circle has a centre and a radius and no rings, and this one has rings as well"),

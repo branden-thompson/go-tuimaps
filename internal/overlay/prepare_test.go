@@ -26,7 +26,7 @@ func TestPrepare(t *testing.T) {
 		t.Fatalf("%d shapes, %v", len(shapes), err)
 	}
 	area := shapes[0]
-	if area.Kind != scene.ShapeArea || area.Role != uint8(colour.AlertSevereOutline) || area.Label != "Tornado Warning" {
+	if area.Kind != scene.ShapeArea || area.Role != uint8(colour.AlertSevereOutline) || area.Label != "Tornado Warning · SEVERE" || area.Mark != "3" {
 		t.Errorf("%+v", area)
 	}
 	if len(area.Rings) != 1 {

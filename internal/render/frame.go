@@ -520,6 +520,7 @@ func (r *Renderer) compose(in Input, status Status) {
 	for _, l := range r.painter.OverlayLabels() {
 		g.label(l)
 	}
+	r.digits(in) // after the overlays' labels, before any name of the basemap's (D-65)
 	if !in.Labels {
 		r.markerNames() // the host's own places are not the basemap's names
 		r.bandNames()
@@ -569,6 +570,42 @@ func (r *Renderer) compose(in Input, status Status) {
 	r.shades()
 	if colourless(in.Depth) {
 		r.hatch() // last of all: it fills what nothing else has taken (FR-18a)
+	}
+}
+
+// digitStride is how many outline cells lie between one severity digit and
+// the next, staggered by row so that a vertical edge carries them too.
+const digitStride = 5
+
+// digits writes each alert's severity digit along its outline every few
+// cells (D-65), never on the rows the frame's furniture uses, and where the
+// stride gave an area none - a small one - on the first free cell of its
+// outline, so every area in view carries one.
+func (r *Renderer) digits(in Input) {
+	g := r.grid
+	top, bottom := 1, g.rows-2 // the top row has the stale word and the frame time; the bottom the scale and credit
+	if textsafe.Width(in.Footer) > 0 {
+		bottom--
+	}
+	free := func(c Point) bool {
+		return c.X >= 0 && c.X < g.cols && c.Y >= top && c.Y <= bottom && !g.cells[c.Y*g.cols+c.X].taken
+	}
+	for _, o := range r.painter.Outlines() {
+		placed, first := false, Point{X: -1}
+		for _, c := range r.painter.Cells(o) {
+			if !free(c) {
+				continue
+			}
+			if first.X < 0 {
+				first = c
+			}
+			if (c.X+2*c.Y)%digitStride == 0 && g.write(c.X, c.Y, o.Mark, o.Ink) {
+				placed = true
+			}
+		}
+		if !placed && first.X >= 0 {
+			g.write(first.X, first.Y, o.Mark, o.Ink)
+		}
 	}
 }
 

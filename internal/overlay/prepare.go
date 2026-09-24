@@ -93,7 +93,10 @@ func Prepare(o Overlay, bucket int) ([]scene.Shape, error) {
 		if f.Kind == Circle {
 			rings = [][]project.LonLat{ringOf(f.Centre, f.RadiusKm)}
 		}
-		shape := scene.Shape{Kind: kind, Role: uint8(f.Role), Label: f.Label}
+		shape := scene.Shape{Kind: kind, Role: uint8(f.Role), Label: LabelOf(f)}
+		if kind == scene.ShapeArea {
+			shape.Mark = SeverityOf(f).Digit()
+		}
 		for _, ring := range rings {
 			prepared, err := prepareRing(ring, kind, tolerance)
 			if err != nil {

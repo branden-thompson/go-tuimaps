@@ -54,6 +54,19 @@ type LoopFrame = overlay.LoopFrame
 // MaxFrames is the most frames a loop may have, gaps included.
 const MaxFrames = overlay.MaxFrames
 
+// Severity is how severe an alert is; the zero value means the one its role
+// implies.
+type Severity = overlay.Severity
+
+// The severities, least first.
+const (
+	SeverityUnknown  = overlay.SeverityUnknown
+	SeverityMinor    = overlay.SeverityMinor
+	SeverityModerate = overlay.SeverityModerate
+	SeveritySevere   = overlay.SeveritySevere
+	SeverityExtreme  = overlay.SeverityExtreme
+)
+
 // TableEntry is one row of that table: a colour of the provider's, the
 // value it stands for, and whether it means "no data".
 type TableEntry = overlay.TableEntry

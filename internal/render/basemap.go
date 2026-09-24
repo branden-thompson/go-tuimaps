@@ -38,6 +38,8 @@ type Painter struct {
 	literals      []colour.RGB
 	labels        []Label
 	overlayLabels []Label
+	outlines      []Outline // alert areas' outlines, for their severity digits (D-65)
+	outlineCells  []Point   // every outline's cells, one backing kept from frame to frame (NFR-4)
 	markerLabels  []Label
 	glyphs        []Label
 	// bandLabels are the values a field's contours carry with no colour
@@ -81,6 +83,7 @@ func (p *Painter) Reset() {
 	p.areas.Wipe()
 	p.literals, p.labels, p.labelPts = p.literals[:0], p.labels[:0], p.labelPts[:0]
 	p.overlayLabels = p.overlayLabels[:0]
+	p.outlines, p.outlineCells = p.outlines[:0], p.outlineCells[:0]
 	p.markerLabels, p.glyphs = p.markerLabels[:0], p.glyphs[:0]
 	p.bandLabels = p.bandLabels[:0]
 	p.culled, p.lastPoints = 0, 0
@@ -191,6 +194,11 @@ func (p *Painter) Shape(v project.View, s scene.Shape) error {
 	if s.Kind == scene.ShapeArea && role >= colour.AlertExtremeOutline && role <= colour.AlertUnknownOutline {
 		p.areas.Fill(p.rings, s.Role+1) // an alert's tint is the token after its outline's
 	}
+	if mark, ok := digitText(s.Mark); ok && s.Kind == scene.ShapeArea && len(p.outlines) < maxLabels {
+		start := len(p.outlineCells)
+		p.outlineCells = cellsAlong(p.outlineCells, p.rings)
+		p.outlines = append(p.outlines, Outline{Mark: mark, Ink: s.Role, from: start, to: len(p.outlineCells)})
+	}
 	p.lines.Forcing(true)
 	for _, ring := range p.rings {
 		p.mark(ring, s)
@@ -255,6 +263,78 @@ func (p *Painter) BandLabels() []Label {
 		return nil
 	}
 	return p.bandLabels
+}
+
+// Outline is an alert area's outline, cell by cell in the order it runs, and
+// the severity digit it carries (D-65).
+type Outline struct {
+	Mark     textsafe.Text
+	Ink      uint8
+	from, to int // its cells, in the painter's outline cells
+}
+
+// Outlines are the alert areas' outlines, in the order drawn.
+func (p *Painter) Outlines() []Outline {
+	if p == nil {
+		return nil
+	}
+	return p.outlines
+}
+
+// Cells is an outline's cells, in cells not dots, in the order it runs.
+func (p *Painter) Cells(o Outline) []Point {
+	if p == nil || o.to > len(p.outlineCells) {
+		return nil
+	}
+	return p.outlineCells[o.from:o.to]
+}
+
+// digitText is a severity digit as the frame writes it: constant text, so a
+// frame allocates nothing for it (NFR-4).
+func digitText(mark string) (textsafe.Text, bool) {
+	switch mark {
+	case "4":
+		return textsafe.Const("4"), true
+	case "3":
+		return textsafe.Const("3"), true
+	case "2":
+		return textsafe.Const("2"), true
+	case "1":
+		return textsafe.Const("1"), true
+	case "?":
+		return textsafe.Const("?"), true
+	}
+	return textsafe.Text{}, false
+}
+
+// cellsAlong appends the cells a shape's rings pass through, in order, each
+// once in a row: a braille cell is two dots wide and four high.
+func cellsAlong(out []Point, rings [][]Point) []Point {
+	start := len(out)
+	add := func(x, y int) {
+		c := Point{X: floorDiv(x, 2), Y: floorDiv(y, 4)}
+		if len(out) == start || out[len(out)-1] != c {
+			out = append(out, c)
+		}
+	}
+	for _, ring := range rings {
+		for i := 0; i+1 < len(ring); i++ {
+			a, b := ring[i], ring[i+1]
+			steps := max(abs(b.X-a.X), abs(b.Y-a.Y), 1)
+			for k := 0; k <= steps; k++ {
+				add(a.X+(b.X-a.X)*k/steps, a.Y+(b.Y-a.Y)*k/steps)
+			}
+		}
+	}
+	return out
+}
+
+func floorDiv(a, b int) int {
+	q := a / b
+	if (a%b != 0) && ((a < 0) != (b < 0)) {
+		q--
+	}
+	return q
 }
 
 // OverlayLabels are the labels of the overlays' shapes, in the order drawn.
