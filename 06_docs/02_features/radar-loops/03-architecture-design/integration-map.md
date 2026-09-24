@@ -52,14 +52,15 @@ flowchart TB
     W9["W9 Library bound, Report, fetch options,<br/>retention + purge, guard 4 full, labels, pattern<br/>(HR-3, HR-6, HR-7, HR-8, HR-10)"]
   end
   WP1 --> WP2
-  L9 -->|"v0.2.0 tag (watchpost FR-5.6)"| WP2
+  L9 -->|"final v0.2.0 tag: 0.18.0 ships (FR-5.6)"| WP2
+  LIB -.->|"v0.2.0-rc.N as packages land (D-69)"| WP2
 ```
 
 **Watchpost's W-numbers are its plan's** (`observer-maps/04-development/implementation-plan.md`). **Inside the library, WP-L4 lands before WP-L3**: the renderer's frame-identity tasks need a way to advance the shown frame.
 
 **Two tracks in parallel, one join.** Watchpost's P1-a needs nothing from v0.2.0 and can start at
-once. Its P1-b waits for the v0.2.0 tag (watchpost FR-5.6: radar lands only against a tagged
-version). Watchpost's ship-without-radar rule (its RK-4) is P1-a on its own.
+once. Its P1-b builds against release candidates, `v0.2.0-rc.N`, as the packages it needs land
+(D-69, watchpost D-51), and 0.18.0 ships only on the final `v0.2.0` (watchpost FR-5.6). Watchpost's ship-without-radar rule (its RK-4) is P1-a on its own.
 
 ## Host requirement ⇄ library requirement ⇄ work package
 

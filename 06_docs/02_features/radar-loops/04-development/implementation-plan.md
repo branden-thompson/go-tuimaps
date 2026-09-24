@@ -232,7 +232,7 @@ L4 comes before L3 in the build order, because L3.1 and L3.2 need to advance the
 |---|---|---|---|---|
 | L10.1 | A test lists the library's environment reads (L-13.8) | `rules_test.go` | Allowed: `look.go`'s colour-depth read | A new `os.Getenv` in a library file fails |
 | L10.2 | Doc comments corrected (L-13.4) | `internal/tiles/disk.go`, `look.go` | Text | The two comments' claims each asserted by a test of the behaviour they describe |
-| L10.3 | A gate test refuses a tag while its checklist is unfinished (L-5.3) | `gate_test.go`, `scripts/gate` | A `--release` check | An unticked row refuses; all ticked passes |
+| L10.3 | A gate test refuses the **final** tag while its checklist is unfinished (L-5.3); release candidates `v0.2.0-rc.N` are tagged as packages land, each naming the packages it holds (D-69) | `gate_test.go`, `scripts/gate`, `release-checklist.md` | A `--release` check; an rc row in the checklist | An unticked row refuses the final tag; all ticked passes; an rc tag is not refused |
 | L10.4 | A pinned `govulncheck` at the tag, requiring no reachable finding (L-5.5) | `scripts/gate`, `release-checklist.md` | The version pinned | An injected vulnerable module fails the release check |
 | L10.5 | Hosted CI (L-6.1) | `.github/workflows/gate.yml` | The gate on Linux; the second architecture on a runner that has it | A run on the branch, green |
 | L10.6 | The default tile memory cache documented against a large view (L-6.3) | `contract.md`, `contract_test.go` | Text | L1.6's sentence test covers it |
