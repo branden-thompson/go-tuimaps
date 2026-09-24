@@ -54,6 +54,17 @@ type look struct {
 	reduce      bool
 	off         style.Switches
 	language    string
+	blends      colour.Blends // how each alert tint blends over each image ramp (L-11.3)
+	blendsFor   blendKey      // the look the search was run for
+}
+
+// blendKey is everything the blend search reads: it runs again only when one
+// of them changes, never on a frame (L3.8).
+type blendKey struct {
+	searched bool
+	palette  uint64
+	ground   colour.GroundChoice
+	depth    Depth
 }
 
 // languageMax is the longest language code the library takes: enough for a
@@ -305,4 +316,35 @@ func (m *Map) paint(in *render.Input) {
 	in.Ground = m.look.ground
 	in.Depth = m.depthInEffect()
 	in.Layers = m.look.off
+	m.searchBlendsLocked(in.Depth)
+	in.Blends = m.look.blends
 }
+
+// searchBlendsLocked runs the blend search when the palette, the ground or
+// the depth has changed since it last ran (L3.8). A tint that a host's
+// palette leaves unable to blend is reported: the image is drawn over it,
+// and the warning is carried by the outline, label and severity digit.
+func (m *Map) searchBlendsLocked(depth Depth) {
+	key := blendKey{searched: true, palette: m.look.version, ground: m.look.ground, depth: depth}
+	if m.look.blendsFor == key {
+		return
+	}
+	colourOf, _ := m.look.ground.InEffect(m.look.palette)
+	m.look.blends = colour.SearchBlends(m.look.palette, m.look.ground.Kind(m.look.palette), colourOf, depth)
+	m.look.blendsFor = key
+	if !m.look.palette.Own() || (depth != colour.Truecolor && depth != colour.Colours256) {
+		return // the library's own colours: where they fall back is documented, not a warning
+	}
+	for _, f := range m.look.blends.Fallbacks() {
+		if len(m.own) < 64 {
+			m.own = append(m.own, fault.Warning{Kind: fault.RampRuleBroken, Count: 1,
+				Subject: textsafe.Clean(presetNames[colour.Preset(f[0])] + " under the " + alertNames[f[1]] + " tint: drawn over it, not blended")})
+		}
+	}
+}
+
+// presetNames are the image presets by name.
+var presetNames = map[colour.Preset]string{colour.Temperature: "temperature", colour.Radar: "radar"}
+
+// alertNames are the alert severities, extreme first, as the tints are ordered.
+var alertNames = [5]string{"extreme", "severe", "moderate", "minor", "unknown"}

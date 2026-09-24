@@ -111,6 +111,10 @@ type Input struct {
 	// current, which the frame marks in a word (FR-32); Footer is the
 	// host's own line of text, drawn only when it is given (P-57).
 	Stale bool
+	// Blends is how strongly each alert tint blends over each image ramp, as
+	// the map's last search found it (L-11.3); a tint that does not blend has
+	// the image drawn over it (D-27).
+	Blends colour.Blends
 	// FrameTime is the moment a loop shows, as text beside the stale word:
 	// its time, "gap" and its time, or "forecast" and its time (L-1.10a).
 	// It changes only with the moment or the overlays, and each of those
@@ -189,9 +193,12 @@ func (g *grid) write(col, row int, text textsafe.Text, ink uint8) bool {
 		if w == 0 {
 			return true
 		}
-		g.cells[at] = cell{text: cluster, ink: ink, taken: true, strict: true, area: g.cells[at].area}
+		// Text keeps what colours the cell under it - an alert's area and an
+		// image's class - so that a name inside an alert over radar sits on
+		// the blend, as it sits on the radar outside (L-11.1).
+		g.cells[at] = cell{text: cluster, ink: ink, taken: true, strict: true, area: g.cells[at].area, under: g.cells[at].under}
 		if w == 2 {
-			g.cells[at+1] = cell{ink: ink, taken: true, strict: true, area: g.cells[at+1].area}
+			g.cells[at+1] = cell{ink: ink, taken: true, strict: true, area: g.cells[at+1].area, under: g.cells[at+1].under}
 		}
 		at += w
 		return true
@@ -691,14 +698,22 @@ func scaleMark(v project.View, room int) textsafe.Text {
 // (FR-16, D-77).
 func (r *Renderer) colours(c cell, in Input, groundColour colour.RGB, kind colour.GroundKind) (fg, bg colour.RGB) {
 	// The background, bottom to top: the ground; water; a field or an image;
-	// an alert's tint (L2 Render, steps 1 to 4).
+	// an alert's tint (L2 Render, steps 1 to 4). Where an alert's tint and an
+	// image meet, the image is shifted toward the tint as strongly as the
+	// search found safe (L-11.1), or where no strength is, drawn over it
+	// (L-11.4, D-27).
 	bg = groundColour
 	tinted := colour.Token(c.area) >= colour.AlertExtremeOutline && colour.Token(c.area) <= colour.AlertUnknownTint
 	if area, ok := r.painter.Colour(c.area, in.Palette, kind, in.Depth); ok {
 		bg = area
 	}
-	if under, ok := r.painter.Colour(c.under, in.Palette, kind, in.Depth); ok && !tinted {
-		bg = under
+	if under, ok := r.painter.Colour(c.under, in.Palette, kind, in.Depth); ok {
+		switch s, blended := in.Blends.Strength(presetOf(c.under), int(colour.Token(c.area)-colour.AlertExtremeOutline)/2); {
+		case tinted && blended:
+			bg = colour.Blend(under, bg, s)
+		default:
+			bg = under
+		}
 	}
 	own, ok := r.painter.Colour(c.ink, in.Palette, kind, in.Depth)
 	if !ok {

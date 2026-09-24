@@ -75,3 +75,5 @@ A commit made from exactly that has the same tree less this file, so the two can
 | 2026-09-24T17:56:31Z | 3702d68 | 27bc2f2d9ac2 | full | FAILED | 1121 | - |
 | 2026-09-24T18:18:00Z | 3702d68 | 27bc2f2d9ac2 | full | green | 1273 | - |
 | 2026-09-24T19:07:31Z | 39cf026 | 3ff947accbd8 | full | green | 1330 | - |
+| 2026-09-24T19:56:50Z | af9c2ac | 61a5d493dc9f | full | FAILED | 1933 | - |
+| 2026-09-24T20:23:44Z | af9c2ac | b88367c92ce2 | full | green | 1400 | - |

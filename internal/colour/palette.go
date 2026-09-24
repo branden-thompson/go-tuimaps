@@ -52,6 +52,9 @@ func NewPalette(values map[string]RGB) (Palette, []string) {
 	return p, unknown
 }
 
+// Own reports whether the host has given any token a colour of its own.
+func (p Palette) Own() bool { return len(p.set) > 0 }
+
 // Resolve is the colour of a token: the host's if it set one, else the
 // library's default for the kind of ground in effect. It is false for a
 // value that is no token, and for a token with no default yet.

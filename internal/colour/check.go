@@ -9,10 +9,12 @@ type Rule uint8
 
 // The rules.
 const (
-	Ordered    Rule = iota + 1 // relative luminance moves one way, or one way on each side of a midpoint
-	Distinct                   // every class is a different palette entry at the depth in use
-	Readable                   // line work 3:1 against its ground; text 4.5:1 on every class
-	VisionSafe                 // every pair of classes, and every class against the ground, at least 10 apart
+	Ordered       Rule = iota + 1 // relative luminance moves one way, or one way on each side of a midpoint
+	Distinct                      // every class is a different palette entry at the depth in use
+	Readable                      // line work 3:1 against its ground; text 4.5:1 on every class
+	VisionSafe                    // every pair of classes, and every class against the ground, at least 10 apart
+	BlendSeparate                 // blended toward an alert's tint, every class still at least 10 from every other (L-11.2)
+	BlendVisible                  // blended, every class at least 5 from the same class outside the area (L-11.5)
 )
 
 // String names the rule.
@@ -26,6 +28,10 @@ func (r Rule) String() string {
 		return "readable"
 	case VisionSafe:
 		return "colour-vision-safe"
+	case BlendSeparate:
+		return "blend-separate"
+	case BlendVisible:
+		return "blend-visible"
 	}
 	return "unknown"
 }
