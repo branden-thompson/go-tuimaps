@@ -370,3 +370,50 @@ without colour. Program and inputs: `radar-loops/02-analysis/programs/partial-re
 |---|---|---|
 | S31-1 | **Drawn as found, the picture puts Fort Davis outside the watch it is inside.** The label's "4 of 5" says the area is incomplete, but not where the gap is, and not that the place is in it. | Watchpost knows the selected place's zone and the alert's zone list, so it can say "the place is in the missing zone" — a fact the picture cannot show. |
 | S31-2 | **The named place's name is drawn at neither size**, in any variant. | The third specimen in a row (S29-3, S30-3); OW-3's diagnosis matters. |
+
+## Specimen 32 — severity without colour: a word and a dash (v0.2.0 PLAN, D-17, OW-2, D-63)
+
+D-17 ruled that an alert's severity reads without colour by a **word in its label** and **one outline
+dash a severity**, and made a specimen owed before PLAN commits to it; D-63 drew it to learn whether the
+approach is feasible. Five alerts, one a severity: specimen 29's real Flash Flood Warning (Severe) and
+four synthetic areas. Dashes, in braille dots: EXTREME solid and two thick; SEVERE 8 on, 2 off;
+MODERATE 4 on, 3 off; MINOR 1 on, 2 off; UNKNOWN 6 on, 2 off, 1 on, 2 off (the line overlay's own dash
+is 5 on, 4 off, two thick). The frame time and `stale` sit on the bottom row beside the scale. Drawn
+from a scratch copy of the library with a throwaway patch that also lets outlines, labels and furniture
+survive radar shades (the specimen 29 defect D-17 depends on). Program and patch:
+`radar-loops/02-analysis/programs/ow2-render.go.txt`, `ow2-severity-dash.patch`; inputs: `inputs/spec29/`.
+
+| File | What it is |
+|---|---|
+| `32-*` | The five alerts over specimen 29's radar, at 69×12 and 149×38, no colour, 16 colours and truecolor |
+| `32k-*` | The dash key: the five as long stacked boxes, no radar, the same sizes and depths |
+
+| # | Finding | Consequence |
+|---|---|---|
+| S32-1 | **At 149×38 all five words are drawn, and the five rhythms read on horizontal edges.** Vertical edges read less well: a braille cell is four dots tall, so a dash spans one or two cells. MODERATE and UNKNOWN are the closest pair. | The approach is feasible at the comfortable size, with the word doing most of the work |
+| S32-2 | **At 69×12, three of the five labels are dropped** in both scenes; only EXTREME and MINOR fit. Small areas are four to six cells across, too short for a rhythm to repeat. | At the floor size the dash cannot rank severity on its own; the description must carry the dropped words (L-8.5) |
+| S32-3 | **With the patch, outlines, labels, the scale, the frame time, `stale` and the credit all survive radar** at no colour and 16 colours. | L-8.3's fix works as planned |
+| S32-4 | The hatch still draws inside each area; with the word and the dash it adds noise over radar. | Whether the hatch stays is a question for the ruling |
+| S32-5 | Hamlin, the named place, is still not drawn. | D-60, in BUILD |
+
+## Specimen 33 — severity as a mark on the outline (v0.2.0 PLAN, D-64, ruled D-65)
+
+D-64 asked for option C before falling back to specimen 32's dashes: a severity mark repeated along
+each alert's outline. The same five alerts, radar and sizes as specimen 32; the outline is solid, the
+word stays in the label, and every fifth outline cell (staggered by row) carries a **letter** — E S M m
+U. **D-65 then ruled a digit scale instead** (Extreme 4, Severe 3, Moderate 2, Minor 1, Unknown `?`),
+with the key in the host's legend: the placement drawn here is the one ruled, the characters are not.
+Program: `ow2-render.go.txt` with `SPECIMEN_MODE=letters`.
+
+| File | What it is |
+|---|---|
+| `33-*` | The five alerts over radar, marks on the outlines |
+| `33k-*` | The key: five long boxes, no radar |
+
+| # | Finding | Consequence |
+|---|---|---|
+| S33-1 | **At 69×12 every area carries its mark**, including the three whose labels are dropped (specimen 32 could rank two of five there) | Severity survives the floor size on the picture itself |
+| S33-2 | At 149×38 the marks repeat along vertical edges too, the dashes' weak case | — |
+| S33-3 | A mark can land in a free bottom-row cell beside the furniture (the key's `14:28ZU`) | Marks stay off the furniture rows (L-8.1) |
+| S33-4 | Minor and moderate differed only by case (`m`, `M`) | Resolved by D-65's digits |
+| S33-5 | On a very small area, marks take outline cells and can crowd its label | Every area keeps at least one mark (L-8.1); crowding is judged in BUILD's goldens |

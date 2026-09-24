@@ -18,6 +18,7 @@ will say so** (the accepted cost of D-32). Update a program when you re-run it.
 | `mrms-legend.go.txt` | The MRMS legend's pixel layout | `inputs/mrms/legend.png` | — |
 | `mrms-measure.go.txt` | Wave 2 M-A: frames against a legend-derived table, independently and through the library | `inputs/mrms/` | `output/mrms-measure.txt` |
 | `mrms-palette.go.txt` | Wave 2 M-A: the palette MRMS uses, across 18 frames | `inputs/mrms/` | `output/mrms-palette.txt` |
+| `ow2-render.go.txt`, `ow2-severity-dash.patch` | Specimen 32 (OW-2, D-63): five alerts, one a severity, with a word and one dash each; `KEY=1` draws the dash key; `SPECIMEN_FRAMETIME` puts the frame time on the bottom row; `SPECIMEN_MODE=letters` draws specimen 33 (a mark on the outline, solid outline). The patch applies to `internal/render` of a scratch copy | `inputs/spec29/` | the `32*` and `33*` specimen files |
 | `loopmem.go.txt` | Wave 2 M-B: heap cost of twelve frames on a map | `inputs/loopmem/`, `inputs/spec29/n0q-table-raw.json` | `output/loopmem.txt` |
 
 ## Re-running one

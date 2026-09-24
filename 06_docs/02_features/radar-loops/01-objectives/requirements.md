@@ -117,13 +117,13 @@ For designers and PMs before engineers, the three visible decisions:
 
 | # | Requirement | Source | Instrument |
 |---|---|---|---|
-| L-8.1 | An alert area's label carries its **severity as a word**, and each of the five levels has **its own outline dash**, at every colour depth; the hatch stays as a secondary cue. | D-17 | Specimen owed before PLAN (OW-2) |
+| L-8.1 | An alert area's label carries its **severity as a word**, and **a severity digit is repeated along its outline** — Extreme 4, Severe 3, Moderate 2, Minor 1, Unknown `?` — at every colour depth, never on the furniture rows, at least one on every area; the outline is solid; the hatch stays as a secondary cue; `Legend()` carries the digit key. | D-17, D-65 | NO INSTRUMENT YET; specimens 32, 33 |
 | L-8.2 | The hatch strokes cannot rank five levels: Extreme and Severe share `╳`, **Minor and Unknown share `╱`**. | L-8.2 corrected, W1-C | — (context for L-8.1) |
 | L-8.3 | **An image or field never erases furniture.** Outline, **hatch**, label, marker, `stale` word, the no-tiles notice, frame time, scale and credit survive an image or field **at every depth**. Today they are erased at NoColour **and Colours16**. Inside rain cells, where a shade glyph takes the whole cell and the hatch cannot draw, what carries severity is stated. | S29-2, D-14, red team A7, D-40 (H D-3, A F7) | NO INSTRUMENT YET; tests at NoColour and Colours16 |
 | L-8.4 | ~~At 16 colours, rain classes stay distinguishable; every rain cell draws as `░`.~~ **Withdrawn (D-50):** a miscount; 16 colours draws the same three shades as no colour. | D-50 | — |
 | L-8.9 | **The named place's marker and name are preserved**: the host's places outrank alert labels, basemap labels and furniture where they collide; where the name still cannot fit, a shorter form or the marker alone is drawn, and the frame reports it. | D-60; S29-3, S30-3, S31-2 | NO INSTRUMENT YET; specimens 29, 30 and 31 as tests |
-| L-8.5 | A label that does not fit falls back to the severity word alone; if that does not fit, the description carries it and the frame reports the dropped label to the host. | D-28 (A8) | NO INSTRUMENT YET; the D-17 specimen (OW-2) |
-| L-8.6 | The five outline dashes differ from each other, from the line-overlay dash (5 on, 4 off) and from every basemap stroke. | D-28 (A8) | NO INSTRUMENT YET; the D-17 specimen (OW-2) |
+| L-8.5 | A label that does not fit falls back to the severity word alone; if that does not fit, the description carries it and the frame reports the dropped label to the host. The outline's digit carries severity either way (D-65). | D-28 (A8), D-65 | NO INSTRUMENT YET; specimens 32, 33 |
+| L-8.6 | ~~The five outline dashes differ from each other …~~ **Superseded by D-65**: the digit replaces the dash; an alert outline is solid and stays distinct from the line-overlay dash (5 on, 4 off). | D-28 (A8), D-65 | — |
 | L-8.7 | The hatch draws at Colours16 as well as NoColour. | D-28 (A8) | NO INSTRUMENT YET |
 | L-8.8 | Outlines hold 3:1 (WCAG 1.4.11) and labels 4.5:1 against the plain radar and, **on each ground where the blend is used**, the blended inside — at truecolor and 256 colours. **At 16 colours there is no ramp and no blend to check** (rain draws as shades), so severity there rests on the word and the dash. | D-28 (A9), D-40 (A F8, B N-3) | The checker, extended |
 
@@ -229,7 +229,7 @@ where it stands.
 | # | What | Due | Source |
 |---|---|---|---|
 | OW-1 | ~~The row in v0.1.0's record saying its close-out did not run~~ **Done (D-38)**: `go-tuimaps/07-readiness/release-checklist.md` | — | D-18 |
-| OW-2 | The D-17 specimen: severity word and five dashes, at 69×12 and 149×38, NoColour and Colours16, **drawn over specimen 29's radar**, with the frame time and the `stale` word on the same bottom row, so the crowding at 69×12 is seen | before PLAN commits to L-8.1 | D-17, D-40 (A F7, B) |
+| OW-2 | The D-17 specimen: severity word and five dashes, at 69×12 and 149×38, NoColour and Colours16, **drawn over specimen 29's radar**, with the frame time and the `stale` word on the same bottom row, so the crowding at 69×12 is seen | before PLAN commits to L-8.1 | D-17, D-40 (A F7, B) **Done: specimens 32 and 33; ruled D-64, D-65 (a digit on the outline).** |
 | OW-3 | ~~Diagnose S29-3~~ **Folded into L-8.9 (D-60)** | — | D-60 |
 | OW-4 | The 40-second `FuzzAgree` freeze | PLAN | L-6.4 |
 | OW-5 | ~~Correct wave 2's "71–80 %" and D-19's copy of it~~ **Done 2026-09-23**: 80.0–80.6 %, and wave 2's finding 2 restated | — | round 1 verification |

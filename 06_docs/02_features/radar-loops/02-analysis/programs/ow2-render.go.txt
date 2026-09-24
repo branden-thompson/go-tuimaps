@@ -1,0 +1,158 @@
+// Command ow2 draws the D-17 specimen (OW-2): a severity word in each alert's
+// label and one outline dash a severity, over specimen 29's radar, at 69x12
+// and 149x38, with no colour, 16 colours and truecolor. It runs against a
+// scratch copy of the library patched by ow2-severity-dash.patch. Throwaway.
+//
+//	ow2 SPEC29_DIR OUT_PREFIX
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strconv"
+	"time"
+
+	tuimaps "github.com/branden-thompson/go-tuimaps"
+	"github.com/branden-thompson/go-tuimaps/assets"
+)
+
+var captured = time.Date(2026, 9, 23, 14, 28, 0, 0, time.UTC)
+
+type alertDoc struct {
+	Features []struct {
+		Properties struct {
+			Event, Severity, AreaDesc string
+		} `json:"properties"`
+		Geometry struct {
+			Coordinates [][][2]float64 `json:"coordinates"`
+		} `json:"geometry"`
+	} `json:"features"`
+}
+
+func must(err error) {
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
+
+func box(w, s, e, n float64) []tuimaps.LonLat {
+	return []tuimaps.LonLat{{Lon: w, Lat: s}, {Lon: e, Lat: s}, {Lon: e, Lat: n}, {Lon: w, Lat: n}, {Lon: w, Lat: s}}
+}
+
+func main() {
+	dir, out := os.Args[1], os.Args[2]
+	var raw [][]string
+	b, err := os.ReadFile(filepath.Join(dir, "n0q-table-raw.json"))
+	must(err)
+	must(json.Unmarshal(b, &raw))
+	table := []tuimaps.TableEntry{}
+	for _, r := range raw {
+		v, _ := strconv.ParseFloat(r[1], 64)
+		R, _ := strconv.Atoi(r[2])
+		G, _ := strconv.Atoi(r[3])
+		B, _ := strconv.Atoi(r[4])
+		table = append(table, tuimaps.TableEntry{Colour: tuimaps.RGB{R: uint8(R), G: uint8(G), B: uint8(B)}, Value: v})
+	}
+	var ad alertDoc
+	b, err = os.ReadFile(filepath.Join(dir, "alert.json"))
+	must(err)
+	must(json.Unmarshal(b, &ad))
+	f := ad.Features[0]
+	ring := []tuimaps.LonLat{}
+	for _, c := range f.Geometry.Coordinates[0] {
+		ring = append(ring, tuimaps.LonLat{Lon: c[0], Lat: c[1]})
+	}
+	png, err := os.ReadFile(filepath.Join(dir, "radar-crop.png"))
+	must(err)
+
+	// The real warning (Severe) and four synthetic areas, one a severity, so
+	// all five dashes are on one frame. The label carries the word (D-17).
+	features := []tuimaps.Feature{
+		{Kind: tuimaps.Polygon, Rings: [][]tuimaps.LonLat{box(-82.30, 38.40, -82.12, 38.55)}, Role: tuimaps.AlertExtreme, Label: "Tornado Warning · EXTREME"},
+		{Kind: tuimaps.Polygon, Rings: [][]tuimaps.LonLat{ring}, Role: tuimaps.AlertSevere, Label: f.Properties.Event + " · SEVERE"},
+		{Kind: tuimaps.Polygon, Rings: [][]tuimaps.LonLat{box(-81.80, 38.40, -81.58, 38.58)}, Role: tuimaps.AlertModerate, Label: "Flood Watch · MODERATE"},
+		{Kind: tuimaps.Polygon, Rings: [][]tuimaps.LonLat{box(-82.30, 38.02, -82.10, 38.18)}, Role: tuimaps.AlertMinor, Label: "Flood Advisory · MINOR"},
+		{Kind: tuimaps.Polygon, Rings: [][]tuimaps.LonLat{box(-81.80, 38.02, -81.58, 38.18)}, Role: tuimaps.AlertUnknown, Label: "Hydrologic Outlook · UNKNOWN"},
+	}
+
+	key := os.Getenv("KEY") != "" // the dash key: five long boxes, stacked, no radar
+	if key {
+		names := []string{"EXTREME", "SEVERE", "MODERATE", "MINOR", "UNKNOWN"}
+		roles := []tuimaps.Token{tuimaps.AlertExtreme, tuimaps.AlertSevere, tuimaps.AlertModerate, tuimaps.AlertMinor, tuimaps.AlertUnknown}
+		features = features[:0]
+		for i := range names {
+			n := 38.60 - float64(i)*0.13
+			features = append(features, tuimaps.Feature{Kind: tuimaps.Polygon, Rings: [][]tuimaps.LonLat{box(-82.35, n-0.08, -81.55, n)}, Role: roles[i], Label: names[i]})
+		}
+	}
+	sizes := []tuimaps.Size{{Cols: 69, Rows: 12}, {Cols: 149, Rows: 38}}
+	depths := []struct {
+		name string
+		d    tuimaps.Depth
+		ext  string
+	}{{"no-colour", tuimaps.NoColour, ".txt"}, {"16-colour", tuimaps.Colours16, ".ans"}, {"truecolor", tuimaps.Truecolor, ".ans"}}
+	now := captured.Add(20 * time.Minute) // past the radar's 15 minutes: "stale" on the bottom row
+
+	for _, sz := range sizes {
+		for _, dp := range depths {
+			m, err := tuimaps.New(tuimaps.WithSize(sz.Cols, sz.Rows), tuimaps.Embed(assets.Tile, assets.MaxZoom))
+			must(err)
+			must(m.CacheRoot(filepath.Join(dir, "tilecache"), 256<<20))
+			must(m.Source("https://tiles.openfreemap.org/planet"))
+			m.ColourDepth(dp.d)
+			must(m.Ground(tuimaps.RGB{R: 16, G: 22, B: 28}))
+			m.PaintGround()
+			m.Units(true, true)
+			img := tuimaps.Image{
+				West: -82.401007, South: 37.949451, East: -81.501007, North: 38.650549,
+				Projection: tuimaps.PlateCarree, PNG: png, Table: table,
+			}
+			radar := tuimaps.RadarImage("radar", img, captured)
+			radar.Credit = "NOAA/NWS NEXRAD via Iowa Environmental Mesonet"
+			if !key {
+				_, err = m.Set(radar)
+				must(err)
+			}
+			_, err = m.Set(tuimaps.Overlay{ID: "alerts", Valid: captured, Keeps: 3 * time.Hour, Credit: "National Weather Service", Features: features})
+			must(err)
+			_, err = m.SetPlaces([]tuimaps.Place{{ID: "hamlin", Name: "Hamlin", At: tuimaps.LonLat{Lon: -82.1029, Lat: 38.2787}, Marker: tuimaps.MarkerRing}})
+			must(err)
+			must(m.FitTo([]tuimaps.LonLat{{Lon: -82.1029, Lat: 38.2787}}, []string{"alerts"}, 1))
+			for i := 0; i < 6; i++ {
+				_, err = m.Settle(context.Background())
+				must(err)
+				if m.Pending() == 0 {
+					break
+				}
+			}
+			fr, err := m.Render(sz, now)
+			must(err)
+			for _, w := range m.Warnings() {
+				fmt.Fprintln(os.Stderr, "warning:", w)
+			}
+			c, z := m.Centre()
+			name := fmt.Sprintf("%s-%s-%dx%d%s", out, dp.name, sz.Cols, sz.Rows, dp.ext)
+			fh, err := os.Create(name)
+			must(err)
+			scene := "over specimen 29's radar (IEM n0q 2026-09-23 14:28Z, stale)"
+			if key {
+				scene = "the dash key: five long boxes, no radar"
+			}
+			what := "Specimen 32 (OW-2, D-17) · %s · %dx%d · five alerts, one a severity: word in the label, one outline dash each · %s · centre %.3f,%.3f z%.2f · status %s\n"
+			if os.Getenv("SPECIMEN_MODE") == "letters" {
+				what = "Specimen 33 (D-64, option C) · %s · %dx%d · five alerts, one a severity: word in the label, a severity letter on the outline every few cells (E S M m U), solid outline · %s · centre %.3f,%.3f z%.2f · status %s\n"
+			}
+			fmt.Fprintf(fh, what, dp.name, sz.Cols, sz.Rows, scene, c.Lat, c.Lon, z, fr.Status)
+			for _, l := range fr.Lines {
+				fmt.Fprintln(fh, l)
+			}
+			fh.Close()
+			fmt.Println("wrote", name, fr.Status)
+			m.Close()
+		}
+	}
+}

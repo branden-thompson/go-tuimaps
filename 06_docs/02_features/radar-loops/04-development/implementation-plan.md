@@ -4,7 +4,7 @@ date: 2026-09-23
 phase: PLAN
 sev: SEV-0
 authority: HUM LEAD
-status: "DRAFT, revised after the internal plan check — for the PLAN red team, then HUM LEAD approval. One item waits on a ruling, marked PENDING. No code: signatures, shapes, test descriptions, file paths and order only (watchpost D-13, v0.2.0 D-52)."
+status: "DRAFT, revised after the internal plan check — for the PLAN red team, then HUM LEAD approval. No item waits on a ruling. No code: signatures, shapes, test descriptions, file paths and order only (watchpost D-13, v0.2.0 D-52)."
 ---
 
 # Implementation plan
@@ -152,16 +152,17 @@ L4 comes before L3 in the build order, because L3.1 and L3.2 need to advance the
 | # | Task | Files | Shape | Test first (RED) |
 |---|---|---|---|---|
 | L3.1 | The frame-reuse test sees the shown frame (L-1.6) | `internal/render/frame.go` (`sameOverlays`), `internal/render/raster.go` | `scene.Raster` gains the shown frame's key; reuse compares it | `Step` the shown frame with nothing else changed: the frame is redrawn, not reused |
-| L3.2 | `Frame` carries `Changed` and `Ticks` (L-1.16) | `map.go` | `type Frame struct{ Lines []string; Status Status; Changed, Ticks uint64; Dropped []Drop }` | A render after a `Set` carries the new `Changed`; after a frame advance, the new `Ticks` |
+| L3.2 | `Frame` carries `Changed` and `Ticks` (L-1.16) | `map.go` | `type Frame struct{ Lines []string; Status Status; Changed, Ticks uint64; Dropped []Drop }`; `type Drop struct{ Kind DropKind; Overlay, Label, Shown string }`, kinds `DropAlertLabel`, `DropPlaceName` | A render after a `Set` carries the new `Changed`; after a frame advance, the new `Ticks` |
 | L3.3 | Furniture is never erased by an image or field at NoColour: outline, hatch, label, marker (L-8.3) | `internal/render/field.go`, `internal/render/frame.go` | Shade cells yield to them | Specimen 29's scene at NoColour: each present (today they vanish) |
 | L3.4 | The same at NoColour for the `stale` word, the notice, the frame time, the scale and the credit (L-8.3) | same | — | Specimen 29's scene: each present |
 | L3.5 | L3.3 and L3.4 at Colours16 (L-8.3) | same | — | The same scene at Colours16 |
 | L3.6 | The tint blends over the image (L-11.1) | `internal/render/frame.go` (`colours`) | The bare tint only where there is no image; otherwise the image's class colour shifted toward the tint in linear light | Pixel test over a blended cell; mutant: the tint wins |
 | L3.7 | The checker holds the blend: class separation ≥ 10 and visibility ≥ 5, on each ground where the blend is used (L-11.2, L-11.5) | `internal/colour/check.go` | `CheckBlend(ramp, tints, ground, strength) []Finding` | Today's 35 % fails; 20 % passes on dark; the light ground selects L-11.4's fallback |
 | L3.8 | The light-ground search, or its named fallback (L-11.3, L-11.4, D-27) | `internal/colour/preset.go` | Search the light ramp, the alert colours and per-class tints; if nothing passes, radar over tint on light | The checker picks the fallback when no candidate passes, and says so |
-| L3.9 | **PENDING the D-17 specimen (OW-2).** The severity word in the label (L-8.1) | `internal/render/frame.go` | The word derived from the feature's role until L5.1 makes severity data | Golden frames of the D-17 specimen at both sizes and depths, drawn over radar |
-| L3.10 | **PENDING OW-2.** Five distinct outline dashes, one a severity, distinct from the line-overlay dash (L-8.6) | `internal/render/hatch.go` | A dash table of five patterns | The same goldens; a test that the five and the line dash differ |
-| L3.11 | **PENDING OW-2.** The hatch at Colours16 (L-8.7); a label that doesn't fit falls back to the word, and a dropped label is reported (L-8.5) | `internal/render/hatch.go`, `map.go` | `type Drop struct{ Kind DropKind; Overlay, Label, Shown string }`; kinds `DropAlertLabel`, `DropPlaceName` | At 69×12 the fallback is drawn and `Frame.Dropped` names it |
+| L3.9 | The severity word in the label (L-8.1) | `internal/render/frame.go` | The word from the feature's severity (L5.1) | Specimen 33's scene as goldens at both sizes and depths: every label that fits carries its word |
+| L3.10 | **A severity digit repeated along each alert outline** (L-8.1, D-65): Extreme 4, Severe 3, Moderate 2, Minor 1, Unknown `?`; the outline solid; never on the furniture rows; at least one digit on every area | `internal/render/frame.go`, `internal/render/basemap.go` | A digit every few outline cells, staggered by row, placed after overlay labels and before basemap names | Specimen 33's scenes: every area carries its digit at 69×12 and 149×38; no digit in a furniture row; a four-cell area still gets one |
+| L3.11 | The hatch at Colours16 (L-8.7); a label that doesn't fit falls back to the word, and a dropped label is reported (L-8.5) | `internal/render/hatch.go`, `map.go` | Uses L3.2's `Frame.Dropped` | At 69×12 the fallback is drawn and `Frame.Dropped` names it |
+| L3.11a | `Legend()` carries the severity digit key (D-65) | `facts.go` | A legend section for alert severity: digit and word | The legend of a frame with alerts lists the five |
 | L3.12 | Contrast of outline and label over the blend (L-8.8) | `internal/colour/check.go` | 3:1 for outlines and 4.5:1 for labels, truecolor and 256 | Checker test at each severity on each ground |
 | L3.13 | **The named place's marker and name are preserved** (L-8.9, D-60) | `internal/render/marker.go`, `internal/render/frame.go` | Places outrank alert labels, basemap labels and furniture where they collide; a shorter form, or the marker alone, and a `DropPlaceName` in `Frame.Dropped` | Specimens 29, 30 and 31 as tests: the place's name is drawn at 149×38 in each, and at 69×12 either it or its reported short form |
 | L3.14 | A frame advance costs ≤ 15 ms at 149×38 (L-12.5, D-61) | `internal/render/profile_test.go` | `BenchmarkFrameAdvance` over a 12-frame loop. **Not a gated timing** (timing in the gate is flaky): the gate holds an allocation count per advance, and the time is measured on the reference machine and recorded in the SHIP report | The allocation pin; the recorded time ≤ 15 ms |
@@ -242,7 +243,7 @@ L4 comes before L3 in the build order, because L3.1 and L3.2 need to advance the
 
 L2.1 → L2.2 → L2.3 → L2.4 → L2.5 → L2.6 → L2.7 → L2.8 · L4.1 → L4.2 → L4.3; L4.4 and L4.5 need L4.1;
 L4.10 needs L4.4 · L3.1 and L3.2 need L4.4 and L4.7 · L3.3 → L3.4 → L3.5; L3.6 → L3.7 → L3.8 ·
-L3.9–L3.11 need OW-2 ruled and L3.5 · L5.1 → L5.2 → L5.3–L5.5; L5.6 needs L6.1 · L6.1 → L6.2, L6.3 →
+L3.9–L3.11a need L3.5 and L5.1 · L5.1 → L5.2 → L5.3–L5.5; L5.6 needs L6.1 · L6.1 → L6.2, L6.3 →
 L6.4 → L6.5, L6.6 → L6.9 · L8.1 → L8.2, L8.3; L8.5 → L8.6 · L9.3 needs L8.1; L9.1 → L9.2.
 
 ## The trace
@@ -251,7 +252,7 @@ L6.4 → L6.5, L6.6 → L6.9 · L8.1 → L8.2, L8.3; L8.5 → L8.6 · L9.3 needs
 |---|---|---|---|---|
 | L-1.1 | L2.1 | | L-7.1, L-7.2, L-7.4, L-13.2 | L8.1, L8.2 |
 | L-1.2, L-1.10a, L-1.10f | L4.8 | | L-7.3 | L8.3, L1.6 |
-| L-1.3 | L4.9 | | L-8.1, L-8.5–L-8.7 | L3.9–L3.11 (pending OW-2) |
+| L-1.3 | L4.9 | | L-8.1, L-8.5, L-8.7 | L3.9–L3.11a (D-65) |
 | L-1.4 | L2.10 | | L-8.3 | L3.3–L3.5, L1.6 |
 | L-1.5, L-1.11 | L4.1 | | L-8.8 | L3.12 |
 | L-1.6 | L3.1 | | L-8.9 | L3.13 |

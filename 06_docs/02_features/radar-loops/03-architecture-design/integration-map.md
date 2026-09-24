@@ -32,7 +32,7 @@ flowchart TB
     L0["WP-L1 Contract skeleton + surface test (L-4)"]
     L1["WP-L2 Loops: frames, copy, keys, budget (L-1, L-12)"]
     L3["WP-L4 Playback API + clock (L-1.5, L-1.8, L-1.10, L-1.13)"]
-    L2["WP-L3 Renderer: frame identity, Frame counters, blend,<br/>furniture, place labels, severity word + dash (L-1.6, L-1.16, L-8, L-11)"]
+    L2["WP-L3 Renderer: frame identity, Frame counters, blend,<br/>furniture, place labels, severity word + digit (L-1.6, L-1.16, L-8, L-11)"]
     L4["WP-L5 Report (L-1.12, L-13)"]
     L5["WP-L6 MRMS, table seam, heavy end (L-2)"]
     L6["WP-L7 View bound (L-3)"]
@@ -73,7 +73,7 @@ version). Watchpost's ship-without-radar rule (its RK-4) is P1-a on its own.
 | HR-4 contract | contract matches the code | L-4.1–L-4.4 | D-34 | WP-L1 |
 | HR-5 triage | superseded | L-5 | D-18 | WP-L10 |
 | HR-6 fetcher | `SetFetchOptions`, user-agent | L-7.1–L-7.4 | D-55 | WP-L8 |
-| HR-7 pattern | severity word + dash, every depth | L-8.1, L-8.5–L-8.7 (pending the D-17 specimen, OW-2) | D-17, D-28 | WP-L3 |
+| HR-7 pattern | severity word + a digit on the outline, every depth; the key in watchpost's legend (watchpost D-44) | L-8.1, L-8.5, L-8.7 | D-17, D-28, D-65 | WP-L3 |
 | HR-8 cache | `MaxAge`, `Purge` of everything | L-9.1–L-9.6 | D-56 | WP-L9 |
 | HR-10 confinement | one allow-list, per-connection proxy check | L-10.1–L-10.3 | D-55 | WP-L8 |
 | FR-4.4 / D-42 partial areas | per-alert answers; place labels kept | L-13.6, L-8.9 | D-43, D-60 | WP-L5, WP-L3 |
