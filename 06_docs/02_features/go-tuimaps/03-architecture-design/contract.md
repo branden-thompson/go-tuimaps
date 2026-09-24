@@ -101,7 +101,7 @@ As first drawn, tiles became wanted only when `Render` noticed them missing, yet
 |---|---|
 | What is it | The rendered rows, each exactly the requested width, held as bytes the map owns; `Frame.Lines`, one string a row; plus its `Status` |
 | How long is it valid | **Until the next `Render` on the same map.** The buffers are reused; a host that keeps a frame copies its `Lines` |
-| When is it reused unchanged, at no cost | When nothing that could change a cell has changed: view, size, depth, palette, safe ramps, ground, layers, language, focus, **the places**, reduce-motion, the overlays' versions, the tiles on hand, the marker phase, **each overlay's freshness**, and the frame's status. This list is the key; L2 Render's diagram points here rather than repeating it |
+| When is it reused unchanged, at no cost | When nothing that could change a cell has changed: view, size, depth, palette, safe ramps, ground, layers, language, focus, **the places**, reduce-motion, the overlays' versions, **the moment a loop shows** (v0.2.0 L4.2), the tiles on hand, the marker phase, **each overlay's freshness**, and the frame's status. This list is the key; L2 Render's diagram points here rather than repeating it |
 | What does a changed frame cost | Only the rows that changed are rebuilt; a marker blink rebuilds the marker's row |
 
 ## 6 · Which calls are safe together

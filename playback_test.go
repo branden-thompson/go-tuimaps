@@ -572,3 +572,33 @@ func TestOnlyAForecastMayBeInTheFuture(t *testing.T) {
 		t.Errorf("a forecast frame ten minutes ahead: %v", err)
 	}
 }
+
+// TestThePathThroughThePublicMap is L4.10 (RK-1): correct parts, correctly
+// connected. Set a loop, turn playback on, play, move the animation clock on
+// and render: the lines differ from the first render, and FrameTicks moved.
+func TestThePathThroughThePublicMap(t *testing.T) {
+	m := world(t, 60, 18)
+	mustSet(t, m, flickerLoop(t, "radar", []int{-10, -5, 0}, -40, 60))
+	settle(t, m)
+	size := tuimaps.Size{Cols: 60, Rows: 18}
+	m.Animate(noon)
+	f, err := m.Render(size, noon)
+	if err != nil {
+		t.Fatal(err)
+	}
+	first := append([]string(nil), f.Lines...) // a frame is valid until the next Render: a host keeps a copy
+	must(t, m.SetPlayback(tuimaps.PlaybackOn))
+	must(t, m.Play())
+	ticks := m.FrameTicks()
+	m.Animate(noon.Add(500 * time.Millisecond))
+	next, err := m.Render(size, noon)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fmt.Sprint(next.Lines) == fmt.Sprint(first) {
+		t.Error("a loop played forward and the frame is the same")
+	}
+	if m.FrameTicks() == ticks {
+		t.Error("a loop played forward and FrameTicks did not move")
+	}
+}
