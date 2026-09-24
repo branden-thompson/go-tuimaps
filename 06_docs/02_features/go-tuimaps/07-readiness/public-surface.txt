@@ -48,12 +48,17 @@ const NoColour
 const NoSize
 const NoTiles
 const NoWorkCalled
+const OffByDefault
+const OffByHost
+const OffReduceMotion OffReason
 const Ordered
 const OverImageCap
 const OverLimit
 const OverVertexCap
 const ParkLayer
 const PlateCarree
+const PlaybackOff Playback
+const PlaybackOn
 const Point
 const Polygon
 const RailLayer
@@ -116,6 +121,7 @@ method Map.InUse(string) bool
 method Map.LabelLanguage(string) error
 method Map.Layers(Layer, bool)
 method Map.Legend() []LegendEntry
+method Map.Loop() LoopState
 method Map.NextCall(time.Time) (time.Time, bool)
 method Map.OnPending(func()) error
 method Map.Overlays() []string
@@ -123,23 +129,29 @@ method Map.PaintGround()
 method Map.PanCells(int, int) error
 method Map.Pending() int
 method Map.Places() []Place
+method Map.Play() error
 method Map.Purge() error
 method Map.Recentre(LonLat) error
 method Map.ReduceMotion(bool)
 method Map.Remove(string) (RemoveResult, error)
 method Map.RemovePlace(string) (int, error)
 method Map.Render(Size, time.Time) (Frame, error)
+method Map.Reset() error
 method Map.SafeRamps(bool)
 method Map.Scale() (Scaled, bool)
 method Map.Set(Overlay) (SetResult, error)
 method Map.SetImageBudget(int64) error
 method Map.SetPalette(map[string]RGB) ([]string, error)
 method Map.SetPlaces([]Place) ([]string, error)
+method Map.SetPlayback(Playback) error
+method Map.SetPlaybackStep(time.Duration) error
 method Map.SetStyle([]byte) error
 method Map.Settle(context.Context) (SettleResult, error)
 method Map.ShowFooter(bool)
 method Map.Source(string) error
 method Map.SourceCredit() string
+method Map.Step(int) error
+method Map.Stop() error
 method Map.Units(bool, bool)
 method Map.Verify() (int, int, error)
 method Map.Warnings() []Warning
@@ -166,11 +178,14 @@ type Layer = style.Layer
 type LegendEntry struct{ ID string; Unit string; Preset string; Classes []Class }
 type LonLat = project.LonLat
 type LoopFrame = overlay.LoopFrame
+type LoopState struct{ At time.Time; Now time.Time; Oldest time.Time; Newest time.Time; Index int; Count int; Playing bool; Advancing bool; Gap bool; Forecast bool; CeilingLifted bool; Playback Playback; Step time.Duration; Off OffReason }
 type Map struct{  }
 type MarkerStyle = render.MarkerShape
+type OffReason uint8
 type Option func(*config) error
 type Overlay = overlay.Overlay
 type Place struct{ ID string; Name string; At LonLat; Marker MarkerStyle; Radius int; Glyph string; Blink bool }
+type Playback uint8
 type Positioned interface{ LonLat() (float64, float64) }
 type Projection = overlay.Projection
 type RGB = colour.RGB

@@ -23,6 +23,7 @@ func (m *Map) Animate(at time.Time) {
 		return
 	}
 	m.driven, m.animation = true, at
+	m.giveLocked(at)
 	m.changed++
 }
 
@@ -93,6 +94,11 @@ func (m *Map) NextCall(wall time.Time) (time.Time, bool) {
 	var due time.Time
 	if !m.driven && m.blinking() {
 		due = soonest(due, m.motion.Next(wall))
+	}
+	if !m.driven {
+		if at, ok := m.nextAdvanceLocked(wall); ok {
+			due = soonest(due, at) // a frame advance: the fourth source (L-1.8)
+		}
 	}
 	if !wall.IsZero() {
 		for _, id := range m.store.IDs() {

@@ -215,6 +215,9 @@ func (m *Map) ReduceMotion(on bool) {
 	if m.shut || m.look.reduce == on {
 		return
 	}
+	if on {
+		m.holdLocked() // a loop playing stops where it is (L-1.10c)
+	}
 	m.look.reduce = on
 	m.motion.Reduce(on)
 	m.changed++

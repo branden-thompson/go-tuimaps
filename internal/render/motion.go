@@ -21,6 +21,32 @@ type Motion struct {
 	start, seen time.Time
 	going       bool
 	reduce      bool
+	half        time.Duration // how long each half of a blink lasts; zero means half of BlinkPeriod
+}
+
+// Align puts the blink on a loop's grid while it plays (v0.2.0 D-76): it
+// starts again at the loop's start and changes every half, so that every
+// change on the map falls on one grid.
+func (m *Motion) Align(start time.Time, half time.Duration) {
+	if m == nil || m.reduce || half <= 0 {
+		return
+	}
+	m.start, m.seen, m.going, m.half = start, start, true, half
+}
+
+// Free gives the blink its own period back, from where it stands.
+func (m *Motion) Free() {
+	if m == nil {
+		return
+	}
+	m.half = 0
+}
+
+func (m *Motion) halfPeriod() time.Duration {
+	if m.half > 0 {
+		return m.half
+	}
+	return BlinkPeriod / 2
 }
 
 // Reduce sets whether motion is reduced. With it on, markers are steady and
@@ -48,7 +74,7 @@ func (m *Motion) Phase(now time.Time) bool {
 		return true
 	}
 	m.seen = now
-	return litHalf(now.Sub(m.start))
+	return litHalf(now.Sub(m.start), m.halfPeriod())
 }
 
 // Next is when the phase changes next, or the zero time if it never will.
@@ -56,7 +82,7 @@ func (m *Motion) Next(now time.Time) time.Time {
 	if m == nil || m.reduce || !m.going {
 		return time.Time{}
 	}
-	half := BlinkPeriod / 2
+	half := m.halfPeriod()
 	elapsed := now.Sub(m.start)
 	if elapsed < 0 {
 		return m.start
@@ -65,9 +91,9 @@ func (m *Motion) Next(now time.Time) time.Time {
 }
 
 // litHalf is which half of a blink an elapsed time falls in.
-func litHalf(elapsed time.Duration) bool {
+func litHalf(elapsed, half time.Duration) bool {
 	if elapsed < 0 {
 		return true
 	}
-	return (elapsed/(BlinkPeriod/2))%2 == 0
+	return (elapsed/half)%2 == 0
 }

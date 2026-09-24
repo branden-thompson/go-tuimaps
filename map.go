@@ -145,6 +145,7 @@ type Map struct {
 	style         *style.Style
 	look          look
 	motion        render.Motion
+	play          playback // the loops' playback, one for the map (D-67)
 	changed       uint64
 	driven        bool            // the host drives the animation clock itself (D-114)
 	footer        bool            // the footer is drawn inside the map (P-57)
@@ -381,6 +382,8 @@ func (m *Map) Render(size Size, now time.Time) (frame Frame, err error) {
 		in.Footer = textsafe.Clean(footerOf(m.view.Centre.Lat, m.view.Centre.Lon, m.view.Zoom))
 	}
 	m.paint(&in)
+	m.giveLocked(m.animationAt(now))
+	m.alignBlinkLocked()
 	in.MarkerPhase = m.motion.Phase(m.animationAt(now))
 	m.noteWallClock(now)
 	in.Stale = m.staleNow

@@ -256,13 +256,18 @@ func (m *Map) overlayWork() error {
 // and images, and the ones read straight from the host's memory (D-92).
 func (m *Map) draw(in *render.Input) {
 	bucket := m.bucket()
+	shown := m.shownLocked()
+	if !shown.Equal(m.play.drawn) {
+		m.overlays++ // another frame of a loop is drawn: the last frame cannot be reused
+		m.play.drawn = shown
+	}
 	m.shapes, m.fields, m.rasters, m.borrowed = m.shapes[:0], m.fields[:0], m.rasters[:0], m.borrowed[:0]
 	for _, id := range m.store.IDs() {
 		if field, ok := m.store.Field(id); ok {
 			m.fields = append(m.fields, field)
 			continue
 		}
-		if raster, _, ok := m.store.Raster(id); ok {
+		if raster, _, ok := m.store.RasterAt(id, shown); ok {
 			m.rasters = append(m.rasters, raster)
 			continue
 		}
