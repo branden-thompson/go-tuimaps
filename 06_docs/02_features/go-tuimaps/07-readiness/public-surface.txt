@@ -38,6 +38,7 @@ const MarkerDisc
 const MarkerDot
 const MarkerGlyph
 const MarkerRing
+const MaxFrames
 const MaxZoom
 const Middle
 const MinZoom
@@ -163,6 +164,7 @@ type Kind = fault.Kind
 type Layer = style.Layer
 type LegendEntry struct{ ID string; Unit string; Preset string; Classes []Class }
 type LonLat = project.LonLat
+type LoopFrame = overlay.LoopFrame
 type Map struct{  }
 type MarkerStyle = render.MarkerShape
 type Option func(*config) error

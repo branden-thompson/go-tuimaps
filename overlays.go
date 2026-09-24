@@ -46,6 +46,14 @@ type Type = overlay.Type
 // mean (D-45).
 type Image = overlay.Image
 
+// LoopFrame is one frame of an image's loop: when its picture was valid, and
+// the picture. A gap is a missing frame, stated as missing, with no bytes; a
+// forecast frame is one the provider forecast rather than observed.
+type LoopFrame = overlay.LoopFrame
+
+// MaxFrames is the most frames a loop may have, gaps included.
+const MaxFrames = overlay.MaxFrames
+
 // TableEntry is one row of that table: a colour of the provider's, the
 // value it stands for, and whether it means "no data".
 type TableEntry = overlay.TableEntry

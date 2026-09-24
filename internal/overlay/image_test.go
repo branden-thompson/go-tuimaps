@@ -303,7 +303,7 @@ func TestClassifiedSharesOneReading(t *testing.T) {
 	if _, _, held := shared.Read(key); held {
 		t.Error("an empty set already holds the picture")
 	}
-	raster, report, err := rasterise(img, kind)
+	raster, report, err := rasterise(img, img.PNG, kind, defaultImageBytes)
 	if err != nil {
 		t.Fatal(err)
 	}

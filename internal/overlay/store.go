@@ -115,12 +115,13 @@ type Store struct {
 	vertices int
 	warnings []fault.Warning
 
-	prepared   map[string]map[int]*prepared // by overlay id, then bucket
-	fields     map[string]scene.Field       // prepared grids, by overlay id
-	rasters    map[string]scene.Raster      // prepared images, by overlay id
-	reports    map[string]Report            // what matching each image's colours found
-	fromMemory map[string]bool              // overlays whose prepared form is larger than the whole cap
-	views      map[*ShapeView]int           // live views, and the bucket each draws at
+	prepared   map[string]map[int]*prepared    // by overlay id, then bucket
+	fields     map[string]scene.Field          // prepared grids, by overlay id
+	pictures   map[string][]picture            // decoded pictures, by overlay id, one a frame
+	spare      map[string]map[[32]byte]picture // a replaced loop's decoded frames, by key, for its refresh to keep (L-1.7)
+	decodes    int                             // pictures decoded, counted so a test can see a refresh reuse them
+	fromMemory map[string]bool                 // overlays whose prepared form is larger than the whole cap
+	views      map[*ShapeView]int              // live views, and the bucket each draws at
 	released   []string
 	shapeHeld  int64
 	shapeNeed  int64
@@ -147,7 +148,7 @@ func NewStore(c Caps) (*Store, error) {
 	if c.ImageBytes == 0 {
 		c.ImageBytes = defaultImageBytes
 	}
-	return &Store{caps: c, current: map[string]*held{}, retiring: map[string]int{}, prepared: map[string]map[int]*prepared{}, fields: map[string]scene.Field{}, rasters: map[string]scene.Raster{}, reports: map[string]Report{}, fromMemory: map[string]bool{}, views: map[*ShapeView]int{}}, nil
+	return &Store{caps: c, current: map[string]*held{}, retiring: map[string]int{}, prepared: map[string]map[int]*prepared{}, fields: map[string]scene.Field{}, pictures: map[string][]picture{}, spare: map[string]map[[32]byte]picture{}, fromMemory: map[string]bool{}, views: map[*ShapeView]int{}}, nil
 }
 
 func refused(kind fault.Kind, why, todo textsafe.Text) error {
@@ -404,7 +405,14 @@ func (s *Store) HandIn(o Overlay) (SetResult, error) {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	vertices, err := s.check(o)
+	var err error
+	if o.Image != nil {
+		o.Image, err = copied(o.Image) // the copy is what is checked and kept (L-1.14)
+	}
+	vertices := 0
+	if err == nil {
+		vertices, err = s.check(o)
+	}
 	if err == nil {
 		replaced := 0
 		if old, ok := s.current[o.ID]; ok {
@@ -445,10 +453,38 @@ func (s *Store) HandIn(o Overlay) (SetResult, error) {
 	if vertices > s.IndexFrom() {
 		next.index = buildIndex(o) // one linear pass, inside Set, so the shape draws next frame (D-92)
 	}
+	s.spareFramesLocked(o)     // a refresh keeps the frames it shares with the loop it replaces (L-1.7)
 	s.dropPreparedLocked(o.ID) // what was prepared from the old geometry is not this overlay's
 	s.current[o.ID] = next
 	s.vertices += vertices
 	return res, nil
+}
+
+// spareFramesLocked keeps, by key, the decoded frames of the loop an overlay
+// replaces, for the new version's job to take instead of decoding them again.
+// Only a loop replacing a loop keeps any; the new version's own keys decide
+// which it takes, and what it does not take is dropped when it is kept.
+//
+// Two refreshes before any work keep what the first kept: the spare set grows
+// only by frames a job decoded, and the job that keeps a version empties it,
+// so it never holds more than one version's frames.
+func (s *Store) spareFramesLocked(o Overlay) {
+	spare := s.spare[o.ID]
+	delete(s.spare, o.ID)
+	if o.Image == nil || len(o.Image.Frames) == 0 {
+		return
+	}
+	if spare == nil {
+		spare = map[[32]byte]picture{}
+	}
+	for _, p := range s.pictures[o.ID] {
+		if p.ready && p.key != ([32]byte{}) {
+			spare[p.key] = p
+		}
+	}
+	if len(spare) > 0 {
+		s.spare[o.ID] = spare
+	}
 }
 
 // Remove takes an overlay away. It never waits, and an id that is not set is
@@ -468,6 +504,7 @@ func (s *Store) Drop(id string) (RemoveResult, error) {
 		return RemoveResult{Released: true}, nil
 	}
 	delete(s.current, id)
+	delete(s.spare, id)
 	s.dropPreparedLocked(id)
 	for i, other := range s.order {
 		if other == id {
@@ -512,8 +549,15 @@ func (s *Store) OwnedBytes() int {
 	for _, f := range s.fields {
 		total += len(f.Classes)
 	}
-	for _, r := range s.rasters {
-		total += len(r.Classes) // one byte a pixel (D-36)
+	for _, pictures := range s.pictures {
+		for _, p := range pictures {
+			total += len(p.raster.Classes) // one byte a pixel (D-36)
+		}
+	}
+	for _, spare := range s.spare {
+		for _, p := range spare {
+			total += len(p.raster.Classes) // held until the refresh's job takes or drops it
+		}
 	}
 	for id, h := range s.current {
 		total += 160 + len(id) + len(h.overlay.Credit) + 96*len(h.overlay.Features) + 16*len(h.index)

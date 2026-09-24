@@ -211,8 +211,7 @@ func (s *Store) dropPreparedLocked(id string) {
 	delete(s.prepared, id)
 	delete(s.fromMemory, id)
 	delete(s.fields, id)
-	delete(s.rasters, id)
-	delete(s.reports, id)
+	delete(s.pictures, id)
 }
 
 // Drawn is what is drawn for an overlay at a bucket now: its prepared form at
@@ -293,9 +292,9 @@ func (j *prepareJob) Run(ctx context.Context) error {
 		return nil // removed meanwhile: nothing to do
 	}
 	if img := reader.Overlay().Image; img != nil {
-		raster, report, err := j.store.readPicture(img, reader.h.kind)
+		pictures, err := j.store.readPictures(ctx, j.id, img, reader.h.kind)
 		if err == nil {
-			j.store.keepRaster(reader, raster, report)
+			j.store.keepPictures(reader, pictures)
 		}
 		reader.Done()
 		return err

@@ -126,6 +126,17 @@ func Make(kind Kind, what, why, todo textsafe.Text) *Error {
 	return &Error{kind: kind, what: what, why: why, todo: todo}
 }
 
+// Of is the same error said of one part of what was handed in, such as one
+// frame of a loop: its first sentence names the part.
+func (e *Error) Of(part textsafe.Text) *Error {
+	if e == nil {
+		return nil
+	}
+	said := *e
+	said.what = textsafe.Join(part, textsafe.Const(": "), e.what)
+	return &said
+}
+
 // Kind returns the error's kind.
 func (e *Error) Kind() Kind {
 	if e == nil {

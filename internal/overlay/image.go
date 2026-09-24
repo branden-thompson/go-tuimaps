@@ -2,10 +2,14 @@ package overlay
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
+	"errors"
 	"image/color"
 	"image/png"
 	"math"
+	"strconv"
+	"time"
 
 	"github.com/branden-thompson/go-tuimaps/internal/colour"
 	"github.com/branden-thompson/go-tuimaps/internal/fault"
@@ -27,6 +31,9 @@ const (
 	maxTolerance     = 25.0
 	maxSamples       = 16
 )
+
+// MaxFrames is the most frames a loop may have, gaps included (L-1.15, D-68).
+const MaxFrames = 72
 
 // Projection is the projection a host says its image is in. There are two,
 // and an image in any other is refused.
@@ -52,12 +59,24 @@ type TableEntry struct {
 // never shown, so without it there is nothing to draw.
 type Image struct {
 	PNG                      []byte
+	Frames                   []LoopFrame // a loop; a single picture is PNG with no frames (L-1.1)
 	West, South, East, North float64
 	Projection               Projection
 	Table                    []TableEntry
 	Tolerance                float64 // a colour difference from 0 to 25; zero means the default, 10
 	Exact                    bool    // match the table's colours exactly, with no tolerance at all
 	Type                     Type
+}
+
+// LoopFrame is one frame of a loop: when its picture was valid, and the
+// picture. A gap is a frame that is missing, stated as missing and never
+// filled from a neighbour (L-1.2); it has no bytes. A forecast frame is one
+// the provider forecast rather than observed (D-67).
+type LoopFrame struct {
+	Valid    time.Time
+	PNG      []byte
+	Gap      bool
+	Forecast bool
 }
 
 // Report is what matching an image's colours found (FR-9): how many pixels
@@ -114,7 +133,7 @@ func checkImage(img *Image, imageCap int) (Kind, error) {
 	if img == nil {
 		return Kind{}, imageRefused(textsafe.Const("there is no image"), textsafe.Const("hand in a PNG"))
 	}
-	err := checkPNG(img.PNG, imageCap)
+	err := checkPictures(img, imageCap)
 	if err != nil {
 		return Kind{}, err
 	}
@@ -135,6 +154,82 @@ func checkImage(img *Image, imageCap int) (Kind, error) {
 		return Kind{}, err
 	}
 	return ResolveType(img.Type)
+}
+
+// checkPictures holds an image's picture, or every frame of its loop, to the
+// limits (L-1.9): times that rise, each once; a gap with no bytes and a
+// picture frame with some; and at least one picture. A refusal names the
+// frame, counting from one. The frame limit is held by copied, before this.
+func checkPictures(img *Image, imageCap int) error {
+	if len(img.Frames) == 0 {
+		return checkPNG(img.PNG, imageCap)
+	}
+	if len(img.PNG) != 0 {
+		return imageRefused(textsafe.Const("it has both a single picture and frames"),
+			textsafe.Const("hand in PNG for one picture, or Frames for a loop, not both"))
+	}
+	pictures := 0
+	for i, f := range img.Frames {
+		frame := textsafe.Join(textsafe.Const("frame "), textsafe.Clean(strconv.Itoa(i+1)))
+		var err error
+		switch {
+		case f.Valid.IsZero():
+			err = imageRefused(textsafe.Const("it has no valid time"), textsafe.Const("give every frame the time its picture was valid"))
+		case i > 0 && !f.Valid.After(img.Frames[i-1].Valid):
+			err = imageRefused(textsafe.Const("its valid time is not after the frame before it"), textsafe.Const("hand the frames in oldest first, each time once"))
+		case f.Gap && len(f.PNG) != 0:
+			err = imageRefused(textsafe.Const("it is a gap and has a picture; a gap has no bytes"), textsafe.Const("hand in a missing frame as a gap with no picture, or as a picture frame"))
+		case !f.Gap && len(f.PNG) == 0:
+			err = imageRefused(textsafe.Const("it has no picture; a missing frame is a gap, and is stated as one"), textsafe.Const("mark a missing frame as a gap"))
+		case !f.Gap:
+			err = checkPNG(f.PNG, imageCap)
+			pictures++
+		}
+		var said *fault.Error
+		if errors.As(err, &said) {
+			return said.Of(frame)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	if pictures == 0 {
+		return imageRefused(textsafe.Const("every frame of it is a gap"), textsafe.Const("hand in at least one frame with a picture"))
+	}
+	return nil
+}
+
+// copied is the store's own copy of an image: its picture, its table, and
+// every frame's picture, so that the host's slices are never read after Set
+// returns (L-1.14). A loop over the frame limit, MaxFrames gaps included, is
+// refused before anything is copied (L-1.15).
+func copied(img *Image) (*Image, error) {
+	if img == nil {
+		return nil, nil
+	}
+	if len(img.Frames) > MaxFrames {
+		return nil, refused(fault.OverImageCap,
+			textsafe.Join(textsafe.Const("it has "), textsafe.Clean(strconv.Itoa(len(img.Frames))), textsafe.Const(" frames, over the most a loop may have, 72, gaps included")),
+			textsafe.Const("hand in fewer frames"))
+	}
+	own := *img
+	own.PNG = cloneBytes(img.PNG)
+	own.Table = append([]TableEntry(nil), img.Table...)
+	if img.Frames != nil {
+		own.Frames = make([]LoopFrame, len(img.Frames))
+	}
+	for i, f := range img.Frames {
+		f.PNG = cloneBytes(f.PNG)
+		own.Frames[i] = f
+	}
+	return &own, nil
+}
+
+func cloneBytes(b []byte) []byte {
+	if b == nil {
+		return nil
+	}
+	return append([]byte(nil), b...)
 }
 
 // CheckTable holds a colour table to FR-9: required, at most 256 entries, no
@@ -233,13 +328,19 @@ func (m *matcher) pixel(c color.NRGBA) int8 {
 	return NoData
 }
 
-// rasterise decodes an image - directly, never through a registry of formats -
-// and turns its colours into classes, one byte a pixel.
-func rasterise(img *Image, kind Kind) (scene.Raster, Report, error) {
+// rasterise decodes one picture of an image - directly, never through a
+// registry of formats - and turns its colours into classes, one byte a pixel.
+// It reads the size from the picture's own header and re-checks the caps
+// before the decoder allocates anything (L-1.14).
+func rasterise(img *Image, file []byte, kind Kind, imageCap int) (scene.Raster, Report, error) {
 	if img == nil {
 		return scene.Raster{}, Report{}, imageRefused(textsafe.Const("there is no image"), textsafe.Const("hand in a PNG"))
 	}
-	decoded, err := png.Decode(bytes.NewReader(img.PNG))
+	err := checkPNG(file, imageCap)
+	if err != nil {
+		return scene.Raster{}, Report{}, err
+	}
+	decoded, err := png.Decode(bytes.NewReader(file))
 	if err != nil {
 		return scene.Raster{}, Report{}, imageRefused(textsafe.Const("its header is a PNG's and the rest of it could not be decoded"), textsafe.Const("check the image; it may have been cut short"))
 	}
@@ -270,38 +371,121 @@ func rasterise(img *Image, kind Kind) (scene.Raster, Report, error) {
 // group draws from, where there is one, and the work itself where there is
 // not. Two maps showing the same radar frame then decode it once between
 // them rather than once each (D-116).
-func (s *Store) readPicture(img *Image, kind Kind) (scene.Raster, Report, error) {
+func (s *Store) readPicture(img *Image, file []byte, kind Kind) (scene.Raster, Report, error) {
 	if s == nil {
 		return scene.Raster{}, Report{}, imageRefused(textsafe.Const("there is no store to read a picture into"), textsafe.Const("this is a defect in the library; report it"))
 	}
-	key, keyed := ImageKey(img, kind)
+	one := *img
+	one.PNG, one.Frames = file, nil
+	key, keyed := ImageKey(&one, kind)
 	if keyed {
 		if raster, report, ok := s.caps.Classified.Read(key); ok {
 			return raster, report, nil
 		}
 	}
-	raster, report, err := rasterise(img, kind)
+	s.mu.Lock()
+	s.decodes++
+	s.mu.Unlock()
+	raster, report, err := rasterise(img, file, kind, s.caps.ImageBytes)
 	if err == nil && keyed {
 		s.caps.Classified.Keep(key, raster, report)
 	}
 	return raster, report, err
 }
 
-// Raster is an overlay's prepared image and what matching its colours found,
-// once a job has decoded it.
+// picture is one decoded picture of an image: its single picture, or one
+// frame of its loop. A gap is never decoded, and stays not ready.
+type picture struct {
+	key    [32]byte
+	raster scene.Raster
+	report Report
+	ready  bool
+}
+
+// shown is the frame an image shows: its single picture, or the newest
+// observed frame that is not a gap - "right now", where a loop opens (D-67) -
+// or, with no observed frame, the newest that is not a gap.
+func shown(img *Image) int {
+	if img == nil || len(img.Frames) == 0 {
+		return 0
+	}
+	newest := -1
+	for i := len(img.Frames) - 1; i >= 0; i-- {
+		f := img.Frames[i]
+		if f.Gap {
+			continue
+		}
+		if !f.Forecast {
+			return i
+		}
+		if newest < 0 {
+			newest = i
+		}
+	}
+	return newest
+}
+
+// Raster is the picture an overlay shows and what matching its colours
+// found, once a job has decoded it.
 func (s *Store) Raster(id string) (scene.Raster, Report, bool) {
 	if s == nil || id == "" {
 		return scene.Raster{}, Report{}, false
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	r, ok := s.rasters[id]
-	return r, s.reports[id], ok
+	h, ok := s.current[id]
+	if !ok {
+		return scene.Raster{}, Report{}, false
+	}
+	pictures, at := s.pictures[id], shown(h.overlay.Image)
+	if at < 0 || at >= len(pictures) || !pictures[at].ready {
+		return scene.Raster{}, Report{}, false
+	}
+	return pictures[at].raster, pictures[at].report, true
 }
 
-// keepRaster stores a prepared image, if the image it was made from is still
-// the overlay's, and warns of colours that matched nothing.
-func (s *Store) keepRaster(r *Reader, raster scene.Raster, report Report) {
+// readPictures decodes every picture of an image: its single picture, or
+// each frame of its loop that is not a gap. A frame whose key the overlay's
+// last version already decoded is kept, not decoded again (L-1.7).
+func (s *Store) readPictures(ctx context.Context, id string, img *Image, kind Kind) ([]picture, error) {
+	if len(img.Frames) == 0 {
+		raster, report, err := s.readPicture(img, img.PNG, kind)
+		return []picture{{raster: raster, report: report, ready: err == nil}}, err
+	}
+	pictures := make([]picture, len(img.Frames))
+	for i, f := range img.Frames {
+		if f.Gap {
+			continue
+		}
+		if ctx.Err() != nil {
+			return nil, fault.Make(fault.Cancelled, textsafe.Const("reading a loop was abandoned"), textsafe.Const("the work it was part of was cancelled or ran out of time"), textsafe.Const("nothing; it is read again if it is still wanted"))
+		}
+		key := frameKey(img, f.PNG, f.Valid, kind)
+		if kept, ok := s.spareFrame(id, key); ok {
+			pictures[i] = kept
+			continue
+		}
+		raster, report, err := s.readPicture(img, f.PNG, kind)
+		if err != nil {
+			return nil, err
+		}
+		pictures[i] = picture{key: key, raster: raster, report: report, ready: true}
+	}
+	return pictures, nil
+}
+
+// spareFrame is a decoded frame of the overlay's replaced version, if it had
+// one with this key.
+func (s *Store) spareFrame(id string, key [32]byte) (picture, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	p, ok := s.spare[id][key]
+	return p, ok
+}
+
+// keepPictures stores an image's decoded pictures, if the image they were
+// made from is still the overlay's, and warns of colours that matched nothing.
+func (s *Store) keepPictures(r *Reader, pictures []picture) {
 	if r == nil || r.h == nil {
 		return
 	}
@@ -310,8 +494,13 @@ func (s *Store) keepRaster(r *Reader, raster scene.Raster, report Report) {
 	if r.h.retired {
 		return
 	}
-	s.rasters[r.id], s.reports[r.id] = raster, report
-	if report.Unmatched > 0 {
-		s.warnCountLocked(fault.UnmatchedImageColours, textsafe.Quote(r.id), report.Unmatched)
+	s.pictures[r.id] = pictures
+	delete(s.spare, r.id) // what the new version kept, it now holds
+	unmatched := 0
+	for _, p := range pictures {
+		unmatched += p.report.Unmatched
+	}
+	if unmatched > 0 {
+		s.warnCountLocked(fault.UnmatchedImageColours, textsafe.Quote(r.id), unmatched)
 	}
 }
