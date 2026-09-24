@@ -15,7 +15,7 @@ const Circle
 const Closed
 const Colours16
 const Colours256
-const Complete
+const Complete Status
 const Distinct
 const Fahrenheit
 const FetchFailed
@@ -80,110 +80,110 @@ const UnsupportedTile
 const VisionSafe
 const WaterLayer
 const WebMercator
-func CheckRamp
-func Embed
-func KindOf
-func Kinds
-func New
-func NewShared
-func RadarImage
-func Ring
-func Rings
-func SharedCaches
-func TemperatureGrid
-func TokenNames
-func WarningKinds
-func WithSize
-method Map.AddPlace
-method Map.Animate
-method Map.CacheRoot
-method Map.CacheUse
-method Map.Centre
-method Map.Changed
-method Map.Close
-method Map.ColourDepth
-method Map.Credits
-method Map.DeepestZoom
-method Map.Describe
-method Map.Fetcher
-method Map.FitTo
-method Map.FitWorld
-method Map.FollowClock
-method Map.Footer
-method Map.Ground
-method Map.InFlight
-method Map.InUse
-method Map.LabelLanguage
-method Map.Layers
-method Map.Legend
-method Map.NextCall
-method Map.OnPending
-method Map.Overlays
-method Map.PaintGround
-method Map.PanCells
-method Map.Pending
-method Map.Places
-method Map.Purge
-method Map.Recentre
-method Map.ReduceMotion
-method Map.Remove
-method Map.RemovePlace
-method Map.Render
-method Map.SafeRamps
-method Map.Scale
-method Map.Set
-method Map.SetPalette
-method Map.SetPlaces
-method Map.SetStyle
-method Map.Settle
-method Map.ShowFooter
-method Map.Source
-method Map.SourceCredit
-method Map.Units
-method Map.Verify
-method Map.Warnings
-method Map.Work
-method Map.Zoom
-method Map.ZoomBy
-method Shared.Use
-method Status.String
-type Answer
-type CacheUse
-type Caches
-type Class
-type Depth
-type Description
-type Feature
-type FeatureKind
-type Fetcher
-type Finding
-type Frame
-type Grid
-type Image
-type Kind
-type Layer
-type LegendEntry
-type LonLat
-type Map
-type MarkerStyle
-type Option
-type Overlay
-type Place
-type Positioned
-type Projection
-type RGB
-type RampCheck
-type RemoveResult
-type Rule
-type Scaled
-type SetResult
-type SettleResult
-type Shared
-type Size
-type Status
-type TableEntry
-type Token
-type Type
-type Unit
-type Warning
-type WarningKind
+func CheckRamp([]RGB, RampCheck) []Finding
+func Embed(func(z uint8, x, y uint32) ([]byte, bool), uint8) Option
+func KindOf(error) (Kind, bool)
+func Kinds() []Kind
+func New(...Option) (*Map, error)
+func NewShared(int64) (*Shared, error)
+func RadarImage(string, Image, time.Time) Overlay
+func Ring(R) []LonLat
+func Rings([]R) [][]LonLat
+func SharedCaches(*Shared) Option
+func TemperatureGrid(string, Grid, Unit, time.Time) Overlay
+func TokenNames() []string
+func WarningKinds() []WarningKind
+func WithSize(int, int) Option
+method Map.AddPlace(Place) (string, error)
+method Map.Animate(time.Time)
+method Map.CacheRoot(string, int64) error
+method Map.CacheUse() Caches
+method Map.Centre() (LonLat, float64)
+method Map.Changed() uint64
+method Map.Close() int
+method Map.ColourDepth(Depth)
+method Map.Credits() []string
+method Map.DeepestZoom() float64
+method Map.Describe([]Place) ([]Description, error)
+method Map.Fetcher(Fetcher)
+method Map.FitTo([]LonLat, []string, int) error
+method Map.FitWorld() error
+method Map.FollowClock()
+method Map.Footer() string
+method Map.Ground(RGB) error
+method Map.InFlight() int
+method Map.InUse(string) bool
+method Map.LabelLanguage(string) error
+method Map.Layers(Layer, bool)
+method Map.Legend() []LegendEntry
+method Map.NextCall(time.Time) (time.Time, bool)
+method Map.OnPending(func()) error
+method Map.Overlays() []string
+method Map.PaintGround()
+method Map.PanCells(int, int) error
+method Map.Pending() int
+method Map.Places() []Place
+method Map.Purge() error
+method Map.Recentre(LonLat) error
+method Map.ReduceMotion(bool)
+method Map.Remove(string) (RemoveResult, error)
+method Map.RemovePlace(string) (int, error)
+method Map.Render(Size, time.Time) (Frame, error)
+method Map.SafeRamps(bool)
+method Map.Scale() (Scaled, bool)
+method Map.Set(Overlay) (SetResult, error)
+method Map.SetPalette(map[string]RGB) ([]string, error)
+method Map.SetPlaces([]Place) ([]string, error)
+method Map.SetStyle([]byte) error
+method Map.Settle(context.Context) (SettleResult, error)
+method Map.ShowFooter(bool)
+method Map.Source(string) error
+method Map.SourceCredit() string
+method Map.Units(bool, bool)
+method Map.Verify() (int, int, error)
+method Map.Warnings() []Warning
+method Map.Work(context.Context) (bool, error)
+method Map.Zoom(float64) error
+method Map.ZoomBy(float64) error
+method Shared.Use() CacheUse
+method Status.String() string
+type Answer = describe.Answer
+type CacheUse struct{ Need int64; Held int64; Limit int64 }
+type Caches struct{ Tiles CacheUse; Shapes CacheUse; Disk CacheUse }
+type Class struct{ Label string; Colour RGB; Drawn bool }
+type Depth = colour.Depth
+type Description struct{ Place string; Answers []Answer; Pending bool }
+type Feature = overlay.Feature
+type FeatureKind = overlay.FeatureKind
+type Fetcher = fetch.Func
+type Finding = colour.Finding
+type Frame struct{ Lines []string; Status Status }
+type Grid = overlay.Grid
+type Image = overlay.Image
+type Kind = fault.Kind
+type Layer = style.Layer
+type LegendEntry struct{ ID string; Unit string; Preset string; Classes []Class }
+type LonLat = project.LonLat
+type Map struct{  }
+type MarkerStyle = render.MarkerShape
+type Option func(*config) error
+type Overlay = overlay.Overlay
+type Place struct{ ID string; Name string; At LonLat; Marker MarkerStyle; Radius int; Glyph string; Blink bool }
+type Positioned interface{ LonLat() (float64, float64) }
+type Projection = overlay.Projection
+type RGB = colour.RGB
+type RampCheck = colour.RampCheck
+type RemoveResult = overlay.RemoveResult
+type Rule = colour.Rule
+type Scaled struct{ KmPerCell float64; Km float64; Cells int }
+type SetResult = overlay.SetResult
+type SettleResult struct{ Ran int; Failed int; InFlight int; Why error }
+type Shared struct{  }
+type Size struct{ Cols int; Rows int }
+type Status uint8
+type TableEntry = overlay.TableEntry
+type Token = colour.Token
+type Type = overlay.Type
+type Unit = colour.Unit
+type Warning = fault.Warning
+type WarningKind = fault.WarningKind
