@@ -80,6 +80,7 @@ version). Watchpost's ship-without-radar rule (its RK-4) is P1-a on its own.
 | FR-7.4 description | `Report`: alerts shown, per place, motion | L-1.12, L-13.5–L-13.10 | D-42, D-43, D-57 | WP-L5 |
 | Radar over alerts | the blend; furniture never erased | L-11, L-8.3 | D-14, D-27, D-45 | WP-L3 |
 | M5 time to picture | render ≤ 15 ms an advance | L-12.5 | D-61 | WP-L3 |
+| The loop's shape (host-owned) | per state-regional region, two hours, a step the listener sets (5 minutes by default), images up to about 200,000 pixels; the library accepts up to `MaxFrames` 72 within a host-set budget (6 MiB default) | L-1.15, L-12.1, L-12.2 | D-68, watchpost D-47, D-50 | WP-L2 |
 
 ## Rules for both plans
 

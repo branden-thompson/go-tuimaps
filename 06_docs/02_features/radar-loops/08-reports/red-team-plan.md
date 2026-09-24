@@ -77,4 +77,5 @@ in its `observer-maps/08-reports/red-team-plan.md`.
 | P-1 | **D-66** here, watchpost **D-45** | `Changed()` counts inputs and is raised by `Work`, never by `Render`; `NextCall` is the time signal; `Frame` carries its counters. Watchpost renders on every event it owns; a freshness property replaces the memo key and guard 4 |
 | P-2 | watchpost **D-46** | M5 keeps "complete" as every alert's area, ≤ 3.5 s p90; W3.9 reverted to the bound of six |
 | P-3 | watchpost **D-47** | Radar requested per fixed state-regional region, never per view |
+| P-5 | **D-68** here, watchpost **D-50** | Two hours of loop, 24 frames at 5 minutes, image budget default 6 MiB; memory revisited once it works; MRMS at 5 minutes by default, source and step host Settings; `MaxFrames` 72 |
 | P-4 | **D-67** here, watchpost **D-48** (and D-49) | The listener's control flow is the API: one playback per map; play from the oldest through observed to forecast; stop; reset to "right now"; step; position by valid time; forecast frames. Pan and zoom came into 0.18.0 |
