@@ -214,7 +214,7 @@ func dedupe(sorted []string) []string {
 // changelogHeading opens the contract's list of v0.2.0's breaks (L1.5). The
 // names it cites are removed or not yet built, so the two name checks above
 // read the contract without it.
-const changelogHeading = "## 11 · Changelog: what v0.2.0 breaks (D-58)"
+const changelogHeading = "## 12 · Changelog: what v0.2.0 breaks (D-58)"
 
 // TestTheChangelogListsEveryBreak is v0.2.0 L1.5 (D-58): the contract has a
 // changelog with one row per break the plan names, each saying what changes,
@@ -272,4 +272,76 @@ func TestTheChangelogListsEveryBreak(t *testing.T) {
 			}
 		}
 	}
+}
+
+// needsHeading opens the contract's section on what a host needs to know.
+const needsHeading = "## 11 · What a host needs to know (v0.2.0 L1.6)"
+
+// planFile is v0.2.0's implementation plan, which names the task that owes
+// each sentence not yet built.
+const planFile = "06_docs/02_features/radar-loops/04-development/implementation-plan.md"
+
+// TestTheContractSaysWhatAHostNeeds is v0.2.0 L1.6 (D-72): the contract has
+// one sentence for each requirement L1.6 names, and each is held by text, by a
+// behaviour test that exists, or by the plan task that owes the behaviour.
+func TestTheContractSaysWhatAHostNeeds(t *testing.T) {
+	_, section, ok := strings.Cut(readContract(t), needsHeading)
+	if !ok {
+		t.Fatalf("contract.md has no %q section", needsHeading)
+	}
+	plan, err := os.ReadFile(planFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tests := testNames(t)
+	held := map[string]bool{}
+	for _, line := range strings.Split(section, "\n") {
+		if strings.HasPrefix(line, "## ") {
+			break
+		}
+		if !strings.HasPrefix(line, "| L-") {
+			continue
+		}
+		cells := strings.Split(strings.Trim(line, "| "), " | ")
+		if len(cells) != 3 || strings.TrimSpace(cells[1]) == "" {
+			t.Errorf("a row must be requirement, sentence, held by: %s", line)
+			continue
+		}
+		id, by := cells[0], cells[2]
+		held[id] = true
+		switch {
+		case by == "text":
+		case strings.HasPrefix(by, "owed: "):
+			task := strings.TrimPrefix(by, "owed: ")
+			if !strings.Contains(string(plan), "\n| "+task+" |") {
+				t.Errorf("%s is owed by %s, which the plan does not have", id, task)
+			}
+		case tests[by]:
+		default:
+			t.Errorf("%s is held by %q: not text, not owed by a task, and not a test that exists", id, by)
+		}
+	}
+	for _, id := range []string{"L-1.10d", "L-7.3", "L-10.3", "L-9.3", "L-9.6", "L-12.3", "L-8.3"} {
+		if !held[id] {
+			t.Errorf("the contract says nothing a host needs to know for %s", id)
+		}
+	}
+}
+
+// testNames are the test functions of this package.
+func testNames(t *testing.T) map[string]bool {
+	t.Helper()
+	names := map[string]bool{}
+	for _, name := range mustGlob(t, "*_test.go") {
+		file, err := parser.ParseFile(token.NewFileSet(), name, nil, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, decl := range file.Decls {
+			if fn, ok := decl.(*ast.FuncDecl); ok && fn.Recv == nil && strings.HasPrefix(fn.Name.Name, "Test") {
+				names[fn.Name.Name] = true
+			}
+		}
+	}
+	return names
 }

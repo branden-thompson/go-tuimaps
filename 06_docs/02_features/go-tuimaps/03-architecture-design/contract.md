@@ -193,7 +193,25 @@ its doc comment and in the sections above.
 | Errors | `Kind`, `Kinds`, `KindOf`, and the kinds: `InvalidCoordinates`, `SizeMismatch`, `UnsortedBreaks`, `MalformedRamp`, `MissingTable`, `MalformedTable`, `UnknownPreset`, `MalformedStyle`, `InvalidID`, `OverVertexCap`, `OverImageCap`, `ImageRefused`, `RingTooShort`, `BadCurrency`, `UnsupportedSchema`, `UnsupportedTile`, `OverLimit`, `FetchRefused`, `FetchFailed`, `CacheRefused`, `NoSize`, `ReentrantCall`, `Cancelled`, `Closed`, `Internal` |
 | Warnings | `Warning`, `WarningKind`, `WarningKinds`, `Map.Warnings`, and the kinds: `RampRuleBroken`, `UnmatchedImageColours`, `StaleOverlay`, `FutureValidTime`, `ImplausibleUnit`, `NearDuplicateID`, `UnknownToken`, `SetRefused`, `NoWorkCalled`, `TileFailed`, `CacheWriteFailed`, `RenderFailed`, `CacheUnderNeed` |
 
-## 11 · Changelog: what v0.2.0 breaks (D-58)
+## 11 · What a host needs to know (v0.2.0 L1.6)
+
+What a host cannot find out from a signature. A row is held by one of three
+things. **text** means guidance, with no behaviour to test. A test name means
+that test exercises the behaviour. **owed** means the behaviour is not built
+yet: the row names the plan task that builds it and adds its test. Until then
+the sentence says what v0.2.0 will do, not what v0.1.0 does.
+
+| Requirement | What a host needs to know | Held by |
+|---|---|---|
+| L-1.10d | A loop's name is the host's. It is the id the host gives `Set`; the library never invents one, and never changes one | text |
+| L-7.3 | A fetch's bytes are bounded whatever the host's transport does, and an answer that arrives after its deadline is never used. Its time is bounded only while the host's transport honours its context: a transport that ignores its context can hold a `Work` call open | owed: L8.3 |
+| L-10.3 | The checked dialer the library exports refuses private and reserved addresses at the moment of connection, so a host transport that dials through it keeps that check. It does not cover a transport that dials some other way, or anything a proxy does beyond the connection to it | owed: L8.4 |
+| L-9.3 | `Purge` empties the root the map holds now. A root that `CacheRoot` replaced or turned off is released: the map no longer holds it, and `Purge` does not reach it. A host that wants that root emptied deletes it itself | TestPurgeDoesNotReachAReleasedRoot |
+| L-9.6 | Put the cache root under the operating system's user cache directory, readable and writable by its owner only. Purging deletes files; it is not secure erasure | text |
+| L-12.3 | Hand in frames at the view's dot grid: 298×152 dots at 149×38 cells. A host that raises the image budget owns the memory it asks for | text |
+| L-8.3 | Inside rain cells, a shade glyph takes the whole cell and the hatch cannot draw. There, an alert's severity is carried by its outline and the severity digit repeated along it (D-65), and the legend carries the digit key | owed: L3.10 |
+
+## 12 · Changelog: what v0.2.0 breaks (D-58)
 
 v0.1.0's shape was additive-only (NFR-1). D-58 relaxed that for v0.2.0: where
 integrating with watchpost showed that an earlier shape was wrong, the better
@@ -208,6 +226,6 @@ plan task that makes the break; until then, v0.1.0's shape still holds.
 | `Changed()` | Counts inputs only: data, look, view, and what `Work` lands. `Render` never raises it; `Work` raises it when it lands something visible | v0.1.0 raised it inside `Render`, so a host could not learn that `Work` had landed a tile without rendering (D-66) | Render when `Changed()` moves, or when `NextCall` says time has something due | lands in L4.7 |
 | Loop playback | One playback per map, not one per overlay. Position is a valid time, never a frame index, and a refresh keeps the same moment | The listener's controls act on the map as a whole: play, stop, reset to "right now", and step (D-67) | Drive the controls with `SetPlayback`, `Play`, `Stop`, `Reset` and `Step`; read the position from `Loop` | lands in L4.1 |
 | `Describe` | Removed; `Report` gives every answer it gave | Two calls answered one question (D-70, 5) | Call `Report` | lands in L5.8 |
-| `Purge` | Returns a report of what it removed and what it could not, beside the error | One call, not a second call with a report (D-70, 1) | Read the report, or ignore it as before | lands in L9.4 |
+| `Purge` | Empties every source's tiles, the memory caches and the decoded pictures, not only the current source's tiles; and returns a report of what it removed and what it could not, beside the error | A purge that leaves a source behind is not a purge (L-9.3); one call, not a second call with a report (D-70, 1) | Call it once for everything; read the report, or ignore it as before | lands in L9.4 |
 | `Fetcher` | Removed, with the fetch package's checked request type | A host's transport, user-agent and timeout go through fetch options instead. A tile source that is not HTTP would need a later ruling (D-62) | Pass a transport, user-agent and timeout with `SetFetchOptions` | lands in L8.2 |
 | New names' shapes | Setters only, with no paired options. The cache's maximum age is its own setter, and `CacheRoot` is unchanged. A provider is a typed constant. "Unverified" is a flag on a legend entry. No "not off" reason: the zero value serves | Fewer names for one host (D-70, 2-4, 6-7) | Nothing to change: these names are new in v0.2.0 | lands with each name |

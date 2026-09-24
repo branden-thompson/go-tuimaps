@@ -7,6 +7,8 @@ package tuimaps_test
 
 import (
 	"context"
+	"io/fs"
+	"path/filepath"
 	"testing"
 
 	tuimaps "github.com/branden-thompson/go-tuimaps"
@@ -97,4 +99,54 @@ func TestChangedMissesWhatWorkLands(t *testing.T) {
 	if m.Changed() == settled {
 		t.Error("the render that drew the landed tile did not move the counter")
 	}
+}
+
+// TestPurgeDoesNotReachAReleasedRoot holds contract section 11, L-9.3: a root
+// that CacheRoot replaced is released, and Purge empties only the root the map
+// holds now. L9.4 widens what Purge empties; this stays true after it.
+func TestPurgeDoesNotReachAReleasedRoot(t *testing.T) {
+	dir := t.TempDir()
+	old, now := filepath.Join(dir, "old"), filepath.Join(dir, "now")
+	srv := serveTiles(t)
+	m, err := tuimaps.New(tuimaps.WithSize(80, 24))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer m.Close()
+	if err := m.Source(srv.url + "/tiles/"); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.CacheRoot(old, 0); err != nil {
+		t.Fatal(err)
+	}
+	drawAndSettle(t, m)
+	held := filesUnder(t, old)
+	if held == 0 {
+		t.Fatal("nothing reached the first root, so this proves nothing")
+	}
+	if err := m.CacheRoot(now, 0); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Purge(); err != nil {
+		t.Fatal(err)
+	}
+	if after := filesUnder(t, old); after != held {
+		t.Errorf("Purge reached the released root: %d files before, %d after", held, after)
+	}
+}
+
+// filesUnder counts the regular files below dir.
+func filesUnder(t *testing.T, dir string) int {
+	t.Helper()
+	n := 0
+	err := filepath.WalkDir(dir, func(_ string, d fs.DirEntry, err error) error {
+		if err == nil && d.Type().IsRegular() {
+			n++
+		}
+		return err
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return n
 }

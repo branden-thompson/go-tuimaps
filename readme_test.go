@@ -193,7 +193,8 @@ func TestReadmeWhatItSendsIsHeldByBehaviour(t *testing.T) {
 // TestReadmePurgeEmptiesTheCurrentSourceOnly is the rest of L1.4: Purge
 // empties the current source's tiles from the disk cache, and another
 // source's tiles in the same directory stay, so a later map on that source
-// asks for nothing.
+// asks for nothing. L9.4 makes Purge empty every source (L-9.3, the
+// changelog's Purge row); the README and this test change with it.
 func TestReadmePurgeEmptiesTheCurrentSourceOnly(t *testing.T) {
 	root := filepath.Join(t.TempDir(), "tiles")
 	one, two := serveTiles(t), serveTiles(t)
