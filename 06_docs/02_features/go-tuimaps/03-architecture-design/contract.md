@@ -16,15 +16,15 @@ One public package. Everything a host hands in is a plain struct (D-74); everyth
 | Group | Calls | Notes |
 |---|---|---|
 | Life | `New(options)` · `Close()` | `New` starts nothing: no goroutine, connection or file. `Close` closes the map at once and reports how many host calls are still inside it. Every reference no call is reading is dropped then, borrowed geometry included; what a call still inside is reading is dropped when that call returns, and `InUse` says yes until it does (section 6) |
-| Size and view | `SetSize(cols, rows)` · intents: `Pan`, `PanCells`, `Zoom`, `ZoomAround`, `Recentre`, `FitWorld`, `FitTo(places, overlay ids, margin)` | **The size is state, set before the first `Settle` or `Render`** — this is what makes the three-call path work (section 3). `Render` takes the size too and updates it |
+| Size and view | `WithSize(cols, rows)` at `New` · intents: `PanCells`, `Zoom`, `ZoomBy`, `Recentre`, `FitWorld`, `FitTo(places, overlay ids, margin)` | **The size is state, set with `WithSize` before the first `Settle` or `Render`** — this is what makes the three-call path work (section 3). `Render` takes the size too and updates it |
 | Places and markers | `SetPlaces(places)` · `AddPlace(place)` · `RemovePlace(id)` — each place a name, a position, a marker style and an id | Places are what `Describe` answers for and what `FitTo` can fit; markers are how they are drawn (FR-26). Separate from overlays: they are the host's "my places", not data. **As upstream (P-61):** an id left empty defaults to the position written to six decimal places, and `RemovePlace` removes every place with that id |
-| Overlays | `Set(overlay)` · `Remove(id)` · `InUse(id)` · `BorrowCheck(on)` | Section 4 |
+| Overlays | `Set(overlay)` · `Remove(id)` · `InUse(id)` | Section 4 |
 | Look | `SetPalette(tokens)` · `SafeRamps(on)` · `Ground(painted or declared)` · `ColourDepth(hint)` · `ReduceMotion(on)` · `Layers(on, off)` · `LabelLanguage(code)` | All take effect at the next `Render`; none re-parses a tile, except the language, which is part of the tile cache key (D-82) |
 | Tiles | `Source(named source)` · `CacheRoot(path)` · `Fetcher(replacement)` · `SharedCaches(handle)` · `CacheUse()` · `Purge()` · `Verify()` | Nothing is reached until `Source` is called (D-65). Section 8 for shared caches. `CacheUse` reports, for each memory cache, the bytes live views need, the bytes held, and the cap (D-90). `Purge` and `Verify` are the disk cache's two maintenance calls (FR-22a) |
 | Running the work | `Pending()` · `Work(ctx)` · `Settle(ctx)` · `OnPending(func)` | Section 2 |
 | The picture | `Render(size, now)` → `Frame` | Section 5. **`now` is the wall clock (D-114).** Markers move on it too, unless the host takes the animation clock over with `Animate(at)` and gives it back with `FollowClock()`. Staleness is always the wall clock's, so a frozen animation clock cannot hide old data (FR-32). *A host that passes a fixed instant for reproducibility sees data that is never stale: that is the cost of A, put to HUM LEAD and taken.* |
 | When to call again | `Changed()` · `NextCall(wallClock)` | The counter moves whenever a redraw would differ. `NextCall` is the earliest of: the next marker phase, a failed tile's retry time, an overlay going stale — on the wall clock, which is passed in separately from animation time (FR-25, FR-32) |
-| The same facts as data | `Legend()` · `Credits()` · `Scale()` · `Footer()` · `Describe(places)` · `Focused()` | `Footer` is the centre and zoom in upstream's own wording, cut with floor as upstream cuts it (P-57); it is drawn inside the map only if the host turns that furniture layer on, and it is off by default. `Describe` returns what it has at once, with each part marked **ready** or **pending**; the pending parts are computed by `Work` (FR-29) |
+| The same facts as data | `Legend()` · `Credits()` · `Scale()` · `Footer()` · `Describe(places)` | `Footer` is the centre and zoom in upstream's own wording, cut with floor as upstream cuts it (P-57); it is drawn inside the map only if the host turns that furniture layer on, and it is off by default. `Describe` returns what it has at once, with each part marked **ready** or **pending**; the pending parts are computed by `Work` (FR-29) |
 | What went wrong | errors of a closed list of kinds · `Warnings()` · `CheckRamp(ramp, ground)` | Section 7 |
 
 ## 2 · Running the work — the pump, drawn
@@ -57,7 +57,7 @@ sequenceDiagram
 
 | Rule | Why |
 |---|---|
-| Work arrives only from the host's own calls — `Render`, `Set`, `Remove`, an intent, `SetSize`, `Describe` — and `OnPending` fires inside that call when pending goes from none to some | So the pump needs no polling and no timer. A host that prefers to poll checks `Pending()` after those calls |
+| Work arrives only from the host's own calls — `Render`, `Set`, `Remove`, an intent, `Describe` — and `OnPending` fires inside that call when pending goes from none to some | So the pump needs no polling and no timer. A host that prefers to poll checks `Pending()` after those calls |
 | **How `wake` is written.** It does nothing but non-blocking sends on a channel the host made **buffered, with one slot for each pump goroutine**, filling every free slot. It never blocks and never calls the map | An unbuffered send made while the pump is busy inside `Work` would be dropped and the wake lost. One slot a goroutine is what makes the pump as wide as the host meant: each pump goroutine takes one token, then calls `Work` until it says it did nothing |
 | **One exception to "only inside the host's own calls", for shared caches.** When a `Work` call gives up a shared job that another map still wants — because its context was cancelled, **or because its own map was closed under it** — the job returns to the queue and **that other map's hook fires from inside the `Work` call that gave it up** | Otherwise the other map's pump, already told there was nothing to do, would sleep for ever on a job that is waiting. It is why `wake` must be safe from any goroutine — which a non-blocking send is. A hook fired this way does **not** arm the re-entrancy guard of section 6, rule 3: the other map's owner may legally be in the middle of a call |
 | `Pending()` counts jobs **waiting to be picked up**. It does not count a job already inside a `Work` call, nor failed work waiting for its retry time | A retry does not wake the pump by itself — nothing in the library can. It becomes pending at the first owner call after its time, and the host learns that time from `NextCall` (section 1); a host that renders on a tick meets it within a tick |
@@ -94,13 +94,13 @@ As first drawn, tiles became wanted only when `Render` noticed them missing, yet
 - **Caps are fixed when a map, or a shared-caches handle, is created.** They cannot change afterwards, so the vertex count above is fixed for an overlay's whole life.
 - A mistyped id on a refresh makes a second overlay; the result says **created**, and a warning notes a create whose id differs from an existing id only slightly.
 - Values declared in one unit that are implausible for it — for example temperatures all above 60 declared as °C — are accepted with a warning.
-- `BorrowCheck(on)`: geometry is fingerprinted at hand-in **run by run — the same runs of 64 vertices as the index** — and a read re-checks only the runs it reads, so a frame that draws from the host's memory re-checks what it draws and no more. A change while in use is a warning naming the overlay. It is a second linear pass inside `Set`. Off by default for that cost; on in every example and test.
+- **The borrow check (not reachable by a host in v0.1.0, OW-13):** geometry is fingerprinted at hand-in **run by run — the same runs of 64 vertices as the index** — and a read re-checks only the runs it reads, so a frame that draws from the host's memory re-checks what it draws and no more. A change while in use is a warning naming the overlay. It is a second linear pass inside `Set`. It exists inside the library and its own tests switch it on, but **no public call reaches it**: whether a host gets a switch, or the check is dropped, is owed to a ruling (OW-13).
 
 ## 5 · The frame (PL-PF-5, PL-CQ-3)
 
 | Question | Answer |
 |---|---|
-| What is it | The rendered rows, each exactly the requested width, held as bytes the map owns; `Frame.Line(i)`, `Frame.WriteTo(w)`, `Frame.String()`; plus its status |
+| What is it | The rendered rows, each exactly the requested width, held as bytes the map owns; `Frame.Lines`, one string a row; plus its `Status` |
 | How long is it valid | **Until the next `Render` on the same map.** The buffers are reused; a host that keeps a frame copies it. `String()` copies |
 | When is it reused unchanged, at no cost | When nothing that could change a cell has changed: view, size, depth, palette, safe ramps, ground, layers, language, focus, **the places**, reduce-motion, the overlays' versions, the tiles on hand, the marker phase, **each overlay's freshness**, and the frame's status. This list is the key; L2 Render's diagram points here rather than repeating it |
 | What does a changed frame cost | Only the rows that changed are rebuilt; a marker blink rebuilds the marker's row |
@@ -111,7 +111,7 @@ One map is used from two kinds of goroutine: the **owner** — the host's interf
 
 | Class | Calls | Rule |
 |---|---|---|
-| **Owner** | `Render`, `Set`, `Remove`, the intents, `SetSize`, `SetPlaces`, `AddPlace`, `RemovePlace`, every look and tile setting, `BorrowCheck`, `OnPending`, `Purge`, `Verify`, `Describe`, `Legend`, `Credits`, `Scale`, `Footer`, `Focused`, `Warnings`, `NextCall` | **One at a time.** They are not safe against each other from two goroutines. Safe beside any pump call |
+| **Owner** | `Render`, `Set`, `Remove`, the intents, `SetPlaces`, `AddPlace`, `RemovePlace`, every look and tile setting, `OnPending`, `Purge`, `Verify`, `Describe`, `Legend`, `Credits`, `Scale`, `Footer`, `Warnings`, `NextCall` | **One at a time.** They are not safe against each other from two goroutines. Safe beside any pump call |
 | **Pump** | `Work`, `Settle` | Any number at once, beside each other and beside owner calls |
 | **Any goroutine** | `Pending`, `InUse`, `Changed`, `CacheUse` | Safe beside everything; each is one short read under the lock. This is what lets a pump poll `Pending` |
 | **No map involved** | `CheckRamp` | A pure function |
@@ -172,3 +172,25 @@ The contract is designed for all of v1 and built for v0.1.0. Each deferred part 
 | PMTiles source | A named source, wrapping the archive reader already inside v0.1.0 (D-58) | — |
 | Pointer operations | Two pure calls: **cell → coordinate** and **cell → the overlay or place under it**; the host turns mouse events into those and into intents | The projection package already has both directions (FR-24, D-17) |
 | Flash, pulse, tours | Marker styles and camera intents | The marker state machine already takes time from the host |
+
+## 10 · Every name, and what it is for (v0.2.0 L1.2, L-4.1)
+
+The whole public surface, grouped. A test holds this section to the code both ways: a name here the
+package lacks fails, and a name the package exports that is not here fails. The detail of each is in
+its doc comment and in the sections above.
+
+| For | Names |
+|---|---|
+| The map | `Map`, `New`, `Option`, `WithSize`, `Embed`, `SharedCaches`, `NewShared`, `Shared`, `Shared.Use`, `Size`, `Frame`, `Status` (`Complete`, `Sharpening`, `NoTiles`; `Status.String`), `SettleResult`, `MinZoom`, `MaxZoom` |
+| Running the work | `Map.Work`, `Map.Pending`, `Map.Settle`, `Map.OnPending`, `Map.InFlight`, `Map.Close` |
+| The picture | `Map.Render`, `Map.Changed`, `Map.NextCall`, `Map.Animate`, `Map.FollowClock` |
+| The view | `Map.Centre`, `Map.Zoom`, `Map.ZoomBy`, `Map.PanCells`, `Map.Recentre`, `Map.FitWorld`, `Map.FitTo`, `Map.DeepestZoom` |
+| Places and markers | `Place`, `Positioned`, `LonLat`, `MarkerStyle` (`MarkerDot`, `MarkerCross`, `MarkerDiamond`, `MarkerRing`, `MarkerDisc`, `MarkerGlyph`), `Map.SetPlaces`, `Map.AddPlace`, `Map.RemovePlace`, `Map.Places` |
+| Overlays | `Overlay`, `Feature`, `FeatureKind` (`Point`, `Line`, `Polygon`, `Circle`), `Grid`, `Image`, `Projection` (`PlateCarree`, `WebMercator`), `TableEntry`, `Type`, `Ring`, `Rings`, `RadarImage`, `TemperatureGrid`, `SetResult`, `RemoveResult`, `Map.Set`, `Map.Remove`, `Map.InUse`, `Map.Overlays` |
+| Roles and colours | `Token`, `TokenNames`, the alert roles (`AlertExtreme`, `AlertSevere`, `AlertModerate`, `AlertMinor`, `AlertUnknown`), `Track`, the field roles (`Low`, `Middle`, `High`), `RGB`, `Unit` (`Celsius`, `Fahrenheit`), `Depth` (`Truecolor`, `Colours256`, `Colours16`, `NoColour`) |
+| The look | `Map.SetPalette`, `Map.SafeRamps`, `Map.Ground`, `Map.PaintGround`, `Map.ColourDepth`, `Map.ReduceMotion`, `Map.Units`, `Map.LabelLanguage`, `Map.SetStyle`, `Map.ShowFooter`, `Layer` (`RoadLayer`, `RailLayer`, `ParkLayer`, `BorderLayer`, `RiverLayer`, `WaterLayer`, `LabelLayer`), `Map.Layers` |
+| Tiles and caches | `Map.Source`, `Map.SourceCredit`, `Map.CacheRoot`, `Map.Fetcher`, `Fetcher`, `Map.Purge`, `Map.Verify`, `Map.CacheUse`, `Caches`, `CacheUse` |
+| The same facts as data | `Map.Legend`, `LegendEntry`, `Class`, `Map.Credits`, `Map.Scale`, `Scaled`, `Map.Footer`, `Map.Describe`, `Description`, `Answer` |
+| Checking a ramp | `CheckRamp`, `RampCheck`, `Rule` (`Ordered`, `Distinct`, `Readable`, `VisionSafe`), `Finding` |
+| Errors | `Kind`, `Kinds`, `KindOf`, and the kinds: `InvalidCoordinates`, `SizeMismatch`, `UnsortedBreaks`, `MalformedRamp`, `MissingTable`, `MalformedTable`, `UnknownPreset`, `MalformedStyle`, `InvalidID`, `OverVertexCap`, `OverImageCap`, `ImageRefused`, `RingTooShort`, `BadCurrency`, `UnsupportedSchema`, `UnsupportedTile`, `OverLimit`, `FetchRefused`, `FetchFailed`, `CacheRefused`, `NoSize`, `ReentrantCall`, `Cancelled`, `Closed`, `Internal` |
+| Warnings | `Warning`, `WarningKind`, `WarningKinds`, `Map.Warnings`, and the kinds: `RampRuleBroken`, `UnmatchedImageColours`, `StaleOverlay`, `FutureValidTime`, `ImplausibleUnit`, `NearDuplicateID`, `UnknownToken`, `SetRefused`, `BorrowChanged`, `NoWorkCalled`, `TileFailed`, `CacheWriteFailed`, `RenderFailed`, `CacheUnderNeed` |

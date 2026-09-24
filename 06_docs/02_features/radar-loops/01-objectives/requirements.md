@@ -237,5 +237,6 @@ where it stands.
 | OW-9 | ~~Diagnose L-8.4~~ **Closed (D-50): no defect** — the round 1 count was wrong | — | D-50 |
 | OW-11 | ~~A specimen of a past outbreak~~ **Done at PLAN entry: specimen 30** (2011-04-27, west-central Alabama, 20 warnings over IEM archive radar). Findings S30-1..S30-4 | — | D-44 |
 | OW-12 | **A triggered MRMS capture**: when a Storm Prediction Center Moderate or High risk, or a tornado watch, is issued over US radar coverage, capture MRMS frames across the whole two-hour window and extend the palette | when triggered, before SHIP | D-44 |
+| OW-13 | **The borrow check has no public switch.** v0.1.0's contract promised hosts `BorrowCheck(on)`; the check exists inside the store (`Caps.BorrowCheck`), only the library's tests switch it on, and no public call reaches it. Found by L1.2's contract test. Expose a switch, or drop the check | a ruling, during WP-L1 | L1.2 |
 | OW-10 | RK-5's detector: count tolerance-fallback matches, not only unmatched pixels, so a palette shift under 10 is seen | PLAN | D-40 (B N-8) |
 | OW-8 | ~~The gate never runs `gofmt`~~ **Closed by D-46**: the gate has a formatting leg | — | D-46 |
