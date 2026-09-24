@@ -4,7 +4,7 @@ date: 2026-09-23
 phase: PLAN
 sev: SEV-0
 authority: HUM LEAD
-status: "ROUND 1 RECEIVED — dispositions pending, one ruling at a time. One round only (the HUM LEAD's lean PLAN close)."
+status: "ROUND 1 DISPOSITIONED — every finding ruled or applied (D-66 … D-72 here; watchpost D-44 … D-55). One round only (the HUM LEAD's lean PLAN close)."
 ---
 
 # PLAN red team — both plans, one round
@@ -79,4 +79,8 @@ in its `observer-maps/08-reports/red-team-plan.md`.
 | P-3 | watchpost **D-47** | Radar requested per fixed state-regional region, never per view |
 | P-5 | **D-68** here, watchpost **D-50** | Two hours of loop, 24 frames at 5 minutes, image budget default 6 MiB; memory revisited once it works; MRMS at 5 minutes by default, source and step host Settings; `MaxFrames` 72 |
 | P-6 | **D-69** here, watchpost **D-51** | Release candidates per landed package; P1-b integrates on them; 0.18.0 ships on the final tag |
+| P-7 | **D-70** here | Seven API simplifications, each in the changelog; `Describe` removed; watchpost's registry stands |
+| P-8 | watchpost **D-52** | The description is text in 0.18.0; one voice pass later (F-181); motion Setting defaults to slow |
+| P-9 | **D-71** here, watchpost **D-53** | M1b re-scored on what ships; M1's non-visual arm first, on words, against a set ground truth; M6 measures ticks and key latency; timings recorded at SHIP, not gated |
+| Batch B-1 … B-10 | **D-72** here, watchpost **D-55** | Applied |
 | P-4 | **D-67** here, watchpost **D-48** (and D-49) | The listener's control flow is the API: one playback per map; play from the oldest through observed to forecast; stop; reset to "right now"; step; position by valid time; forecast frames. Pan and zoom came into 0.18.0 |

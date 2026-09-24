@@ -29,30 +29,30 @@ flowchart TB
     W7["W7 Without colour; M1b scored<br/>(FR-7)"]
   end
   subgraph LIB["go-tuiMaps v0.2.0"]
-    L0["WP-L1 Contract skeleton + surface test (L-4)"]
-    L1["WP-L2 Loops: frames, copy, keys, budget (L-1, L-12)"]
-    L3["WP-L4 Playback API + clock (L-1.5, L-1.8, L-1.10, L-1.13)"]
-    L2["WP-L3 Renderer: frame identity, Frame counters, blend,<br/>furniture, place labels, severity word + digit (L-1.6, L-1.16, L-8, L-11)"]
-    L4["WP-L5 Report (L-1.12, L-13)"]
-    L5["WP-L6 MRMS, table seam, heavy end (L-2)"]
-    L6["WP-L7 View bound (L-3)"]
-    L7["WP-L8 Fetch options + confinement (L-7, L-10)"]
-    L8["WP-L9 Cache age + purge (L-9)"]
-    L9["WP-L10 Defects + close-out (L-5, L-6, L-13, M4, M6)"]
-    L0 --> L1 --> L3 --> L2 --> L4
-    L0 --> L5 --> L4
-    L0 --> L6
-    L0 --> L7 --> L8
-    L4 --> L9
-    L6 --> L9
-    L8 --> L9
+    WPL1["WP-L1 Contract skeleton + surface test (L-4)"]
+    WPL2["WP-L2 Loops: frames, copy, keys, budget (L-1, L-12)"]
+    WPL4["WP-L4 Playback API + clock (L-1.5, L-1.8, L-1.10, L-1.13)"]
+    WPL3["WP-L3 Renderer: frame identity, Frame counters, blend,<br/>furniture, place labels, severity word + digit (L-1.6, L-1.16, L-8, L-11)"]
+    WPL5["WP-L5 Report (L-1.12, L-13)"]
+    WPL6["WP-L6 MRMS, table seam, heavy end (L-2)"]
+    WPL7["WP-L7 View bound (L-3)"]
+    WPL8["WP-L8 Fetch options + confinement (L-7, L-10)"]
+    WPL9["WP-L9 Cache age + purge (L-9)"]
+    WPL10["WP-L10 Defects + close-out (L-5, L-6, L-13, M4, M6)"]
+    WPL1 --> WPL2 --> WPL4 --> WPL3 --> WPL5
+    WPL1 --> WPL6 --> WPL5
+    WPL1 --> WPL7
+    WPL1 --> WPL8 --> WPL9
+    WPL5 --> WPL10
+    WPL7 --> WPL10
+    WPL9 --> WPL10
   end
   subgraph WP2["watchpost P1-b — lands on the v0.2.0 tag"]
     W8["W8 Radar loops, motion Setting, M3, M5, M6<br/>(FR-5, HR-1, HR-9)"]
     W9["W9 Library bound, Report, fetch options,<br/>retention + purge, guard 4 full, labels, pattern<br/>(HR-3, HR-6, HR-7, HR-8, HR-10)"]
   end
   WP1 --> WP2
-  L9 -->|"final v0.2.0 tag: 0.18.0 ships (FR-5.6)"| WP2
+  WPL10 -->|"final v0.2.0 tag: 0.18.0 ships (FR-5.6)"| WP2
   LIB -.->|"v0.2.0-rc.N as packages land (D-69)"| WP2
 ```
 
