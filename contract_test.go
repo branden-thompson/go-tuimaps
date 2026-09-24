@@ -57,7 +57,15 @@ func TestTheContractNamesEverythingExported(t *testing.T) {
 	}
 }
 
+// readContract is the contract without its changelog, whose names are
+// removed or not yet built.
 func readContract(t *testing.T) string {
+	t.Helper()
+	before, _, _ := strings.Cut(readWholeContract(t), changelogHeading)
+	return before
+}
+
+func readWholeContract(t *testing.T) string {
 	t.Helper()
 	b, err := os.ReadFile(contractFile)
 	if err != nil {
@@ -201,4 +209,67 @@ func dedupe(sorted []string) []string {
 		}
 	}
 	return out
+}
+
+// changelogHeading opens the contract's list of v0.2.0's breaks (L1.5). The
+// names it cites are removed or not yet built, so the two name checks above
+// read the contract without it.
+const changelogHeading = "## 11 · Changelog: what v0.2.0 breaks (D-58)"
+
+// TestTheChangelogListsEveryBreak is v0.2.0 L1.5 (D-58): the contract has a
+// changelog with one row per break the plan names, each saying what changes,
+// why, what a host does instead, and its state; and a row marked landed is
+// true: the names it says were removed are gone from the package.
+func TestTheChangelogListsEveryBreak(t *testing.T) {
+	_, log, ok := strings.Cut(readWholeContract(t), changelogHeading)
+	if !ok {
+		t.Fatalf("contract.md has no %q section", changelogHeading)
+	}
+	rows := map[string][]string{}
+	for _, line := range strings.Split(log, "\n") {
+		if strings.HasPrefix(line, "## ") {
+			break
+		}
+		if !strings.HasPrefix(line, "| ") || strings.HasPrefix(line, "| Break ") {
+			continue
+		}
+		cells := strings.Split(strings.Trim(line, "| "), " | ")
+		if len(cells) != 5 {
+			t.Errorf("a changelog row has %d cells, want 5: %s", len(cells), line)
+			continue
+		}
+		for i, c := range cells {
+			if strings.TrimSpace(c) == "" {
+				t.Errorf("a changelog row leaves cell %d empty: %s", i+1, line)
+			}
+		}
+		rows[cells[0]] = cells
+	}
+	for _, ruling := range []string{"D-62", "D-66", "D-67", "D-70", "D-74"} {
+		if !strings.Contains(log, ruling) {
+			t.Errorf("the changelog does not cite %s", ruling)
+		}
+	}
+	for _, name := range []string{"The borrow check", "`Changed()`", "Loop playback", "`Describe`", "`Purge`", "`Fetcher`", "New names' shapes"} {
+		if rows[name] == nil {
+			t.Errorf("the changelog has no row for %s", name)
+		}
+	}
+	known := knownNames(t)
+	for _, cells := range rows {
+		state := cells[4]
+		if !strings.HasPrefix(state, "landed") && !strings.HasPrefix(state, "lands in") && !strings.HasPrefix(state, "lands with") {
+			t.Errorf("row %s: state %q is neither landed nor lands in/with", cells[0], state)
+			continue
+		}
+		if !strings.HasPrefix(state, "landed") {
+			continue
+		}
+		_, removed, _ := strings.Cut(cells[1], "Removed")
+		for _, span := range regexp.MustCompile("`([^`]*)`").FindAllStringSubmatch(removed, -1) {
+			if m := apiSpan.FindStringSubmatch(span[1]); m != nil && known[m[1]] {
+				t.Errorf("row %s is marked landed, but %s is still in the package", cells[0], m[1])
+			}
+		}
+	}
 }

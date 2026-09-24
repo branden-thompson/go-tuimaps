@@ -192,3 +192,22 @@ its doc comment and in the sections above.
 | Checking a ramp | `CheckRamp`, `RampCheck`, `Rule` (`Ordered`, `Distinct`, `Readable`, `VisionSafe`), `Finding` |
 | Errors | `Kind`, `Kinds`, `KindOf`, and the kinds: `InvalidCoordinates`, `SizeMismatch`, `UnsortedBreaks`, `MalformedRamp`, `MissingTable`, `MalformedTable`, `UnknownPreset`, `MalformedStyle`, `InvalidID`, `OverVertexCap`, `OverImageCap`, `ImageRefused`, `RingTooShort`, `BadCurrency`, `UnsupportedSchema`, `UnsupportedTile`, `OverLimit`, `FetchRefused`, `FetchFailed`, `CacheRefused`, `NoSize`, `ReentrantCall`, `Cancelled`, `Closed`, `Internal` |
 | Warnings | `Warning`, `WarningKind`, `WarningKinds`, `Map.Warnings`, and the kinds: `RampRuleBroken`, `UnmatchedImageColours`, `StaleOverlay`, `FutureValidTime`, `ImplausibleUnit`, `NearDuplicateID`, `UnknownToken`, `SetRefused`, `NoWorkCalled`, `TileFailed`, `CacheWriteFailed`, `RenderFailed`, `CacheUnderNeed` |
+
+## 11 · Changelog: what v0.2.0 breaks (D-58)
+
+v0.1.0's shape was additive-only (NFR-1). D-58 relaxed that for v0.2.0: where
+integrating with watchpost showed that an earlier shape was wrong, the better
+shape is taken now, while watchpost is the only host, and every break is
+listed here. A row marked **landed** names what has been removed; a test holds
+that the name is gone from the package. A row marked **lands in** names the
+plan task that makes the break; until then, v0.1.0's shape still holds.
+
+| Break | What changes | Why | What a host does instead | State |
+|---|---|---|---|---|
+| The borrow check | Removed: the check, and the warning kind `BorrowChanged`. The kinds after it renumber | The check had no public switch, and only its own test called it. Hosts guard borrowed geometry themselves (D-74) | Keep one owner for any geometry you hand the map; compare kinds by name, never by number | landed (D-74) |
+| `Changed()` | Counts inputs only: data, look, view, and what `Work` lands. `Render` never raises it; `Work` raises it when it lands something visible | v0.1.0 raised it inside `Render`, so a host could not learn that `Work` had landed a tile without rendering (D-66) | Render when `Changed()` moves, or when `NextCall` says time has something due | lands in L4.7 |
+| Loop playback | One playback per map, not one per overlay. Position is a valid time, never a frame index, and a refresh keeps the same moment | The listener's controls act on the map as a whole: play, stop, reset to "right now", and step (D-67) | Drive the controls with `SetPlayback`, `Play`, `Stop`, `Reset` and `Step`; read the position from `Loop` | lands in L4.1 |
+| `Describe` | Removed; `Report` gives every answer it gave | Two calls answered one question (D-70, 5) | Call `Report` | lands in L5.8 |
+| `Purge` | Returns a report of what it removed and what it could not, beside the error | One call, not a second call with a report (D-70, 1) | Read the report, or ignore it as before | lands in L9.4 |
+| `Fetcher` | Removed, with the fetch package's checked request type | A host's transport, user-agent and timeout go through fetch options instead. A tile source that is not HTTP would need a later ruling (D-62) | Pass a transport, user-agent and timeout with `SetFetchOptions` | lands in L8.2 |
+| New names' shapes | Setters only, with no paired options. The cache's maximum age is its own setter, and `CacheRoot` is unchanged. A provider is a typed constant. "Unverified" is a flag on a legend entry. No "not off" reason: the zero value serves | Fewer names for one host (D-70, 2-4, 6-7) | Nothing to change: these names are new in v0.2.0 | lands with each name |
