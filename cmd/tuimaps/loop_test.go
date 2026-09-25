@@ -64,7 +64,9 @@ func TestPanelsReplaceTheMapAndGoAway(t *testing.T) {
 	a, out := upFor(t, home)
 	for _, c := range []struct{ key, says string }{
 		{keyHelp, "braille"},
-		{keyDescribe, "Home"},
+		// Not the place's name: since v0.2.0 L3.13 the map itself keeps the
+		// named place's name (D-60), so only the panel's own words show it open.
+		{keyDescribe, "nothing is set over this place"},
 	} {
 		a.act(c.key)
 		out.Reset()

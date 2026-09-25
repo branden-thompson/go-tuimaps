@@ -214,7 +214,7 @@ func (m *Map) markers() []render.Marker {
 			shape = MarkerDot
 		}
 		m.drawnPlaces = append(m.drawnPlaces, render.Marker{At: p.At, Shape: shape, Radius: p.Radius,
-			Text: p.Glyph, Label: p.Name, Ink: uint8(colour.Marker), Blink: p.Blink})
+			Text: p.Glyph, Label: p.Name, Ink: uint8(colour.Marker), Blink: p.Blink, ID: p.ID})
 	}
 	return m.drawnPlaces
 }

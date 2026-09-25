@@ -221,3 +221,31 @@ func BenchmarkSearchBlends(b *testing.B) {
 		SearchBlends(none, Dark, g, Truecolor)
 	}
 }
+
+// TestTheOutlineAndLabelReadOverTheBlend is L3.12 (L-8.8): at each severity,
+// on each ground, in truecolour and at 256 colours, over every background the
+// blend search leaves inside the area, the outline reaches 3:1 and the label
+// 4.5:1.
+func TestTheOutlineAndLabelReadOverTheBlend(t *testing.T) {
+	var none Palette
+	checked := 0
+	for _, ground := range []GroundKind{Dark, Light} {
+		for _, depth := range []Depth{Truecolor, Colours256} {
+			b := SearchBlends(none, ground, groundOf(ground, depth), depth)
+			for _, p := range []Preset{Radar, Temperature} {
+				ramp := rampOf(none, p, ground, depth)
+				for tint := range 5 {
+					outline, _ := none.ResolveAt(AlertExtremeOutline+Token(2*tint), ground, depth)
+					s, _ := b.Strength(p, tint)
+					for _, f := range CheckOverBlend(outline, ramp, tintOf(none, tint, ground, depth), s, depth) {
+						t.Errorf("%v %v %v tint %d: class %d, %s at %.2f:1", p, ground, depth, tint, f.A, [2]string{"outline", "label"}[f.B], f.Value)
+					}
+					checked++
+				}
+			}
+		}
+	}
+	if checked != 40 {
+		t.Errorf("checked %d combinations, want 40", checked)
+	}
+}

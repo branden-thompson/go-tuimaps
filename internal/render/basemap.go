@@ -29,6 +29,7 @@ type Label struct {
 	Rank       int32
 	Ink        uint8
 	fromPoint  bool // placed from its point, not centred on it: a marker's label (P-60)
+	place      bool // a host's place: a label that cannot fit whole is a DropPlaceName
 	first, end int  // its vertices, among the painter's: each is tried in turn (P-32)
 }
 

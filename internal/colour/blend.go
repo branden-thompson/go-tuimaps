@@ -200,3 +200,28 @@ func tintOf(p Palette, tint int, ground GroundKind, depth Depth) RGB {
 	c, _ := p.ResolveAt(AlertExtremeTint+Token(2*tint), ground, depth)
 	return c
 }
+
+// CheckOverBlend holds an alert's outline and its label to their contrast
+// over every background an image ramp takes inside the alert's area: each
+// class blended toward the tint at the strength given, or where the strength
+// is zero, the class itself, drawn over the tint (L-8.8). The outline must
+// reach 3:1 and the label 4.5:1, as the depth shows them, after the
+// foreground rule has chosen what is drawn. A is the class; B is 0 for the
+// outline and 1 for the label.
+func CheckOverBlend(ink RGB, ramp []RGB, tint RGB, strength float64, depth Depth) []Finding {
+	var out []Finding
+	for i, class := range ramp {
+		bg := class
+		if strength > 0 {
+			bg = Blend(class, tint, strength)
+		}
+		bg = shownAt(bg, depth)
+		own := shownAt(ink, depth)
+		for which, need := range []float64{LineContrast, TextContrast} {
+			if got := Contrast(Foreground(own, bg, need), bg); got < need {
+				out = append(out, Finding{Rule: Readable, A: i, B: which, Value: got})
+			}
+		}
+	}
+	return out
+}

@@ -424,7 +424,11 @@ func (m *Map) Render(size Size, now time.Time) (frame Frame, err error) {
 	}
 	frame = Frame{Lines: drawn.Lines, Status: Status(drawn.Status), Changed: m.changed, FrameTicks: m.play.ticks}
 	for _, d := range drawn.Dropped {
-		frame.Dropped = append(frame.Dropped, Drop{Kind: DropAlertLabel, Overlay: d.Overlay, Label: d.Label, Shown: d.Shown})
+		kind := DropAlertLabel
+		if d.Place {
+			kind = DropPlaceName
+		}
+		frame.Dropped = append(frame.Dropped, Drop{Kind: kind, Overlay: d.Overlay, Label: d.Label, Shown: d.Shown})
 	}
 	return frame, nil
 }

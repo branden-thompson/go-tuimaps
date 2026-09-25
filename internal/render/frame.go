@@ -135,6 +135,7 @@ type Frame struct {
 // Drop is one alert label the frame could not show whole: the overlay it
 // belongs to, the label, and the word that stood in for it, or empty.
 type Drop struct {
+	Place                 bool // a host's place's name; otherwise an alert's label
 	Overlay, Label, Shown string
 }
 
@@ -521,29 +522,20 @@ func (r *Renderer) compose(in Input, status Status) {
 	for _, g := range r.painter.Glyphs() {
 		_ = r.grid.anchor(g, Point{X: g.X, Y: g.Y}) // a marker outside the rectangle is simply not drawn
 	}
+	r.drops = r.drops[:0]
+	r.markerNames() // the host's places, before any other name (L-8.9, D-80)
 	// An overlay's labels are placed before any name of the basemap's, so that
 	// a place name never hides a warning's word; they are not the basemap's
 	// labels and do not go when those are turned off.
 	g.world = box{}
-	r.drops = r.drops[:0]
 	for _, l := range r.painter.OverlayLabels() {
-		if g.labelAt(l, []Point{{X: l.X, Y: l.Y}}) || textsafe.Width(l.Short) == 0 {
-			continue
-		}
 		// An alert's label that does not fit falls back to its severity word;
 		// either way the host is told (L-8.5). The outline's digit carries
 		// the severity whatever happens to the label (D-65).
-		short := l
-		short.Name = l.Short
-		shown := ""
-		if g.labelAt(short, []Point{{X: l.X, Y: l.Y}}) {
-			shown = l.Short.String()
-		}
-		r.drops = append(r.drops, Drop{Overlay: l.Overlay, Label: l.Name.String(), Shown: shown})
+		r.placeOrShorten(l)
 	}
 	r.digits(in) // after the overlays' labels, before any name of the basemap's (D-65)
 	if !in.Labels {
-		r.markerNames() // the host's own places are not the basemap's names
 		r.bandNames()
 		r.shades()
 		if rampless(in.Depth) {
@@ -558,17 +550,12 @@ func (r *Renderer) compose(in Input, status Status) {
 	// then.** A field drawn without colour is contour lines, and a contour
 	// with no value says where a band changes but not to what - so on such a
 	// frame the values are the data the host asked for and a place name is
-	// the decoration (D-124). The host's own markers are placed first of the
-	// three, so that a value can never cost the map its "you are here".
-	//
-	// **This is where P-60 would otherwise put the marker labels**, which
-	// upstream collision-checks after the map's names. Upstream has no scalar
-	// fields at all, so it has no contour values to order against names, and
-	// this reordering therefore changes no frame upstream could draw: the
-	// parity row holds for every input it supports, and the branch below is
-	// taken only when a field is being labelled.
+	// the decoration (D-124). The host's own places were placed before all of
+	// them, and before the overlays' labels too (L-8.9, D-60, D-81), so that
+	// nothing can cost the map its "you are here". That departs from P-60,
+	// which places marker labels after the map's names; the parity row
+	// records it.
 	if bands := r.painter.BandLabels(); len(bands) > 0 {
-		r.markerNames()
 		r.bandNames()
 	}
 	// Names last, most important first; the order among equals is the order
@@ -584,9 +571,6 @@ func (r *Renderer) compose(in Input, status Status) {
 		if g.labelAt(l, r.painter.Points(l)) {
 			placed++
 		}
-	}
-	if len(r.painter.BandLabels()) == 0 {
-		r.markerNames() // P-60's own place, on every frame with no field on it
 	}
 	r.shades()
 	if rampless(in.Depth) {
@@ -670,8 +654,27 @@ func (r *Renderer) bandNames() {
 func (r *Renderer) markerNames() {
 	r.grid.world = box{}
 	for _, l := range r.painter.MarkerLabels() {
-		r.grid.label(l)
+		r.placeOrShorten(l)
 	}
+}
+
+// placeOrShorten places a label; one that does not fit whole tries its
+// shorter form, and either way the frame reports it (L-8.5, L-8.9). A label
+// with no shorter form that does not fit is simply not drawn, as before.
+func (r *Renderer) placeOrShorten(l Label) {
+	g := r.grid
+	if g.labelAt(l, []Point{{X: l.X, Y: l.Y}}) || textsafe.Width(l.Short) == 0 && !l.place {
+		return
+	}
+	shown := ""
+	if textsafe.Width(l.Short) > 0 {
+		short := l
+		short.Name = l.Short
+		if g.labelAt(short, []Point{{X: l.X, Y: l.Y}}) {
+			shown = l.Short.String()
+		}
+	}
+	r.drops = append(r.drops, Drop{Place: l.place, Overlay: l.Overlay, Label: l.Name.String(), Shown: shown})
 }
 
 // furniture is what is drawn over the map's edge: the notice when there are
