@@ -31,6 +31,12 @@ type LegendEntry struct {
 	// blends over it (L-11.1); under the others it is drawn over the tint,
 	// the warning carried by the outline, label and digit (L-11.4, D-27).
 	Blended []Severity
+	// Approximate says an image's table was read from a provider's legend
+	// rather than published (L-13.10, D-19); Unverified says part of its
+	// range has not yet been seen in data, so its values there are the
+	// library's best reading (L-2.3). Both come from the provider's table the
+	// image is read with; a table of the host's own carries neither.
+	Approximate, Unverified bool
 }
 
 // Scaled is the scale of the map as data, in the terms the mark on the frame
@@ -88,8 +94,14 @@ func (m *Map) legendOf(id string) (LegendEntry, bool) {
 	if err != nil {
 		return LegendEntry{}, false
 	}
-	return LegendEntry{ID: id, Unit: kind.Unit, Preset: kind.Preset,
-		Classes: m.classesOf(resolved), Blended: m.blendedUnder(resolved.Preset)}, true
+	entry := LegendEntry{ID: id, Unit: kind.Unit, Preset: kind.Preset,
+		Classes: m.classesOf(resolved), Blended: m.blendedUnder(resolved.Preset)}
+	if o.Image != nil {
+		if t, ok := overlay.TableOf(o.Image.Provider); ok {
+			entry.Approximate, entry.Unverified = t.Approximate, t.Unverified
+		}
+	}
+	return entry, true
 }
 
 // severities are the alert severities as the legend lists them, extreme

@@ -337,3 +337,14 @@ func shapeKind(k FeatureKind) scene.ShapeKind {
 	}
 	return scene.ShapeLine
 }
+
+// Provider names a source of radar images whose colour table the library
+// carries: an image that names one, with no table of its own, is read with
+// the provider's (L-2.5).
+type Provider = overlay.Provider
+
+// The providers the library carries tables for.
+const (
+	ProviderIEM  = overlay.ProviderIEM  // the Iowa Environmental Mesonet's N0Q composite, its published table
+	ProviderMRMS = overlay.ProviderMRMS // NOAA's MRMS reflectivity, its observed palette valued from its legend: approximate
+)

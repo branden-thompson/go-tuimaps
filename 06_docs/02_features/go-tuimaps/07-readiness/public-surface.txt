@@ -69,6 +69,8 @@ const PlaybackOff Playback
 const PlaybackOn
 const Point
 const Polygon
+const ProviderIEM
+const ProviderMRMS
 const RailLayer
 const RampRuleBroken
 const Readable
@@ -192,7 +194,7 @@ type Grid = overlay.Grid
 type Image = overlay.Image
 type Kind = fault.Kind
 type Layer = style.Layer
-type LegendEntry struct{ ID string; Unit string; Preset string; Classes []Class; Blended []Severity }
+type LegendEntry struct{ ID string; Unit string; Preset string; Classes []Class; Blended []Severity; Approximate bool; Unverified bool }
 type LonLat = project.LonLat
 type LoopFrame = overlay.LoopFrame
 type LoopState struct{ At time.Time; Now time.Time; Oldest time.Time; Newest time.Time; Index int; Count int; Playing bool; Advancing bool; Gap bool; Forecast bool; CeilingLifted bool; Playback Playback; Step time.Duration; Off OffReason }
@@ -208,6 +210,7 @@ type PlaceReport struct{ Place string; Alerts []PlaceAlert; Answers []Answer }
 type Playback uint8
 type Positioned interface{ LonLat() (float64, float64) }
 type Projection = overlay.Projection
+type Provider = overlay.Provider
 type RGB = colour.RGB
 type RampCheck = colour.RampCheck
 type RemoveResult = overlay.RemoveResult

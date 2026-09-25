@@ -64,6 +64,7 @@ type TableEntry struct {
 type Image struct {
 	PNG                      []byte
 	Frames                   []LoopFrame // a loop; a single picture is PNG with no frames (L-1.1)
+	Provider                 Provider    // whose table to read it with, when Table is empty (L-2.5)
 	West, South, East, North float64
 	Projection               Projection
 	Table                    []TableEntry
@@ -224,6 +225,18 @@ func copied(img *Image) (*Image, error) {
 	own := *img
 	own.PNG = cloneBytes(img.PNG)
 	own.Table = append([]TableEntry(nil), img.Table...)
+	if len(own.Table) > 0 {
+		own.Provider = 0 // a table of the host's own is the host's, whatever provider it names
+	}
+	if len(own.Table) == 0 && img.Provider != 0 {
+		t, ok := TableOf(img.Provider)
+		if !ok {
+			return nil, fault.Make(fault.MissingTable, textsafe.Const("the image was refused"),
+				textsafe.Const("it names a provider the library carries no table for, and has no table of its own"),
+				textsafe.Const("name one of the library's providers, or hand in the table"))
+		}
+		own.Table = append([]TableEntry(nil), t.Entries...)
+	}
 	if img.Frames != nil {
 		own.Frames = make([]LoopFrame, len(img.Frames))
 	}
