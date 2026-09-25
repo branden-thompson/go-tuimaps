@@ -22,7 +22,7 @@ least recently read files (`pruneLocked`, `:267`). So:
 - `Purge` empties one source's directory (`Empty`, `:329`), but a fetch already in flight can write
   after it, as can one in flight when `CacheRoot` changes or the map closes (S-4).
 
-## PLAN v0.2.0 — shared by every option: purge and in-flight writes (ruled D-56, not yet built)
+## AS BUILT v0.2.0 — shared by every option: purge and in-flight writes (ruled D-56; built in rc.7)
 
 ```go
 // Purge empties everything the map holds from tiles: every source on disk,
@@ -40,16 +40,20 @@ cache off, and `Close` all raise it, so no write lands after any of them (L-9.3)
 `Release`d, and its file descriptor closed. Removals are counted only when they succeed, and a failed
 write raises `cache-write-failed` (L-9.5).
 
+*As built: one call, `Purge() (PurgeReport, error)` — no `PurgeWithReport`. The generation is the disk cache's, not the map's. The age is `SetCacheMaxAge`, not a `CacheRoot` option.*
+
 ```mermaid
 sequenceDiagram
-  participant J as Fetch job (in Work)
-  participant M as Map (generation g)
-  participant D as Disk
-  J->>M: start: remember g
-  Note over M: Purge / CacheRoot change / Close<br/>raises g to g+1
-  J->>M: store tile (remembered g)
-  M-->>J: g changed: drop it, write nothing
-  J->>D: (only if unchanged) write
+  participant J as Tile job (in Work)
+  participant D as Disk cache (generation g)
+  participant M as Map
+  J->>D: start: read g · expire files past their age · Load (a read writes nothing)
+  D-->>J: a miss
+  Note over J: fetch from the network, decode through the gate
+  Note over M,D: meanwhile: Purge() empties every source's files, raises g to g+1<br/>— or CacheRoot changes, or goes off, or Close: the old cache is released (g+1, root closed)
+  J->>D: Store(tile, fetch time, remembered g)
+  D-->>J: g changed or released: refused, nothing written
+  Note over D: only with g unchanged: temporary file, dated with the fetch time, then rename ·<br/>over the cap, prune to nine tenths, oldest fetched first, never a file the view needs
 ```
 
 ## The choice: what records a tile's age

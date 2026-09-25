@@ -4,13 +4,17 @@ Up: [architecture](architecture.md) · Carries: NFR-22, D-19, D-81, D-86
 
 **There is no remote until SHIP (D-19), so there is no hosted continuous integration until then.** Until SHIP the gate is a script run locally before every merge; at SHIP the same script becomes the hosted workflow. What cannot be run locally is said to be untested, not assumed.
 
+*AS BUILT v0.2.0 (rc.8); what is not built yet says so.*
+
 ```mermaid
 flowchart TB
     subgraph MODS["Every module in the repository, one by one — not only the library"]
       direction LR
       M0["library"] --- M1["cmd/tuimaps"] --- M2["examples"] --- M3["tools/gen-assets"] --- M4["tools/answer-key"] --- M5["tools/oracle"] --- M6["tools/atlas"]
     end
-    GATE["The gate script<br/>writes a throw-away workspace file so the nested modules resolve the library from this tree —<br/>with a replace for the library at exactly v0.0.0 inside that throw-away file —<br/>the tracked module files carry no replace line"] --> MODS
+    GATE["The gate script<br/>writes a throw-away workspace file so the nested modules resolve the library from this tree —<br/>with a replace for the library at exactly v0.0.0 inside that throw-away file —<br/>the tracked module files carry no replace line · one mode a run: full, --quick, --docs or --fuzz"] --> MODS
+    GATE --> LOG["Every run logged to 06_docs/gate-runs.md: time · commit · tree checked · mode · result · duration"]
+    GATE -- "--docs" --> DOCS["The docs lane: a STAGED change of Markdown alone (and the generated atlas page) —<br/>every module's tests run, and no other leg; anything else staged is refused (v0.2.0 D-15, D-41, D-53)"]
     MODS --> T0["A module with no packages yet is named and called EMPTY — not failed, not hidden;<br/>a module go cannot list FAILS (v0.2.0 D-31);<br/>tests or a module graph that cannot be listed FAIL (D-40)"]
     MODS --> T1["Tests under the race detector, on the floor toolchain"]
     MODS --> T2["A second leg WITHOUT the race detector: the zero-allocation and allocation-count tests live here"]
@@ -23,10 +27,12 @@ flowchart TB
     M0 --> A4["Reference frames byte-identical on arm64 (native) and amd64 (emulated locally)<br/>FAILS — never skips — if the second architecture cannot be run"]
     M0 --> A5["Loopback only: the dial hook is installed for every test binary by default, not opted into<br/>a static check fails any test package that does not link it"]
     M0 --> A6["Sub-process test: a program that reuses borrowed memory too early must be caught by the race detector (D-86)"]
-    M0 --> A7["From the first tag: the public contract compared with the last tag (NFR-22)"]
-    T1 & T2 & T3 & T4 & T5 & A1 & A2 & A3 & A4 & A5 & A6 & A7 --> OK{"All green?"}
+    M0 --> A7["NOT BUILT: the public contract compared with the last tag (NFR-22, v0.2.0 L-4) — the gate says so on every run"]
+    T1 & T2 & T3 & T4 & T5 & A1 & A2 & A3 & A4 & A5 & A6 --> OK{"All green?"}
+    DOCS --> OK
     OK -- yes --> MERGE["Merge allowed"]
     OK -- no --> STOP["Stop: what failed, why, what to do"]
+    NB["NOT BUILT YET (v0.2.0 WP-L10): a release check refusing the final tag while its checklist is open (L10.3) ·<br/>a pinned vulnerability scan at the tag (L10.4) · hosted CI with the second architecture (L10.5) ·<br/>the loop's memory bound, five-minute and hour forms (L10.8)"] -. "will join" .-> OK
 ```
 
 | Untested until SHIP, and said so | Why |

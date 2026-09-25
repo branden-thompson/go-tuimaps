@@ -8,13 +8,13 @@ Up: [architecture](architecture.md) · Carries: FR-9, FR-11, FR-37, NFR-3, NFR-4
 
 ## Where the bytes live
 
-*v0.1.0 as built. v0.2.0 PLAN changes it: a loop's frames count against a per-map image budget, 3 MiB by default (L-12, D-61).*
+*AS BUILT v0.2.0 (rc.2): images are copied at `Set` and held to a per-map image budget, **6 MiB by default** (D-68, not PLAN's 3 MiB). The loop's heap bound, M4, is not yet measured (L10.8); the figures are v0.1.0's. Corrected against the code: the shape cache is each map's own, and only the tile cap and the image budget are host-settable.*
 
 ```mermaid
 flowchart TB
     subgraph HOSTMEM["The host's memory — not counted against the library"]
       HG["Borrowed geometry (FR-11)<br/>synthetic upper bound: 58 zones · 812,058 vertices · 12.4 MiB<br/>measured: ten Gulf-coast counties · 56,827 vertices · 0.9 MB<br/>the library reads it, never copies it"]
-      HP["The PNG the host fetched — may be released once the image is prepared"]
+      HP["The PNG, or a loop's frames, the host fetched — COPIED at Set (L-1.14):<br/>the host may reuse its own as soon as Set returns"]
     end
 
     subgraph LIVE["Library, live after a collection — the 4 MB line"]
@@ -22,10 +22,10 @@ flowchart TB
       FIX["<b>Fixed buffers</b> — measured 0.44 MB<br/>cell grid × 2 frames · dot mask · output lines (149×38)"]
       TC["<b>Tile cache</b> — default cap 0.5 MB, shared · one view draws 0.33 to 0.80 MB<br/>what a live view draws is never evicted; spares only in the room left; over the cap is reported (D-90) · with data dropped while decoding and coordinates as 16-bit integers (D-75)"]
       SC["<b>Shape cache</b> — byte-capped · measured 0.01 MB for 56,827 borrowed vertices<br/>simplified forms and bounding boxes · same rule; a form larger than the whole cap is drawn from the host's memory (D-90)"]
-      IC["<b>Image cache</b> — byte-capped · measured 0.25 MB for a 600×400 image<br/>one byte per pixel (D-36) · a loop's frames must fit inside this cap (FR-37)"]
+      IC["<b>Images</b> — each picture at most 250,000 pixels by default, kept at one byte a pixel (D-36) · measured 0.25 MB for a 600×400 image<br/>a loop: up to 72 frames, each decoded frame one byte a pixel; a refresh keeps the frames it shares (L-1.7)<br/><b>the image budget</b>, 6 MiB a map by default (D-68): every picture's copied file and its pixels, each grid's field,<br/>and the shared classified set (1 MiB, across maps) — a Set over it is refused, saying by how much"]
       GC2["<b>Grids, contours, ramps, legend</b> ≈ 0.05 MB (an estimate; NOT measured)"]
       ST["<b>Styles, tokens, pools</b> ≈ 0.6 MB (an estimate; NOT measured)"]
-      CAPS["Default caps (D-85, lean first): tiles 0.5 MB and shapes 0.25 MB, shared by every map;<br/>images 0.25 MB a map · all host-settable · the lines cover THREE maps sharing caches<br/>Rule: default caps + fixed buffers ≤ 3 MB, leaving 1 MB for everything else (NFR-3)"]
+      CAPS["Default caps (D-85, lean first): tiles 0.5 MB, shared by the maps given one handle (NewShared sets it);<br/>shapes 0.25 MB a map and each picture 250,000 pixels, both fixed · the image budget 6 MiB a map (SetImageBudget) ·<br/>the lines cover THREE maps sharing a handle<br/>Rule: default caps + fixed buffers ≤ 3 MB, leaving 1 MB for everything else (NFR-3)"]
     end
 
     subgraph TRANS["Transient — what pushes the peak toward 8 MB"]

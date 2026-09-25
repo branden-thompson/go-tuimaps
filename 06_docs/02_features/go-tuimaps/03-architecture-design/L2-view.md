@@ -17,9 +17,11 @@ flowchart LR
 
 ## Fit-to — put these things in the frame (D-76)
 
+*AS BUILT v0.2.0 (rc.6): the fitted view, like every move, is then held inside the host's bound if one is set (`SetBound`, L-3.1).*
+
 ```mermaid
 flowchart TB
-    IN["FitTo(places, overlay ids, margin in cells)"] --> BOX["Bounding box of everything named —<br/>places by position; overlays by the box recorded at hand-in, so no Work is needed first"]
+    IN["FitTo(places, overlay ids, margin in cells)"] --> BOX["Bounding box of everything named, and the map's own places —<br/>places by position; overlays by the box recorded at hand-in, so no Work is needed first"]
     BOX --> ONE{"A single point, or an empty box?"}
     ONE -- yes --> KEEP["Centre on it · keep the current zoom"]
     ONE -- no --> ANTI{"Does the box cross ±180°?"}
@@ -28,7 +30,8 @@ flowchart TB
     SHORT --> SPAN["Span in web-mercator units, east-west and north-south"]
     SPAN --> FITZ["The largest zoom at which the span, plus the margin, fits the rectangle —<br/>solved directly, not stepped. A cell is twice as tall as it is wide: 2 dots across, 4 down"]
     FITZ --> CL["Clamped to the zoom range · centre on the box's centre"]
-    CL --> OUT["The view changes as any intent does: the counter moves, tiles become wanted"]
+    CL --> BOUND["Held inside the host's Bound, if one is set (L-3.1):<br/>zoom raised to its least · the centre moved so the view stays in its box,<br/>or centred on a box narrower than the view · a box may cross ±180°"]
+    BOUND --> OUT["The view changes as any intent does: Changed() moves, tiles become wanted"]
 ```
 
 **M1's guard** — the place and the condition share one frame — is met by calling this, and tested by it (task 14.5).

@@ -22,14 +22,14 @@ The diagram set is wide — thirty-four diagrams, not counting the six in the ap
 | # | What happens | Where to look | Why |
 |---|---|---|---|
 | 7 | Watchpost's 300 ms clock ticks and it calls `Render`. Nothing has been decoded yet, so the frame shows the ground, the place marker and a one-line notice — not an empty box. | L3 Sequences — *A cold first frame*, steps 4–5 | D-30, FR-23 |
-| 8 | `Render` never waits and never fetches. It only **notes which tiles are missing** as pending work; the three overlays were queued for preparing when they were set. | L2 Render — *From a call to a frame*, the "Note what is missing" box | FR-23 |
+| 8 | `Render` never waits and never fetches. It only **notes which tiles are missing** as pending work; the three overlays are queued for preparing by this `Render` (or a `Settle`), not at `Set`. | L2 Render — *From a call to a frame*, the "Note what is missing" box | FR-23 |
 | 9 | Nothing happens to that pending work until **Watchpost's own goroutines** call `Work`. The library has none. | L3 Sequences — the *Host's pump* lane · L0 Context — *Host's pump* | D-73 |
 
 ## Part 3 — The slow work, done on Watchpost's time
 
 | # | What happens | Where to look | Why |
 |---|---|---|---|
-| 10 | A `Work` call picks up a tile. It tries the disk cache, then the named service, then the tiles shipped inside the program. | L2 Tiles — *Where a tile can come from* | FR-21, D-27 |
+| 10 | A `Work` call picks up a tile. It tries the disk cache, then the named service. The tiles shipped inside the program are their own jobs, standing in until the service's tiles land. | L2 Tiles — *Where a tile can come from* | FR-21, D-27 |
 | 11 | The network request leaves through one guarded door: secure transport, at most three redirects, never into a private address, and no error message ever prints the address. | L2 Tiles — *The network edge* | FR-22b |
 | 12 | The bytes that come back are treated as hostile. Sizes and counts are checked **before** memory is set aside; layers the map does not draw, and every place-name translation but the one configured language, are thrown away during decoding. | L2 Tiles — *Untrusted-input gate* | NFR-10, D-75, D-82 |
 | 13 | If the tile fails, it is given a "not before" time — 30 seconds, doubling. No timer is set; the time simply becomes part of the answer to "when should I call you next?" | L3 States — *A tile* · L3 Sequences — *An idle host* | FR-23, FR-25 |
@@ -41,7 +41,7 @@ The diagram set is wide — thirty-four diagrams, not counting the six in the ap
 
 | # | What happens | Where to look | Why |
 |---|---|---|---|
-| 17 | `Render` runs again and paints in a fixed order: ground, water, the radar, the warning's tint, the map's braille lines, the warning's outline, the marker, labels, then the scale mark and credit. | L2 Render — *Paint the cell grid*, 1 to 9 | FR-12 |
+| 17 | `Render` runs again and paints in a fixed order: ground, water, the warning's tint, the radar blended over it (v0.2.0 L3.6), the map's braille lines, the warning's outline, the marker, labels, then the scale mark and credit. | L2 Render — *Paint the cell grid*, 1 to 9 | FR-12 |
 | 18 | Each radar cell's "how heavy" byte becomes a colour: preset → named job → Watchpost's theme if it set one → checked → fitted to the terminal's colour depth. With "safe ramps" on, the theme is skipped. | L2 Colour — *How a value becomes a cell colour* | D-69, D-63, D-53 |
 | 19 | For every cell the map line keeps its own colour where that still reads against what is behind it; where it would not, it is drawn black or white — whichever contrasts more. | L2 Colour — step 7 | FR-16 |
 | 20 | Roads thin out so the weather can be read. | L2 Render — *Choose the basemap profile* | FR-19 |
@@ -51,7 +51,7 @@ The diagram set is wide — thirty-four diagrams, not counting the six in the ap
 
 | # | What happens | Where to look | Why |
 |---|---|---|---|
-| 22 | Watchpost asks `Describe(Fort Wayne)`. The answer is worked out from the **real outline**, not the simplified one and not the drawn cells: "inside the Flood Warning; nearest edge 3 km east; heavy rain 38 km south-west." | L2 Describe — *How it is computed* | D-52 |
+| 22 | Watchpost asks `Report` for Fort Wayne (v0.2.0; `Describe` is removed). The answer is worked out from the **real outline**, not the simplified one and not the drawn cells: "inside the Flood Warning; nearest edge 3 km east; heavy rain 38 km south-west." | L2 Describe — *How it is computed* | D-52 |
 | 23 | That is why the picture and the words cannot disagree about which side of a line you are on — one outline, one rule for "inside", two uses. | L2 Describe — *Picture and description cannot disagree* | FR-11, FR-29 |
 | 24 | At the smallest map size a column is 1.6 km wide. If Fort Wayne sits closer to the edge than that, the honest reading of the picture is "on the edge" — and the words give the exact answer. Both are tested. | L2 Describe — the *Answer key* arrows | D-67 |
 | 25 | Every string is cleaned on its way out, so a hostile place name in a tile can never send control codes to your terminal or your speech engine. | L0 Context — *Way out* | FR-34 |
@@ -60,8 +60,8 @@ The diagram set is wide — thirty-four diagrams, not counting the six in the ap
 
 | # | What happens | Where to look | Why |
 |---|---|---|---|
-| 26 | Watchpost asks "when should I call you next?" The answer is the soonest of: the marker's next blink, a failed tile's retry time, the moment the radar goes stale. | L3 Sequences — *An idle host* | FR-25 |
-| 27 | Twenty minutes later the radar has not been refreshed. It is marked stale on the map, in the legend and in the description. | L3 States — *An overlay's freshness* | FR-32 |
+| 26 | Watchpost asks "when should I call you next?" The answer is the soonest of: the marker's next blink, a failed tile's retry time, the moment the radar goes stale, and the loop's next frame advance while it plays (v0.2.0 L4). | L3 Sequences — *An idle host* | FR-25 |
+| 27 | Twenty minutes later the radar has not been refreshed. It is marked stale on the map and in `Report`; the legend carries no stale mark. | L3 States — *An overlay's freshness* | FR-32 |
 | 28 | Watchpost sets a new radar picture under the same id. The old one keeps drawing until the new one is ready. | L2 Overlays — *Same id already set?* | FR-11, D-74 |
 | 29 | All of this — for three maps at once — had to fit in about 4 MB of lasting memory. The map of where those bytes go — and the one place the numbers are tight — is its own diagram. | L2 Memory — *Where the bytes live* | D-29, D-48 |
 

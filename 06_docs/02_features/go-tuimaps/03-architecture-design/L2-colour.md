@@ -6,6 +6,8 @@ Up: [architecture](architecture.md) · Carries: FR-13, FR-16, FR-17, FR-18a, FR-
 
 Read top to bottom. Each step can only narrow what the step above allowed.
 
+*AS BUILT v0.2.0 (rc.4): step 6 changed. An alert's tint no longer lies over an image; the image lies over the tint and is shifted toward it, as strongly as the blend search finds safe (L-11, `internal/colour/blend.go`). The legend says which severities blend and carries each alert's digit.*
+
 ```mermaid
 flowchart TB
     V["A class index in a cell<br/>(from a grid, an image, or a feature's severity)"] --> TYPE
@@ -35,10 +37,10 @@ flowchart TB
       D0["No colour (D-35)<br/>smooth fields: contours with value labels<br/>patchy data: block shades ░▒▓<br/>areas: hatch ╱ ╲ plus a plain-word label (FR-18a)"]
     end
 
-    DEPTH --> BG["6 · The cell's background<br/>by the compositing order: ground → water → image or field → tint (L2-render)"]
+    DEPTH --> BG["6 · The cell's background (L2-render)<br/>ground → water or an alert's tint → an image's or a field's class<br/>where a tint and an image meet: the image shifted toward the tint in linear light, as strongly as the blend search<br/>found safe for this palette, ground and depth — every tinted class 10 from every other and from the ground,<br/>5 from itself untinted (L-11); where no strength is safe, the image is drawn over the tint<br/>(a host palette's case is a ramp-rule-broken warning)"]
     BG --> FG["7 · The cell's foreground (FR-16, D-77)<br/>the line's own colour where it meets 3:1 on this cell; otherwise whichever of black and white contrasts more<br/>line work ≥ 3:1 · labels and legend text ≥ 4.5:1"]
     FG --> CELL["The cell"]
-    DEPTH --> LEGEND["The legend shows the colours actually drawn, at this depth, with text chosen the same way (FR-13, FR-16)"]
+    DEPTH --> LEGEND["The legend shows the colours actually drawn, at this depth, with text chosen the same way (FR-13, FR-16) ·<br/>for an alert, each severity's word and digit (D-65); for an image or field, the severities whose tint blends over it"]
 ```
 
 ## The ground

@@ -42,6 +42,8 @@ flowchart TB
 
 ## Placing labels
 
+*AS BUILT v0.2.0 (rc.4): before any basemap name, the host's place names claim their cells, then the overlays' labels — an alert's falling back to its severity word — then each alert's severity digits; what did not fit is named in the frame's `Dropped` (L-8.5, L-8.9, D-65). The order is L2 Render's step 7.*
+
 ```mermaid
 flowchart LR
     C["Candidates: places on hand, largest rank first<br/>name by upstream's order with one language kept (P-36, D-82): the configured language — English unless the host says otherwise — then the local name, then the house number. No other language survives decoding"] --> CL["Cleaned and measured by grapheme cluster (FR-34, NFR-8)<br/>a wide character takes two cells"]
@@ -53,7 +55,7 @@ flowchart LR
     PUT --> CAP{"Profile's label budget reached?"}
     CAP -- no --> C
     CAP -- yes --> DONE["Done"]
-    OVL["Overlay labels and markers are placed BEFORE basemap labels,<br/>so a place name never hides a warning's word"] -.-> COL
+    OVL["Placed BEFORE basemap labels: markers, the host's place names, then overlay labels<br/>(an alert's label that does not fit falls back to its severity word) and severity digits,<br/>and on a frame with a field, its contour values (D-124) —<br/>so a basemap name never hides a warning's word or the host's place"] -.-> COL
 ```
 
 ## What can change this diagram

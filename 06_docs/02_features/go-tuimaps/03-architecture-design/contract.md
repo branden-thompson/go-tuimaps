@@ -123,7 +123,7 @@ One map is used from two kinds of goroutine: the **owner** — the host's interf
 | **Pump** | `Work`, `Settle` | Any number at once, beside each other and beside owner calls |
 | **Any goroutine** | `Pending`, `InUse`, `Changed`, `CacheUse` | Safe beside everything; each is one short read under the lock. This is what lets a pump poll `Pending` |
 | **No map involved** | `CheckRamp` | A pure function |
-| **`Close`** | | Meant to come after the last owner call and after every pump call has returned. If a call is still inside, `Close` does not wait: **the map is closed at once**, every later call returns the `closed` kind, a `Work` still inside abandons or finishes its job, publishes nothing to this map, returns `closed` **together with the ids whose geometry it was the last to read**, and hands any shared job another map still wants back to the queue, waking that map (section 2); and `Close` reports how many calls were inside. `InUse` still answers afterwards, and says yes for a borrowed id until those calls have returned |
+| **`Close`** | | Meant to come after the last owner call and after every pump call has returned. If a call is still inside, `Close` does not wait: **the map is closed at once**, every later call returns the `closed` kind, a `Work` still inside abandons or finishes its job, publishes nothing to this map, returns `closed` - no ids come back; a host learns its geometry is released from `InUse` - and hands any shared job another map still wants back to the queue, waking that map (section 2); and `Close` reports how many calls were inside. `InUse` still answers afterwards, and says yes for a borrowed id until those calls have returned |
 
 **How it is kept** — rules for the implementation, each with a test:
 
@@ -146,7 +146,7 @@ Every string in either passes through the one cleaning type that only the text-s
 
 ```mermaid
 flowchart LR
-    SC["Shared caches handle<br/>tile cache 0.5 MB · shape cache 0.25 MB (D-85)<br/>created by the host · its own Close"] --> M1["Map A"]
+    SC["Shared caches handle (NewShared)<br/>the tile cache, 0.5 MB by default (D-85), and the<br/>classified set of pictures read (D-116)<br/>each map keeps its own shape cache; no Close of its own"] --> M1["Map A"]
     SC --> M2["Map B"]
     SC --> M3["Map C"]
     M1 -- "wants tile T" --> J{"T already being fetched<br/>inside some map's Work call?"}

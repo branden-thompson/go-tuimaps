@@ -143,37 +143,41 @@ to be kept for good.
 radar, for example satellite at full resolution, the per-refresh copy grows with it. B scales
 better there, and A would need B's API added later anyway.
 
-## PLAN v0.2.0 — how the parts fit (ruled D-54, not yet built)
+## AS BUILT v0.2.0 — how the parts fit (ruled D-54; built in rc.2 and rc.3)
+
+The sketch above was PLAN's. As built, playback is **one for the map** (D-67): `SetPlayback` on or off, `SetPlaybackStep` (200–1000 ms, D-76), and `Play`, `Stop`, `Reset`, `Step(by)` along every loop's frame times merged. No `Seek`, `ShowNewest` or slow/normal speeds. `Loop()` returns the moment shown, "right now", the span, and why playback is off. Frames may be forecasts; at most 72.
 
 ```mermaid
 flowchart LR
-  H["Host (watchpost)<br/>fetches frames, builds the list"] -->|"Set(RadarImage with Frames)"| V["Validate + copy<br/>every frame, total, order, gaps<br/>(L-1.9, L-1.14)"]
-  V -->|"over budget → refused, says so (L-12.1)"| H
-  V --> K["Key each frame<br/>valid time + hash of bytes"]
-  K -->|"key held"| R1["Reuse decoded picture (L-1.7)"]
+  H["Host (watchpost)<br/>fetches frames, builds the list"] -->|"Set(RadarImage with Image.Frames)"| V["Validate + copy at hand-in<br/>order · gaps with no picture · at most 72 ·<br/>no observed frame past the map's clock (L-1.9, L-1.14, L-1.15)"]
+  V -->|"refused, says so — over the image budget, 6 MiB by default, says by how much (L-12.1)"| H
+  V --> K["Key each frame (SHA-256)<br/>its bytes · table · bounds · type · valid time"]
+  K -->|"key held by the loop it replaced"| R1["Keep that decoded picture (L-1.7)"]
   K -->|"key new"| R2["Decode in Work (existing pump)"]
-  R1 --> S["Store: frames of the overlay"]
+  R1 --> S["Store: the overlay's pictures ·<br/>a timeline of every loop's frame times, merged"]
   R2 --> S
-  C["Animation clock<br/>Animate / FollowClock"] --> P["Playback<br/>off / slow / normal, ceiling per map"]
-  P -->|"shown frame"| RND["Renderer<br/>frame identity in the reuse test (L-1.6)"]
+  C["Animation clock<br/>Render's time, or Animate / FollowClock"] --> P["Playback, one for the map<br/>SetPlayback on or off · SetPlaybackStep ·<br/>Play · Stop · Reset · Step(by)"]
+  P -->|"the moment shown, a valid time"| RND["Renderer<br/>the frame of that moment · the moment in the reuse test (L-1.6) ·<br/>the frame time on the map, 'gap' or 'forecast' where it is one"]
   S --> RND
-  P -->|"tick"| T["FrameTicks (not Changed)"]
-  S --> D["Description<br/>newest non-gap frame; motion oldest→newest (D-39, D-42)"]
-  P --> NC["NextCall: next frame change (L-1.8)"]
+  P -->|"an advance"| T["FrameTicks — not Changed;<br/>a control the listener uses moves Changed (D-66)"]
+  P --> LS["Loop() → LoopState"]
+  S --> D["Report<br/>an image's answer from the newest observed frame ·<br/>motion from the oldest decoded observed frame to the newest (D-39, D-42)"]
+  P --> NC["NextCall: the next frame advance, while a loop plays (L-1.8)"]
 ```
+
+The playback states, as built. *ReduceMotion(false) does not restart a loop: playback keeps its setting, and the host presses `Play` again (L-1.10c as built). `LoopState.Off` names why playback is off: reduce motion, the host, or the default.*
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Off: default (D-26)
-  Off --> Playing: SetPlayback(slow|normal)
-  Playing --> Off: SetPlayback(off)
-  Playing --> Held: ReduceMotion(true)
-  Held --> Playing: ReduceMotion(false) restores the setting (L-1.10c)
-  Playing --> Frozen: host freezes the clock (Animate)
-  Frozen --> Playing: FollowClock
-  Off --> Off: Step / Seek / ShowNewest
-  Held --> Held: Step / Seek / ShowNewest
-  note right of Off: shows the newest non-gap frame with its age (L-1.10f)
+  [*] --> Stopped: playback off by default (D-26) · shows right now, the newest observed frame
+  Stopped --> Playing: Play() — only while playback is on and reduce-motion is off
+  Playing --> Stopped: Stop() holds the frame shown · SetPlayback(off) · ReduceMotion(true)
+  Playing --> Stopped: Step(by) moves and stops · Reset() back to right now
+  Stopped --> Stopped: Step(by) · Reset() · Play() while off does nothing
+  Playing --> Frozen: the host holds the animation clock (Animate at one time)
+  Frozen --> Playing: the clock moves again (a later Animate, or FollowClock)
+  note right of Stopped: with a moment held, shows it or the nearest a refresh kept, with its time (L-1.10f, D-67)
+  note right of Playing: oldest through right now and on through forecasts, one frame a step, the last held at least 2 s, then again (D-76)
   note right of Frozen: LoopState.Advancing = false (D-40)
 ```
 
@@ -183,6 +187,6 @@ stateDiagram-v2
 |---|---|
 | FR-5.2: one overlay per source, never blended | One `Set` per source's loop; frames never merged across overlays |
 | FR-5.5: a refresh fetches only new frames | Watchpost's fetch; under A the library decodes only new frames |
-| FR-5.8: motion is a Settings row, off / slow / normal | `SetPlayback`, one call per loop, straight from the Setting |
+| FR-5.8: motion is a Settings row, off / slow / normal | *As built:* playback is one per map - `Playback` on or off, plus `SetPlaybackStep` (D-76) - not one call per loop; the Setting drives both |
 | FR-5.9: a maximum frame rate, as a number | Set here in PLAN, within L-1.10g's ceiling per map |
 | FR-5.4: the newest frame's age is visible | `LoopState.Newest`, and the frame time on the map (L-1.10a) |

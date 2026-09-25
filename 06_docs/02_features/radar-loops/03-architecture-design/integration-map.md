@@ -14,7 +14,9 @@ the order in which their work can land, and traces each host requirement to the 
 and ruling that meet it. Each plan cites the work packages here by name; neither plan restates the
 other's.
 
-## PLAN — the order, in one picture (v0.2.0 ⇄ watchpost 0.18.0, not yet built)
+## The order, in one picture (v0.2.0 ⇄ watchpost 0.18.0) — library AS BUILT to rc.8; WP-L10 in part; watchpost's side is its plan's
+
+*Library status from the tags: WP-L1 to WP-L9 are built (rc.1–rc.7); of WP-L10 only L10.1, L10.2 and L10.6 (rc.8). Watchpost's W-packages are drawn as its plan has them; their state is watchpost's to report, not this page's.*
 
 ```mermaid
 flowchart TB
@@ -29,16 +31,16 @@ flowchart TB
     W7["W7 Without colour; M1b scored<br/>(FR-7)"]
   end
   subgraph LIB["go-tuiMaps v0.2.0"]
-    WPL1["WP-L1 Contract skeleton + surface test (L-4)"]
-    WPL2["WP-L2 Loops: frames, copy, keys, budget (L-1, L-12)"]
-    WPL4["WP-L4 Playback API + clock (L-1.5, L-1.8, L-1.10, L-1.13)"]
-    WPL3["WP-L3 Renderer: frame identity, Frame counters, blend,<br/>furniture, place labels, severity word + digit (L-1.6, L-1.16, L-8, L-11)"]
-    WPL5["WP-L5 Report (L-1.12, L-13)"]
-    WPL6["WP-L6 MRMS, table seam, heavy end (L-2)"]
-    WPL7["WP-L7 View bound (L-3)"]
-    WPL8["WP-L8 Fetch options + confinement (L-7, L-10)"]
-    WPL9["WP-L9 Cache age + purge (L-9)"]
-    WPL10["WP-L10 Defects + close-out (L-5, L-6, L-13, M4, M6)"]
+    WPL1["WP-L1 Contract skeleton + surface test (L-4)<br/>BUILT rc.1"]
+    WPL2["WP-L2 Loops: frames, copy, keys, budget (L-1, L-12)<br/>BUILT rc.2"]
+    WPL4["WP-L4 Playback API + clock (L-1.5, L-1.8, L-1.10, L-1.13)<br/>BUILT rc.3"]
+    WPL3["WP-L3 Renderer: frame identity, Frame counters, blend,<br/>furniture, place labels, severity word + digit (L-1.6, L-1.16, L-8, L-11)<br/>BUILT rc.4"]
+    WPL5["WP-L5 Report (L-1.12, L-13)<br/>BUILT rc.5 — Describe removed"]
+    WPL6["WP-L6 MRMS, table seam, heavy end (L-2)<br/>BUILT rc.5"]
+    WPL7["WP-L7 View bound (L-3)<br/>BUILT rc.6"]
+    WPL8["WP-L8 Fetch options + confinement (L-7, L-10)<br/>BUILT rc.6 — Fetcher removed"]
+    WPL9["WP-L9 Cache age + purge (L-9)<br/>BUILT rc.7"]
+    WPL10["WP-L10 Defects + close-out (L-5, L-6, L-13, M4, M6)<br/>IN PART rc.8: L10.1, L10.2, L10.6 ·<br/>NOT YET: L10.3–L10.5, L10.7–L10.12"]
     WPL1 --> WPL2 --> WPL4 --> WPL3 --> WPL5
     WPL1 --> WPL6 --> WPL5
     WPL1 --> WPL7
@@ -53,7 +55,7 @@ flowchart TB
   end
   WP1 --> WP2
   WPL10 -->|"final v0.2.0 tag: 0.18.0 ships (FR-5.6)"| WP2
-  LIB -.->|"v0.2.0-rc.N as packages land (D-69)"| WP2
+  LIB -.->|"v0.2.0-rc.N as packages land (D-69): rc.1–rc.8 so far"| WP2
 ```
 
 **Watchpost's W-numbers are its plan's** (`observer-maps/04-development/implementation-plan.md`). **Inside the library, WP-L4 lands before WP-L3**: the renderer's frame-identity tasks need a way to advance the shown frame.
@@ -75,7 +77,7 @@ once. Its P1-b builds against release candidates, `v0.2.0-rc.N`, as the packages
 | HR-5 triage | superseded | L-5 | D-18 | WP-L10 |
 | HR-6 fetcher | `SetFetchOptions`, user-agent | L-7.1–L-7.4 | D-55 | WP-L8 |
 | HR-7 pattern | severity word + a digit on the outline, every depth; the key in watchpost's legend (watchpost D-44) | L-8.1, L-8.5, L-8.7 | D-17, D-28, D-65 | WP-L3 |
-| HR-8 cache | `MaxAge`, `Purge` of everything | L-9.1–L-9.6 | D-56 | WP-L9 |
+| HR-8 cache | `SetCacheMaxAge` (D-70), `Purge` of everything | L-9.1–L-9.6 | D-56 | WP-L9 |
 | HR-10 confinement | one allow-list, per-connection proxy check | L-10.1–L-10.3 | D-55 | WP-L8 |
 | FR-4.4 / D-42 partial areas | per-alert answers; place labels kept | L-13.6, L-8.9 | D-43, D-60 | WP-L5, WP-L3 |
 | FR-7.4 description | `Report`: alerts shown, per place, motion | L-1.12, L-13.5–L-13.10 | D-42, D-43, D-57 | WP-L5 |

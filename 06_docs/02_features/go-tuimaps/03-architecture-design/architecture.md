@@ -48,7 +48,7 @@ Read down for more detail, up for context. Each file's first lines say which rul
 
 ## Level 0 — Context and trust boundary
 
-*v0.1.0 as built. v0.2.0 PLAN changes it: the host may supply the transport (D-55).*
+*AS BUILT v0.2.0 (rc.8).*
 
 Who the library talks to, and who it trusts. **The library trusts nothing that arrives as bytes**, including what its own host hands in: the host's data is validated (NFR-20), everyone else's is limited, decoded defensively and fuzzed (NFR-10). Nothing crosses back out to a terminal or a host uncleaned (FR-34).
 
@@ -63,8 +63,9 @@ flowchart LR
       direction TB
       HUI["Host's interface and clock<br/>draws every tick · owns keys and pointer"]
       HPUMP["Host's pump<br/>its goroutines call Work (D-73)"]
-      HFETCH["Host's weather fetchers<br/>alerts · radar image · temperature grid (D-15)"]
+      HFETCH["Host's weather fetchers<br/>alerts · radar image or loop frames · temperature grid (D-15)"]
       HTHEME["Host's theme → palette tokens (D-63)"]
+      HTRANS["Host's HTTP transport — optional<br/>its proxy, trust roots or tile store, via SetFetchOptions (D-55)"]
     end
 
     subgraph LIBBOX["go-tuiMaps library — starts no goroutine, touches no terminal (M5)"]
@@ -77,7 +78,7 @@ flowchart LR
     subgraph UNTRUSTED["Untrusted — limited before allocating, fuzzed (NFR-10)"]
       direction TB
       TS[("Tile service<br/>only if the host names one (D-65)")]
-      DISK[("Disk cache<br/>off unless configured (FR-21b)")]
+      DISK[("Disk cache<br/>off unless configured (FR-21b) · files dated by fetch time, reads write nothing ·<br/>host-set maximum age · Purge reaches every source (D-56)")]
       EMB[("Embedded tiles, zoom 0–3<br/>opt-in package, hash-listed (FR-28a)")]
       USRSTYLE[/"A user's style file"/]
     end
@@ -87,15 +88,16 @@ flowchart LR
     DEV -. "writes" .-> HOSTBOX
     HFETCH -- "overlay structs (D-74)" --> GATE
     HTHEME -- "palette" --> GATE
-    HUI -- "intents: pan · zoom · focus (FR-24)<br/>time (FR-25) · rectangle · colour depth" --> GATE
+    HUI -- "intents: pan · zoom · fit · bound (FR-24, L-3)<br/>playback controls · time (FR-25) · size · colour depth" --> GATE
     GATE --> CORE
     HPUMP -- "Work(ctx)" --> CORE
-    CORE -- "secure fetch, limits, no address in errors (FR-22b)" --> TS
+    CORE -- "confined fetch: the source's scheme, host and port only ·<br/>limits · late answers dropped · no address in errors (FR-22b, L-7, L-10)" --> TS
+    HTRANS -. "if given, carries the library's requests" .-> TS
     CORE <--> DISK
     EMB --> CORE
     USRSTYLE --> GATE
     CORE --> OUTGATE
-    OUTGATE -- "frame: cells of glyph + colours<br/>legend · credits · description · warnings<br/>changed? · call-me-by deadline" --> HUI
+    OUTGATE -- "frame: cells of glyph + colours, its counters, what it dropped<br/>legend · credits · Report · warnings · loop state<br/>Changed · FrameTicks · call-me-by deadline" --> HUI
 ```
 
 **What this diagram settles**
@@ -114,7 +116,7 @@ flowchart LR
 
 ## Level 1 — The parts
 
-*v0.1.0 as built. v0.2.0 PLAN changes it: loop frames and playback (D-54), fetch options (D-55), `Report` (D-57).*
+*AS BUILT v0.2.0 (rc.8): the edges are the real import graph; most edges into `textsafe` are left out.*
 
 One public package holds the whole contract (D-74). Everything under `internal/` can change freely without breaking a host (D-60). The app, examples, generator and test oracle are **separate modules**, so nothing they import appears in a host's dependency graph (D-75).
 
@@ -122,39 +124,53 @@ One public package holds the whole contract (D-74). Everything under `internal/`
 flowchart TB
     subgraph LIB["Library module"]
       direction TB
-      PUB["<b>tuimaps</b> — the public contract<br/>Map · overlay structs · presets · palette tokens<br/>Work · Pending · Settle · Close<br/>Frame · Legend · Credits · Description · Warnings"]
+      PUB["<b>tuimaps</b> — the public contract<br/>Map · overlay structs · presets · palette tokens · places<br/>Work · Pending · Settle · Close · playback · fetch options<br/>Frame · Legend · Credits · Report · Warnings"]
       ASSETS["<b>tuimaps/assets</b><br/>opt-in embedded tiles z0–3 (D-27, D-33)"]
 
       subgraph INT["internal/"]
         direction TB
         subgraph DATA["getting data in"]
           direction LR
-          TILES["<b>tiles</b><br/>sources · cache · stand-ins · retry times"]
+          TILES["<b>tiles</b><br/>sources · memory and disk caches · stand-ins · retry times ·<br/>disk: fetch-time dating, maximum age, generation (D-56)"]
           MVT["<b>mvt</b><br/>own decoder · limits · drop-at-decode (D-75)"]
-          ARC["<b>archive</b><br/>minimal single-file reader (D-58)"]
-          FETCH["<b>fetch</b><br/>secure transport · redirects · limits (FR-22b)"]
-          OVR["<b>overlay</b><br/>validate · simplify · classify · index — resampling is render's, at draw time"]
+          FETCH["<b>fetch</b><br/>the one door to the network: confinement · checked dialer ·<br/>a host's transport under the library's client · limits (FR-22b, D-55)"]
+          JSON["<b>jsonsafe</b><br/>size and depth of a JSON document, before it is parsed"]
+          OVR["<b>overlay</b><br/>validate · copy · simplify · classify · index · loops, timeline ·<br/>image budget · provider tables (IEM, MRMS) — resampling is render's, at draw time"]
         end
         subgraph DRAW["turning it into cells"]
           direction LR
           PROJ["<b>project</b><br/>web-mercator · view ↔ cell · distances"]
           STYL["<b>style</b><br/>dark and bright · user styles · profiles (FR-19, FR-20)"]
-          REN["<b>render</b><br/>braille canvas · compositing order · labels · markers"]
-          COL["<b>colour</b><br/>tokens · presets · ramps per depth · checker"]
+          REN["<b>render</b><br/>braille canvas · compositing order · labels · markers · severity digits"]
+          COL["<b>colour</b><br/>tokens · presets · ramps per depth · checker · alert-tint blend (L-11)"]
         end
-        SCENE["<b>scene</b><br/>the prepared types everything shares: decoded tile, prepared overlay, job — imports only textsafe here (D-121)"]
+        SCENE["<b>scene</b><br/>the prepared types everything shares: decoded tile, prepared overlay, job — imports only textsafe (D-121)"]
         subgraph OUTP["what leaves"]
           direction LR
-          DESC["<b>describe</b><br/>description as data (D-52)"]
+          DESC["<b>describe</b><br/>answers as data: areas, points, lines, fields, images;<br/>motion helpers for Report (D-52, D-42)"]
           TXT["<b>textsafe</b><br/>cleaning · clusters · width (FR-34, NFR-8)"]
           WORKQ["<b>work</b><br/>capped queue · newest view wins · no limiter: the pump's width is the host's (D-73, D-84)"]
           FAULT["<b>fault</b><br/>the typed error · both closed lists of kinds"]
-          KIT["<b>testkit</b><br/>imported by test files only — a static check says so"]
         end
+        subgraph TESTONLY["for tests only — a static check says so"]
+          direction LR
+          KIT["<b>testkit</b><br/>imported by test files and tools only"]
+          RULES["<b>rules</b><br/>the static checks, run by the library's tests"]
+        end
+        ARC["<b>archive</b><br/>minimal single-file reader (D-58) —<br/>imported by tools/gen-assets only"]
       end
 
       PUB --> WORKQ
       PUB --> TILES
+      PUB --> FETCH
+      PUB --> MVT
+      PUB --> OVR
+      PUB --> REN
+      PUB --> STYL
+      PUB --> COL
+      PUB --> PROJ
+      PUB --> DESC
+      PUB --> SCENE
       PUB --> FAULT
       FAULT --> TXT
       TILES --> FAULT
@@ -166,27 +182,29 @@ flowchart TB
       WORKQ --> FAULT
       REN --> FAULT
       COL --> FAULT
-      DESC --> FAULT
       PROJ --> FAULT
       TILES --> SCENE
       OVR --> SCENE
       REN --> SCENE
-      DESC --> SCENE
+      MVT --> SCENE
+      STYL --> SCENE
+      PROJ --> SCENE
       WORKQ --> SCENE
+      ARC --> SCENE
       SCENE --> TXT
-      PUB --> REN
-      PUB --> OVR
-      PUB --> DESC
-      PUB --> COL
       ASSETS -. "handed to New as an option — never registers itself" .-> PUB
       TILES --> FETCH
       TILES --> MVT
-      TILES --> ARC
+      TILES --> JSON
+      STYL --> JSON
+      STYL --> COL
+      ARC --> FETCH
       REN --> PROJ
       REN --> STYL
       REN --> COL
       REN --> TXT
       OVR --> PROJ
+      OVR --> COL
       DESC --> PROJ
       DESC --> TXT
       TXT --> DEP["go-runewidth · uax29<br/>the only third-party imports (D-75, D-81)"]
@@ -194,16 +212,20 @@ flowchart TB
 
     subgraph OUT["Separate modules, same repository"]
       direction LR
-      APP["<b>cmd/tuimaps</b><br/>keys · pointer · describe mode · headless flag"]
-      EX["<b>examples/</b><br/>one per shape · a pump · a pump in the first host's idiom · the radar table"]
+      APP["<b>cmd/tuimaps</b><br/>keys (no pointer yet) · describe mode (Report) · headless flag"]
+      EX["<b>examples/</b><br/>one per shape · intensity from the legend · a pump · playback with no host state"]
       GEN["<b>tools/gen-assets</b><br/>builds the embedded tiles (FR-28a)"]
       ORA["<b>tools/oracle</b><br/>a proven decoder, tests only"]
       AK["<b>tools/answer-key</b><br/>the independent M1 key · imports nothing from the library (D-67)"]
+      ATL["<b>tools/atlas</b><br/>builds the architecture atlas from these documents · imports nothing from the library"]
     end
     APP --> PUB
+    APP --> ASSETS
     EX --> PUB
+    EX --> ASSETS
     GEN --> ARC
     GEN --> MVT
+    GEN --> FETCH
     ORA -. "differential tests" .-> MVT
 ```
 
@@ -213,7 +235,7 @@ flowchart TB
 |---|---|
 | A host imports `tuimaps`, and `tuimaps/assets` if it wants offline tiles. Nothing else is importable. | D-74; internal parts stay free to change under D-60's promise |
 | `render` never imports `tiles`, `fetch` or `overlay`'s slow paths. It reads what is already on hand. | FR-23: Render does no input or output, ever |
-| Only `work` runs slow jobs, and only when the host calls `Work`. It knows jobs only through `scene`'s job type — `tiles`, `overlay` and `describe` supply jobs; `work` imports none of them. | D-73; this is what keeps the import graph free of cycles (PL-CQ-7) |
+| Only `work` runs slow jobs, and only when the host calls `Work`. It knows jobs only through `scene`'s job type — `tiles` and `overlay` supply jobs; `work` imports neither. `describe` supplies none: `Report` is worked out inside its own call. | D-73; this is what keeps the import graph free of cycles (PL-CQ-7) |
 | Only `fetch` opens a connection; only `textsafe` lets a string out. Every package that reports a problem does it through `fault`, whose only import is `textsafe`. | One place to enforce FR-22b; one place to enforce FR-34 |
 | The public package imports `tiles` to configure sources and caches and to hand its jobs to `work`. | Without this edge nothing reaches `tiles`, and through it `fetch`, `mvt` and `archive` (P2-DOC-2) |
 | Only `textsafe` imports third-party code. | D-75 |
@@ -223,28 +245,29 @@ flowchart TB
 
 ## Level 1 — The public contract at a glance
 
-*v0.1.0 as built. v0.2.0 PLAN changes it: `SetFetchOptions` (D-55), `Report` beside `Describe` (D-57), loop frames and playback (D-54), `MaxAge` (D-56).*
+*AS BUILT v0.2.0 (rc.8): `Report` replaces `Describe`; playback, fetch options, cache age, bound.*
 
-Everything a host can call or hand in, grouped by what it is for. Names are illustrative (D-71). **The full statement — what each call promises, which calls are safe together, the pump, the end of a borrow — is [the contract](contract.md).**
+Everything a host can call or hand in, grouped by what it is for. The names are the code's, as of v0.2.0-rc.8; PLAN's were illustrative (D-71). **The full statement — what each call promises, which calls are safe together, the pump, the end of a borrow — is [the contract](contract.md).**
 
 ```mermaid
 flowchart LR
     subgraph IN["Host → Map"]
       direction TB
-      A1["<b>Life</b><br/>New(options, WithSize) · Close() — closes at once and reports calls still inside"]
-      A2["<b>Size and view</b><br/>SetSize(cols, rows) — state, set BEFORE Settle or Render<br/>intents: Pan · PanCells · Zoom · ZoomAround · Recentre · FitWorld · FitTo(places, overlays, margin) (FR-24, D-76)"]
-      A2b["<b>Places and markers</b><br/>SetPlaces(places) · AddPlace(place) · RemovePlace(id) — ids as upstream (P-61)<br/>what Describe answers for, what FitTo can fit, what markers draw (FR-26)"]
-      A3["<b>Overlays</b> (D-74, D-86)<br/>Set(overlay) → created or replaced · old geometry released yes/no<br/>Remove(id) → found or not · released yes/no · InUse(id)<br/>structs: Features · ScalarGrid · Image (· VectorGrid · TileImages later)<br/>presets: Temperature · Radar · Alerts (· Wind later) (D-69)"]
-      A4["<b>Look</b><br/>SetPalette(tokens) (D-63) · SafeRamps(on) · Ground(painted or declared) (D-64)<br/>ColourDepth(hint) · ReduceMotion(on) (NFR-21) · Layers(on/off) (FR-36) · LabelLanguage(code) (D-82)"]
-      A5["<b>Tiles</b><br/>Source(named network source) (D-65) · CacheRoot(path) · Fetcher(replacement)<br/>SharedCaches(handle) (FR-27, D-85) · CacheUse() (D-90) · Purge() · Verify() (FR-22a)"]
-      A6["<b>Running the work</b> (D-73, D-84)<br/>Pending() · Work(ctx) · Settle(ctx) · OnPending(wake)<br/>Work and Settle report the ids whose borrow they ended (D-86)"]
+      A1["<b>Life</b><br/>New(options: WithSize · Embed · SharedCaches) · Close() — closes at once and reports calls still inside"]
+      A2["<b>Size and view</b><br/>WithSize(cols, rows) — state, set BEFORE Settle or Render; Render's size updates it<br/>intents: PanCells · Zoom · ZoomBy · Recentre · FitWorld · FitTo(places, overlays, margin) (FR-24, D-76)<br/>SetBound(Bound): a least zoom and a box, held on every move (L-3.1) · Centre() · DeepestZoom()"]
+      A2b["<b>Places and markers</b><br/>SetPlaces(places) · AddPlace(place) · RemovePlace(id) · Places() — ids as upstream (P-61)<br/>what Report answers for, what FitTo can fit, what markers draw (FR-26)"]
+      A3["<b>Overlays</b> (D-74, D-86)<br/>Set(overlay) → SetResult: created or replaced · old geometry released yes/no<br/>Remove(id) → RemoveResult: found · released yes/no · InUse(id) · Overlays()<br/>structs: Features · Grid · Image — one PNG, or Frames: a loop of up to MaxFrames 72, gaps and forecasts stated (D-54)<br/>an image's table, or a Provider's: IEM · MRMS · SetImageBudget(bytes), 6 MiB by default (L-12)<br/>presets: Temperature · Radar · Alerts (· Wind, VectorGrid, TileImages later) (D-69)"]
+      A4["<b>Look</b><br/>SetPalette(tokens) (D-63) · SafeRamps(on) · Ground(colour) · PaintGround() (D-64)<br/>ColourDepth(depth) · ReduceMotion(on) (NFR-21) · Layers(layer, on) (FR-36) · LabelLanguage(code) (D-82)<br/>SetStyle(body) · ShowFooter(on)"]
+      A5["<b>Tiles</b><br/>Source(address) (D-65) · CacheRoot(dir, capBytes) · SetCacheMaxAge(age) (D-56)<br/>SetFetchOptions(FetchOptions: Transport · UserAgent · Timeout · AllowHTTP) · CheckedDialer() (D-55)<br/>NewShared · SharedCaches (FR-27, D-85) · CacheUse() (D-90) · Purge() → PurgeReport · Verify() (FR-22a) · SourceCredit()"]
+      A6["<b>Running the work</b> (D-73, D-84)<br/>Pending() · Work(ctx) → did · Settle(ctx) → SettleResult: ran · failed · in flight · why · OnPending(hook) · InFlight()<br/>Set and Remove say at once whether a borrow is over; InUse(id) answers after (D-86)"]
+      A7["<b>Playback</b> — one for the map (D-54, D-67, D-76)<br/>SetPlayback(on or off) · SetPlaybackStep(200–1000 ms, 500 by default)<br/>Play · Stop · Reset · Step(by) · Animate(at) · FollowClock()"]
     end
     subgraph OUTB["Map → Host"]
       direction TB
-      B1["<b>The picture</b><br/>Render(size, now) → Frame: exactly-sized rows (NFR-8), valid until the next Render<br/>status: complete · still sharpening · no tiles; a recovered panic returns an empty frame and an internal error"]
-      B2["<b>When to call again</b><br/>Changed() counter · NextCall(wallClock): the earliest of a marker phase, a retry time, an overlay going stale (FR-25, FR-32)"]
-      B3["<b>The same facts as data</b><br/>Legend() · Credits() · Scale() (FR-13, FR-14, FR-33)<br/>Footer(): centre and zoom in upstream's wording (P-57)<br/>Describe(places): each part ready or pending (D-52) · Focused()"]
-      B4["<b>What went wrong</b><br/>errors of a closed list of kinds · Warnings() ≤ 64 (NFR-20)<br/>CheckRamp(ramp, ground) for a host's own tests (D-53, D-88)"]
+      B1["<b>The picture</b><br/>Render(size, now) → Frame: exactly-sized rows (NFR-8), valid until the next Render,<br/>the counters it was drawn at, and what it dropped (a label, a place's name)<br/>status: complete · still sharpening · no tiles; a recovered panic returns an empty frame and an internal error"]
+      B2["<b>When to call again</b><br/>Changed(): inputs, and work landed · FrameTicks(): loop frame advances (D-66)<br/>NextCall(wallClock): the earliest of a marker phase, a retry time, an overlay going stale, the next loop advance (FR-25, FR-32)"]
+      B3["<b>The same facts as data</b><br/>Legend() · Credits() · Scale() (FR-13, FR-14, FR-33)<br/>Footer(): centre and zoom in upstream's wording (P-57)<br/>Report(places) → alerts shown · each place's alerts and answers · observed motion (D-57) · Units · SetNearby<br/>Loop() → LoopState: the moment shown, the span, playing, advancing, why off"]
+      B4["<b>What went wrong</b><br/>errors of a closed list of 25 kinds · KindOf · Warnings() ≤ 64, of 15 kinds (NFR-20)<br/>CheckRamp(ramp, how) for a host's own tests (D-53, D-88)"]
     end
     IN --> M((Map)) --> OUTB
 ```

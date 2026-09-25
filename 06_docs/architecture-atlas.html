@@ -59,16 +59,17 @@ code{font-family:var(--mono);font-size:.92em}
     <nav aria-label="Areas"><ul><li><a href="#go-tuimaps">The shape of the library<span class="n">41</span></a></li><li><a href="#radar-loops">radar loops<span class="n">4</span></a></li></ul></nav>
     <p class="how"><strong>This page is generated.</strong> The tracked documents are the source of truth; rebuild with <code>cd tools/atlas &amp;&amp; go run . -root ../..</code>. Only fenced mermaid blocks are read — <strong>a change written in the prose beside a diagram never reaches this page</strong>, so put the fact in the diagram.</p>
   </aside>
-  <main><section class="level" id="go-tuimaps"><header class="lvl"><h2>The shape of the library</h2></header><article class="dia" id="go-tuimaps-0"><div class="meta"><h3>Level 2 — The standalone app</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-app.md</code></p><p class="lead">Up: [architecture](architecture.md) · Carries: FR-5, FR-34, NFR-15, D-17, D-52, D-65, D-73, D-75, D-94, P-68a, P-68b, P-72a, P-72b, L-16 A separate module (D-75). It is the library&#39;s first host: it writes its own pump, as any host must (D-73), and it is what HUM LEAD judges M1a in.</p></div><div class="canvas"><pre class="mermaid">flowchart TB
+  <main><section class="level" id="go-tuimaps"><header class="lvl"><h2>The shape of the library</h2></header><article class="dia" id="go-tuimaps-0"><div class="meta"><h3>Level 2 — The standalone app</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-app.md</code></p><p class="lead">Up: [architecture](architecture.md) · Carries: FR-5, FR-34, NFR-15, D-17, D-52, D-65, D-73, D-75, D-94, P-68a, P-68b, P-72a, P-72b, L-16 A separate module (D-75). It is the library&#39;s first host: it writes its own pump, as any host must (D-73), and it is what HUM LEAD judges M1a in. <em>AS BUILT v0.2.0 (rc.8): describe mode reads <code>Report</code>; the app plays no loops.</em></p></div><div class="canvas"><pre class="mermaid">flowchart TB
     ARGS[&#34;Flags: --headless · --describe --place · --offline · --no-cache · --purge · --verify ·&lt;br/&gt;--safe-ramps · --reduce-motion · --no-colour · --lang · --style PATH (D-94) · --size COLSxROWS · --scenario (loads an M1 scenario&#39;s places and overlays)&#34;] --&gt; MODE{&#34;Mode&#34;}
-    MODE -- &#34;--describe&#34; --&gt; D[&#34;New · SetPlaces · Set(overlays) · Settle · Describe → plain text, no map, no terminal control&lt;br/&gt;a screen-reader user&#39;s path (D-52)&#34;]
+    MODE -- &#34;--describe&#34; --&gt; D[&#34;New · SetPlaces · Set(overlays) · Settle · Report(the map&#39;s own places) → worded by the app as plain text,&lt;br/&gt;no map, no terminal control; the library&#39;s warnings to standard error&lt;br/&gt;a screen-reader user&#39;s path (D-52)&#34;]
+    MODE -- &#34;--purge · --verify&#34; --&gt; MNT[&#34;New · CacheRoot · Purge() → files removed · Verify() → tiles read, damaged ones dropped (FR-22a)&#34;]
     MODE -- &#34;--headless&#34; --&gt; HL[&#34;New(WithSize from --size, else the terminal&#39;s) · Settle · Render → one complete frame to standard output&#34;]
     MODE -- &#34;interactive&#34; --&gt; TUI
 
     subgraph TUI[&#34;Interactive&#34;]
       direction TB
       TERM[&#34;Terminal: raw mode, restored on EVERY exit path, including a panic (L-16)&#34;]
-      KEYS[&#34;Keys → intents: pan (±8/2^zoom, ±6/2^zoom — P-69) · zoom — about the focused place when one is focused, the keyboard equivalent of zoom-toward-the-pointer (FR-5) ·&lt;br/&gt;fit world · labels · water · markers · focus the next place · safe ramps · reduce motion · no colour · layers (P-68a)&lt;br/&gt;describe and help open in place of the map, so the chrome is never lost&lt;br/&gt;every state reachable by keys alone (NFR-15)&#34;]
+      KEYS[&#34;Keys → intents: pan (±8/2^zoom, ±6/2^zoom — P-69) · zoom — about the focused place when one is focused, the keyboard equivalent of zoom-toward-the-pointer (FR-5) ·&lt;br/&gt;fit world · labels · water · markers · focus the next place · safe ramps · reduce motion · no colour · layers (P-68a)&lt;br/&gt;describe (the same Report) and help open in place of the map, so the chrome is never lost&lt;br/&gt;every state reachable by keys alone (NFR-15)&#34;]
       LOOP[&#34;Draw loop: Render on a key, a resize or a unit of work done;&lt;br/&gt;otherwise waits for NextCall, and for nothing at all when nothing is due — never a poll (P-71, L-15)&#34;]
       PUMP[&#34;Its own pump: two goroutines calling Work, woken by OnPending —&lt;br/&gt;the same ten lines the examples show&#34;]
       FOOT[&#34;Chrome (P-72a): a key row at rows-2 and a status row at rows-1, which carries &#39;&gt;&gt; label&#39; for the focused place&lt;br/&gt;Help: states that maps need a font with braille, that the network is ON by default here, and lists every accessibility switch with its flag and its key&#34;]
@@ -80,7 +81,7 @@ code{font-family:var(--mono);font-size:.92em}
     NET -- yes --&gt; OFF[&#34;Embedded tiles only&#34;]
     OUTR[&#34;Everything printed passes through the library&#39;s cleaning (FR-34)&#34;] -.-&gt; D
     OUTR -.-&gt; HL
-</pre></div></article><article class="dia" id="go-tuimaps-1"><div class="meta"><h3>How a value becomes a cell colour</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-colour.md</code></p><p class="lead">Read top to bottom. Each step can only narrow what the step above allowed.</p></div><div class="canvas"><pre class="mermaid">flowchart TB
+</pre></div></article><article class="dia" id="go-tuimaps-1"><div class="meta"><h3>How a value becomes a cell colour</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-colour.md</code></p><p class="lead">Read top to bottom. Each step can only narrow what the step above allowed. <em>AS BUILT v0.2.0 (rc.4): step 6 changed. An alert&#39;s tint no longer lies over an image; the image lies over the tint and is shifted toward it, as strongly as the blend search finds safe (L-11, <code>internal/colour/blend.go</code>). The legend says which severities blend and carries each alert&#39;s digit.</em></p></div><div class="canvas"><pre class="mermaid">flowchart TB
     V[&#34;A class index in a cell&lt;br/&gt;(from a grid, an image, or a feature&#39;s severity)&#34;] --&gt; TYPE
 
     subgraph TYPE[&#34;1 · Which type? (D-69)&#34;]
@@ -108,69 +109,83 @@ code{font-family:var(--mono);font-size:.92em}
       D0[&#34;No colour (D-35)&lt;br/&gt;smooth fields: contours with value labels&lt;br/&gt;patchy data: block shades ░▒▓&lt;br/&gt;areas: hatch ╱ ╲ plus a plain-word label (FR-18a)&#34;]
     end
 
-    DEPTH --&gt; BG[&#34;6 · The cell&#39;s background&lt;br/&gt;by the compositing order: ground → water → image or field → tint (L2-render)&#34;]
+    DEPTH --&gt; BG[&#34;6 · The cell&#39;s background (L2-render)&lt;br/&gt;ground → water or an alert&#39;s tint → an image&#39;s or a field&#39;s class&lt;br/&gt;where a tint and an image meet: the image shifted toward the tint in linear light, as strongly as the blend search&lt;br/&gt;found safe for this palette, ground and depth — every tinted class 10 from every other and from the ground,&lt;br/&gt;5 from itself untinted (L-11); where no strength is safe, the image is drawn over the tint&lt;br/&gt;(a host palette&#39;s case is a ramp-rule-broken warning)&#34;]
     BG --&gt; FG[&#34;7 · The cell&#39;s foreground (FR-16, D-77)&lt;br/&gt;the line&#39;s own colour where it meets 3:1 on this cell; otherwise whichever of black and white contrasts more&lt;br/&gt;line work ≥ 3:1 · labels and legend text ≥ 4.5:1&#34;]
     FG --&gt; CELL[&#34;The cell&#34;]
-    DEPTH --&gt; LEGEND[&#34;The legend shows the colours actually drawn, at this depth, with text chosen the same way (FR-13, FR-16)&#34;]
+    DEPTH --&gt; LEGEND[&#34;The legend shows the colours actually drawn, at this depth, with text chosen the same way (FR-13, FR-16) ·&lt;br/&gt;for an alert, each severity&#39;s word and digit (D-65); for an image or field, the severities whose tint blends over it&#34;]
 </pre></div></article><article class="dia" id="go-tuimaps-2"><div class="meta"><h3>The ground</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-colour.md</code></p></div><div class="canvas"><pre class="mermaid">flowchart LR
     G{&#34;Ground (D-64)&#34;} -- &#34;default&#34; --&gt; PAINT[&#34;Painted: every cell&#39;s background starts as the &#39;ground&#39; token&lt;br/&gt;→ the map reads the same on any terminal · contrast checks are exact&#34;]
     G -- &#34;host opts out&#34; --&gt; DECL[&#34;Not painted: the host declares the ground colour&lt;br/&gt;→ checks use the declaration · its truth is the host&#39;s responsibility&#34;]
     G -- &#34;no colour&#34; --&gt; NONE[&#34;Nothing painted; the terminal&#39;s own foreground on its own background&#34;]
     PAINT --&gt; STYLE1[&#34;dark or bright style chosen by the ground&#39;s luminance (FR-20)&#34;]
     DECL --&gt; STYLE1
-</pre></div></article><article class="dia" id="go-tuimaps-3"><div class="meta"><h3>How it is computed</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-describe.md</code></p><p class="lead"><em>v0.1.0 as built. v0.2.0 PLAN changes it: a structured <code>Report</code> is computed beside <code>Describe</code> (D-57).</em></p></div><div class="canvas"><pre class="mermaid">flowchart TB
-    ASK[&#34;Describe(places)&#34;] --&gt; MEMO{&#34;Anything changed since last time?&lt;br/&gt;overlays · places · staleness · colour depth&#34;}
-    MEMO -- no --&gt; SAME[&#34;Return the same data — no allocation&#34;]
-    MEMO -- yes --&gt; Q[(&#34;Pending work&#34;)]
-    Q -- &#34;host calls Work (D-73) — never inside Render&#34; --&gt; PER
+</pre></div></article><article class="dia" id="go-tuimaps-3"><div class="meta"><h3>How it is computed</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-describe.md</code></p><p class="lead"><em>AS BUILT v0.2.0 (rc.5): <code>Describe</code> and <code>Description</code> are removed; <code>Report(places)</code> replaces them and carries every answer (D-57, L5.2–L5.8). It is worked out inside the call, from the host&#39;s own geometry, and needs no <code>Work</code> — except that an image&#39;s answer and observed motion read pictures a <code>Work</code> call has decoded.</em></p></div><div class="canvas"><pre class="mermaid">flowchart TB
+    ASK[&#34;Report(places) — the places given, or the map&#39;s own&#34;] --&gt; MEMO{&#34;Anything changed since last time?&lt;br/&gt;overlays · places · places asked · units · staleness · nearby distance · view · work landed&#34;}
+    MEMO -- no --&gt; SAME[&#34;Return the same report — no allocation (FR-29)&#34;]
+    MEMO -- yes --&gt; NOW[&#34;Worked out inside the call, under the map&#39;s lock — never inside Render, never queued as work&#34;]
+    NOW --&gt; SHOWN
+    NOW --&gt; PER
+    NOW --&gt; MOT
 
-    subgraph PER[&#34;For each place × each overlay&#34;]
+    SHOWN[&#34;&lt;b&gt;Alerts&lt;/b&gt;: every alert in view — overlay, feature id, label, severity, valid time, expiry, stale or not (L-13.5)&#34;]
+
+    subgraph PER[&#34;&lt;b&gt;Places&lt;/b&gt;: for each place&#34;]
       direction TB
-      A[&#34;&lt;b&gt;Areas&lt;/b&gt; (polygons, circles)&lt;br/&gt;inside or outside — even-odd within a polygon, a feature is the union of its polygons (FR-11)&lt;br/&gt;distance and compass bearing to the nearest edge · longitude is circular, a ±180° seam is never an edge&#34;]
+      A[&#34;&lt;b&gt;Each alert on its own&lt;/b&gt; (L-13.6)&lt;br/&gt;inside, nearby (10 km by default, SetNearby) or outside — even-odd within a polygon, a feature is the union of its polygons (FR-11)&lt;br/&gt;distance and compass bearing to the nearest edge · longitude is circular, a ±180° seam is never an edge · under one cell or not (D-67)&#34;]
       B[&#34;&lt;b&gt;Points and lines&lt;/b&gt;&lt;br/&gt;distance and bearing to the nearest, with its label&#34;]
       C[&#34;&lt;b&gt;Fields&lt;/b&gt;&lt;br/&gt;value with its unit · its band · which way it rises — from the data, exact even on a flat day (D-68)&#34;]
-      D[&#34;&lt;b&gt;Images&lt;/b&gt;&lt;br/&gt;the class here · the nearest heavier class, with distance and bearing&#34;]
-      E[&#34;&lt;b&gt;Every overlay&lt;/b&gt;&lt;br/&gt;valid time · stale or not · the form it is drawn in · &#39;no data here&#39;, said plainly&#34;]
+      D[&#34;&lt;b&gt;Images&lt;/b&gt;&lt;br/&gt;the class here — its words are the legend&#39;s, for the host to use (L5.7) · the nearest heavier class, with distance and bearing ·&lt;br/&gt;read from the newest observed frame; &#39;no data&#39; until a Work call has decoded it&#34;]
+      E[&#34;&lt;b&gt;Every answer&lt;/b&gt;&lt;br/&gt;valid time · stale or not · the form it is drawn in · &#39;no data here&#39;, said plainly&#34;]
     end
 
-    PER --&gt; GEO[&#34;Great-circle distances · units follow the host&#39;s setting and are always stated&#34;]
+    MOT[&#34;&lt;b&gt;Motion&lt;/b&gt;, for each loop (L-1.12, D-42)&lt;br/&gt;where the heavier rain was at the oldest decoded observed frame and where it is at the newest,&lt;br/&gt;from each place asked — or the view&#39;s centre — under one threshold held for the loop:&lt;br/&gt;closer, away or held, over the span · observation only, never a forecast&#34;]
+
+    SHOWN --&gt; GEO
+    PER --&gt; GEO
+    MOT --&gt; GEO
+    GEO[&#34;Great-circle distances · units follow Units(miles, fahrenheit) and are always stated&#34;]
     GEO --&gt; CLEAN[&#34;Every string cleaned on the way out (FR-34)&lt;br/&gt;no braille, block or box characters · no abbreviations a speech engine would spell out&#34;]
-    CLEAN --&gt; DATA[&#34;Plain data, not sentences — the host renders or speaks it (D-52)&#34;]
+    CLEAN --&gt; DATA[&#34;Plain data, not sentences — the host words it or speaks it, and never says &#39;you&#39; of a place (D-52, D-29)&#34;]
     DATA --&gt; HOST[&#34;Host: a line beside the map · its own speech&#34;]
-    DATA --&gt; APP[&#34;App: describe mode prints it as text, with no map (FR-5)&#34;]
+    DATA --&gt; APP[&#34;App: describe mode words it as text, with no map (FR-5)&#34;]
 </pre></div></article><article class="dia" id="go-tuimaps-4"><div class="meta"><h3>Picture and description cannot disagree</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-describe.md</code></p></div><div class="canvas"><pre class="mermaid">flowchart LR
     SHAPE[(&#34;Borrowed geometry&lt;br/&gt;one copy, the host&#39;s&#34;)] --&gt; SIMP[&#34;Simplified for the view&#34;] --&gt; PIC[&#34;The picture&lt;br/&gt;(right to within a cell)&#34;]
-    SHAPE --&gt; EXACT[&#34;Used unsimplified&#34;] --&gt; TXT[&#34;The description&lt;br/&gt;(exact)&#34;]
+    SHAPE --&gt; EXACT[&#34;Used unsimplified&#34;] --&gt; TXT[&#34;Report&lt;br/&gt;(exact)&#34;]
     RULE[&#34;One fill rule, one longitude convention,&lt;br/&gt;one projection package&#34;] -.-&gt; SIMP
     RULE -.-&gt; EXACT
     KEY[&#34;Answer key — a separate script over the same data (D-43, D-67)&#34;] -. &#34;M1a: the frame must not contradict it,&lt;br/&gt;to the frame&#39;s resolution (&#39;on the edge&#39; under one cell)&#34; .-&gt; PIC
     KEY -. &#34;M1b: must match exactly&#34; .-&gt; TXT
-</pre></div></article><article class="dia" id="go-tuimaps-5"><div class="meta"><h3>Level 2 — Errors and warnings</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-errors.md</code></p><p class="lead">Up: [architecture](architecture.md) · [contract, section 7](contract.md) · Carries: FR-22b, FR-34, NFR-22 One rule decides which a problem becomes: <strong>refused → an error; accepted but off, or found later during <code>Work</code> → a warning.</strong> Both pass through the one way out, so neither can carry an escape byte, a tile address or a foreign error.</p></div><div class="canvas"><pre class="mermaid">flowchart TB
+</pre></div></article><article class="dia" id="go-tuimaps-5"><div class="meta"><h3>Level 2 — Errors and warnings</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-errors.md</code></p></div><div class="canvas"><pre class="mermaid">flowchart TB
     subgraph IN[&#34;Where problems are found&#34;]
       direction LR
       H[&#34;A hand-in or a call&lt;br/&gt;Set · Remove · settings · intents&#34;]
-      W[&#34;During Work&lt;br/&gt;fetch · gate · decode · prepare · describe&#34;]
-      R[&#34;During Render&#34;]
+      W[&#34;During Work&lt;br/&gt;fetch · gate · decode · disk write · prepare · classify an image&#34;]
+      R[&#34;During any call&#34;]
     end
     H --&gt; REF{&#34;Refused?&#34;}
     REF -- yes --&gt; ERR[&#34;Error: a kind from the closed list&lt;br/&gt;what happened · why · what to do&#34;]
     REF -- &#34;yes, and it was a Set&#34; --&gt; ALSO[&#34;…and a &#39;set-refused&#39; warning,&lt;br/&gt;so a discarded error is still visible&#34;]
     REF -- &#34;no, but something is off&#34; --&gt; WARN
-    W -- &#34;a job failed or met something odd&#34; --&gt; WARN[&#34;Warning: kind · the overlay or tile it concerns · a count&lt;br/&gt;at most 64 kept · duplicates counted, not repeated&#34;]
+    W -- &#34;a job failed or met something odd&#34; --&gt; WARN[&#34;Warning: one of 15 kinds (contract, section 7) · the overlay or tile it concerns · a count&lt;br/&gt;at most 64 kept · duplicates counted, not repeated&lt;br/&gt;e.g. tile-failed · cache-write-failed · cache-under-need · cache-root-readable ·&lt;br/&gt;unmatched-image-colours · table-fallback (an MRMS colour valued along its legend)&#34;]
     W -- &#34;Work itself cannot proceed&#34; --&gt; ERR
-    R -- &#34;a panic, recovered at the call&#39;s edge&#34; --&gt; FAILF[&#34;Frame with status &#39;failed&#39;, last good rows kept&lt;br/&gt;and a &#39;render-failed&#39; warning&#34;]
+    R -- &#34;a panic, recovered at the call&#39;s edge&#34; --&gt; FAILF{&#34;Does the call return an error?&#34;}
+    FAILF -- &#34;yes: Render, Set, Work …&#34; --&gt; PANICE[&#34;An &#39;internal&#39; error; Render&#39;s frame is empty&lt;br/&gt;the map stays usable&#34;]
+    FAILF -- &#34;no: Legend, Warnings, CacheUse …&#34; --&gt; PANICW[&#34;A &#39;render-failed&#39; warning naming the call&#34;]
+    PANICE --&gt; ERR
+    PANICW --&gt; WARN
     ERR --&gt; SAFE
     WARN --&gt; SAFE
     ALSO --&gt; WARN
-    FAILF --&gt; SAFE
     SAFE{{&#34;The way out: text-safety&#39;s own type&lt;br/&gt;cleaned · outside text cut to 64 clusters · scheme and host only, never an address&lt;br/&gt;no foreign error is ever wrapped (FR-34, FR-22b)&#34;}}
     SAFE --&gt; HOST[&#34;Host: the returned error · Warnings() · the frame&#39;s status&#34;]
-</pre></div></article><article class="dia" id="go-tuimaps-6"><div class="meta"><h3>Level 2 — Tests and gates</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-gates.md</code></p><p class="lead">Up: [architecture](architecture.md) · Carries: NFR-22, D-19, D-81, D-86 <strong>There is no remote until SHIP (D-19), so there is no hosted continuous integration until then.</strong> Until SHIP the gate is a script run locally before every merge; at SHIP the same script becomes the hosted workflow. What cannot be run locally is said to be untested, not assumed.</p></div><div class="canvas"><pre class="mermaid">flowchart TB
+</pre></div></article><article class="dia" id="go-tuimaps-6"><div class="meta"><h3>Level 2 — Tests and gates</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-gates.md</code></p><p class="lead">Up: [architecture](architecture.md) · Carries: NFR-22, D-19, D-81, D-86 <strong>There is no remote until SHIP (D-19), so there is no hosted continuous integration until then.</strong> Until SHIP the gate is a script run locally before every merge; at SHIP the same script becomes the hosted workflow. What cannot be run locally is said to be untested, not assumed. <em>AS BUILT v0.2.0 (rc.8); what is not built yet says so.</em></p></div><div class="canvas"><pre class="mermaid">flowchart TB
     subgraph MODS[&#34;Every module in the repository, one by one — not only the library&#34;]
       direction LR
       M0[&#34;library&#34;] --- M1[&#34;cmd/tuimaps&#34;] --- M2[&#34;examples&#34;] --- M3[&#34;tools/gen-assets&#34;] --- M4[&#34;tools/answer-key&#34;] --- M5[&#34;tools/oracle&#34;] --- M6[&#34;tools/atlas&#34;]
     end
-    GATE[&#34;The gate script&lt;br/&gt;writes a throw-away workspace file so the nested modules resolve the library from this tree —&lt;br/&gt;with a replace for the library at exactly v0.0.0 inside that throw-away file —&lt;br/&gt;the tracked module files carry no replace line&#34;] --&gt; MODS
+    GATE[&#34;The gate script&lt;br/&gt;writes a throw-away workspace file so the nested modules resolve the library from this tree —&lt;br/&gt;with a replace for the library at exactly v0.0.0 inside that throw-away file —&lt;br/&gt;the tracked module files carry no replace line · one mode a run: full, --quick, --docs or --fuzz&#34;] --&gt; MODS
+    GATE --&gt; LOG[&#34;Every run logged to 06_docs/gate-runs.md: time · commit · tree checked · mode · result · duration&#34;]
+    GATE -- &#34;--docs&#34; --&gt; DOCS[&#34;The docs lane: a STAGED change of Markdown alone (and the generated atlas page) —&lt;br/&gt;every module&#39;s tests run, and no other leg; anything else staged is refused (v0.2.0 D-15, D-41, D-53)&#34;]
     MODS --&gt; T0[&#34;A module with no packages yet is named and called EMPTY — not failed, not hidden;&lt;br/&gt;a module go cannot list FAILS (v0.2.0 D-31);&lt;br/&gt;tests or a module graph that cannot be listed FAIL (D-40)&#34;]
     MODS --&gt; T1[&#34;Tests under the race detector, on the floor toolchain&#34;]
     MODS --&gt; T2[&#34;A second leg WITHOUT the race detector: the zero-allocation and allocation-count tests live here&#34;]
@@ -183,14 +198,16 @@ code{font-family:var(--mono);font-size:.92em}
     M0 --&gt; A4[&#34;Reference frames byte-identical on arm64 (native) and amd64 (emulated locally)&lt;br/&gt;FAILS — never skips — if the second architecture cannot be run&#34;]
     M0 --&gt; A5[&#34;Loopback only: the dial hook is installed for every test binary by default, not opted into&lt;br/&gt;a static check fails any test package that does not link it&#34;]
     M0 --&gt; A6[&#34;Sub-process test: a program that reuses borrowed memory too early must be caught by the race detector (D-86)&#34;]
-    M0 --&gt; A7[&#34;From the first tag: the public contract compared with the last tag (NFR-22)&#34;]
-    T1 &amp; T2 &amp; T3 &amp; T4 &amp; T5 &amp; A1 &amp; A2 &amp; A3 &amp; A4 &amp; A5 &amp; A6 &amp; A7 --&gt; OK{&#34;All green?&#34;}
+    M0 --&gt; A7[&#34;NOT BUILT: the public contract compared with the last tag (NFR-22, v0.2.0 L-4) — the gate says so on every run&#34;]
+    T1 &amp; T2 &amp; T3 &amp; T4 &amp; T5 &amp; A1 &amp; A2 &amp; A3 &amp; A4 &amp; A5 &amp; A6 --&gt; OK{&#34;All green?&#34;}
+    DOCS --&gt; OK
     OK -- yes --&gt; MERGE[&#34;Merge allowed&#34;]
     OK -- no --&gt; STOP[&#34;Stop: what failed, why, what to do&#34;]
-</pre></div></article><article class="dia" id="go-tuimaps-7"><div class="meta"><h3>Where the bytes live</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-memory.md</code></p><p class="lead"><em>v0.1.0 as built. v0.2.0 PLAN changes it: a loop&#39;s frames count against a per-map image budget, 3 MiB by default (L-12, D-61).</em></p></div><div class="canvas"><pre class="mermaid">flowchart TB
+    NB[&#34;NOT BUILT YET (v0.2.0 WP-L10): a release check refusing the final tag while its checklist is open (L10.3) ·&lt;br/&gt;a pinned vulnerability scan at the tag (L10.4) · hosted CI with the second architecture (L10.5) ·&lt;br/&gt;the loop&#39;s memory bound, five-minute and hour forms (L10.8)&#34;] -. &#34;will join&#34; .-&gt; OK
+</pre></div></article><article class="dia" id="go-tuimaps-7"><div class="meta"><h3>Where the bytes live</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-memory.md</code></p><p class="lead"><em>AS BUILT v0.2.0 (rc.2): images are copied at <code>Set</code> and held to a per-map image budget, <strong>6 MiB by default</strong> (D-68, not PLAN&#39;s 3 MiB). The loop&#39;s heap bound, M4, is not yet measured (L10.8); the figures are v0.1.0&#39;s. Corrected against the code: the shape cache is each map&#39;s own, and only the tile cap and the image budget are host-settable.</em></p></div><div class="canvas"><pre class="mermaid">flowchart TB
     subgraph HOSTMEM[&#34;The host&#39;s memory — not counted against the library&#34;]
       HG[&#34;Borrowed geometry (FR-11)&lt;br/&gt;synthetic upper bound: 58 zones · 812,058 vertices · 12.4 MiB&lt;br/&gt;measured: ten Gulf-coast counties · 56,827 vertices · 0.9 MB&lt;br/&gt;the library reads it, never copies it&#34;]
-      HP[&#34;The PNG the host fetched — may be released once the image is prepared&#34;]
+      HP[&#34;The PNG, or a loop&#39;s frames, the host fetched — COPIED at Set (L-1.14):&lt;br/&gt;the host may reuse its own as soon as Set returns&#34;]
     end
 
     subgraph LIVE[&#34;Library, live after a collection — the 4 MB line&#34;]
@@ -198,10 +215,10 @@ code{font-family:var(--mono);font-size:.92em}
       FIX[&#34;&lt;b&gt;Fixed buffers&lt;/b&gt; — measured 0.44 MB&lt;br/&gt;cell grid × 2 frames · dot mask · output lines (149×38)&#34;]
       TC[&#34;&lt;b&gt;Tile cache&lt;/b&gt; — default cap 0.5 MB, shared · one view draws 0.33 to 0.80 MB&lt;br/&gt;what a live view draws is never evicted; spares only in the room left; over the cap is reported (D-90) · with data dropped while decoding and coordinates as 16-bit integers (D-75)&#34;]
       SC[&#34;&lt;b&gt;Shape cache&lt;/b&gt; — byte-capped · measured 0.01 MB for 56,827 borrowed vertices&lt;br/&gt;simplified forms and bounding boxes · same rule; a form larger than the whole cap is drawn from the host&#39;s memory (D-90)&#34;]
-      IC[&#34;&lt;b&gt;Image cache&lt;/b&gt; — byte-capped · measured 0.25 MB for a 600×400 image&lt;br/&gt;one byte per pixel (D-36) · a loop&#39;s frames must fit inside this cap (FR-37)&#34;]
+      IC[&#34;&lt;b&gt;Images&lt;/b&gt; — each picture at most 250,000 pixels by default, kept at one byte a pixel (D-36) · measured 0.25 MB for a 600×400 image&lt;br/&gt;a loop: up to 72 frames, each decoded frame one byte a pixel; a refresh keeps the frames it shares (L-1.7)&lt;br/&gt;&lt;b&gt;the image budget&lt;/b&gt;, 6 MiB a map by default (D-68): every picture&#39;s copied file and its pixels, each grid&#39;s field,&lt;br/&gt;and the shared classified set (1 MiB, across maps) — a Set over it is refused, saying by how much&#34;]
       GC2[&#34;&lt;b&gt;Grids, contours, ramps, legend&lt;/b&gt; ≈ 0.05 MB (an estimate; NOT measured)&#34;]
       ST[&#34;&lt;b&gt;Styles, tokens, pools&lt;/b&gt; ≈ 0.6 MB (an estimate; NOT measured)&#34;]
-      CAPS[&#34;Default caps (D-85, lean first): tiles 0.5 MB and shapes 0.25 MB, shared by every map;&lt;br/&gt;images 0.25 MB a map · all host-settable · the lines cover THREE maps sharing caches&lt;br/&gt;Rule: default caps + fixed buffers ≤ 3 MB, leaving 1 MB for everything else (NFR-3)&#34;]
+      CAPS[&#34;Default caps (D-85, lean first): tiles 0.5 MB, shared by the maps given one handle (NewShared sets it);&lt;br/&gt;shapes 0.25 MB a map and each picture 250,000 pixels, both fixed · the image budget 6 MiB a map (SetImageBudget) ·&lt;br/&gt;the lines cover THREE maps sharing a handle&lt;br/&gt;Rule: default caps + fixed buffers ≤ 3 MB, leaving 1 MB for everything else (NFR-3)&#34;]
     end
 
     subgraph TRANS[&#34;Transient — what pushes the peak toward 8 MB&#34;]
@@ -219,26 +236,28 @@ code{font-family:var(--mono);font-size:.92em}
     TRANS --&gt; PEAK[&#34;Peak ≈ live + one decode + garbage&#34;]
     SUM --&gt; T1[&#34;&lt;b&gt;Tension (NFR-3):&lt;/b&gt; at live = 4 MB the 8 MB peak is reached by garbage alone.&lt;br/&gt;Live must sit near 3 MB — and for three maps it does, with no room to spare. RS-7 stays High.&#34;]
     PEAK --&gt; T1
-</pre></div></article><article class="dia" id="go-tuimaps-8"><div class="meta"><h3>One path for every overlay</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-overlays.md</code></p><p class="lead"><em>v0.1.0 as built. v0.2.0 PLAN changes it: an image overlay may carry loop frames (D-54).</em> The host hands in a plain struct (D-74). What happens next is the same for every shape; only the &#34;prepare&#34; step differs.</p></div><div class="canvas"><pre class="mermaid">flowchart TB
-    SET[&#34;Set(overlay struct)&#34;] --&gt; VAL{&#34;Validate on hand-in (NFR-20)&#34;}
+</pre></div></article><article class="dia" id="go-tuimaps-8"><div class="meta"><h3>One path for every overlay</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-overlays.md</code></p><p class="lead"><em>AS BUILT v0.2.0 (rc.5): an image overlay may carry loop frames (D-54), and every image is copied and held to the map&#39;s image budget at <code>Set</code>. Prepare work is queued by the next <code>Render</code> or <code>Settle</code>, not by <code>Set</code>.</em> The host hands in a plain struct (D-74). What happens next is the same for every shape; only the &#34;prepare&#34; step differs.</p></div><div class="canvas"><pre class="mermaid">flowchart TB
+    SET[&#34;Set(overlay struct)&#34;] --&gt; VAL{&#34;Validate on hand-in (NFR-20)&lt;br/&gt;an image&#39;s loop too: frames oldest first, gaps with no picture, at most 72,&lt;br/&gt;no observed frame dated past the map&#39;s clock — only a forecast may be&#34;}
     VAL -- &#34;refused&#34; --&gt; ERR[&#34;Typed error from a closed list:&lt;br/&gt;what happened · why · what to do&lt;br/&gt;…and a set-refused warning, so a discarded error still shows&#34;]
     VAL -- &#34;accepted with warnings&#34; --&gt; WARN[&#34;Warnings (≤ 64, de-duplicated)&lt;br/&gt;e.g. a ramp that breaks the colour rules — reported, never refused (D-53)&#34;]
     WARN --&gt; REPL
     RM[&#34;Remove(id)&#34;] --&gt; RMR[&#34;Returns at once: found or not · old geometry released yes/no (D-86)&lt;br/&gt;queued jobs for it are dropped; it stops drawing at the next Render&#34;]
-    VAL -- &#34;accepted&#34; --&gt; REPL{&#34;Same id already set?&#34;}
-    REPL -- yes --&gt; OLD[&#34;Replaced. Returns at once: replaced, and whether the old borrow is ALREADY released (D-86).&lt;br/&gt;The old shape keeps drawing from the library&#39;s own simplified copy until the new one is prepared.&lt;br/&gt;Over 30,303 vertices at the default cap: Set builds the run index itself, so the new shape draws next frame from the host&#39;s memory (D-92)&#34;]
+    VAL -- &#34;accepted&#34; --&gt; COPY[&#34;An image is COPIED — its picture, its table, every frame (L-1.14)&lt;br/&gt;and charged to the map&#39;s image budget, 6 MiB by default: over it, the Set is refused, saying by how much (L-12)&#34;]
+    COPY --&gt; REPL{&#34;Same id already set?&#34;}
+    REPL -- yes --&gt; OLD[&#34;Replaced. Returns at once: replaced, and whether the old borrow is ALREADY released (D-86).&lt;br/&gt;The old shape keeps drawing from the library&#39;s own simplified copy until the new one is prepared.&lt;br/&gt;A loop replacing a loop keeps, by key, the frames it shares, so they are not read again (L-1.7).&lt;br/&gt;Over 30,303 vertices at the default cap: Set builds the run index itself, so the new shape draws next frame from the host&#39;s memory (D-92)&#34;]
     REPL -- no --&gt; NEW[&#34;Created — the result says so, so a mistyped id is visible (D-74)&#34;]
     OLD --&gt; Q
     NEW --&gt; Q
-    Q[(&#34;Pending work — capped, newest wins&#34;)] -- &#34;host calls Work (D-73)&#34; --&gt; PREP[&#34;Prepare (per shape, below)&#34;]
+    Q[(&#34;Pending work — capped, newest wins&lt;br/&gt;queued by the next Render or Settle: one job an overlay, at the bucket in view&#34;)] -- &#34;host calls Work (D-73)&#34; --&gt; PREP[&#34;Prepare (per shape, below)&#34;]
     PREP --&gt; STORE[(&#34;Overlay store — byte-capped&lt;br/&gt;only bytes the library owns are counted (FR-11)&#34;)]
     STORE --&gt; DRAW[&#34;Render: composited by the stated order (L2-render)&#34;]
-    STORE --&gt; LEG[&#34;Legend: breaks · unit · colours actually drawn (FR-13)&#34;]
+    STORE --&gt; LEG[&#34;Legend: breaks · unit · colours actually drawn (FR-13) · an alert&#39;s severity words and digits · which tints blend ·&lt;br/&gt;a provider&#39;s table marked approximate or unverified&#34;]
     STORE --&gt; CRED[&#34;Credits, with the basemap&#39;s (FR-14)&#34;]
-    STORE --&gt; DESC[&#34;Description as data (L2-describe)&#34;]
-    STORE --&gt; FRESH[&#34;Freshness: valid time · current-for · stale mark (FR-32, L3-states)&#34;]
-</pre></div></article><article class="dia" id="go-tuimaps-9"><div class="meta"><h3>What &#34;prepare&#34; means for each shape</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-overlays.md</code></p><p class="lead"><em>v0.1.0 as built. v0.2.0 PLAN replaces &#34;Image frames (FR-37)&#34; below: a loop is <code>Image.Frames</code>, kept by valid time and hash, played on the library&#39;s animation clock, inside a per-map image budget (D-54, D-61).</em></p></div><div class="canvas"><pre class="mermaid">flowchart LR
-    subgraph V010[&#34;In v0.1.0 (D-44)&#34;]
+    STORE --&gt; DESC[&#34;Report, as data (L2-describe)&#34;]
+    STORE --&gt; FRESH[&#34;Freshness: valid time — a loop&#39;s is its newest observed frame · current-for · stale mark (FR-32, L3-states)&#34;]
+    STORE --&gt; TL[&#34;A loop&#39;s frame times, merged with every other loop&#39;s: the timeline playback moves along (D-67)&#34;]
+</pre></div></article><article class="dia" id="go-tuimaps-9"><div class="meta"><h3>What &#34;prepare&#34; means for each shape</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-overlays.md</code></p><p class="lead"><em>AS BUILT v0.2.0 (rc.5): a loop is <code>Image.Frames</code>, each frame read in <code>Work</code> and kept by a key of its bytes, table, bounds, type and valid time; it plays on the library&#39;s animation clock, inside the map&#39;s image budget (D-54, D-68). An image may name a provider instead of handing in a table (L-2.5).</em></p></div><div class="canvas"><pre class="mermaid">flowchart LR
+    subgraph V010[&#34;Built — v0.1.0 (D-44), with loops and provider tables in v0.2.0&#34;]
       direction TB
       subgraph F[&#34;Features — points · lines · polygons · circles&#34;]
         direction LR
@@ -255,19 +274,19 @@ code{font-family:var(--mono);font-size:.92em}
         S2 --&gt; S3[&#34;Kept as classes on the host&#39;s own grid.&lt;br/&gt;PREPARE ENDS HERE&#34;]
         S3 -. &#34;at draw time, in render&#34; .-&gt; S4[&#34;Each cell samples the grid at its centre ·&lt;br/&gt;contour lines at the breaks for the no-colour form (D-35)&lt;br/&gt;work bounded by the cell count, not the data&#34;]
       end
-      subgraph I[&#34;Image — one PNG for one bounding box&#34;]
+      subgraph I[&#34;Image — one PNG, or a loop of frames, for one bounding box&#34;]
         direction LR
-        I1[&#34;Header read first: PNG only ·&lt;br/&gt;≤ 1,048,576 pixels · 8-bit (FR-9)&#34;] --&gt; I2[&#34;Decode directly (never via a format registry)&#34;]
-        I2 --&gt; I3[&#34;Colour → class by the required table (D-45)&lt;br/&gt;nearest within tolerance; unmatched = no data, counted&#34;]
+        I0[&#34;A loop: each frame that is not a gap, in turn;&lt;br/&gt;a frame whose key the replaced loop already read is kept (L-1.7)&#34;] --&gt; I1
+        I1[&#34;Header read first: PNG only ·&lt;br/&gt;≤ 1,048,576 pixels · 8-bit · within the map&#39;s image cap (FR-9)&#34;] --&gt; I2[&#34;Decode directly (never via a format registry);&lt;br/&gt;a picture another map sharing caches already read is taken from the shared set&#34;]
+        I2 --&gt; I3[&#34;Colour → class by the image&#39;s table, or its provider&#39;s (D-45, L-2.5):&lt;br/&gt;IEM, published · MRMS, observed and approximate&lt;br/&gt;nearest within tolerance; unmatched = no data, counted ·&lt;br/&gt;MRMS&#39;s heavy end, off its table, valued along its legend — counted, a table-fallback warning&#34;]
         I3 --&gt; I4[&#34;Keep ONE byte per pixel: the class index (D-36)&lt;br/&gt;the provider&#39;s colours are never shown&#34;]
-        I4 -. &#34;PREPARE ENDS HERE · at draw time, in render&#34; .-&gt; I5[&#34;From the projection the host stated: eight samples a cell,&lt;br/&gt;the HEAVIEST class wins, never the mean (D-78)&lt;br/&gt;so a pan needs no Work (PL-PF-4)&#34;]
+        I4 -. &#34;PREPARE ENDS HERE · at draw time, in render&#34; .-&gt; I5[&#34;The frame of the moment shown (L-1.6) ·&lt;br/&gt;from the projection the host stated: eight samples a cell,&lt;br/&gt;the HEAVIEST class wins, never the mean (D-78)&lt;br/&gt;so a pan needs no Work (PL-PF-4)&#34;]
       end
     end
     subgraph LATER[&#34;After the integration (D-44, D-60)&#34;]
       direction TB
       VG[&#34;Vector grid (wind)&lt;br/&gt;two scalar grids → arrow and speed class per cell · basemap thins (S5-1)&#34;]
       TI[&#34;Tile-image provider&lt;br/&gt;a host function per tile → each tile takes the Image path&#34;]
-      LOOP[&#34;Image frames (FR-37)&lt;br/&gt;a sequence of Images on the host&#39;s clock, inside the image cache&#39;s byte cap&#34;]
     end
 </pre></div></article><article class="dia" id="go-tuimaps-10"><div class="meta"><h3>Presets and host-defined types</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-overlays.md</code></p></div><div class="canvas"><pre class="mermaid">flowchart LR
     T{&#34;overlay.Type&#34;} -- &#34;a preset&#34; --&gt; P[&#34;Temperature · Radar and precipitation · Alert areas · (Wind, later)&lt;br/&gt;unit · breaks · colours per depth · no-colour form — all supplied (D-69)&#34;]
@@ -277,32 +296,32 @@ code{font-family:var(--mono);font-size:.92em}
     PO --&gt; OUT
     H --&gt; OUT
     SAFE[&#34;Safe ramps on (D-63)&#34;] -. &#34;forces&#34; .-&gt; P
-</pre></div></article><article class="dia" id="go-tuimaps-11"><div class="meta"><h3>From a call to a frame</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-render.md</code></p><p class="lead"><em>v0.1.0 as built. v0.2.0 PLAN changes it: radar is blended over alert areas (D-14, D-45), furniture is never erased (L-8.3), place labels are kept (D-60), and each frame carries its counters (D-59).</em></p></div><div class="canvas"><pre class="mermaid">flowchart TB
-    CALL[&#34;Render(rectangle, now)&#34;] --&gt; SAME{&#34;Anything that could change a cell changed?&lt;br/&gt;the full list is the contract&#39;s, section 5 —&lt;br/&gt;view · size · look · places · overlays · tiles · phase · freshness · status&#34;}
-    SAME -- yes --&gt; REUSE[&#34;Return the previous frame&lt;br/&gt;zero allocations (NFR-4)&#34;]
-    SAME -- no --&gt; SNAP[&#34;Take a snapshot of what is on hand&lt;br/&gt;tiles in a fixed order (NFR-6) · prepared overlays · markers&#34;]
+</pre></div></article><article class="dia" id="go-tuimaps-11"><div class="meta"><h3>From a call to a frame</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-render.md</code></p><p class="lead"><em>AS BUILT v0.2.0 (rc.4): radar lies over an alert&#39;s tint, blended toward it (L-11); an image&#39;s shade is laid last, never erasing furniture or text (L-8.3); the host&#39;s place names are placed before any other name, and an alert&#39;s label falls back to its severity word (L-8.5, L-8.9); severity digits run along outlines (D-65); a frame carries its counters and what it dropped (D-59).</em></p></div><div class="canvas"><pre class="mermaid">flowchart TB
+    CALL[&#34;Render(size, now)&#34;] --&gt; SNAP[&#34;Take a snapshot of what is on hand&lt;br/&gt;tiles in a fixed order (NFR-6) · prepared overlays · the loop frame of the moment shown · markers&#34;]
     SNAP --&gt; NEED[&#34;Note what is missing → pending work&lt;br/&gt;(never fetched here; the host&#39;s Work does it — D-73)&#34;]
-    SNAP --&gt; PROFILE[&#34;Choose the basemap profile (FR-19)&lt;br/&gt;by map size · by what is on top · by layers switched off (FR-36)&#34;]
+    SNAP --&gt; SAME{&#34;Anything that could change a cell changed?&lt;br/&gt;the full list is the contract&#39;s, section 5 —&lt;br/&gt;view · size · look · places · overlays · the loop frame shown · tiles · phase · freshness · status&#34;}
+    SAME -- no --&gt; REUSE[&#34;Return the previous frame&lt;br/&gt;zero allocations (NFR-4)&#34;]
+    SAME -- yes --&gt; PROFILE[&#34;Choose the basemap profile (FR-19)&lt;br/&gt;by map size · by what is on top · by layers switched off (FR-36)&#34;]
     PROFILE --&gt; PAINT
 
     subgraph PAINT[&#34;Paint the cell grid — each cell is glyph + foreground + background&#34;]
       direction TB
       L0[&#34;1 Ground&lt;br/&gt;painted from the ground token, or left to the terminal if the host declared it (D-64)&#34;]
       L1[&#34;2 Water&lt;br/&gt;masks a scalar FIELD: temperature stops at the shore (D-32)&lt;br/&gt;never masks an IMAGE: rain shows over water, the coast drawn as an outline (D-87)&lt;br/&gt;a host can flip either, per overlay&#34;]
-      L2[&#34;3 Images and fields&lt;br/&gt;cell background by class → colour (L2-colour)&lt;br/&gt;fields skip water cells; images do not (D-87)&#34;]
-      L3[&#34;4 Area tints&lt;br/&gt;alert polygons&#39; interior; hatch when there is no colour (FR-18a)&#34;]
+      L2[&#34;3 Area tints&lt;br/&gt;alert polygons&#39; interior; hatch when there is no colour (FR-18a)&#34;]
+      L3[&#34;4 Images and fields&lt;br/&gt;cell background by class → colour (L2-colour) · fields skip water cells; images do not (D-87)&lt;br/&gt;inside an alert: the image shifted toward the tint, as strongly as the blend search found safe (L-11)&#34;]
       L4[&#34;5 Basemap lines&lt;br/&gt;braille dots, 2×4 per cell: coast, borders, roads, rivers, parks&#34;]
       L5[&#34;6 Overlay lines and outlines&lt;br/&gt;polygon outlines always drawn (FR-16), contours (D-35), tracks&#34;]
-      L6[&#34;7 Labels&lt;br/&gt;place names, value labels, edge labels — collision-checked, cleaned, by grapheme cluster (FR-34)&lt;br/&gt;the text is a contest: furniture, then a marker, then an overlay&#39;s label, then a place name,&lt;br/&gt;and a marker&#39;s own label last, where P-60 puts it&lt;br/&gt;&lt;b&gt;a frame with a scalar field claims in a different order (D-124):&lt;/b&gt; marker labels, then the field&#39;s&lt;br/&gt;contour values, then the place names — a contour with no value says where a band changes but not to what&#34;]
+      L6[&#34;7 Text — a contest: the first to claim a cell keeps it, in this order&lt;br/&gt;the frame&#39;s furniture · marker glyphs · the host&#39;s place names (L-8.9) ·&lt;br/&gt;overlay labels, an alert&#39;s falling back to its severity word (L-8.5) · each alert&#39;s severity digit along its outline (D-65) ·&lt;br/&gt;a field&#39;s contour values (D-124) · basemap names, within the profile&#39;s budget ·&lt;br/&gt;an image&#39;s shade where it has no ramp to be coloured by (L-8.3) · the hatch, last, at 16 colours and none (FR-18a)&lt;br/&gt;all collision-checked, cleaned, by grapheme cluster (FR-34)&#34;]
       L7[&#34;8 Glyphs&lt;br/&gt;markers over everything beneath — never under a hatch or a name (FR-18a); focus indicator (FR-24a)&#34;]
-      L8[&#34;9 Furniture&lt;br/&gt;scale mark (FR-33) · stale mark (FR-32) · credit line (FR-14) · footer, off by default (P-57) · the no-tiles notice (FR-23)&#34;]
+      L8[&#34;9 Furniture&lt;br/&gt;scale mark (FR-33) · stale mark and the loop&#39;s frame time, &#39;gap&#39; or &#39;forecast&#39; where it is one (FR-32, L-1.10a) ·&lt;br/&gt;credit line (FR-14) · footer, off by default (P-57) · the no-tiles notice (FR-23)&#34;]
       L0 --&gt; L1 --&gt; L2 --&gt; L3 --&gt; L4 --&gt; L5 --&gt; L6 --&gt; L7 --&gt; L8
     end
 
     PAINT --&gt; FG[&#34;Choose each cell&#39;s foreground (FR-16, D-77)&lt;br/&gt;the line&#39;s own colour where it meets 3:1 on this cell; otherwise whichever of black and white contrasts more&#34;]
     FG --&gt; DEPTH[&#34;Map colours to the depth in use&lt;br/&gt;truecolor · 256 (indices 16–255 only) · 16 · none (L2-colour)&#34;]
     DEPTH --&gt; EMIT[&#34;Emit lines&lt;br/&gt;each exactly the requested width (NFR-8)&lt;br/&gt;colour sequences and cleaned text, nothing else (FR-34)&#34;]
-    EMIT --&gt; STATUS[&#34;Frame + status&lt;br/&gt;complete · still sharpening · no tiles&lt;br/&gt;(a recovered panic returns an empty frame and an internal error)&#34;]
+    EMIT --&gt; STATUS[&#34;Frame: lines · status — complete · still sharpening · no tiles ·&lt;br/&gt;Changed and FrameTicks as drawn (L-1.16) · Dropped: each alert label or place name that did not fit, and what stood in&lt;br/&gt;(a recovered panic returns an empty frame and an internal error)&#34;]
 </pre></div></article><article class="dia" id="go-tuimaps-12"><div class="meta"><h3>The braille canvas</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-render.md</code></p></div><div class="canvas"><pre class="mermaid">flowchart LR
     G[&#34;Geometry in tile units&lt;br/&gt;small integers (D-75)&#34;] --&gt; P[&#34;Project to dot space&lt;br/&gt;2 dots across × 4 down per cell&#34;]
     P --&gt; C[&#34;Clip to the rectangle&lt;br/&gt;nothing is ever drawn outside it (FR-11)&#34;]
@@ -332,7 +351,7 @@ code{font-family:var(--mono);font-size:.92em}
     S1 --&gt; L
     S0 --&gt; L
     L[&#34;Host&#39;s layer switches applied last (FR-36): a layer the host turned off is never drawn&#34;]
-</pre></div></article><article class="dia" id="go-tuimaps-15"><div class="meta"><h3>Placing labels</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-style.md</code></p></div><div class="canvas"><pre class="mermaid">flowchart LR
+</pre></div></article><article class="dia" id="go-tuimaps-15"><div class="meta"><h3>Placing labels</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-style.md</code></p><p class="lead"><em>AS BUILT v0.2.0 (rc.4): before any basemap name, the host&#39;s place names claim their cells, then the overlays&#39; labels — an alert&#39;s falling back to its severity word — then each alert&#39;s severity digits; what did not fit is named in the frame&#39;s <code>Dropped</code> (L-8.5, L-8.9, D-65). The order is L2 Render&#39;s step 7.</em></p></div><div class="canvas"><pre class="mermaid">flowchart LR
     C[&#34;Candidates: places on hand, largest rank first&lt;br/&gt;name by upstream&#39;s order with one language kept (P-36, D-82): the configured language — English unless the host says otherwise — then the local name, then the house number. No other language survives decoding&#34;] --&gt; CL[&#34;Cleaned and measured by grapheme cluster (FR-34, NFR-8)&lt;br/&gt;a wide character takes two cells&#34;]
     CL --&gt; FIT{&#34;Fits inside the rectangle?&#34;}
     FIT -- no --&gt; SKIP[&#34;Skipped whole — never cut mid-cluster&#34;]
@@ -342,7 +361,7 @@ code{font-family:var(--mono);font-size:.92em}
     PUT --&gt; CAP{&#34;Profile&#39;s label budget reached?&#34;}
     CAP -- no --&gt; C
     CAP -- yes --&gt; DONE[&#34;Done&#34;]
-    OVL[&#34;Overlay labels and markers are placed BEFORE basemap labels,&lt;br/&gt;so a place name never hides a warning&#39;s word&#34;] -.-&gt; COL
+    OVL[&#34;Placed BEFORE basemap labels: markers, the host&#39;s place names, then overlay labels&lt;br/&gt;(an alert&#39;s label that does not fit falls back to its severity word) and severity digits,&lt;br/&gt;and on a frame with a field, its contour values (D-124) —&lt;br/&gt;so a basemap name never hides a warning&#39;s word or the host&#39;s place&#34;] -.-&gt; COL
 </pre></div></article><article class="dia" id="go-tuimaps-16"><div class="meta"><h3>Where a tile can come from</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-tiles.md</code></p></div><div class="canvas"><pre class="mermaid">flowchart LR
     NEED[&#34;Render — or Settle — notes: tile z/x/y is wanted&lt;br/&gt;AND its nearest ancestors the sources can supply, so there is a stand-in to draw&#34;] --&gt; MEM{&#34;In the memory cache?&lt;br/&gt;keyed by source identity + label language + z/x/y&lt;br/&gt;(never by style — FR-31, D-82)&#34;}
     MEM -- yes --&gt; USE[&#34;On hand → drawn next frame&#34;]
@@ -353,7 +372,7 @@ code{font-family:var(--mono);font-size:.92em}
     subgraph ORDER[&#34;Two kinds of job, each keyed by its source&#34;]
       direction TB
       S3[&#34;The embedded tile, z0–3 — only if the host passes them as an option.&lt;br/&gt;The tile itself when no source is named; otherwise only a stand-in (L-13)&#34;]
-      S1[&#34;The chosen source&#39;s tile: 1 the disk cache&lt;br/&gt;only if the host set a root (FR-21b)&#34;]
+      S1[&#34;The chosen source&#39;s tile: 1 the disk cache&lt;br/&gt;only if the host set a root (FR-21b) · the job notes the cache&#39;s generation first ·&lt;br/&gt;a file at its maximum age (SetCacheMaxAge), or dated after the host&#39;s clock, is removed, not served ·&lt;br/&gt;reading writes nothing (D-56)&#34;]
       S2[&#34;2 the host&#39;s named network source&lt;br/&gt;only if one was named (D-65)&#34;]
       S1 -- miss --&gt; S2
     end
@@ -368,33 +387,40 @@ code{font-family:var(--mono);font-size:.92em}
       G4[&#34;Count first, then allocate once: each kept layer&#39;s geometry is counted without decoding it,&lt;br/&gt;and its slabs are made at their exact size · coordinates as 16-bit integers ·&lt;br/&gt;keys ≤ 4,096 · values ≤ 400,000 · retained ≤ 4 MiB · a host may lower any limit, never raise one&#34;]
       G1 --&gt; G2 --&gt; G2R --&gt; G3 --&gt; G4
     end
-    GATE -- &#34;ok&#34; --&gt; STORE[&#34;Memory cache (byte-capped)&lt;br/&gt;what a live view draws is never evicted · spares only in the room left (D-90)&#34;]
-    GATE -- &#34;ok, and it came from the network&#34; --&gt; WRITE[&#34;Write to disk cache&lt;br/&gt;only after a complete successful decode (FR-22a)&lt;br/&gt;temporary file, then rename&#34;]
+    GATE -- &#34;ok&#34; --&gt; STORE[&#34;Memory cache (byte-capped)&lt;br/&gt;what a live view draws is never evicted · spares only in the room left (D-90)&lt;br/&gt;need over the cap: a cache-under-need warning, once a stretch&#34;]
+    GATE -- &#34;ok, and it came from the network&#34; --&gt; WRITE[&#34;Write to disk cache&lt;br/&gt;only after a complete successful decode (FR-22a), and only if the generation is unchanged:&lt;br/&gt;nothing lands after a Purge, a CacheRoot change or Close (L-9.3)&lt;br/&gt;temporary file, then rename · dated with the fetch time, by the host&#39;s clock (L-9.4)&lt;br/&gt;over the cap: pruned to nine tenths, oldest fetched first, never a file the view needs&lt;br/&gt;a failed write: a cache-write-failed warning (L-9.5)&#34;]
+    PURGE[&#34;Purge(): every source&#39;s files on disk · the fetched tiles in memory ·&lt;br/&gt;a replaced loop&#39;s spare pictures and the shared readings — the embedded tiles stay (L-9.3)&#34;] -. &#34;the view&#39;s tiles are fetched again&#34; .-&gt; Q
     GATE -- &#34;refused or failed&#34; --&gt; FAIL[&#34;Count the failure; the owner call that follows stamps a not-before time&lt;br/&gt;from the host&#39;s clock: 30 s doubling to 10 min (FR-23)&lt;br/&gt;a bad cached file is deleted and the network asked&#34;]
-    STORE --&gt; BUMP[&#34;Change counter +1 · call-me-by = now&#34;]
+    STORE --&gt; BUMP[&#34;The Work call that landed it raises Changed() — the host draws when it moves (D-66)&#34;]
     FAIL --&gt; DL[&#34;Call-me-by includes the earliest not-before time (FR-25)&#34;]
-</pre></div></article><article class="dia" id="go-tuimaps-17"><div class="meta"><h3>The network edge</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-tiles.md</code></p><p class="lead"><em>v0.1.0 as built. v0.2.0 PLAN changes it: the host may supply the transport, user-agent and timeout (D-55); the proxy is checked on each connection (L-10).</em> Everything that touches the network goes through one package, so the rules are enforced in one place.</p></div><div class="canvas"><pre class="mermaid">flowchart TB
-    REQ[&#34;A fetch for the named source&#34;] --&gt; SAME{&#34;Same scheme and host as the source,&lt;br/&gt;or a host the options allow?&#34;}
+</pre></div></article><article class="dia" id="go-tuimaps-17"><div class="meta"><h3>The network edge</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-tiles.md</code></p><p class="lead"><em>AS BUILT v0.2.0 (rc.6): <code>SetFetchOptions</code> supplies a transport, user-agent token, timeout and plain-http hosts (D-55); one rule confines requests, redirects and TileJSON addresses (L-10); the proxy is decided per connection; a late answer is thrown away (L-7.3).</em> Everything that touches the network goes through one package, so the rules are enforced in one place.</p></div><div class="canvas"><pre class="mermaid">flowchart TB
+    NAME{&#34;Source(address) named:&lt;br/&gt;https, or http to a LITERAL loopback address (a name can resolve anywhere)&lt;br/&gt;or a host FetchOptions.AllowHTTP names?&#34;}
+    NAME -- no --&gt; X1[&#34;Refused when named&#34;]
+    NAME -- yes --&gt; REQ[&#34;A fetch for the named source: a tile, or its TileJSON document&#34;]
+    REQ --&gt; SAME{&#34;Confined? the source&#39;s own scheme, host and port, and no user name&lt;br/&gt;(fetch.Confined — the one rule for requests, redirects and TileJSON tile addresses)&#34;}
     SAME -- no --&gt; X0[&#34;Refused before anything is sent&#34;]
-    SAME -- yes --&gt; T1{&#34;Secure transport?&#34;}
-    T1 -- &#34;no, and not a LITERAL loopback address (a name can resolve anywhere), and not explicitly allowed&#34; --&gt; X1[&#34;Refused&#34;]
-    T1 -- yes --&gt; DIAL[&#34;Dial — check the address actually connected to:&lt;br/&gt;not loopback, link-local or private unless the source already is (FR-22b)&#34;]
-    DIAL --&gt; SEND[&#34;Send: identifying User-Agent (library, version, host&#39;s token)&lt;br/&gt;no Referer · proxy settings honoured&#34;]
-    SEND --&gt; RESP{&#34;Response&#34;}
-    RESP -- &#34;redirect&#34; --&gt; RD{&#34;≤ 3 · never secure→plain ·&lt;br/&gt;never to another host unless allowed&#34;}
-    RD -- ok --&gt; DIAL
+    SAME -- yes --&gt; SEND[&#34;Send, under the library&#39;s own client, with the request&#39;s own deadline (Timeout, 20 s by default):&lt;br/&gt;identifying User-Agent (library, version, the host&#39;s token) · no Referer&#34;]
+    SEND --&gt; TR{&#34;Whose transport?&#34;}
+    TR -- &#34;the library&#39;s&#34; --&gt; DIAL[&#34;Dial — check the address actually connected to:&lt;br/&gt;not loopback, link-local, private or reserved unless the source already is (FR-22b)&lt;br/&gt;except the one connection to a proxy the environment named — decided per connection (L-10.3)&#34;]
+    TR -- &#34;the host&#39;s (FetchOptions.Transport)&#34; --&gt; HDIAL[&#34;The host&#39;s transport dials as it likes;&lt;br/&gt;the address check holds only if it dials through CheckedDialer() (D-55)&#34;]
+    DIAL --&gt; RESP{&#34;Response&#34;}
+    HDIAL --&gt; RESP
+    RESP -- &#34;redirect&#34; --&gt; RD{&#34;≤ 3 · Confined, as above · Referer removed&#34;}
+    RD -- ok --&gt; TR
     RD -- no --&gt; X2[&#34;Refused&#34;]
     RESP -- &#34;range asked, but not 206 with exactly that range&#34; --&gt; X3[&#34;Closed unread (AI-9 §8)&#34;]
     RESP -- &#34;success&#34; --&gt; LIM[&#34;Body read through a limit&#34;]
-    LIM --&gt; OUT[&#34;Bytes to the gate&#34;]
-    X0 &amp; X1 &amp; X2 &amp; X3 --&gt; ERR[&#34;Error names scheme and host only&lt;br/&gt;never the address — it may hold a key&lt;br/&gt;never wraps the transport error (FR-22b)&#34;]
+    LIM --&gt; LATE{&#34;Read before the request&#39;s deadline?&#34;}
+    LATE -- no --&gt; X4[&#34;Thrown away, even from a transport that ignored its context (L-7.3)&#34;]
+    LATE -- yes --&gt; OUT[&#34;Bytes to the gate&#34;]
+    X0 &amp; X1 &amp; X2 &amp; X3 &amp; X4 --&gt; ERR[&#34;Error names scheme and host only&lt;br/&gt;never the address — it may hold a key&lt;br/&gt;never wraps the transport error (FR-22b)&lt;br/&gt;fetch-refused by policy · fetch-failed · cancelled when the caller&#39;s context ended&#34;]
 </pre></div></article><article class="dia" id="go-tuimaps-18"><div class="meta"><h3>The embedded tiles and their generator</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-tiles.md</code></p></div><div class="canvas"><pre class="mermaid">flowchart LR
     PLANET[(&#34;Pinned planet archive&lt;br/&gt;version · length · entity tag&#34;)] -- &#34;range requests, 206 only&#34; --&gt; GEN[&#34;tools/gen-assets (separate module)&lt;br/&gt;uses the minimal archive reader (D-58)&#34;]
     GEN --&gt; STRIP[&#34;Decode with the library&#39;s own decoder&lt;br/&gt;strip every translation but English (D-33, D-82)&#34;]
     STRIP --&gt; OUT1[&#34;85 tiles, zoom 0–3: 1.02 MB measured,&lt;br/&gt;held under 2.5 MB by a test&#34;]
     STRIP --&gt; HASH[&#34;SHA-256 list: every source tile, every output tile&#34;]
     OUT1 --&gt; PKG[&#34;tuimaps/assets (opt-in import)&#34;]
-    HASH --&gt; CI[&#34;Continuous integration:&lt;br/&gt;re-hash the asset · decode every tile through the gate&#34;]
+    HASH --&gt; CI[&#34;The gate, through the assets package&#39;s tests (no hosted CI yet, L10.5):&lt;br/&gt;re-hash the asset · decode every tile through the gate&#34;]
     PIN[&#34;Pin · hash list · asset&lt;br/&gt;change only together (FR-28a)&#34;] -.-&gt; GEN
 </pre></div></article><article class="dia" id="go-tuimaps-19"><div class="meta"><h3>Zoom buckets — one simplified copy of a shape per whole zoom level</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-view.md</code></p></div><div class="canvas"><pre class="mermaid">flowchart LR
     Z[&#34;The view&#39;s zoom, say 6.4&#34;] --&gt; B[&#34;Bucket = the whole part: 6&lt;br/&gt;serves every zoom from 6 up to, not including, 7&#34;]
@@ -404,8 +430,8 @@ code{font-family:var(--mono);font-size:.92em}
     HAVE -- no --&gt; NEAR[&#34;Draw the NEAREST prepared bucket meanwhile — a shape never vanishes mid-zoom —&lt;br/&gt;and queue bucket 6 as pending work&#34;]
     NEAR --&gt; PREP[&#34;A Work call simplifies the borrowed shape for bucket 6:&lt;br/&gt;iterative, never recursive · rings under three distinct points dropped ·&lt;br/&gt;larger than the whole shape cache: not cached, drawn from the borrowed shape instead (D-90)&#34;]
     PREP --&gt; DRAW
-</pre></div></article><article class="dia" id="go-tuimaps-20"><div class="meta"><h3>Fit-to — put these things in the frame (D-76)</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-view.md</code></p></div><div class="canvas"><pre class="mermaid">flowchart TB
-    IN[&#34;FitTo(places, overlay ids, margin in cells)&#34;] --&gt; BOX[&#34;Bounding box of everything named —&lt;br/&gt;places by position; overlays by the box recorded at hand-in, so no Work is needed first&#34;]
+</pre></div></article><article class="dia" id="go-tuimaps-20"><div class="meta"><h3>Fit-to — put these things in the frame (D-76)</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L2-view.md</code></p><p class="lead"><em>AS BUILT v0.2.0 (rc.6): the fitted view, like every move, is then held inside the host&#39;s bound if one is set (<code>SetBound</code>, L-3.1).</em></p></div><div class="canvas"><pre class="mermaid">flowchart TB
+    IN[&#34;FitTo(places, overlay ids, margin in cells)&#34;] --&gt; BOX[&#34;Bounding box of everything named, and the map&#39;s own places —&lt;br/&gt;places by position; overlays by the box recorded at hand-in, so no Work is needed first&#34;]
     BOX --&gt; ONE{&#34;A single point, or an empty box?&#34;}
     ONE -- yes --&gt; KEEP[&#34;Centre on it · keep the current zoom&#34;]
     ONE -- no --&gt; ANTI{&#34;Does the box cross ±180°?&#34;}
@@ -414,81 +440,81 @@ code{font-family:var(--mono);font-size:.92em}
     SHORT --&gt; SPAN[&#34;Span in web-mercator units, east-west and north-south&#34;]
     SPAN --&gt; FITZ[&#34;The largest zoom at which the span, plus the margin, fits the rectangle —&lt;br/&gt;solved directly, not stepped. A cell is twice as tall as it is wide: 2 dots across, 4 down&#34;]
     FITZ --&gt; CL[&#34;Clamped to the zoom range · centre on the box&#39;s centre&#34;]
-    CL --&gt; OUT[&#34;The view changes as any intent does: the counter moves, tiles become wanted&#34;]
-</pre></div></article><article class="dia" id="go-tuimaps-21"><div class="meta"><h3>1 · A cold first frame — never blank (D-30, NFR-5: ≤ 3 s to full detail)</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L3-sequences.md</code></p></div><div class="canvas"><pre class="mermaid">sequenceDiagram
+    CL --&gt; BOUND[&#34;Held inside the host&#39;s Bound, if one is set (L-3.1):&lt;br/&gt;zoom raised to its least · the centre moved so the view stays in its box,&lt;br/&gt;or centred on a box narrower than the view · a box may cross ±180°&#34;]
+    BOUND --&gt; OUT[&#34;The view changes as any intent does: Changed() moves, tiles become wanted&#34;]
+</pre></div></article><article class="dia" id="go-tuimaps-21"><div class="meta"><h3>1 · A cold first frame — never blank (D-30, NFR-5: ≤ 3 s to full detail)</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L3-sequences.md</code></p><p class="lead"><em>AS BUILT v0.2.0 (rc.8), corrected against the code: the source is named by a call after <code>New</code>; the embedded tiles are a job of their own, not a fallback after the network; overlays are queued for preparing by the first <code>Render</code>; <code>OnPending</code> wakes the pump; and a landed job raises <code>Changed()</code>, which the host watches.</em></p></div><div class="canvas"><pre class="mermaid">sequenceDiagram
     autonumber
     participant H as Host (draws on its tick)
     participant P as Host&#39;s pump (its goroutines)
     participant M as Map
     participant T as Tile sources
-    H-&gt;&gt;M: New(Source(named), embedded tiles passed as an option)
+    H-&gt;&gt;M: New(WithSize, Embed(embedded tiles)) · Source(named) · OnPending(wake the pump)
     H-&gt;&gt;M: Set(alerts), Set(radar image), Set(temperature grid)
     M--&gt;&gt;H: created ×3 · warnings if any
-    H-&gt;&gt;M: Render(rect, now)
-    Note over M: Nothing decoded yet.&lt;br/&gt;Draws ground, markers, the notice — never an empty rectangle (FR-23)
-    M--&gt;&gt;H: frame · status &#34;still sharpening&#34; · NextCall = now
-    P-&gt;&gt;M: Pending()?
-    M--&gt;&gt;P: 4 tiles wanted, and their z3 ancestor · 3 overlays to prepare
+    H-&gt;&gt;M: Render(size, now)
+    Note over M: Nothing decoded yet. Notes the wanted tiles, their z3 ancestor, and the three overlays to prepare.&lt;br/&gt;Draws ground, markers, the notice — never an empty rectangle (FR-23)
+    M--&gt;&gt;P: OnPending hook: work went from none to some
+    M--&gt;&gt;H: frame · status &#34;no tiles&#34;
     par as many as the pump likes — its width, and the memory that costs, are the host&#39;s (D-84)
         P-&gt;&gt;M: Work(ctx)
-        M-&gt;&gt;T: the z3 ancestor: disk, then network, then embedded — embedded answers
+        M-&gt;&gt;T: the z3 ancestor, from the embedded tiles — a job of its own, the cheapest, so first
         T--&gt;&gt;M: bytes → gate → cache
     and
         P-&gt;&gt;M: Work(ctx)
         Note over M: prepare the alerts: simplify, boxes
     and
         P-&gt;&gt;M: Work(ctx)
-        M-&gt;&gt;T: a z5 tile: disk misses, the network answers (secure, limits)
-        T--&gt;&gt;M: bytes → gate → cache → disk
+        M-&gt;&gt;T: a z5 tile: disk misses, the network answers (confined, secure, limits)
+        T--&gt;&gt;M: bytes → gate → cache → disk, if its generation is unchanged
     end
-    M--&gt;&gt;P: each done · change counter +1
-    P--&gt;&gt;H: &#34;map changed&#34;
-    H-&gt;&gt;M: Render(rect, now)
-    M--&gt;&gt;H: frame: stand-in from z3 under the overlays
+    M--&gt;&gt;P: each Work returns · each that landed something raises Changed()
+    P--&gt;&gt;H: &#34;map changed&#34; — Changed() moved
+    H-&gt;&gt;M: Render(size, now)
+    M--&gt;&gt;H: frame: stand-in from z3 under the overlays · &#34;still sharpening&#34;
     Note over H,M: …the remaining tiles arrive the same way…
-    H-&gt;&gt;M: Render(rect, now)
+    H-&gt;&gt;M: Render(size, now)
     M--&gt;&gt;H: frame · status &#34;complete&#34;
 </pre></div></article><article class="dia" id="go-tuimaps-22"><div class="meta"><h3>2 · A pan — the newest view wins</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L3-sequences.md</code></p></div><div class="canvas"><pre class="mermaid">sequenceDiagram
     autonumber
     participant H as Host
     participant P as Host&#39;s pump
     participant M as Map
-    H-&gt;&gt;M: Pan(east) — an intent, not a key (FR-24)
-    H-&gt;&gt;M: Render(rect, now)
+    H-&gt;&gt;M: PanCells(east) — an intent, not a key (FR-24)
+    H-&gt;&gt;M: Render(size, now)
     Note over M: Tiles on hand are redrawn shifted. The new column uses stand-ins.&lt;br/&gt;Wanted tiles join the queue. jobs for tiles that left the view are cancelled (FR-30)
     M--&gt;&gt;H: frame · &#34;still sharpening&#34;
-    H-&gt;&gt;M: Pan(east) again, before the first tiles arrive
+    H-&gt;&gt;M: PanCells(east) again, before the first tiles arrive
     Note over M: The queue is re-ordered: newest view first. The cap drops the oldest
     P-&gt;&gt;M: Work(ctx) …
-    M--&gt;&gt;P: done · counter +1
-    H-&gt;&gt;M: Render(rect, now)
+    M--&gt;&gt;P: done · Changed() +1
+    H-&gt;&gt;M: Render(size, now)
     M--&gt;&gt;H: frame · &#34;complete&#34;
-</pre></div></article><article class="dia" id="go-tuimaps-23"><div class="meta"><h3>3 · An idle host — how it still learns that something is due (FR-25)</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L3-sequences.md</code></p><p class="lead"><em>v0.1.0 as built. v0.2.0 PLAN changes it: <code>NextCall</code> also reports the next loop frame (D-54).</em></p></div><div class="canvas"><pre class="mermaid">sequenceDiagram
+</pre></div></article><article class="dia" id="go-tuimaps-23"><div class="meta"><h3>3 · An idle host — how it still learns that something is due (FR-25)</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L3-sequences.md</code></p><p class="lead"><em>AS BUILT v0.2.0 (rc.3): while a loop plays, <code>NextCall</code> also reports its next frame advance — the fourth source (L-1.8). A frame advance moves <code>FrameTicks()</code>, not <code>Changed()</code> (D-66).</em></p></div><div class="canvas"><pre class="mermaid">sequenceDiagram
     autonumber
     participant H as Host
     participant M as Map
-    H-&gt;&gt;M: Render(rect, now)
+    H-&gt;&gt;M: Render(size, now)
     M--&gt;&gt;H: frame
-    H-&gt;&gt;M: NextCall()
-    Note over M: The earliest of: next visible change (a blink phase) ·&lt;br/&gt;next retry time of a failed tile (FR-23) ·&lt;br/&gt;next change of staleness (FR-32). On the wall clock.
+    H-&gt;&gt;M: NextCall(wall clock)
+    Note over M: The earliest of: next visible change (a blink phase) ·&lt;br/&gt;while a loop plays, its next frame advance (L-1.8) ·&lt;br/&gt;next retry time of a failed tile (FR-23) ·&lt;br/&gt;next change of staleness (FR-32). On the wall clock.&lt;br/&gt;A host holding the animation clock (Animate) is told of no blink or advance.
     M--&gt;&gt;H: a deadline, or &#34;nothing due&#34;
     Note over H: Sleeps until the deadline, or until its pump reports a change
-    H-&gt;&gt;M: Render(rect, later)
-    Note over M: Marker phase computed from the time given, never from a count of calls.&lt;br/&gt;With reduce-motion on, markers are steady and no blink deadline is reported (NFR-21)
+    H-&gt;&gt;M: Render(size, later)
+    Note over M: Marker phase and the loop frame shown are computed from the time given, never from a count of calls.&lt;br/&gt;With reduce-motion on, markers are steady, a loop stops where it is, and neither is reported due ·&lt;br/&gt;a stale moment and a retry stay due (NFR-21)
     M--&gt;&gt;H: frame
     Note over H,M: A host that stops calling stops retrying — the documents say so
 </pre></div></article><article class="dia" id="go-tuimaps-24"><div class="meta"><h3>4 · A one-shot render — three calls (NFR-19, FR-4)</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L3-sequences.md</code></p></div><div class="canvas"><pre class="mermaid">sequenceDiagram
     autonumber
     participant C as Caller (a test, the app&#39;s headless flag, a script)
     participant M as Map
-    C-&gt;&gt;M: New(WithSize(cols, rows), embedded tiles) — no network
+    C-&gt;&gt;M: New(WithSize(cols, rows), Embed(embedded tiles)) — no network
     C-&gt;&gt;M: Settle(ctx)
     Note over M: Settle first notes what a render of the map&#39;s size would want (no size: refused, &#39;no-size&#39;).&lt;br/&gt;Then the same loop as a pump, on the caller&#39;s goroutine:&lt;br/&gt;Work until nothing is pending, or the context ends.&lt;br/&gt;Work that failed and is waiting to retry is not pending — so Settle always ends (FR-30)
-    M--&gt;&gt;C: settled, or context ended · work that failed · why nothing could be fetched, if so · jobs in flight elsewhere · ids released
-    C-&gt;&gt;M: Render(rect, now)
+    M--&gt;&gt;C: SettleResult: jobs run · how many failed · the first failure&#39;s why · jobs in flight elsewhere — or the context&#39;s error
+    C-&gt;&gt;M: Render(size, now)
     M--&gt;&gt;C: frame · status &#34;complete&#34; — or marked incomplete, never silently (NFR-20)
-</pre></div></article><article class="dia" id="go-tuimaps-25"><div class="meta"><h3>1 · A tile</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L3-states.md</code></p></div><div class="canvas"><pre class="mermaid">stateDiagram-v2
-    [*] --&gt; Wanted: Render notes it is missing
+</pre></div></article><article class="dia" id="go-tuimaps-25"><div class="meta"><h3>1 · A tile</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L3-states.md</code></p><p class="lead"><em>AS BUILT v0.2.0 (rc.8): <code>Purge</code> also takes a fetched tile out of memory, and a disk file past its maximum age is fetched again rather than served (D-56).</em></p></div><div class="canvas"><pre class="mermaid">stateDiagram-v2
+    [*] --&gt; Wanted: Render or Settle notes it is missing
     Wanted --&gt; Queued: joins pending work (capped, de-duplicated)
     Queued --&gt; Dropped: left the view, or the cap dropped the oldest
     Queued --&gt; Loading: a Work call picks it up (D-73)
@@ -500,6 +526,7 @@ code{font-family:var(--mono);font-size:.92em}
     Waiting --&gt; Dropped: no longer wanted
     Unavailable --&gt; Wanted: a source is named, or embedded tiles are passed
     OnHand --&gt; Evicted: NO live view of any map draws it, and the cache is over its cap (D-90)
+    OnHand --&gt; Evicted: Purge() — every fetched tile, needed or not · embedded tiles stay (L-9.3)
     Evicted --&gt; Wanted: wanted again
     Dropped --&gt; [*]
     note right of Waiting
@@ -519,7 +546,7 @@ code{font-family:var(--mono);font-size:.92em}
     Borrowed --&gt; Borrowed: read inside the host&#39;s own Work and Render calls
     Borrowed --&gt; ReleasedAtOnce: Set(same id) or Remove(id) with no reader in flight
     Borrowed --&gt; Draining: Set(same id) or Remove(id) while a Work on another goroutine is reading
-    Draining --&gt; Released: that Work call — or the Settle running it — returns and says so
+    Draining --&gt; Released: that Work call — or the Settle running it — returns, and InUse(id) now says no
     ReleasedAtOnce --&gt; [*]: the host may reuse the memory
     Released --&gt; [*]: the host may reuse the memory
     note right of ReleasedAtOnce
@@ -541,13 +568,14 @@ code{font-family:var(--mono);font-size:.92em}
       A very large shape has no such copy: Set indexes
       it in one pass, so the new one draws next frame
       and the old is released at once (D-92).
-      Opt-in borrow check: fingerprint at hand-in,
-      re-checked at every read. A change is a warning
-      that names the overlay.
+      Close lets go of every borrow at once, and what a
+      call still inside reads goes when it returns.
+      NOT BUILT: the opt-in borrow check PLAN named
+      (a fingerprint re-checked at every read).
     end note
-</pre></div></article><article class="dia" id="go-tuimaps-27"><div class="meta"><h3>3 · A marker&#39;s animation (FR-26, D-56, NFR-21)</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L3-states.md</code></p></div><div class="canvas"><pre class="mermaid">stateDiagram-v2
+</pre></div></article><article class="dia" id="go-tuimaps-27"><div class="meta"><h3>3 · A marker&#39;s animation (FR-26, D-56, NFR-21)</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L3-states.md</code></p><p class="lead"><em>AS BUILT v0.2.0 (rc.3): while a loop plays, the blink&#39;s half-period is put on the loop&#39;s step, the smallest multiple of it at least half the blink&#39;s own period, so every blink change falls on a frame advance (D-76). Flash and pulse are not built.</em></p></div><div class="canvas"><pre class="mermaid">stateDiagram-v2
     [*] --&gt; Steady: static marker, or reduce-motion on
-    [*] --&gt; Animated: blink (v0.1.0) · flash and pulse (later)
+    [*] --&gt; Animated: blink · flash and pulse not built
     Animated --&gt; Steady: reduce-motion switched on
     Steady --&gt; Animated: reduce-motion switched off
     state Animated {
@@ -556,20 +584,23 @@ code{font-family:var(--mono);font-size:.92em}
         Off --&gt; On: never from a count of calls (FR-25)
     }
     note right of Animated
-      Blink: upstream&#39;s 800 ms period (P-59a).
-      Flash: no faster than 2.5 a second (D-56).
+      Blink: upstream&#39;s 800 ms period (P-59a),
+      on the loop&#39;s step while a loop plays (D-76).
+      A host holding the clock (Animate) gets no
+      blink deadline from NextCall.
       A frozen clock never leaves a marker hidden:
       if time does not advance, the marker is drawn On.
     end note
-</pre></div></article><article class="dia" id="go-tuimaps-28"><div class="meta"><h3>4 · An overlay&#39;s freshness (FR-32)</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L3-states.md</code></p></div><div class="canvas"><pre class="mermaid">stateDiagram-v2
-    [*] --&gt; Current: valid time given · current-for between 0 and 7 days
-    [*] --&gt; Uncertain: valid time more than 5 minutes in the future
+</pre></div></article><article class="dia" id="go-tuimaps-28"><div class="meta"><h3>4 · An overlay&#39;s freshness (FR-32)</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/L3-states.md</code></p><p class="lead"><em>AS BUILT v0.2.0 (rc.3): a loop&#39;s freshness is its newest observed frame&#39;s — never the frame shown, a gap or a forecast (L-1.3, D-67); an observed frame dated more than five minutes past the map&#39;s clock is refused at <code>Set</code>, since only a forecast may be in the future.</em></p></div><div class="canvas"><pre class="mermaid">stateDiagram-v2
+    [*] --&gt; Current: valid time given · current-for between 0 and 7 days · a loop: its newest observed frame&#39;s time
+    [*] --&gt; Uncertain: valid time more than 5 minutes in the future · a loop&#39;s observed frame that far ahead is refused at Set instead
     Current --&gt; Stale: wall clock passes valid time + current-for
     Uncertain --&gt; Stale: treated as stale at once
     Stale --&gt; Current: the host sets fresher data
     note right of Stale
-      Marked on the frame, stated in the legend data
-      and in the description. Uses the wall clock,
+      Marked on the frame and stated in Report,
+      on each answer and alert (the legend data
+      carries no stale mark). Uses the wall clock,
       supplied separately from animation time, so a
       frozen animation clock cannot hide old data.
       The change to Stale is part of the
@@ -705,7 +736,7 @@ code{font-family:var(--mono);font-size:.92em}
     GEN --&gt; ARC
     ORA -.checks.-&gt; MVT
     TXT --&gt; U[&#34;uniseg · go-runewidth&lt;br/&gt;(option B or C)&#34;]
-</pre></div></article><article class="dia" id="go-tuimaps-35"><div class="meta"><h3>Level 0 — Context and trust boundary</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/architecture.md</code></p><p class="lead"><em>v0.1.0 as built. v0.2.0 PLAN changes it: the host may supply the transport (D-55).</em> Who the library talks to, and who it trusts. <strong>The library trusts nothing that arrives as bytes</strong>, including what its own host hands in: the host&#39;s data is validated (NFR-20), everyone else&#39;s is limited, decoded defensively and fuzzed (NFR-10). Nothing crosses back out to a terminal or a host uncleaned (FR-34).</p></div><div class="canvas"><pre class="mermaid">flowchart LR
+</pre></div></article><article class="dia" id="go-tuimaps-35"><div class="meta"><h3>Level 0 — Context and trust boundary</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/architecture.md</code></p><p class="lead"><em>AS BUILT v0.2.0 (rc.8).</em> Who the library talks to, and who it trusts. <strong>The library trusts nothing that arrives as bytes</strong>, including what its own host hands in: the host&#39;s data is validated (NFR-20), everyone else&#39;s is limited, decoded defensively and fuzzed (NFR-10). Nothing crosses back out to a terminal or a host uncleaned (FR-34).</p></div><div class="canvas"><pre class="mermaid">flowchart LR
     subgraph PEOPLE[&#34; &#34;]
       U([&#34;Person at a terminal&#34;])
       DEV([&#34;Host developer&#34;])
@@ -715,8 +746,9 @@ code{font-family:var(--mono);font-size:.92em}
       direction TB
       HUI[&#34;Host&#39;s interface and clock&lt;br/&gt;draws every tick · owns keys and pointer&#34;]
       HPUMP[&#34;Host&#39;s pump&lt;br/&gt;its goroutines call Work (D-73)&#34;]
-      HFETCH[&#34;Host&#39;s weather fetchers&lt;br/&gt;alerts · radar image · temperature grid (D-15)&#34;]
+      HFETCH[&#34;Host&#39;s weather fetchers&lt;br/&gt;alerts · radar image or loop frames · temperature grid (D-15)&#34;]
       HTHEME[&#34;Host&#39;s theme → palette tokens (D-63)&#34;]
+      HTRANS[&#34;Host&#39;s HTTP transport — optional&lt;br/&gt;its proxy, trust roots or tile store, via SetFetchOptions (D-55)&#34;]
     end
 
     subgraph LIBBOX[&#34;go-tuiMaps library — starts no goroutine, touches no terminal (M5)&#34;]
@@ -729,7 +761,7 @@ code{font-family:var(--mono);font-size:.92em}
     subgraph UNTRUSTED[&#34;Untrusted — limited before allocating, fuzzed (NFR-10)&#34;]
       direction TB
       TS[(&#34;Tile service&lt;br/&gt;only if the host names one (D-65)&#34;)]
-      DISK[(&#34;Disk cache&lt;br/&gt;off unless configured (FR-21b)&#34;)]
+      DISK[(&#34;Disk cache&lt;br/&gt;off unless configured (FR-21b) · files dated by fetch time, reads write nothing ·&lt;br/&gt;host-set maximum age · Purge reaches every source (D-56)&#34;)]
       EMB[(&#34;Embedded tiles, zoom 0–3&lt;br/&gt;opt-in package, hash-listed (FR-28a)&#34;)]
       USRSTYLE[/&#34;A user&#39;s style file&#34;/]
     end
@@ -739,51 +771,66 @@ code{font-family:var(--mono);font-size:.92em}
     DEV -. &#34;writes&#34; .-&gt; HOSTBOX
     HFETCH -- &#34;overlay structs (D-74)&#34; --&gt; GATE
     HTHEME -- &#34;palette&#34; --&gt; GATE
-    HUI -- &#34;intents: pan · zoom · focus (FR-24)&lt;br/&gt;time (FR-25) · rectangle · colour depth&#34; --&gt; GATE
+    HUI -- &#34;intents: pan · zoom · fit · bound (FR-24, L-3)&lt;br/&gt;playback controls · time (FR-25) · size · colour depth&#34; --&gt; GATE
     GATE --&gt; CORE
     HPUMP -- &#34;Work(ctx)&#34; --&gt; CORE
-    CORE -- &#34;secure fetch, limits, no address in errors (FR-22b)&#34; --&gt; TS
+    CORE -- &#34;confined fetch: the source&#39;s scheme, host and port only ·&lt;br/&gt;limits · late answers dropped · no address in errors (FR-22b, L-7, L-10)&#34; --&gt; TS
+    HTRANS -. &#34;if given, carries the library&#39;s requests&#34; .-&gt; TS
     CORE &lt;--&gt; DISK
     EMB --&gt; CORE
     USRSTYLE --&gt; GATE
     CORE --&gt; OUTGATE
-    OUTGATE -- &#34;frame: cells of glyph + colours&lt;br/&gt;legend · credits · description · warnings&lt;br/&gt;changed? · call-me-by deadline&#34; --&gt; HUI
-</pre></div></article><article class="dia" id="go-tuimaps-36"><div class="meta"><h3>Level 1 — The parts</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/architecture.md</code></p><p class="lead"><em>v0.1.0 as built. v0.2.0 PLAN changes it: loop frames and playback (D-54), fetch options (D-55), <code>Report</code> (D-57).</em> One public package holds the whole contract (D-74). Everything under <code>internal/</code> can change freely without breaking a host (D-60). The app, examples, generator and test oracle are <strong>separate modules</strong>, so nothing they import appears in a host&#39;s dependency graph (D-75).</p></div><div class="canvas"><pre class="mermaid">flowchart TB
+    OUTGATE -- &#34;frame: cells of glyph + colours, its counters, what it dropped&lt;br/&gt;legend · credits · Report · warnings · loop state&lt;br/&gt;Changed · FrameTicks · call-me-by deadline&#34; --&gt; HUI
+</pre></div></article><article class="dia" id="go-tuimaps-36"><div class="meta"><h3>Level 1 — The parts</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/architecture.md</code></p><p class="lead"><em>AS BUILT v0.2.0 (rc.8): the edges are the real import graph; most edges into <code>textsafe</code> are left out.</em> One public package holds the whole contract (D-74). Everything under <code>internal/</code> can change freely without breaking a host (D-60). The app, examples, generator and test oracle are <strong>separate modules</strong>, so nothing they import appears in a host&#39;s dependency graph (D-75).</p></div><div class="canvas"><pre class="mermaid">flowchart TB
     subgraph LIB[&#34;Library module&#34;]
       direction TB
-      PUB[&#34;&lt;b&gt;tuimaps&lt;/b&gt; — the public contract&lt;br/&gt;Map · overlay structs · presets · palette tokens&lt;br/&gt;Work · Pending · Settle · Close&lt;br/&gt;Frame · Legend · Credits · Description · Warnings&#34;]
+      PUB[&#34;&lt;b&gt;tuimaps&lt;/b&gt; — the public contract&lt;br/&gt;Map · overlay structs · presets · palette tokens · places&lt;br/&gt;Work · Pending · Settle · Close · playback · fetch options&lt;br/&gt;Frame · Legend · Credits · Report · Warnings&#34;]
       ASSETS[&#34;&lt;b&gt;tuimaps/assets&lt;/b&gt;&lt;br/&gt;opt-in embedded tiles z0–3 (D-27, D-33)&#34;]
 
       subgraph INT[&#34;internal/&#34;]
         direction TB
         subgraph DATA[&#34;getting data in&#34;]
           direction LR
-          TILES[&#34;&lt;b&gt;tiles&lt;/b&gt;&lt;br/&gt;sources · cache · stand-ins · retry times&#34;]
+          TILES[&#34;&lt;b&gt;tiles&lt;/b&gt;&lt;br/&gt;sources · memory and disk caches · stand-ins · retry times ·&lt;br/&gt;disk: fetch-time dating, maximum age, generation (D-56)&#34;]
           MVT[&#34;&lt;b&gt;mvt&lt;/b&gt;&lt;br/&gt;own decoder · limits · drop-at-decode (D-75)&#34;]
-          ARC[&#34;&lt;b&gt;archive&lt;/b&gt;&lt;br/&gt;minimal single-file reader (D-58)&#34;]
-          FETCH[&#34;&lt;b&gt;fetch&lt;/b&gt;&lt;br/&gt;secure transport · redirects · limits (FR-22b)&#34;]
-          OVR[&#34;&lt;b&gt;overlay&lt;/b&gt;&lt;br/&gt;validate · simplify · classify · index — resampling is render&#39;s, at draw time&#34;]
+          FETCH[&#34;&lt;b&gt;fetch&lt;/b&gt;&lt;br/&gt;the one door to the network: confinement · checked dialer ·&lt;br/&gt;a host&#39;s transport under the library&#39;s client · limits (FR-22b, D-55)&#34;]
+          JSON[&#34;&lt;b&gt;jsonsafe&lt;/b&gt;&lt;br/&gt;size and depth of a JSON document, before it is parsed&#34;]
+          OVR[&#34;&lt;b&gt;overlay&lt;/b&gt;&lt;br/&gt;validate · copy · simplify · classify · index · loops, timeline ·&lt;br/&gt;image budget · provider tables (IEM, MRMS) — resampling is render&#39;s, at draw time&#34;]
         end
         subgraph DRAW[&#34;turning it into cells&#34;]
           direction LR
           PROJ[&#34;&lt;b&gt;project&lt;/b&gt;&lt;br/&gt;web-mercator · view ↔ cell · distances&#34;]
           STYL[&#34;&lt;b&gt;style&lt;/b&gt;&lt;br/&gt;dark and bright · user styles · profiles (FR-19, FR-20)&#34;]
-          REN[&#34;&lt;b&gt;render&lt;/b&gt;&lt;br/&gt;braille canvas · compositing order · labels · markers&#34;]
-          COL[&#34;&lt;b&gt;colour&lt;/b&gt;&lt;br/&gt;tokens · presets · ramps per depth · checker&#34;]
+          REN[&#34;&lt;b&gt;render&lt;/b&gt;&lt;br/&gt;braille canvas · compositing order · labels · markers · severity digits&#34;]
+          COL[&#34;&lt;b&gt;colour&lt;/b&gt;&lt;br/&gt;tokens · presets · ramps per depth · checker · alert-tint blend (L-11)&#34;]
         end
-        SCENE[&#34;&lt;b&gt;scene&lt;/b&gt;&lt;br/&gt;the prepared types everything shares: decoded tile, prepared overlay, job — imports only textsafe here (D-121)&#34;]
+        SCENE[&#34;&lt;b&gt;scene&lt;/b&gt;&lt;br/&gt;the prepared types everything shares: decoded tile, prepared overlay, job — imports only textsafe (D-121)&#34;]
         subgraph OUTP[&#34;what leaves&#34;]
           direction LR
-          DESC[&#34;&lt;b&gt;describe&lt;/b&gt;&lt;br/&gt;description as data (D-52)&#34;]
+          DESC[&#34;&lt;b&gt;describe&lt;/b&gt;&lt;br/&gt;answers as data: areas, points, lines, fields, images;&lt;br/&gt;motion helpers for Report (D-52, D-42)&#34;]
           TXT[&#34;&lt;b&gt;textsafe&lt;/b&gt;&lt;br/&gt;cleaning · clusters · width (FR-34, NFR-8)&#34;]
           WORKQ[&#34;&lt;b&gt;work&lt;/b&gt;&lt;br/&gt;capped queue · newest view wins · no limiter: the pump&#39;s width is the host&#39;s (D-73, D-84)&#34;]
           FAULT[&#34;&lt;b&gt;fault&lt;/b&gt;&lt;br/&gt;the typed error · both closed lists of kinds&#34;]
-          KIT[&#34;&lt;b&gt;testkit&lt;/b&gt;&lt;br/&gt;imported by test files only — a static check says so&#34;]
         end
+        subgraph TESTONLY[&#34;for tests only — a static check says so&#34;]
+          direction LR
+          KIT[&#34;&lt;b&gt;testkit&lt;/b&gt;&lt;br/&gt;imported by test files and tools only&#34;]
+          RULES[&#34;&lt;b&gt;rules&lt;/b&gt;&lt;br/&gt;the static checks, run by the library&#39;s tests&#34;]
+        end
+        ARC[&#34;&lt;b&gt;archive&lt;/b&gt;&lt;br/&gt;minimal single-file reader (D-58) —&lt;br/&gt;imported by tools/gen-assets only&#34;]
       end
 
       PUB --&gt; WORKQ
       PUB --&gt; TILES
+      PUB --&gt; FETCH
+      PUB --&gt; MVT
+      PUB --&gt; OVR
+      PUB --&gt; REN
+      PUB --&gt; STYL
+      PUB --&gt; COL
+      PUB --&gt; PROJ
+      PUB --&gt; DESC
+      PUB --&gt; SCENE
       PUB --&gt; FAULT
       FAULT --&gt; TXT
       TILES --&gt; FAULT
@@ -795,27 +842,29 @@ code{font-family:var(--mono);font-size:.92em}
       WORKQ --&gt; FAULT
       REN --&gt; FAULT
       COL --&gt; FAULT
-      DESC --&gt; FAULT
       PROJ --&gt; FAULT
       TILES --&gt; SCENE
       OVR --&gt; SCENE
       REN --&gt; SCENE
-      DESC --&gt; SCENE
+      MVT --&gt; SCENE
+      STYL --&gt; SCENE
+      PROJ --&gt; SCENE
       WORKQ --&gt; SCENE
+      ARC --&gt; SCENE
       SCENE --&gt; TXT
-      PUB --&gt; REN
-      PUB --&gt; OVR
-      PUB --&gt; DESC
-      PUB --&gt; COL
       ASSETS -. &#34;handed to New as an option — never registers itself&#34; .-&gt; PUB
       TILES --&gt; FETCH
       TILES --&gt; MVT
-      TILES --&gt; ARC
+      TILES --&gt; JSON
+      STYL --&gt; JSON
+      STYL --&gt; COL
+      ARC --&gt; FETCH
       REN --&gt; PROJ
       REN --&gt; STYL
       REN --&gt; COL
       REN --&gt; TXT
       OVR --&gt; PROJ
+      OVR --&gt; COL
       DESC --&gt; PROJ
       DESC --&gt; TXT
       TXT --&gt; DEP[&#34;go-runewidth · uax29&lt;br/&gt;the only third-party imports (D-75, D-81)&#34;]
@@ -823,34 +872,39 @@ code{font-family:var(--mono);font-size:.92em}
 
     subgraph OUT[&#34;Separate modules, same repository&#34;]
       direction LR
-      APP[&#34;&lt;b&gt;cmd/tuimaps&lt;/b&gt;&lt;br/&gt;keys · pointer · describe mode · headless flag&#34;]
-      EX[&#34;&lt;b&gt;examples/&lt;/b&gt;&lt;br/&gt;one per shape · a pump · a pump in the first host&#39;s idiom · the radar table&#34;]
+      APP[&#34;&lt;b&gt;cmd/tuimaps&lt;/b&gt;&lt;br/&gt;keys (no pointer yet) · describe mode (Report) · headless flag&#34;]
+      EX[&#34;&lt;b&gt;examples/&lt;/b&gt;&lt;br/&gt;one per shape · intensity from the legend · a pump · playback with no host state&#34;]
       GEN[&#34;&lt;b&gt;tools/gen-assets&lt;/b&gt;&lt;br/&gt;builds the embedded tiles (FR-28a)&#34;]
       ORA[&#34;&lt;b&gt;tools/oracle&lt;/b&gt;&lt;br/&gt;a proven decoder, tests only&#34;]
       AK[&#34;&lt;b&gt;tools/answer-key&lt;/b&gt;&lt;br/&gt;the independent M1 key · imports nothing from the library (D-67)&#34;]
+      ATL[&#34;&lt;b&gt;tools/atlas&lt;/b&gt;&lt;br/&gt;builds the architecture atlas from these documents · imports nothing from the library&#34;]
     end
     APP --&gt; PUB
+    APP --&gt; ASSETS
     EX --&gt; PUB
+    EX --&gt; ASSETS
     GEN --&gt; ARC
     GEN --&gt; MVT
+    GEN --&gt; FETCH
     ORA -. &#34;differential tests&#34; .-&gt; MVT
-</pre></div></article><article class="dia" id="go-tuimaps-37"><div class="meta"><h3>Level 1 — The public contract at a glance</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/architecture.md</code></p><p class="lead"><em>v0.1.0 as built. v0.2.0 PLAN changes it: <code>SetFetchOptions</code> (D-55), <code>Report</code> beside <code>Describe</code> (D-57), loop frames and playback (D-54), <code>MaxAge</code> (D-56).</em> Everything a host can call or hand in, grouped by what it is for. Names are illustrative (D-71). <strong>The full statement — what each call promises, which calls are safe together, the pump, the end of a borrow — is [the contract](contract.md).</strong></p></div><div class="canvas"><pre class="mermaid">flowchart LR
+</pre></div></article><article class="dia" id="go-tuimaps-37"><div class="meta"><h3>Level 1 — The public contract at a glance</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/architecture.md</code></p><p class="lead"><em>AS BUILT v0.2.0 (rc.8): <code>Report</code> replaces <code>Describe</code>; playback, fetch options, cache age, bound.</em> Everything a host can call or hand in, grouped by what it is for. The names are the code&#39;s, as of v0.2.0-rc.8; PLAN&#39;s were illustrative (D-71). <strong>The full statement — what each call promises, which calls are safe together, the pump, the end of a borrow — is [the contract](contract.md).</strong></p></div><div class="canvas"><pre class="mermaid">flowchart LR
     subgraph IN[&#34;Host → Map&#34;]
       direction TB
-      A1[&#34;&lt;b&gt;Life&lt;/b&gt;&lt;br/&gt;New(options, WithSize) · Close() — closes at once and reports calls still inside&#34;]
-      A2[&#34;&lt;b&gt;Size and view&lt;/b&gt;&lt;br/&gt;SetSize(cols, rows) — state, set BEFORE Settle or Render&lt;br/&gt;intents: Pan · PanCells · Zoom · ZoomAround · Recentre · FitWorld · FitTo(places, overlays, margin) (FR-24, D-76)&#34;]
-      A2b[&#34;&lt;b&gt;Places and markers&lt;/b&gt;&lt;br/&gt;SetPlaces(places) · AddPlace(place) · RemovePlace(id) — ids as upstream (P-61)&lt;br/&gt;what Describe answers for, what FitTo can fit, what markers draw (FR-26)&#34;]
-      A3[&#34;&lt;b&gt;Overlays&lt;/b&gt; (D-74, D-86)&lt;br/&gt;Set(overlay) → created or replaced · old geometry released yes/no&lt;br/&gt;Remove(id) → found or not · released yes/no · InUse(id)&lt;br/&gt;structs: Features · ScalarGrid · Image (· VectorGrid · TileImages later)&lt;br/&gt;presets: Temperature · Radar · Alerts (· Wind later) (D-69)&#34;]
-      A4[&#34;&lt;b&gt;Look&lt;/b&gt;&lt;br/&gt;SetPalette(tokens) (D-63) · SafeRamps(on) · Ground(painted or declared) (D-64)&lt;br/&gt;ColourDepth(hint) · ReduceMotion(on) (NFR-21) · Layers(on/off) (FR-36) · LabelLanguage(code) (D-82)&#34;]
-      A5[&#34;&lt;b&gt;Tiles&lt;/b&gt;&lt;br/&gt;Source(named network source) (D-65) · CacheRoot(path) · Fetcher(replacement)&lt;br/&gt;SharedCaches(handle) (FR-27, D-85) · CacheUse() (D-90) · Purge() · Verify() (FR-22a)&#34;]
-      A6[&#34;&lt;b&gt;Running the work&lt;/b&gt; (D-73, D-84)&lt;br/&gt;Pending() · Work(ctx) · Settle(ctx) · OnPending(wake)&lt;br/&gt;Work and Settle report the ids whose borrow they ended (D-86)&#34;]
+      A1[&#34;&lt;b&gt;Life&lt;/b&gt;&lt;br/&gt;New(options: WithSize · Embed · SharedCaches) · Close() — closes at once and reports calls still inside&#34;]
+      A2[&#34;&lt;b&gt;Size and view&lt;/b&gt;&lt;br/&gt;WithSize(cols, rows) — state, set BEFORE Settle or Render; Render&#39;s size updates it&lt;br/&gt;intents: PanCells · Zoom · ZoomBy · Recentre · FitWorld · FitTo(places, overlays, margin) (FR-24, D-76)&lt;br/&gt;SetBound(Bound): a least zoom and a box, held on every move (L-3.1) · Centre() · DeepestZoom()&#34;]
+      A2b[&#34;&lt;b&gt;Places and markers&lt;/b&gt;&lt;br/&gt;SetPlaces(places) · AddPlace(place) · RemovePlace(id) · Places() — ids as upstream (P-61)&lt;br/&gt;what Report answers for, what FitTo can fit, what markers draw (FR-26)&#34;]
+      A3[&#34;&lt;b&gt;Overlays&lt;/b&gt; (D-74, D-86)&lt;br/&gt;Set(overlay) → SetResult: created or replaced · old geometry released yes/no&lt;br/&gt;Remove(id) → RemoveResult: found · released yes/no · InUse(id) · Overlays()&lt;br/&gt;structs: Features · Grid · Image — one PNG, or Frames: a loop of up to MaxFrames 72, gaps and forecasts stated (D-54)&lt;br/&gt;an image&#39;s table, or a Provider&#39;s: IEM · MRMS · SetImageBudget(bytes), 6 MiB by default (L-12)&lt;br/&gt;presets: Temperature · Radar · Alerts (· Wind, VectorGrid, TileImages later) (D-69)&#34;]
+      A4[&#34;&lt;b&gt;Look&lt;/b&gt;&lt;br/&gt;SetPalette(tokens) (D-63) · SafeRamps(on) · Ground(colour) · PaintGround() (D-64)&lt;br/&gt;ColourDepth(depth) · ReduceMotion(on) (NFR-21) · Layers(layer, on) (FR-36) · LabelLanguage(code) (D-82)&lt;br/&gt;SetStyle(body) · ShowFooter(on)&#34;]
+      A5[&#34;&lt;b&gt;Tiles&lt;/b&gt;&lt;br/&gt;Source(address) (D-65) · CacheRoot(dir, capBytes) · SetCacheMaxAge(age) (D-56)&lt;br/&gt;SetFetchOptions(FetchOptions: Transport · UserAgent · Timeout · AllowHTTP) · CheckedDialer() (D-55)&lt;br/&gt;NewShared · SharedCaches (FR-27, D-85) · CacheUse() (D-90) · Purge() → PurgeReport · Verify() (FR-22a) · SourceCredit()&#34;]
+      A6[&#34;&lt;b&gt;Running the work&lt;/b&gt; (D-73, D-84)&lt;br/&gt;Pending() · Work(ctx) → did · Settle(ctx) → SettleResult: ran · failed · in flight · why · OnPending(hook) · InFlight()&lt;br/&gt;Set and Remove say at once whether a borrow is over; InUse(id) answers after (D-86)&#34;]
+      A7[&#34;&lt;b&gt;Playback&lt;/b&gt; — one for the map (D-54, D-67, D-76)&lt;br/&gt;SetPlayback(on or off) · SetPlaybackStep(200–1000 ms, 500 by default)&lt;br/&gt;Play · Stop · Reset · Step(by) · Animate(at) · FollowClock()&#34;]
     end
     subgraph OUTB[&#34;Map → Host&#34;]
       direction TB
-      B1[&#34;&lt;b&gt;The picture&lt;/b&gt;&lt;br/&gt;Render(size, now) → Frame: exactly-sized rows (NFR-8), valid until the next Render&lt;br/&gt;status: complete · still sharpening · no tiles; a recovered panic returns an empty frame and an internal error&#34;]
-      B2[&#34;&lt;b&gt;When to call again&lt;/b&gt;&lt;br/&gt;Changed() counter · NextCall(wallClock): the earliest of a marker phase, a retry time, an overlay going stale (FR-25, FR-32)&#34;]
-      B3[&#34;&lt;b&gt;The same facts as data&lt;/b&gt;&lt;br/&gt;Legend() · Credits() · Scale() (FR-13, FR-14, FR-33)&lt;br/&gt;Footer(): centre and zoom in upstream&#39;s wording (P-57)&lt;br/&gt;Describe(places): each part ready or pending (D-52) · Focused()&#34;]
-      B4[&#34;&lt;b&gt;What went wrong&lt;/b&gt;&lt;br/&gt;errors of a closed list of kinds · Warnings() ≤ 64 (NFR-20)&lt;br/&gt;CheckRamp(ramp, ground) for a host&#39;s own tests (D-53, D-88)&#34;]
+      B1[&#34;&lt;b&gt;The picture&lt;/b&gt;&lt;br/&gt;Render(size, now) → Frame: exactly-sized rows (NFR-8), valid until the next Render,&lt;br/&gt;the counters it was drawn at, and what it dropped (a label, a place&#39;s name)&lt;br/&gt;status: complete · still sharpening · no tiles; a recovered panic returns an empty frame and an internal error&#34;]
+      B2[&#34;&lt;b&gt;When to call again&lt;/b&gt;&lt;br/&gt;Changed(): inputs, and work landed · FrameTicks(): loop frame advances (D-66)&lt;br/&gt;NextCall(wallClock): the earliest of a marker phase, a retry time, an overlay going stale, the next loop advance (FR-25, FR-32)&#34;]
+      B3[&#34;&lt;b&gt;The same facts as data&lt;/b&gt;&lt;br/&gt;Legend() · Credits() · Scale() (FR-13, FR-14, FR-33)&lt;br/&gt;Footer(): centre and zoom in upstream&#39;s wording (P-57)&lt;br/&gt;Report(places) → alerts shown · each place&#39;s alerts and answers · observed motion (D-57) · Units · SetNearby&lt;br/&gt;Loop() → LoopState: the moment shown, the span, playing, advancing, why off&#34;]
+      B4[&#34;&lt;b&gt;What went wrong&lt;/b&gt;&lt;br/&gt;errors of a closed list of 25 kinds · KindOf · Warnings() ≤ 64, of 15 kinds (NFR-20)&lt;br/&gt;CheckRamp(ramp, how) for a host&#39;s own tests (D-53, D-88)&#34;]
     end
     IN --&gt; M((Map)) --&gt; OUTB
 </pre></div></article><article class="dia" id="go-tuimaps-38"><div class="meta"><h3>2 · Running the work — the pump, drawn</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/contract.md</code></p><p class="lead">The library never runs anything by itself (D-73) and never makes one <code>Work</code> wait on another (D-84). So a host that wants its map to sharpen <strong>writes a pump</strong>. This is the whole of it.</p></div><div class="canvas"><pre class="mermaid">sequenceDiagram
@@ -873,7 +927,7 @@ code{font-family:var(--mono);font-size:.92em}
     M--&gt;&gt;U: frame · &#34;complete&#34;
     U-&gt;&gt;P: on quit: cancel ctx (a Work blocked in a fetch returns &#39;cancelled&#39;), wait for the pump, then Close()
 </pre></div></article><article class="dia" id="go-tuimaps-39"><div class="meta"><h3>8 · Shared caches (FR-27, D-85)</h3><p class="file"><code>06_docs/02_features/go-tuimaps/03-architecture-design/contract.md</code></p></div><div class="canvas"><pre class="mermaid">flowchart LR
-    SC[&#34;Shared caches handle&lt;br/&gt;tile cache 0.5 MB · shape cache 0.25 MB (D-85)&lt;br/&gt;created by the host · its own Close&#34;] --&gt; M1[&#34;Map A&#34;]
+    SC[&#34;Shared caches handle (NewShared)&lt;br/&gt;the tile cache, 0.5 MB by default (D-85), and the&lt;br/&gt;classified set of pictures read (D-116)&lt;br/&gt;each map keeps its own shape cache; no Close of its own&#34;] --&gt; M1[&#34;Map A&#34;]
     SC --&gt; M2[&#34;Map B&#34;]
     SC --&gt; M3[&#34;Map C&#34;]
     M1 -- &#34;wants tile T&#34; --&gt; J{&#34;T already being fetched&lt;br/&gt;inside some map&#39;s Work call?&#34;}
@@ -918,42 +972,44 @@ code{font-family:var(--mono);font-size:.92em}
     WP12 --&gt; WP13[&#34;WP-13&lt;br/&gt;app&#34;]
     WP12 --&gt; WP14[&#34;WP-14&lt;br/&gt;reference frames · benchmarks · judging&#34;]
     WP13 --&gt; WP14
-</pre></div></article></section><section class="level" id="radar-loops"><header class="lvl"><h2>radar loops</h2></header><article class="dia" id="radar-loops-0"><div class="meta"><h3>PLAN v0.2.0 — how the parts fit (ruled D-54, not yet built)</h3><p class="file"><code>06_docs/02_features/radar-loops/03-architecture-design/approach-1-loop-model.md</code></p></div><div class="canvas"><pre class="mermaid">flowchart LR
-  H[&#34;Host (watchpost)&lt;br/&gt;fetches frames, builds the list&#34;] --&gt;|&#34;Set(RadarImage with Frames)&#34;| V[&#34;Validate + copy&lt;br/&gt;every frame, total, order, gaps&lt;br/&gt;(L-1.9, L-1.14)&#34;]
-  V --&gt;|&#34;over budget → refused, says so (L-12.1)&#34;| H
-  V --&gt; K[&#34;Key each frame&lt;br/&gt;valid time + hash of bytes&#34;]
-  K --&gt;|&#34;key held&#34;| R1[&#34;Reuse decoded picture (L-1.7)&#34;]
+</pre></div></article></section><section class="level" id="radar-loops"><header class="lvl"><h2>radar loops</h2></header><article class="dia" id="radar-loops-0"><div class="meta"><h3>AS BUILT v0.2.0 — how the parts fit (ruled D-54; built in rc.2 and rc.3)</h3><p class="file"><code>06_docs/02_features/radar-loops/03-architecture-design/approach-1-loop-model.md</code></p><p class="lead">The sketch above was PLAN&#39;s. As built, playback is <strong>one for the map</strong> (D-67): <code>SetPlayback</code> on or off, <code>SetPlaybackStep</code> (200–1000 ms, D-76), and <code>Play</code>, <code>Stop</code>, <code>Reset</code>, <code>Step(by)</code> along every loop&#39;s frame times merged. No <code>Seek</code>, <code>ShowNewest</code> or slow/normal speeds. <code>Loop()</code> returns the moment shown, &#34;right now&#34;, the span, and why playback is off. Frames may be forecasts; at most 72.</p></div><div class="canvas"><pre class="mermaid">flowchart LR
+  H[&#34;Host (watchpost)&lt;br/&gt;fetches frames, builds the list&#34;] --&gt;|&#34;Set(RadarImage with Image.Frames)&#34;| V[&#34;Validate + copy at hand-in&lt;br/&gt;order · gaps with no picture · at most 72 ·&lt;br/&gt;no observed frame past the map&#39;s clock (L-1.9, L-1.14, L-1.15)&#34;]
+  V --&gt;|&#34;refused, says so — over the image budget, 6 MiB by default, says by how much (L-12.1)&#34;| H
+  V --&gt; K[&#34;Key each frame (SHA-256)&lt;br/&gt;its bytes · table · bounds · type · valid time&#34;]
+  K --&gt;|&#34;key held by the loop it replaced&#34;| R1[&#34;Keep that decoded picture (L-1.7)&#34;]
   K --&gt;|&#34;key new&#34;| R2[&#34;Decode in Work (existing pump)&#34;]
-  R1 --&gt; S[&#34;Store: frames of the overlay&#34;]
+  R1 --&gt; S[&#34;Store: the overlay&#39;s pictures ·&lt;br/&gt;a timeline of every loop&#39;s frame times, merged&#34;]
   R2 --&gt; S
-  C[&#34;Animation clock&lt;br/&gt;Animate / FollowClock&#34;] --&gt; P[&#34;Playback&lt;br/&gt;off / slow / normal, ceiling per map&#34;]
-  P --&gt;|&#34;shown frame&#34;| RND[&#34;Renderer&lt;br/&gt;frame identity in the reuse test (L-1.6)&#34;]
+  C[&#34;Animation clock&lt;br/&gt;Render&#39;s time, or Animate / FollowClock&#34;] --&gt; P[&#34;Playback, one for the map&lt;br/&gt;SetPlayback on or off · SetPlaybackStep ·&lt;br/&gt;Play · Stop · Reset · Step(by)&#34;]
+  P --&gt;|&#34;the moment shown, a valid time&#34;| RND[&#34;Renderer&lt;br/&gt;the frame of that moment · the moment in the reuse test (L-1.6) ·&lt;br/&gt;the frame time on the map, &#39;gap&#39; or &#39;forecast&#39; where it is one&#34;]
   S --&gt; RND
-  P --&gt;|&#34;tick&#34;| T[&#34;FrameTicks (not Changed)&#34;]
-  S --&gt; D[&#34;Description&lt;br/&gt;newest non-gap frame; motion oldest→newest (D-39, D-42)&#34;]
-  P --&gt; NC[&#34;NextCall: next frame change (L-1.8)&#34;]
-</pre></div></article><article class="dia" id="radar-loops-1"><div class="meta"><h3>PLAN v0.2.0 — how the parts fit (ruled D-54, not yet built)</h3><p class="file"><code>06_docs/02_features/radar-loops/03-architecture-design/approach-1-loop-model.md</code></p></div><div class="canvas"><pre class="mermaid">stateDiagram-v2
-  [*] --&gt; Off: default (D-26)
-  Off --&gt; Playing: SetPlayback(slow|normal)
-  Playing --&gt; Off: SetPlayback(off)
-  Playing --&gt; Held: ReduceMotion(true)
-  Held --&gt; Playing: ReduceMotion(false) restores the setting (L-1.10c)
-  Playing --&gt; Frozen: host freezes the clock (Animate)
-  Frozen --&gt; Playing: FollowClock
-  Off --&gt; Off: Step / Seek / ShowNewest
-  Held --&gt; Held: Step / Seek / ShowNewest
-  note right of Off: shows the newest non-gap frame with its age (L-1.10f)
+  P --&gt;|&#34;an advance&#34;| T[&#34;FrameTicks — not Changed;&lt;br/&gt;a control the listener uses moves Changed (D-66)&#34;]
+  P --&gt; LS[&#34;Loop() → LoopState&#34;]
+  S --&gt; D[&#34;Report&lt;br/&gt;an image&#39;s answer from the newest observed frame ·&lt;br/&gt;motion from the oldest decoded observed frame to the newest (D-39, D-42)&#34;]
+  P --&gt; NC[&#34;NextCall: the next frame advance, while a loop plays (L-1.8)&#34;]
+</pre></div></article><article class="dia" id="radar-loops-1"><div class="meta"><h3>AS BUILT v0.2.0 — how the parts fit (ruled D-54; built in rc.2 and rc.3)</h3><p class="file"><code>06_docs/02_features/radar-loops/03-architecture-design/approach-1-loop-model.md</code></p></div><div class="canvas"><pre class="mermaid">stateDiagram-v2
+  [*] --&gt; Stopped: playback off by default (D-26) · shows right now, the newest observed frame
+  Stopped --&gt; Playing: Play() — only while playback is on and reduce-motion is off
+  Playing --&gt; Stopped: Stop() holds the frame shown · SetPlayback(off) · ReduceMotion(true)
+  Playing --&gt; Stopped: Step(by) moves and stops · Reset() back to right now
+  Stopped --&gt; Stopped: Step(by) · Reset() · Play() while off does nothing
+  Playing --&gt; Frozen: the host holds the animation clock (Animate at one time)
+  Frozen --&gt; Playing: the clock moves again (a later Animate, or FollowClock)
+  note right of Stopped: with a moment held, shows it or the nearest a refresh kept, with its time (L-1.10f, D-67)
+  note right of Playing: oldest through right now and on through forecasts, one frame a step, the last held at least 2 s, then again (D-76)
   note right of Frozen: LoopState.Advancing = false (D-40)
-</pre></div></article><article class="dia" id="radar-loops-2"><div class="meta"><h3>PLAN v0.2.0 — shared by every option: purge and in-flight writes (ruled D-56, not yet built)</h3><p class="file"><code>06_docs/02_features/radar-loops/03-architecture-design/approach-3-cache.md</code></p></div><div class="canvas"><pre class="mermaid">sequenceDiagram
-  participant J as Fetch job (in Work)
-  participant M as Map (generation g)
-  participant D as Disk
-  J-&gt;&gt;M: start: remember g
-  Note over M: Purge / CacheRoot change / Close&lt;br/&gt;raises g to g+1
-  J-&gt;&gt;M: store tile (remembered g)
-  M--&gt;&gt;J: g changed: drop it, write nothing
-  J-&gt;&gt;D: (only if unchanged) write
-</pre></div></article><article class="dia" id="radar-loops-3"><div class="meta"><h3>PLAN — the order, in one picture (v0.2.0 ⇄ watchpost 0.18.0, not yet built)</h3><p class="file"><code>06_docs/02_features/radar-loops/03-architecture-design/integration-map.md</code></p></div><div class="canvas"><pre class="mermaid">flowchart TB
+</pre></div></article><article class="dia" id="radar-loops-2"><div class="meta"><h3>AS BUILT v0.2.0 — shared by every option: purge and in-flight writes (ruled D-56; built in rc.7)</h3><p class="file"><code>06_docs/02_features/radar-loops/03-architecture-design/approach-3-cache.md</code></p></div><div class="canvas"><pre class="mermaid">sequenceDiagram
+  participant J as Tile job (in Work)
+  participant D as Disk cache (generation g)
+  participant M as Map
+  J-&gt;&gt;D: start: read g · expire files past their age · Load (a read writes nothing)
+  D--&gt;&gt;J: a miss
+  Note over J: fetch from the network, decode through the gate
+  Note over M,D: meanwhile: Purge() empties every source&#39;s files, raises g to g+1&lt;br/&gt;— or CacheRoot changes, or goes off, or Close: the old cache is released (g+1, root closed)
+  J-&gt;&gt;D: Store(tile, fetch time, remembered g)
+  D--&gt;&gt;J: g changed or released: refused, nothing written
+  Note over D: only with g unchanged: temporary file, dated with the fetch time, then rename ·&lt;br/&gt;over the cap, prune to nine tenths, oldest fetched first, never a file the view needs
+</pre></div></article><article class="dia" id="radar-loops-3"><div class="meta"><h3>The order, in one picture (v0.2.0 ⇄ watchpost 0.18.0) — library AS BUILT to rc.8; WP-L10 in part; watchpost&#39;s side is its plan&#39;s</h3><p class="file"><code>06_docs/02_features/radar-loops/03-architecture-design/integration-map.md</code></p><p class="lead"><em>Library status from the tags: WP-L1 to WP-L9 are built (rc.1–rc.7); of WP-L10 only L10.1, L10.2 and L10.6 (rc.8). Watchpost&#39;s W-packages are drawn as its plan has them; their state is watchpost&#39;s to report, not this page&#39;s.</em></p></div><div class="canvas"><pre class="mermaid">flowchart TB
   subgraph WP1[&#34;watchpost P1-a — lands on go-tuiMaps v0.1.0&#34;]
     W0[&#34;W0 Foundations: the library, fixtures,&lt;br/&gt;the plan-code gate (FR-8.1, FR-8.6)&#34;]
     W1[&#34;W1 Window, its words, Settings&lt;br/&gt;(FR-1, FR-7.4 renderer, FR-9)&#34;]
@@ -965,16 +1021,16 @@ code{font-family:var(--mono);font-size:.92em}
     W7[&#34;W7 Without colour; M1b scored&lt;br/&gt;(FR-7)&#34;]
   end
   subgraph LIB[&#34;go-tuiMaps v0.2.0&#34;]
-    WPL1[&#34;WP-L1 Contract skeleton + surface test (L-4)&#34;]
-    WPL2[&#34;WP-L2 Loops: frames, copy, keys, budget (L-1, L-12)&#34;]
-    WPL4[&#34;WP-L4 Playback API + clock (L-1.5, L-1.8, L-1.10, L-1.13)&#34;]
-    WPL3[&#34;WP-L3 Renderer: frame identity, Frame counters, blend,&lt;br/&gt;furniture, place labels, severity word + digit (L-1.6, L-1.16, L-8, L-11)&#34;]
-    WPL5[&#34;WP-L5 Report (L-1.12, L-13)&#34;]
-    WPL6[&#34;WP-L6 MRMS, table seam, heavy end (L-2)&#34;]
-    WPL7[&#34;WP-L7 View bound (L-3)&#34;]
-    WPL8[&#34;WP-L8 Fetch options + confinement (L-7, L-10)&#34;]
-    WPL9[&#34;WP-L9 Cache age + purge (L-9)&#34;]
-    WPL10[&#34;WP-L10 Defects + close-out (L-5, L-6, L-13, M4, M6)&#34;]
+    WPL1[&#34;WP-L1 Contract skeleton + surface test (L-4)&lt;br/&gt;BUILT rc.1&#34;]
+    WPL2[&#34;WP-L2 Loops: frames, copy, keys, budget (L-1, L-12)&lt;br/&gt;BUILT rc.2&#34;]
+    WPL4[&#34;WP-L4 Playback API + clock (L-1.5, L-1.8, L-1.10, L-1.13)&lt;br/&gt;BUILT rc.3&#34;]
+    WPL3[&#34;WP-L3 Renderer: frame identity, Frame counters, blend,&lt;br/&gt;furniture, place labels, severity word + digit (L-1.6, L-1.16, L-8, L-11)&lt;br/&gt;BUILT rc.4&#34;]
+    WPL5[&#34;WP-L5 Report (L-1.12, L-13)&lt;br/&gt;BUILT rc.5 — Describe removed&#34;]
+    WPL6[&#34;WP-L6 MRMS, table seam, heavy end (L-2)&lt;br/&gt;BUILT rc.5&#34;]
+    WPL7[&#34;WP-L7 View bound (L-3)&lt;br/&gt;BUILT rc.6&#34;]
+    WPL8[&#34;WP-L8 Fetch options + confinement (L-7, L-10)&lt;br/&gt;BUILT rc.6 — Fetcher removed&#34;]
+    WPL9[&#34;WP-L9 Cache age + purge (L-9)&lt;br/&gt;BUILT rc.7&#34;]
+    WPL10[&#34;WP-L10 Defects + close-out (L-5, L-6, L-13, M4, M6)&lt;br/&gt;IN PART rc.8: L10.1, L10.2, L10.6 ·&lt;br/&gt;NOT YET: L10.3–L10.5, L10.7–L10.12&#34;]
     WPL1 --&gt; WPL2 --&gt; WPL4 --&gt; WPL3 --&gt; WPL5
     WPL1 --&gt; WPL6 --&gt; WPL5
     WPL1 --&gt; WPL7
@@ -989,7 +1045,7 @@ code{font-family:var(--mono);font-size:.92em}
   end
   WP1 --&gt; WP2
   WPL10 --&gt;|&#34;final v0.2.0 tag: 0.18.0 ships (FR-5.6)&#34;| WP2
-  LIB -.-&gt;|&#34;v0.2.0-rc.N as packages land (D-69)&#34;| WP2
+  LIB -.-&gt;|&#34;v0.2.0-rc.N as packages land (D-69): rc.1–rc.8 so far&#34;| WP2
 </pre></div></article></section></main>
 </div>
 <script type="module">

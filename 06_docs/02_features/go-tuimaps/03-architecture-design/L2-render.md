@@ -8,35 +8,35 @@ Up: [architecture](architecture.md) · Carries: FR-11, FR-12, FR-14, FR-16, FR-1
 
 ## From a call to a frame
 
-*v0.1.0 as built. v0.2.0 PLAN changes it: radar is blended over alert areas (D-14, D-45), furniture is never erased (L-8.3), place labels are kept (D-60), and each frame carries its counters (D-59).*
+*AS BUILT v0.2.0 (rc.4): radar lies over an alert's tint, blended toward it (L-11); an image's shade is laid last, never erasing furniture or text (L-8.3); the host's place names are placed before any other name, and an alert's label falls back to its severity word (L-8.5, L-8.9); severity digits run along outlines (D-65); a frame carries its counters and what it dropped (D-59).*
 
 ```mermaid
 flowchart TB
-    CALL["Render(rectangle, now)"] --> SAME{"Anything that could change a cell changed?<br/>the full list is the contract's, section 5 —<br/>view · size · look · places · overlays · tiles · phase · freshness · status"}
-    SAME -- yes --> REUSE["Return the previous frame<br/>zero allocations (NFR-4)"]
-    SAME -- no --> SNAP["Take a snapshot of what is on hand<br/>tiles in a fixed order (NFR-6) · prepared overlays · markers"]
+    CALL["Render(size, now)"] --> SNAP["Take a snapshot of what is on hand<br/>tiles in a fixed order (NFR-6) · prepared overlays · the loop frame of the moment shown · markers"]
     SNAP --> NEED["Note what is missing → pending work<br/>(never fetched here; the host's Work does it — D-73)"]
-    SNAP --> PROFILE["Choose the basemap profile (FR-19)<br/>by map size · by what is on top · by layers switched off (FR-36)"]
+    SNAP --> SAME{"Anything that could change a cell changed?<br/>the full list is the contract's, section 5 —<br/>view · size · look · places · overlays · the loop frame shown · tiles · phase · freshness · status"}
+    SAME -- no --> REUSE["Return the previous frame<br/>zero allocations (NFR-4)"]
+    SAME -- yes --> PROFILE["Choose the basemap profile (FR-19)<br/>by map size · by what is on top · by layers switched off (FR-36)"]
     PROFILE --> PAINT
 
     subgraph PAINT["Paint the cell grid — each cell is glyph + foreground + background"]
       direction TB
       L0["1 Ground<br/>painted from the ground token, or left to the terminal if the host declared it (D-64)"]
       L1["2 Water<br/>masks a scalar FIELD: temperature stops at the shore (D-32)<br/>never masks an IMAGE: rain shows over water, the coast drawn as an outline (D-87)<br/>a host can flip either, per overlay"]
-      L2["3 Images and fields<br/>cell background by class → colour (L2-colour)<br/>fields skip water cells; images do not (D-87)"]
-      L3["4 Area tints<br/>alert polygons' interior; hatch when there is no colour (FR-18a)"]
+      L2["3 Area tints<br/>alert polygons' interior; hatch when there is no colour (FR-18a)"]
+      L3["4 Images and fields<br/>cell background by class → colour (L2-colour) · fields skip water cells; images do not (D-87)<br/>inside an alert: the image shifted toward the tint, as strongly as the blend search found safe (L-11)"]
       L4["5 Basemap lines<br/>braille dots, 2×4 per cell: coast, borders, roads, rivers, parks"]
       L5["6 Overlay lines and outlines<br/>polygon outlines always drawn (FR-16), contours (D-35), tracks"]
-      L6["7 Labels<br/>place names, value labels, edge labels — collision-checked, cleaned, by grapheme cluster (FR-34)<br/>the text is a contest: furniture, then a marker, then an overlay's label, then a place name,<br/>and a marker's own label last, where P-60 puts it<br/><b>a frame with a scalar field claims in a different order (D-124):</b> marker labels, then the field's<br/>contour values, then the place names — a contour with no value says where a band changes but not to what"]
+      L6["7 Text — a contest: the first to claim a cell keeps it, in this order<br/>the frame's furniture · marker glyphs · the host's place names (L-8.9) ·<br/>overlay labels, an alert's falling back to its severity word (L-8.5) · each alert's severity digit along its outline (D-65) ·<br/>a field's contour values (D-124) · basemap names, within the profile's budget ·<br/>an image's shade where it has no ramp to be coloured by (L-8.3) · the hatch, last, at 16 colours and none (FR-18a)<br/>all collision-checked, cleaned, by grapheme cluster (FR-34)"]
       L7["8 Glyphs<br/>markers over everything beneath — never under a hatch or a name (FR-18a); focus indicator (FR-24a)"]
-      L8["9 Furniture<br/>scale mark (FR-33) · stale mark (FR-32) · credit line (FR-14) · footer, off by default (P-57) · the no-tiles notice (FR-23)"]
+      L8["9 Furniture<br/>scale mark (FR-33) · stale mark and the loop's frame time, 'gap' or 'forecast' where it is one (FR-32, L-1.10a) ·<br/>credit line (FR-14) · footer, off by default (P-57) · the no-tiles notice (FR-23)"]
       L0 --> L1 --> L2 --> L3 --> L4 --> L5 --> L6 --> L7 --> L8
     end
 
     PAINT --> FG["Choose each cell's foreground (FR-16, D-77)<br/>the line's own colour where it meets 3:1 on this cell; otherwise whichever of black and white contrasts more"]
     FG --> DEPTH["Map colours to the depth in use<br/>truecolor · 256 (indices 16–255 only) · 16 · none (L2-colour)"]
     DEPTH --> EMIT["Emit lines<br/>each exactly the requested width (NFR-8)<br/>colour sequences and cleaned text, nothing else (FR-34)"]
-    EMIT --> STATUS["Frame + status<br/>complete · still sharpening · no tiles<br/>(a recovered panic returns an empty frame and an internal error)"]
+    EMIT --> STATUS["Frame: lines · status — complete · still sharpening · no tiles ·<br/>Changed and FrameTicks as drawn (L-1.16) · Dropped: each alert label or place name that did not fit, and what stood in<br/>(a recovered panic returns an empty frame and an internal error)"]
 ```
 
 ## The braille canvas
@@ -50,7 +50,7 @@ flowchart LR
     CELL --> COLR["Per cell: one foreground colour<br/>the MAJORITY colour among its lit dots;<br/>a tie goes to the colour commoner in the 8 neighbouring cells (P-08, D-83)"]
 ```
 
-**The three parts of a cell.** A cell has one background, one set of dots and one piece of text, and the order above is read within each: the later layer is what that part of the cell shows, and across the three all of them are seen at once. **The text is a contest, not a painting**: the first layer to claim a cell keeps it, so for text the order above is the order in which cells are claimed - the frame's own furniture first, then a marker, then an overlay's label, then a place name, and a marker's own label last of all, which is where P-60 puts it. **A frame with a scalar field on it claims in a different order** (D-124): the host's own marker labels, then the values the field's contours carry, and only then the place names. A field drawn without colour is contour lines, and a contour with no value on it says where a band changes but not to what - so on such a frame the values are the data the host asked for and a place name is the decoration, while the host's own marker still outranks both. Upstream has no scalar fields, so it has no contour values to order against names: this order is taken only on a frame that has a field on it, and P-60's own order stands on every frame upstream could draw. A hatch (FR-18a) is laid last over the cells nothing else has taken, so a marker or a name inside an alert area always shows.
+**The three parts of a cell.** A cell has one background, one set of dots and one piece of text, and the order above is read within each: the later layer is what that part of the cell shows, and across the three all of them are seen at once. **The text is a contest, not a painting**: the first layer to claim a cell keeps it, so for text the order above is the order in which cells are claimed - the frame's own furniture first, then a marker, then the host's own place names, then an overlay's label (an alert's falling back to its severity word, v0.2.0 D-80, D-81), then a basemap name. P-60 had a marker's own label last; v0.2.0 D-80 moved the host's place names ahead of every other name. **A frame with a scalar field on it claims in a different order** (D-124): the host's own marker labels, then the values the field's contours carry, and only then the place names. A field drawn without colour is contour lines, and a contour with no value on it says where a band changes but not to what - so on such a frame the values are the data the host asked for and a place name is the decoration, while the host's own marker still outranks both. Upstream has no scalar fields, so it has no contour values to order against names: this order is taken only on a frame that has a field on it, and P-60's own order stands on every frame upstream could draw. A hatch (FR-18a) is laid last over the cells nothing else has taken, so a marker or a name inside an alert area always shows.
 
 **Why one colour per cell matters.** A terminal cell has one foreground and one background. Two lines of different colours crossing one cell cannot both keep their colour; within the basemap upstream's majority vote decides (P-08, D-83), and across layers the compositing order does. This is the reason the basemap thins under overlays (FR-19) rather than competing with them.
 
