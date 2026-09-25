@@ -74,7 +74,7 @@ func TestEveryErrorCarriesAKind(t *testing.T) {
 		"an overlay with no id":  second(m.Set(tuimaps.Overlay{})),
 		"a zoom that is nowhere": m.Zoom(99),
 		"a language that is not": m.LabelLanguage("a whole sentence"),
-		"no disk cache":          m.Purge(),
+		"no disk cache":          second(m.Purge()),
 		"no size":                second(tuimaps.New(tuimaps.Embed(nil, 0))),
 	}
 	for name, err := range cases {

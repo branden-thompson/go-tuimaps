@@ -185,6 +185,7 @@ type Map struct {
 	reportedKey   describeKey
 	remote        *tiles.Remote // the source named, if any: nothing is reached until one is (D-65)
 	disk          *tiles.Disk   // the disk cache, if the host named a directory
+	cacheMaxAge   time.Duration // how long a tile is kept on disk from its fetch; zero: until the cap needs the room
 	fetchOpts     FetchOptions  // how the library fetches (D-55)
 	address       string        // the source named, as the host wrote it
 	animation     time.Time     // and this is the moment it has driven it to
@@ -497,6 +498,8 @@ func (m *Map) Close() int {
 		m.view4.Withdraw()
 		m.pipe.Release()
 		m.member.Leave()
+		m.disk.Release() // nothing a job still inside writes lands (L-9.3)
+		m.disk = nil
 	}
 	return int(m.inside.Load())
 }

@@ -79,9 +79,10 @@ const (
 	CacheWriteFailed
 	RenderFailed
 	CacheUnderNeed
-	TableFallback // pixels of an image were valued by its provider's legend gradient, off its table (v0.2.0 L-2.3)
+	TableFallback     // pixels of an image were valued by its provider's legend gradient, off its table (v0.2.0 L-2.3)
+	CacheRootReadable // other users can read the disk cache's root, and so where the user looked (v0.2.0 L-9.6)
 
-	lastWarningKind = TableFallback
+	lastWarningKind = CacheRootReadable
 )
 
 // String returns the warning kind's name as the contract writes it.
@@ -93,6 +94,7 @@ func (k WarningKind) String() string {
 		"ramp-rule-broken", "unmatched-image-colours", "stale-overlay", "future-valid-time",
 		"implausible-unit", "near-duplicate-id", "unknown-token", "set-refused", "no-work-called",
 		"tile-failed", "cache-write-failed", "render-failed", "cache-under-need", "table-fallback",
+		"cache-root-readable",
 	}[k-1]
 }
 

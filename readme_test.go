@@ -190,12 +190,11 @@ func TestReadmeWhatItSendsIsHeldByBehaviour(t *testing.T) {
 	}
 }
 
-// TestReadmePurgeEmptiesTheCurrentSourceOnly is the rest of L1.4: Purge
-// empties the current source's tiles from the disk cache, and another
-// source's tiles in the same directory stay, so a later map on that source
-// asks for nothing. L9.4 makes Purge empty every source (L-9.3, the
-// changelog's Purge row); the README and this test change with it.
-func TestReadmePurgeEmptiesTheCurrentSourceOnly(t *testing.T) {
+// TestReadmePurgeEmptiesEverySource is the rest of L1.4, as v0.2.0 L9.4
+// makes it (L-9.3, the changelog's Purge row): Purge empties every source's
+// tiles from the disk cache, so a later map on either source asks for its
+// tiles again.
+func TestReadmePurgeEmptiesEverySource(t *testing.T) {
 	root := filepath.Join(t.TempDir(), "tiles")
 	one, two := serveTiles(t), serveTiles(t)
 	m, err := tuimaps.New(tuimaps.WithSize(80, 24))
@@ -211,20 +210,19 @@ func TestReadmePurgeEmptiesTheCurrentSourceOnly(t *testing.T) {
 		}
 		drawAndSettle(t, m)
 	}
-	if err := m.Purge(); err != nil { // the current source is the second
+	if _, err := m.Purge(); err != nil { // the current source is the second
 		t.Fatal(err)
 	}
-	if use := m.CacheUse(); use.Disk.Held == 0 {
-		t.Error("Purge emptied every source's tiles, not the current one's")
+	if use := m.CacheUse(); use.Disk.Held != 0 {
+		t.Errorf("Purge left %d bytes of another source's tiles", use.Disk.Held)
 	}
 	m.Close()
 
-	// A fresh map on the same directory: the first source is still served
-	// from disk; the purged one is asked for again.
+	// A fresh map on the same directory asks each source again.
 	for _, c := range []struct {
 		s     *tileServer
 		again bool
-	}{{one, false}, {two, true}} {
+	}{{one, true}, {two, true}} {
 		fresh, err := tuimaps.New(tuimaps.WithSize(80, 24))
 		if err != nil {
 			t.Fatal(err)

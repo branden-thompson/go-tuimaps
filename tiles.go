@@ -1,6 +1,8 @@
 package tuimaps
 
 import (
+	"time"
+
 	"github.com/branden-thompson/go-tuimaps/internal/fault"
 	"github.com/branden-thompson/go-tuimaps/internal/fetch"
 	"github.com/branden-thompson/go-tuimaps/internal/mvt"
@@ -121,7 +123,14 @@ func (m *Map) SetFetchOptions(o FetchOptions) (err error) {
 
 // CacheRoot names a directory to keep tiles in between runs, or takes the
 // disk cache away again with an empty path (FR-21b). The cap is in bytes; a
-// cap of zero is the default.
+// cap of zero is the default. The root it replaces, or turns off, is let go:
+// nothing is written to it after, a fetch already in flight included, and
+// Purge does not reach it (L-9.3). The maximum age is kept at once, by the
+// clock of the last frame (L-9.4).
+//
+// Over its cap the cache drops the tiles fetched longest ago, never one the
+// view needs. A file's time is when its tile was fetched; reading it changes
+// nothing on disk.
 func (m *Map) CacheRoot(dir string, capBytes int64) (err error) {
 	defer guard("CacheRoot", &err)
 	m.plant("CacheRoot")
@@ -135,6 +144,7 @@ func (m *Map) CacheRoot(dir string, capBytes int64) (err error) {
 		return closed()
 	}
 	if dir == "" {
+		m.disk.Release()
 		m.disk = nil
 		return m.pipe.SetDisk(nil)
 	}
@@ -145,8 +155,39 @@ func (m *Map) CacheRoot(dir string, capBytes int64) (err error) {
 	if err != nil {
 		return err
 	}
+	m.disk.Release()
 	m.disk = disk
+	disk.SetMaxAge(m.cacheMaxAge)
+	disk.Expire(m.wallClock)
 	return m.pipe.SetDisk(disk)
+}
+
+// SetCacheMaxAge sets how long a tile is kept on disk from when it was
+// fetched (L-9.1, D-70). A tile at its age is not served but fetched again,
+// and its file is removed; a file dated after the host's clock counts as
+// aged. It is kept at once, by the clock of the last frame, and in every job
+// after. Zero, the default, keeps tiles until the cap needs their room; a
+// negative age is refused.
+func (m *Map) SetCacheMaxAge(age time.Duration) (err error) {
+	defer guard("SetCacheMaxAge", &err)
+	m.plant("SetCacheMaxAge")
+
+	if m == nil {
+		return closed()
+	}
+	if age < 0 {
+		return fault.Make(fault.CacheRefused, textsafe.Const("the cache's maximum age was refused"),
+			textsafe.Const("it is negative"), textsafe.Const("give an age above zero, or zero to keep tiles until the cap needs the room"))
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.shut {
+		return closed()
+	}
+	m.cacheMaxAge = age
+	m.disk.SetMaxAge(age)
+	m.disk.Expire(m.wallClock)
+	return nil
 }
 
 // CacheUse is what each of the map's caches holds and may hold (D-90). A
@@ -176,29 +217,38 @@ func (m *Map) CacheUse() Caches {
 	return out
 }
 
-// Purge empties the disk cache of the source in use, or of everything when
-// no source is named (FR-22a). It is one of the cache's two maintenance
-// calls, and it is the host's to make: the library never purges by itself.
-func (m *Map) Purge() (err error) {
+// PurgeReport is what Purge removed from disk, and what it could not.
+// Removed counts only the files that went.
+type PurgeReport struct{ Removed, Failed int }
+
+// Purge empties everything the map holds of tiles: every source's tiles on
+// disk, the fetched tiles in memory, and the decoded pictures kept only to be
+// used again - a replaced loop's spare frames and a shared set's readings
+// (L-9.3, FR-22a). A fetch already in flight writes nothing to disk after
+// it. The tiles the view needs are fetched again. It is one of the cache's
+// two maintenance calls, and it is the host's to make: the library never
+// purges by itself. With no disk cache, memory is emptied and the error
+// says there was no disk to purge. Purging deletes files; it is not secure
+// erasure (L-9.6).
+func (m *Map) Purge() (report PurgeReport, err error) {
 	defer guard("Purge", &err)
 	m.plant("Purge")
 
 	if m == nil {
-		return closed()
+		return PurgeReport{}, closed()
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.shut {
-		return closed()
+		return PurgeReport{}, closed()
 	}
+	m.pipe.Purge()
+	m.store.Purge()
 	if m.disk == nil {
-		return noCache()
+		return PurgeReport{}, noCache()
 	}
-	identity := ""
-	if m.remote != nil {
-		identity = m.remote.Network().Identity
-	}
-	return m.disk.Empty(identity)
+	emptied, err := m.disk.Empty()
+	return PurgeReport(emptied), err
 }
 
 // Verify reads every tile the disk cache holds and removes the ones that no

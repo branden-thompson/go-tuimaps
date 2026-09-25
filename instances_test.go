@@ -81,7 +81,7 @@ func TestCloseReleasesEverything(t *testing.T) {
 		"FitTo":    m.FitTo([]tuimaps.LonLat{{Lon: 1, Lat: 1}}, nil, 1),
 		"Recentre": m.Recentre(tuimaps.LonLat{}),
 		"Source":   m.Source("https://tiles.example.test/"),
-		"Purge":    m.Purge(),
+		"Purge":    second(m.Purge()),
 	} {
 		if !isKind(err, fault.Closed) {
 			t.Errorf("%s on a closed map: %v", name, err)

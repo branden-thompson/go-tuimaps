@@ -129,7 +129,7 @@ func TestCacheRootAndMaintenance(t *testing.T) {
 	defer m.Close()
 	// Before a cache is named, the maintenance calls say so rather than
 	// pretending to work.
-	if err := m.Purge(); !isKind(err, fault.CacheRefused) {
+	if _, err := m.Purge(); !isKind(err, fault.CacheRefused) {
 		t.Errorf("Purge with no cache: %v", err)
 	}
 	if _, _, err := m.Verify(); !isKind(err, fault.CacheRefused) {
@@ -162,7 +162,7 @@ func TestCacheRootAndMaintenance(t *testing.T) {
 		t.Errorf("Verify: %d checked, %d removed, %v", checked, removed, err)
 	}
 	// Purge empties it.
-	if err := m.Purge(); err != nil {
+	if _, err := m.Purge(); err != nil {
 		t.Fatal(err)
 	}
 	if after := m.CacheUse(); after.Disk.Held != 0 {

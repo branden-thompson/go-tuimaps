@@ -641,6 +641,20 @@ func (s *Store) spareFramesLocked(o Overlay) {
 	}
 }
 
+// Purge drops the decoded pictures kept only to be used again: a replaced
+// loop's spare frames, and the shared set of readings (L-9.3). What an
+// overlay shows now is the host's, and stays.
+func (s *Store) Purge() {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	s.spare = map[string]map[[32]byte]picture{}
+	classified := s.caps.Classified
+	s.mu.Unlock()
+	classified.Empty()
+}
+
 // Remove takes an overlay away. It never waits, and an id that is not set is
 // not an error: the result says it was not found.
 func (s *Store) Drop(id string) (RemoveResult, error) {

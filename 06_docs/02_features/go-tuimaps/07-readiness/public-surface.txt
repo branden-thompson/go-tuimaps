@@ -7,6 +7,7 @@ const Away
 const BadCurrency
 const BorderLayer
 const CacheRefused
+const CacheRootReadable
 const CacheUnderNeed
 const CacheWriteFailed
 const Cancelled
@@ -146,7 +147,7 @@ method Map.PanCells(int, int) error
 method Map.Pending() int
 method Map.Places() []Place
 method Map.Play() error
-method Map.Purge() error
+method Map.Purge() (PurgeReport, error)
 method Map.Recentre(LonLat) error
 method Map.ReduceMotion(bool)
 method Map.Remove(string) (RemoveResult, error)
@@ -158,6 +159,7 @@ method Map.SafeRamps(bool)
 method Map.Scale() (Scaled, bool)
 method Map.Set(Overlay) (SetResult, error)
 method Map.SetBound(Bound) error
+method Map.SetCacheMaxAge(time.Duration) error
 method Map.SetFetchOptions(FetchOptions) error
 method Map.SetImageBudget(int64) error
 method Map.SetNearby(float64) error
@@ -216,6 +218,7 @@ type Playback uint8
 type Positioned interface{ LonLat() (float64, float64) }
 type Projection = overlay.Projection
 type Provider = overlay.Provider
+type PurgeReport struct{ Removed int; Failed int }
 type RGB = colour.RGB
 type RampCheck = colour.RampCheck
 type RemoveResult = overlay.RemoveResult

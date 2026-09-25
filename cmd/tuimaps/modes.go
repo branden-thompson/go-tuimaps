@@ -82,10 +82,11 @@ func maintain(s settings, out, errs io.Writer) int {
 	}
 	defer m.Close()
 	if s.purge {
-		if err := m.Purge(); err != nil {
+		report, err := m.Purge()
+		if err != nil {
 			return complain(errs, err, exitFailed)
 		}
-		fmt.Fprintln(out, "the tile cache at "+s.cacheRoot+" is empty")
+		fmt.Fprintln(out, "the tile cache at "+s.cacheRoot+" is empty: "+strconv.Itoa(report.Removed)+" files removed")
 	}
 	if s.verify {
 		checked, removed, err := m.Verify()

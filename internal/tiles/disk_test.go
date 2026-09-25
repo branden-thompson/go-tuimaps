@@ -82,7 +82,7 @@ func TestCachePathConfined(t *testing.T) {
 	d := openDisk(t, root, DefaultDiskBytes)
 	hostile := []string{"../../../etc/passwd", "/etc/passwd", `C:\Windows\system32`, "a/../../b", strings.Repeat("x", 5000), "https://tiles.example/?key=SECRET", "nul\x00byte"}
 	for _, identity := range hostile {
-		if err := d.Store(identity, id(3, 1, 2), tileBytes(t), t0); err != nil {
+		if err := d.Store(identity, id(3, 1, 2), tileBytes(t), t0, d.Generation()); err != nil {
 			t.Errorf("%q: %v", identity, err)
 		}
 	}
@@ -108,7 +108,7 @@ func TestParityP48_DiskCache(t *testing.T) {
 	root := t.TempDir()
 	d := openDisk(t, root, DefaultDiskBytes)
 	body := tileBytes(t)
-	if err := d.Store(planet, id(6, 16, 26), body, t0); err != nil {
+	if err := d.Store(planet, id(6, 16, 26), body, t0, d.Generation()); err != nil {
 		t.Fatal(err)
 	}
 	// Raw bytes, no expiry: a file a year old is served.
@@ -170,7 +170,7 @@ func TestWriteOnlyAfterFullDecode(t *testing.T) {
 func TestBadCachedFileDeleted(t *testing.T) {
 	root := t.TempDir()
 	d := openDisk(t, root, DefaultDiskBytes)
-	if err := d.Store(planet, id(0, 0, 0), []byte("rotted on disk"), t0); err != nil {
+	if err := d.Store(planet, id(0, 0, 0), []byte("rotted on disk"), t0, d.Generation()); err != nil {
 		t.Fatal(err)
 	}
 	net := &network{}
@@ -213,79 +213,6 @@ func TestRootWritableByOthersRefused(t *testing.T) {
 	}
 }
 
-// TestEvictLeastRecentlyRead is plan task 06.12 (FR-21a).
-func TestEvictLeastRecentlyRead(t *testing.T) {
-	root := t.TempDir()
-	body := tileBytes(t)
-	size := int64(len(body))
-	d := openDisk(t, root, 10*size)
-	for x := uint32(0); x < 10; x++ {
-		if err := d.Store(planet, id(8, x, 0), body, t0.Add(time.Duration(x)*time.Minute)); err != nil {
-			t.Fatal(err)
-		}
-	}
-	if held, _ := d.Held(); held != 10*size {
-		t.Fatalf("held %d, want %d", held, 10*size)
-	}
-	// Reading the oldest, more than an hour on, makes it the most recent.
-	later := t0.Add(2 * time.Hour)
-	if _, ok := d.Load(planet, id(8, 0, 0), later); !ok {
-		t.Fatal("miss")
-	}
-	// Within the hour the time is not written again.
-	path := filepath.Join(root, files(t, root)[0])
-	_ = path
-	if err := d.Store(planet, id(8, 10, 0), body, later); err != nil {
-		t.Fatal(err)
-	}
-	held, limit := d.Held()
-	if held > limit*9/10 {
-		t.Errorf("held %d after pruning, want at most 90%% of %d", held, limit)
-	}
-	if _, ok := d.Load(planet, id(8, 0, 0), later); !ok {
-		t.Error("the tile just read was evicted")
-	}
-	if _, ok := d.Load(planet, id(8, 1, 0), later); ok {
-		t.Error("the least recently read tile was kept")
-	}
-	if _, ok := d.Load(planet, id(8, 10, 0), later); !ok {
-		t.Error("the tile just written was evicted")
-	}
-
-	// The total is seeded by one walk when the cache is opened.
-	d.Release()
-	reopened := openDisk(t, root, 10*size)
-	if again, _ := reopened.Held(); again != held {
-		t.Errorf("reopened: held %d, want %d", again, held)
-	}
-}
-
-// TestRecencyWrittenAtMostHourly: the modification time is the recency, and
-// a read within the hour does not write it again.
-func TestRecencyWrittenAtMostHourly(t *testing.T) {
-	root := t.TempDir()
-	d := openDisk(t, root, DefaultDiskBytes)
-	if err := d.Store(planet, id(1, 0, 0), tileBytes(t), t0); err != nil {
-		t.Fatal(err)
-	}
-	path := filepath.Join(root, files(t, root)[0])
-	mtime := func() time.Time {
-		info, err := os.Stat(path)
-		if err != nil {
-			t.Fatal(err)
-		}
-		return info.ModTime()
-	}
-	d.Load(planet, id(1, 0, 0), t0.Add(59*time.Minute))
-	if !mtime().Equal(t0) {
-		t.Errorf("read within the hour moved the time to %v", mtime())
-	}
-	d.Load(planet, id(1, 0, 0), t0.Add(61*time.Minute))
-	if !mtime().Equal(t0.Add(61 * time.Minute)) {
-		t.Errorf("read after the hour left the time at %v", mtime())
-	}
-}
-
 // TestPurgeAndVerify is plan task 06.13 (FR-22a).
 func TestPurgeAndVerify(t *testing.T) {
 	root := t.TempDir()
@@ -293,28 +220,19 @@ func TestPurgeAndVerify(t *testing.T) {
 	other := "https://other.example/"
 	for _, source := range []string{planet, other} {
 		for x := uint32(0); x < 3; x++ {
-			if err := d.Store(source, id(4, x, 0), tileBytes(t), t0); err != nil {
+			if err := d.Store(source, id(4, x, 0), tileBytes(t), t0, d.Generation()); err != nil {
 				t.Fatal(err)
 			}
 		}
 	}
-	if err := d.Store(planet, id(4, 9, 9), []byte("rotted"), t0); err != nil {
+	if err := d.Store(planet, id(4, 9, 9), []byte("rotted"), t0, d.Generation()); err != nil {
 		t.Fatal(err)
 	}
 	checked, removed, err := d.ReadBack(mvt.DefaultLimits())
 	if err != nil || checked != 7 || removed != 1 {
 		t.Errorf("verify: %d checked, %d removed, %v; want 7 and 1", checked, removed, err)
 	}
-	if err := d.Empty(planet); err != nil {
-		t.Fatal(err)
-	}
-	if got := files(t, root); len(got) != 3 {
-		t.Errorf("after purging one source: %v", got)
-	}
-	if _, ok := d.Load(other, id(4, 0, 0), t0); !ok {
-		t.Error("purging one source removed another's tiles")
-	}
-	if err := d.Empty(""); err != nil {
+	if _, err := d.Empty(); err != nil {
 		t.Fatal(err)
 	}
 	if got := files(t, root); len(got) != 0 {
@@ -332,7 +250,7 @@ func TestSymlinkInsideRootNotFollowed(t *testing.T) {
 	}
 	root := t.TempDir()
 	d := openDisk(t, root, DefaultDiskBytes)
-	if err := d.Store(planet, id(2, 1, 1), tileBytes(t), t0); err != nil {
+	if err := d.Store(planet, id(2, 1, 1), tileBytes(t), t0, d.Generation()); err != nil {
 		t.Fatal(err)
 	}
 	real := filepath.Join(root, files(t, root)[0])
@@ -349,7 +267,7 @@ func TestSymlinkInsideRootNotFollowed(t *testing.T) {
 	if body, ok := d.Load(planet, id(2, 1, 1), t0); ok {
 		t.Errorf("a link inside the root was followed: %q", body)
 	}
-	if err := d.Store(planet, id(2, 1, 1), tileBytes(t), t0); err != nil {
+	if err := d.Store(planet, id(2, 1, 1), tileBytes(t), t0, d.Generation()); err != nil {
 		t.Fatal(err)
 	}
 	if got, _ := os.ReadFile(secret); string(got) != "not a tile" {
@@ -360,7 +278,7 @@ func TestSymlinkInsideRootNotFollowed(t *testing.T) {
 func TestCachedFileSizeCheckedBeforeRead(t *testing.T) {
 	root := t.TempDir()
 	d := openDisk(t, root, DefaultDiskBytes)
-	if err := d.Store(planet, id(2, 1, 1), tileBytes(t), t0); err != nil {
+	if err := d.Store(planet, id(2, 1, 1), tileBytes(t), t0, d.Generation()); err != nil {
 		t.Fatal(err)
 	}
 	path := filepath.Join(root, files(t, root)[0])
@@ -373,7 +291,7 @@ func TestCachedFileSizeCheckedBeforeRead(t *testing.T) {
 	if got := files(t, root); len(got) != 0 {
 		t.Errorf("the oversized file was kept: %v", got)
 	}
-	if err := d.Store(planet, id(2, 1, 1), make([]byte, 3<<20), t0); err == nil {
+	if err := d.Store(planet, id(2, 1, 1), make([]byte, 3<<20), t0, d.Generation()); err == nil {
 		t.Error("a body larger than any tile was written")
 	}
 }
@@ -384,7 +302,7 @@ func TestReadOnlyRootTolerated(t *testing.T) {
 	}
 	root := t.TempDir()
 	d := openDisk(t, root, DefaultDiskBytes)
-	if err := d.Store(planet, id(0, 0, 0), tileBytes(t), t0); err != nil {
+	if err := d.Store(planet, id(0, 0, 0), tileBytes(t), t0, d.Generation()); err != nil {
 		t.Fatal(err)
 	}
 	d.Release()
@@ -414,26 +332,6 @@ func TestReadOnlyRootTolerated(t *testing.T) {
 	}
 }
 
-func TestMemoryHitRefreshesDiskRecency(t *testing.T) {
-	root := t.TempDir()
-	d := openDisk(t, root, DefaultDiskBytes)
-	net := &network{}
-	p := pipeline(t, Options{Disk: d, Network: &Network{Identity: planet, MaxZoom: 14, Get: net.get}})
-	runAll(t, p.Plan(t0, []scene.TileID{id(0, 0, 0)}))
-	path := filepath.Join(root, files(t, root)[0])
-	// Hours later the tile is still drawn from memory. The plan only notes
-	// it - a plan does no input or output - and the next job writes it down.
-	later := t0.Add(5 * time.Hour)
-	plan := p.Plan(later, []scene.TileID{id(0, 0, 0), id(1, 0, 0)})
-	if info, _ := os.Stat(path); !info.ModTime().Equal(t0) {
-		t.Error("the plan itself touched the disk")
-	}
-	runAll(t, plan)
-	if info, _ := os.Stat(path); !info.ModTime().Equal(later) {
-		t.Errorf("recency %v; a tile served from memory is still being read", info.ModTime())
-	}
-}
-
 func TestCacheRootOpenedOnce(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("NOT RUN: a directory in use cannot be renamed on Windows")
@@ -449,7 +347,7 @@ func TestCacheRootOpenedOnce(t *testing.T) {
 	if err := os.Mkdir(root, 0o777); err != nil {
 		t.Fatal(err)
 	}
-	if err := d.Store(planet, id(0, 0, 0), tileBytes(t), t0); err != nil {
+	if err := d.Store(planet, id(0, 0, 0), tileBytes(t), t0, d.Generation()); err != nil {
 		t.Fatal(err)
 	}
 	if got := files(t, root); len(got) != 0 {

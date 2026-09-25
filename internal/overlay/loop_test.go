@@ -387,3 +387,49 @@ func TestAFramesFileIsCappedByItsPixels(t *testing.T) {
 		t.Errorf("padded to exactly the limit: %v", err)
 	}
 }
+
+// TestPurgeDropsOnlyPicturesKeptForReuse is v0.2.0 L9.4 (L-9.3): a purge
+// empties the shared set of readings and a replaced loop's spare frames, so
+// the refresh after it decodes every frame again; the picture an overlay
+// shows now is the host's, and stays.
+func TestPurgeDropsOnlyPicturesKeptForReuse(t *testing.T) {
+	var frames []LoopFrame
+	for i := 12; i >= 0; i-- {
+		c := rain
+		if i%2 == 0 {
+			c = storm
+		}
+		frames = append(frames, frameAt(t, i, c))
+	}
+	shared := NewClassified(0)
+	s, err := NewStore(Caps{Classified: shared})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.HandIn(loopOf(frames[:12]...)); err != nil {
+		t.Fatal(err)
+	}
+	classesOf(t, s, "loop")
+	first := s.decodes
+	if held, _ := shared.Bytes(); held == 0 || first == 0 {
+		t.Fatal("nothing was decoded or shared, so this proves nothing")
+	}
+	s.Purge()
+	if held, _ := shared.Bytes(); held != 0 {
+		t.Errorf("the shared set holds %d bytes after a purge", held)
+	}
+	if _, _, ok := s.Raster("loop"); !ok {
+		t.Error("a purge took away the picture the overlay shows")
+	}
+	// A refresh keeps its spare frames; a purge before its work drops them,
+	// and it decodes each of the two pictures again, as the first hand-in
+	// did. With the spare frames kept it would decode only the new frame.
+	if _, err := s.HandIn(loopOf(frames[1:]...)); err != nil {
+		t.Fatal(err)
+	}
+	s.Purge()
+	classesOf(t, s, "loop")
+	if got := s.decodes - first; got != first {
+		t.Errorf("the refresh after a purge decoded %d, want %d, as the first hand-in did", got, first)
+	}
+}

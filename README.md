@@ -70,8 +70,10 @@ Nothing, until you name a source. With one named:
   nothing about your machine. `SetFetchOptions` adds a name of your own to
   it, and takes a transport of your own for your proxy or trust roots;
 - tiles are held in memory, and on disk only if you name a directory with
-  `CacheRoot`. `Purge()` empties the current source's tiles from it, and
-  `Verify()` reads it back.
+  `CacheRoot`. A cached file's time is when its tile was fetched: reading a
+  tile writes nothing. `SetCacheMaxAge` sets how long a tile is kept.
+  `Purge()` empties every source's tiles from disk and memory, and
+  `Verify()` reads the disk cache back.
 
 ## The data
 

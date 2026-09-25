@@ -248,3 +248,25 @@ func lineages(keys ...Key) [][]Key {
 	}
 	return out
 }
+
+// TestEmptyFetchedKeepsTheEmbeddedTiles is v0.2.0 L9.4 (L-9.3): a purge drops
+// every fetched tile, needed or not, and keeps the embedded ones, which
+// record nothing of where anyone looked.
+func TestEmptyFetchedKeepsTheEmbeddedTiles(t *testing.T) {
+	c := mustCache(t, DefaultCacheBytes)
+	embedded := Key{Source: embeddedIdentity, Language: "en", Tile: scene.TileID{Z: 1}}
+	c.Put(embedded, sized(10_000))
+	c.Put(key(6, 0, 0), sized(10_000))
+	pins := c.Register()
+	pins.Publish([][]Key{{key(6, 0, 0)}})
+	c.EmptyFetched()
+	if c.Has(key(6, 0, 0)) {
+		t.Error("a fetched tile the view needs survived the purge")
+	}
+	if !c.Has(embedded) {
+		t.Error("an embedded tile was purged")
+	}
+	if use := c.Bytes(); use.Held != int64(sized(10_000).Bytes()) {
+		t.Errorf("held %d after the purge, want the embedded tile's %d", use.Held, sized(10_000).Bytes())
+	}
+}

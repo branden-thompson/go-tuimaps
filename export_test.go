@@ -22,3 +22,11 @@ func ReportRemembered(m *Map, asked []Place) bool {
 	_, ok := m.rememberedReport(asked)
 	return ok
 }
+
+// ImageUse is what the map's images hold, the shared set of readings among
+// it, as the image budget counts it.
+func ImageUse(m *Map) int64 {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.store.ImageUse()
+}

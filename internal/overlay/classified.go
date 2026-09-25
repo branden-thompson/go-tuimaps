@@ -154,6 +154,16 @@ func (c *Classified) Keep(key [32]byte, raster scene.Raster, report Report) {
 	c.order = append(c.order, key)
 }
 
+// Empty drops every reading the set holds (L-9.3).
+func (c *Classified) Empty() {
+	if c == nil {
+		return
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.seen, c.order, c.held = map[[32]byte]classifiedEntry{}, nil, 0
+}
+
 // Bytes is what the set holds and may hold.
 func (c *Classified) Bytes() (held, limit int64) {
 	if c == nil {

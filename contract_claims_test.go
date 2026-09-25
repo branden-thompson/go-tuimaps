@@ -157,7 +157,7 @@ func TestPurgeDoesNotReachAReleasedRoot(t *testing.T) {
 	if err := m.CacheRoot(now, 0); err != nil {
 		t.Fatal(err)
 	}
-	if err := m.Purge(); err != nil {
+	if _, err := m.Purge(); err != nil {
 		t.Fatal(err)
 	}
 	if after := filesUnder(t, old); after != held {

@@ -91,6 +91,22 @@ func (c *Cache) Put(k Key, tile *scene.Tile) {
 	c.settleLocked()
 }
 
+// EmptyFetched drops every tile a source was fetched for, needed or not; the
+// embedded tiles, which record nothing, stay (L-9.3).
+func (c *Cache) EmptyFetched() {
+	if c == nil {
+		return
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for k, it := range c.items {
+		if k.Source != embeddedIdentity {
+			c.held -= it.bytes
+			delete(c.items, k)
+		}
+	}
+}
+
 // Get returns a tile on hand and notes that it was read.
 func (c *Cache) Get(k Key) (*scene.Tile, bool) {
 	if c == nil {
