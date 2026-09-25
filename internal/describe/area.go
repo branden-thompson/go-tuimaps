@@ -20,12 +20,16 @@ type Where uint8
 const (
 	Outside Where = iota + 1
 	Inside
+	Nearby // outside, but within the distance the host set (v0.2.0 L-13.6)
 )
 
 // String names the answer, in words a speech engine says as they are.
 func (w Where) String() string {
-	if w == Inside {
+	switch w {
+	case Inside:
 		return "inside"
+	case Nearby:
+		return "nearby"
 	}
 	return "outside"
 }

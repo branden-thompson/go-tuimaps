@@ -162,13 +162,19 @@ func (m *Map) answersFor(place Place) []Answer {
 		}
 		o := reader.Overlay()
 		reader.Done()
-		answer := m.answerOf(place, id, o)
-		answer.Valid = o.Valid
-		answer.Stale = m.staleOverlay(o)
-		answer.UnderOneCell = m.underOneCell(answer)
-		out = append(out, answer.Cleaned())
+		out = append(out, m.answerFor(place, id, o))
 	}
 	return out
+}
+
+// answerFor is one overlay's answer for a place, with its valid time, its
+// stale mark and whether the picture can settle it, cleaned.
+func (m *Map) answerFor(place Place, id string, o Overlay) Answer {
+	answer := m.answerOf(place, id, o)
+	answer.Valid = o.Valid
+	answer.Stale = m.staleOverlay(o)
+	answer.UnderOneCell = m.underOneCell(answer)
+	return answer.Cleaned()
 }
 
 // staleOverlay reports whether one overlay is out of date, by the rule the

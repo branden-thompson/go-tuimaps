@@ -58,6 +58,9 @@ type Feature struct {
 	// (L-13.9). Valid and Expires are its times, zero when not given.
 	Severity       Severity
 	Valid, Expires time.Time
+	// ID is the host's name for the feature, so that an entry of Report can
+	// be joined back to the host's own alert. It is the host's to give.
+	ID string
 }
 
 // Severity is how severe an alert is. The zero value means "as the role

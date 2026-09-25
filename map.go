@@ -177,6 +177,7 @@ type Map struct {
 	own           []fault.Warning // what the map itself noticed, for the next Warnings call
 	planted       func(string)    // set only by the library's own tests, to plant a panic
 	units         describe.Units  // the units descriptions come back in
+	nearby        float64         // how close to an alert's edge is nearby, in km; zero is the default (L-13.6)
 	placesVersion uint64          // raised whenever the places change
 	wallClock     time.Time       // the clock of the last frame, which staleness is judged by
 	staleNow      bool

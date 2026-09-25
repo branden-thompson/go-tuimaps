@@ -25,6 +25,7 @@ const FutureValidTime
 const High
 const ImageRefused
 const ImplausibleUnit
+const Inside
 const Internal
 const InvalidCoordinates
 const InvalidID
@@ -46,6 +47,7 @@ const Middle
 const MinZoom
 const MissingTable
 const NearDuplicateID
+const Nearby
 const NoColour
 const NoSize
 const NoTiles
@@ -54,6 +56,7 @@ const OffByDefault
 const OffByHost
 const OffReduceMotion OffReason
 const Ordered
+const Outside
 const OverImageCap
 const OverLimit
 const OverVertexCap
@@ -144,11 +147,13 @@ method Map.ReduceMotion(bool)
 method Map.Remove(string) (RemoveResult, error)
 method Map.RemovePlace(string) (int, error)
 method Map.Render(Size, time.Time) (Frame, error)
+method Map.Report([]Place) (Report, error)
 method Map.Reset() error
 method Map.SafeRamps(bool)
 method Map.Scale() (Scaled, bool)
 method Map.Set(Overlay) (SetResult, error)
 method Map.SetImageBudget(int64) error
+method Map.SetNearby(float64) error
 method Map.SetPalette(map[string]RGB) ([]string, error)
 method Map.SetPlaces([]Place) ([]string, error)
 method Map.SetPlayback(Playback) error
@@ -168,6 +173,7 @@ method Map.Zoom(float64) error
 method Map.ZoomBy(float64) error
 method Shared.Use() CacheUse
 method Status.String() string
+type AlertShown struct{ Overlay string; Feature string; Label string; Severity Severity; Valid time.Time; Expires time.Time; Stale bool }
 type Answer = describe.Answer
 type CacheUse struct{ Need int64; Held int64; Limit int64 }
 type Caches struct{ Tiles CacheUse; Shapes CacheUse; Disk CacheUse }
@@ -195,12 +201,15 @@ type OffReason uint8
 type Option func(*config) error
 type Overlay = overlay.Overlay
 type Place struct{ ID string; Name string; At LonLat; Marker MarkerStyle; Radius int; Glyph string; Blink bool }
+type PlaceAlert struct{ Overlay string; Feature string; Label string; Severity Severity; Where Where; Distance float64; Unit string; Bearing float64; Compass string }
+type PlaceReport struct{ Place string; Alerts []PlaceAlert; Answers []Answer }
 type Playback uint8
 type Positioned interface{ LonLat() (float64, float64) }
 type Projection = overlay.Projection
 type RGB = colour.RGB
 type RampCheck = colour.RampCheck
 type RemoveResult = overlay.RemoveResult
+type Report struct{ Alerts []AlertShown; Places []PlaceReport }
 type Rule = colour.Rule
 type Scaled struct{ KmPerCell float64; Km float64; Cells int }
 type SetResult = overlay.SetResult
@@ -215,3 +224,4 @@ type Type = overlay.Type
 type Unit = colour.Unit
 type Warning = fault.Warning
 type WarningKind = fault.WarningKind
+type Where = describe.Where
