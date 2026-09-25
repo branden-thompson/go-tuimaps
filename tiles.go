@@ -8,9 +8,16 @@ import (
 	"github.com/branden-thompson/go-tuimaps/internal/tiles"
 )
 
-// Fetcher is a replacement for the library's own way of reaching a source: a
-// host that has a client of its own, or a proxy, passes one (FR-22b).
-type Fetcher = fetch.Func
+// FetchOptions is how a host shapes the library's own fetching (L-7.1, D-55):
+// its Transport, its UserAgent, its Timeout, and the hosts it lets be
+// fetched over plain http (AllowHTTP). The library keeps its client: it
+// builds each request, confines it and every redirect to the source's own
+// scheme, host and port, sets the headers, and reads the body through its
+// limit, throwing away an answer that comes back after its request's end. A
+// host Transport dials as it likes, and keeps the refusal of private
+// addresses only if it dials through CheckedDialer; its time is bounded only
+// while it honours its request's context (L-7.3).
+type FetchOptions = fetch.HostOptions
 
 // CacheUse is what one cache holds and is allowed to hold (D-90).
 type CacheUse struct {
@@ -44,42 +51,60 @@ func (m *Map) Source(address string) (err error) {
 		return closed()
 	}
 	if address == "" {
-		m.remote = nil
+		m.remote, m.address = nil, ""
 		return m.pipe.SetNetwork(nil)
 	}
-	get := m.fetcher
-	if get == nil {
-		own, err := fetch.ForSource(address, fetch.Options{})
-		if err != nil {
-			return err
-		}
-		get = own.Fetch
-	}
-	remote, err := tiles.NewRemote(address, get, nil)
+	return m.useSourceLocked(address)
+}
+
+// useSourceLocked names a source with the fetch options in effect.
+func (m *Map) useSourceLocked(address string) error {
+	own, err := fetch.ForSource(address, fetch.Options{Transport: m.fetchOpts.Transport, Token: m.fetchOpts.UserAgent,
+		Timeout: m.fetchOpts.Timeout, AllowHTTP: m.fetchOpts.AllowHTTP})
 	if err != nil {
 		return err
 	}
-	m.remote = remote
+	remote, err := tiles.NewRemote(address, own.Fetch, nil)
+	if err != nil {
+		return err
+	}
+	m.remote, m.address = remote, address
 	m.changed++
 	return m.pipe.SetNetwork(remote.Network())
 }
 
-// Fetcher replaces the way the library reaches a source. It takes effect at
-// the next Source call, and a host that passes nil puts the library's own
-// back (FR-22b).
-func (m *Map) Fetcher(get Fetcher) {
-	defer m.guardQuiet("Fetcher")
-	m.plant("Fetcher")
+// SetFetchOptions sets how the library fetches, and takes effect at once
+// (L-7.4): with a source named, the next tile is fetched the new way. The
+// zero FetchOptions is the library's own.
+func (m *Map) SetFetchOptions(o FetchOptions) (err error) {
+	defer guard("SetFetchOptions", &err)
+	m.plant("SetFetchOptions")
 
 	if m == nil {
-		return
+		return closed()
+	}
+	if err := fetch.CheckToken(o.UserAgent); err != nil {
+		return err
+	}
+	if o.Timeout < 0 {
+		return fault.Make(fault.FetchRefused, textsafe.Const("the fetch options were refused"),
+			textsafe.Const("the timeout is negative"), textsafe.Const("give a timeout of zero or more; zero is the library's own"))
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.shut {
-		return
+		return closed()
 	}
-	m.fetcher = get
+	was := m.fetchOpts
+	m.fetchOpts = o
+	if m.remote == nil {
+		return nil
+	}
+	if err := m.useSourceLocked(m.address); err != nil {
+		m.fetchOpts = was
+		return err
+	}
+	return nil
 }
 
 // CacheRoot names a directory to keep tiles in between runs, or takes the

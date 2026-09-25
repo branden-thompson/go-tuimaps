@@ -33,20 +33,42 @@ const (
 	maxToken = 64
 )
 
+// HostOptions are how a host shapes the library's fetching, as the root
+// package's FetchOptions (D-55).
+type HostOptions struct {
+	// Transport is the host's own: its proxy, its trust roots, its pool, or
+	// a store it serves tiles from. Nil is the library's, which refuses to
+	// connect to a private address.
+	Transport http.RoundTripper
+	// UserAgent is the host's name for itself, added to the library's own
+	// (L-7.2): printable ASCII, no spaces or brackets, at most 64 bytes.
+	UserAgent string
+	// Timeout bounds a whole request; zero is the library's default.
+	Timeout time.Duration
+	// AllowHTTP names hosts, as host or host:port, that may be fetched from
+	// over plain http; without them only a literal loopback address may
+	// (L-10.2).
+	AllowHTTP []string
+}
+
 // Options are a host's choices for one source.
 type Options struct {
-	// AllowPlainHTTP permits a source over plain http. Without it, plain
-	// http is permitted only to a literal loopback address.
-	AllowPlainHTTP bool
-	// AllowHosts names hosts, as host or host:port, that a redirect may go
-	// to besides the source's own.
-	AllowHosts []string
-	// Token is the host's name for itself in the User-Agent.
+	// AllowHTTP names hosts, as host or host:port, that may be fetched from
+	// over plain http. Without them plain http is permitted only to a literal
+	// loopback address (L-10.2).
+	AllowHTTP []string
+	// Token is the host's name for itself in the User-Agent (L-7.2).
 	Token string
 	// Timeout bounds a whole request; zero means DefaultTimeout.
 	Timeout time.Duration
 	// RootCAs are the trust anchors; nil means the system's.
 	RootCAs *x509.CertPool
+	// Transport is a host's own, under the library's client (D-55): the
+	// library still shapes each request, confines redirects, sets the
+	// headers and reads the body through its limit. Nil is the library's
+	// own, with its private-address check; a host transport dials as it
+	// likes, and keeps that check only by dialling through CheckedDialer.
+	Transport http.RoundTripper
 }
 
 // Request asks for one address: all of it, or a range of it. MaxBytes is
@@ -67,7 +89,6 @@ type Fetcher struct {
 	scheme    string
 	host      string
 	private   bool // the source is itself in private or loopback space, so connections may land there
-	allow     []string
 	agent     string
 	client    *http.Client
 	transport *http.Transport
@@ -96,14 +117,14 @@ func ForSource(source string, opts Options) (*Fetcher, error) {
 		return nil, refusedSource()
 	}
 	ip := net.ParseIP(u.Hostname())
-	if u.Scheme == "http" && !opts.AllowPlainHTTP && !ip.IsLoopback() {
+	if u.Scheme == "http" && !ip.IsLoopback() && !listed(u, opts.AllowHTTP) {
 		return nil, refusedSource()
 	}
 	agent, err := userAgent(opts.Token)
 	if err != nil {
 		return nil, err
 	}
-	f := &Fetcher{scheme: u.Scheme, host: u.Host, private: ip != nil && !isPublic(ip), allow: opts.AllowHosts, agent: agent}
+	f := &Fetcher{scheme: u.Scheme, host: u.Host, private: ip != nil && !isPublic(ip), agent: agent}
 	f.transport = &http.Transport{
 		Proxy:                 http.ProxyFromEnvironment,
 		DialContext:           f.dial,
@@ -116,8 +137,30 @@ func ForSource(source string, opts Options) (*Fetcher, error) {
 	if timeout <= 0 {
 		timeout = DefaultTimeout
 	}
-	f.client = &http.Client{Transport: f.transport, Timeout: timeout, CheckRedirect: f.checkRedirect}
+	var through http.RoundTripper = f.transport
+	if opts.Transport != nil {
+		through = opts.Transport
+	}
+	f.client = &http.Client{Transport: through, Timeout: timeout, CheckRedirect: f.checkRedirect}
 	return f, nil
+}
+
+// listed reports whether an address's host is one the options name, as
+// host or host:port.
+func listed(u *url.URL, hosts []string) bool {
+	for _, h := range hosts {
+		if h == u.Host || h == u.Hostname() {
+			return true
+		}
+	}
+	return false
+}
+
+// CheckToken reports whether a host's name for itself may go in the
+// User-Agent, before any source is named.
+func CheckToken(token string) error {
+	_, err := userAgent(token)
+	return err
 }
 
 // userAgent names the library, its version and the host's token, and
@@ -185,21 +228,10 @@ func (f *Fetcher) dial(ctx context.Context, network, address string) (net.Conn, 
 	return d.DialContext(ctx, network, address)
 }
 
-// allowed reports whether a request or a redirect may go to this scheme and
-// host: the source's own, or a host the options allow over the same scheme.
+// allowed reports whether a request or a redirect may go to this address:
+// the source's own scheme, host and port, and nothing else (L-10.1).
 func (f *Fetcher) allowed(u *url.URL) bool {
-	if u == nil || u.User != nil || u.Scheme != f.scheme {
-		return false
-	}
-	if u.Host == f.host {
-		return true
-	}
-	for _, h := range f.allow {
-		if u.Host == h {
-			return true
-		}
-	}
-	return false
+	return u != nil && u.User == nil && u.Scheme == f.scheme && u.Host == f.host
 }
 
 // checkRedirect is the redirect policy: at most three, never from secure to

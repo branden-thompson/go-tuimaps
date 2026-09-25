@@ -8,7 +8,6 @@ import (
 
 	"github.com/branden-thompson/go-tuimaps/internal/describe"
 	"github.com/branden-thompson/go-tuimaps/internal/fault"
-	"github.com/branden-thompson/go-tuimaps/internal/fetch"
 	"github.com/branden-thompson/go-tuimaps/internal/overlay"
 	"github.com/branden-thompson/go-tuimaps/internal/project"
 	"github.com/branden-thompson/go-tuimaps/internal/render"
@@ -186,7 +185,8 @@ type Map struct {
 	reportedKey   describeKey
 	remote        *tiles.Remote // the source named, if any: nothing is reached until one is (D-65)
 	disk          *tiles.Disk   // the disk cache, if the host named a directory
-	fetcher       fetch.Func    // a replacement for the library's own way of reaching a source
+	fetchOpts     FetchOptions  // how the library fetches (D-55)
+	address       string        // the source named, as the host wrote it
 	animation     time.Time     // and this is the moment it has driven it to
 	places        []Place
 	drawn         []render.Drawn

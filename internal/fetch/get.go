@@ -59,6 +59,12 @@ func (f *Fetcher) Fetch(ctx context.Context, r Request) ([]byte, error) {
 	}
 	data, err := f.readReply(ctx, resp, r)
 	_ = resp.Body.Close() // the body was read through its limit or is being abandoned; a close error changes nothing
+	if err == nil && ctx.Err() != nil {
+		// A late answer is never used (L-7.3): a transport that ignored its
+		// context has held this call past its end, and what it brought back
+		// is thrown away.
+		return nil, f.problem(fault.Cancelled, textsafe.Text{})
+	}
 	return data, err
 }
 
@@ -141,32 +147,4 @@ func (f *Fetcher) readReply(ctx context.Context, resp *http.Response, r Request)
 		return nil, f.problem(fault.FetchFailed, textsafe.Const("the source sent a different number of bytes than the range that was asked for"))
 	}
 	return data, nil
-}
-
-// Checked wraps a host's replacement fetcher: the range and the maximum
-// length are passed to it, and what comes back is held to them. Its error
-// is not passed on, because it may hold the address.
-func Checked(replacement Func) Func {
-	if replacement == nil {
-		return nil
-	}
-	return func(ctx context.Context, r Request) ([]byte, error) {
-		if r.MaxBytes <= 0 || r.RangeStart < 0 || r.RangeLen < 0 {
-			return nil, refusedSource()
-		}
-		data, err := replacement(ctx, r)
-		if ctx.Err() != nil {
-			return nil, fault.Make(fault.Cancelled, textsafe.Const("a request was abandoned"), textsafe.Const("the work it was part of was cancelled or ran out of time"), textsafe.Const("nothing; it is asked for again if it is still wanted"))
-		}
-		if err != nil {
-			return nil, fault.Make(fault.FetchFailed, textsafe.Const("the host's own fetcher failed"), textsafe.Const("it returned an error, which is not repeated here because it may hold the tile's address"), textsafe.Const("check the host's fetcher"))
-		}
-		if int64(len(data)) > r.MaxBytes {
-			return nil, tooLarge()
-		}
-		if r.RangeLen > 0 && int64(len(data)) != r.RangeLen {
-			return nil, fault.Make(fault.FetchFailed, textsafe.Const("the host's own fetcher failed"), textsafe.Const("it returned a different number of bytes than the range that was asked for"), textsafe.Const("check the host's fetcher"))
-		}
-		return data, nil
-	}
 }

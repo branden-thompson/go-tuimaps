@@ -114,6 +114,11 @@ func checkAddress(raw string, source *url.URL, allowHosts []string) error {
 	if !strings.HasPrefix(raw, u.Scheme+"://") {
 		return refusedAddress(textsafe.Const("its tile address is not written as it parses: the scheme must be lower case"))
 	}
+	if !strings.HasPrefix(u.EscapedPath(), "/") {
+		// "https://host?/{z}{x}{y}" parses with the tile numbers in its query
+		// and no path at all: found by FuzzTileJSON.
+		return refusedAddress(textsafe.Const("its tile address has no path after its host"))
+	}
 	if strings.Contains(raw, "#") {
 		return refusedAddress(textsafe.Const("its tile address has a fragment, which is never sent: every tile would be the same request"))
 	}

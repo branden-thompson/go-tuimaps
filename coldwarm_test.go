@@ -2,6 +2,7 @@ package tuimaps_test
 
 import (
 	"context"
+	"crypto/tls"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -10,7 +11,6 @@ import (
 
 	tuimaps "github.com/branden-thompson/go-tuimaps"
 	"github.com/branden-thompson/go-tuimaps/internal/fault"
-	"github.com/branden-thompson/go-tuimaps/internal/fetch"
 	"github.com/branden-thompson/go-tuimaps/internal/testkit"
 )
 
@@ -131,7 +131,9 @@ func timed(t *testing.T, server *testkit.ShapedServer, cacheDir string, link tes
 	if err := m.CacheRoot(cacheDir, 0); err != nil {
 		t.Fatal(err)
 	}
-	m.Fetcher(trusting(t, server))
+	if err := m.SetFetchOptions(tuimaps.FetchOptions{Transport: trusting(t, server), UserAgent: "cold-and-warm"}); err != nil {
+		t.Fatal(err)
+	}
 	if err := m.Source(server.URL + "/"); err != nil {
 		t.Fatal(err)
 	}
@@ -193,14 +195,11 @@ func timed(t *testing.T, server *testkit.ShapedServer, cacheDir string, link tes
 	return out
 }
 
-// trusting is the library's own way of fetching, given the shaped server's
-// own trust anchor: the server signs for itself, and the library trusts the
-// system's roots and nothing else (NFR-11).
-func trusting(t *testing.T, server *testkit.ShapedServer) tuimaps.Fetcher {
+// trusting is a host transport that trusts the shaped server's own anchor:
+// the server signs for itself, and the library's own transport trusts the
+// system's roots and nothing else (NFR-11). It dials the loopback server,
+// which the library's own transport would refuse as a private address.
+func trusting(t *testing.T, server *testkit.ShapedServer) http.RoundTripper {
 	t.Helper()
-	own, err := fetch.ForSource(server.URL+"/", fetch.Options{RootCAs: server.RootCAs, Token: "cold-and-warm"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	return own.Fetch
+	return &http.Transport{TLSClientConfig: &tls.Config{RootCAs: server.RootCAs, MinVersion: tls.VersionTLS12}}
 }

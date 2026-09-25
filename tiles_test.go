@@ -1,8 +1,11 @@
 package tuimaps_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"io"
+	"net/http"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -10,16 +13,28 @@ import (
 	tuimaps "github.com/branden-thompson/go-tuimaps"
 	"github.com/branden-thompson/go-tuimaps/assets"
 	"github.com/branden-thompson/go-tuimaps/internal/fault"
-	"github.com/branden-thompson/go-tuimaps/internal/fetch"
 )
 
-// served is a fetcher that answers with the embedded tiles, so that a test
-// of the source path reaches nothing at all.
-func served(t *testing.T, asked *int) tuimaps.Fetcher {
+// answering is a host's own transport that answers each tile address from a
+// function: what a host that serves tiles from a store of its own hands the
+// library (L-7.1). Nothing is dialled.
+type answering func(address string) ([]byte, error)
+
+func (a answering) RoundTrip(r *http.Request) (*http.Response, error) {
+	body, err := a(r.URL.String())
+	if err != nil {
+		return &http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(strings.NewReader("")), Header: http.Header{}, Request: r}, nil
+	}
+	return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(bytes.NewReader(body)), ContentLength: int64(len(body)), Header: http.Header{}, Request: r}, nil
+}
+
+// served is a transport that answers with the embedded tiles, so that a
+// test of the source path reaches nothing at all.
+func served(t *testing.T, asked *int) http.RoundTripper {
 	t.Helper()
-	return func(ctx context.Context, r fetch.Request) ([]byte, error) {
+	return answering(func(address string) ([]byte, error) {
 		*asked++
-		z, x, y, ok := tileOf(r.URL)
+		z, x, y, ok := tileOf(address)
 		if !ok {
 			return nil, errors.New("not a tile address")
 		}
@@ -28,6 +43,14 @@ func served(t *testing.T, asked *int) tuimaps.Fetcher {
 			return nil, errors.New("no such tile")
 		}
 		return body, nil
+	})
+}
+
+// useTransport hands the map a transport of the host's own.
+func useTransport(t *testing.T, m *tuimaps.Map, tr http.RoundTripper) {
+	t.Helper()
+	if err := m.SetFetchOptions(tuimaps.FetchOptions{Transport: tr}); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -58,7 +81,7 @@ func tileOf(address string) (uint8, uint32, uint32, bool) {
 
 // TestSourceReachesNothingUntilNamed is plan task 12.18 (D-65): a map with
 // no source named reaches nothing; one with a source named fetches through
-// the host's own fetcher, and nothing else.
+// the host's own transport, and nothing else.
 func TestSourceReachesNothingUntilNamed(t *testing.T) {
 	m, err := tuimaps.New(tuimaps.WithSize(80, 24))
 	if err != nil {
@@ -66,7 +89,7 @@ func TestSourceReachesNothingUntilNamed(t *testing.T) {
 	}
 	defer m.Close()
 	asked := 0
-	m.Fetcher(served(t, &asked))
+	useTransport(t, m, served(t, &asked))
 	if _, err := m.Settle(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -113,7 +136,7 @@ func TestCacheRootAndMaintenance(t *testing.T) {
 		t.Errorf("Verify with no cache: %v", err)
 	}
 	asked := 0
-	m.Fetcher(served(t, &asked))
+	useTransport(t, m, served(t, &asked))
 	if err := m.CacheRoot(filepath.Join(dir, "tiles"), 0); err != nil {
 		t.Fatal(err)
 	}
@@ -160,5 +183,58 @@ func TestCacheUseWithNoCaches(t *testing.T) {
 	}
 	if got := m.SourceCredit(); got != "" {
 		t.Errorf("a map drawing the embedded tiles credits a source: %q", got)
+	}
+}
+
+// recording is a transport that answers with the embedded tiles and keeps
+// every user-agent it was sent.
+type recording struct {
+	agents []string
+	tiles  http.RoundTripper
+}
+
+func (r *recording) RoundTrip(req *http.Request) (*http.Response, error) {
+	r.agents = append(r.agents, req.Header.Get("User-Agent"))
+	return r.tiles.RoundTrip(req)
+}
+
+// TestFetchOptionsTakeEffectAtOnce is L8.1 (L-7.1, L-7.2, L-7.4): a
+// transport set after the source is the one the next fetch goes through, and
+// the host's name reaches the user-agent beside the library's.
+func TestFetchOptionsTakeEffectAtOnce(t *testing.T) {
+	m, err := tuimaps.New(tuimaps.WithSize(80, 24))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer m.Close()
+	asked := 0
+	first, second := &recording{tiles: served(t, &asked)}, &recording{tiles: served(t, &asked)}
+	must(t, m.SetFetchOptions(tuimaps.FetchOptions{Transport: first}))
+	must(t, m.Source("https://tiles.example.test/"))
+	must(t, m.SetFetchOptions(tuimaps.FetchOptions{Transport: second, UserAgent: "watchpost"}))
+	if _, err := m.Render(tuimaps.Size{Cols: 80, Rows: 24}, noon); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Settle(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(first.agents) != 0 || len(second.agents) == 0 {
+		t.Fatalf("the first transport was asked %d times and the second %d; want the second only", len(first.agents), len(second.agents))
+	}
+	for _, a := range second.agents {
+		if !strings.HasPrefix(a, "go-tuimaps/") || !strings.HasSuffix(a, "(watchpost)") {
+			t.Errorf("user-agent %q; want the library's name and the host's", a)
+		}
+	}
+	if use := m.CacheUse(); use.Tiles.Held == 0 {
+		t.Error("the second transport's tiles did not arrive")
+	}
+	fresh, err := tuimaps.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer fresh.Close()
+	if err := fresh.SetFetchOptions(tuimaps.FetchOptions{UserAgent: "two words"}); err == nil {
+		t.Error("a user-agent that would break the header was accepted, with no source named yet")
 	}
 }

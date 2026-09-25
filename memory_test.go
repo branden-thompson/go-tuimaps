@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"math"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -13,7 +14,6 @@ import (
 	"time"
 
 	tuimaps "github.com/branden-thompson/go-tuimaps"
-	"github.com/branden-thompson/go-tuimaps/internal/fetch"
 	"github.com/branden-thompson/go-tuimaps/internal/testkit"
 )
 
@@ -117,15 +117,15 @@ func grid64x48() tuimaps.Overlay {
 
 // fixtureSource is a way of fetching that serves the fixture's own tiles
 // and reaches no network.
-func fixtureSource(t *testing.T) tuimaps.Fetcher {
+func fixtureSource(t *testing.T) http.RoundTripper {
 	t.Helper()
 	root, err := testkit.FixtureRoot()
 	if err != nil {
 		t.Fatal(err)
 	}
 	dirs := []string{"tiles-gulf-z6", "tiles-midwest-z5", "tiles-urban-z14"}
-	return func(_ context.Context, r fetch.Request) ([]byte, error) {
-		z, x, y, ok := tileOf(r.URL)
+	return answering(func(address string) ([]byte, error) {
+		z, x, y, ok := tileOf(address)
 		if !ok {
 			return nil, os.ErrNotExist
 		}
@@ -136,7 +136,7 @@ func fixtureSource(t *testing.T) tuimaps.Fetcher {
 			}
 		}
 		return nil, os.ErrNotExist
-	}
+	})
 }
 
 // TestFixtureMemory is plan task 14.6, and NFR-3 itself: **what the library
@@ -259,7 +259,7 @@ func touring(t *testing.T, shared *tuimaps.Shared, views []placed) (live, peak u
 			t.Fatal(err)
 		}
 		defer m.Close()
-		m.Fetcher(fixtureSource(t))
+		useTransport(t, m, fixtureSource(t))
 		if err := m.Source("https://tiles.example.test/"); err != nil {
 			t.Fatal(err)
 		}

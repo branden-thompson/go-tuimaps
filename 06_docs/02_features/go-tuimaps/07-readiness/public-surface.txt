@@ -125,7 +125,6 @@ method Map.Close() int
 method Map.ColourDepth(Depth)
 method Map.Credits() []string
 method Map.DeepestZoom() float64
-method Map.Fetcher(Fetcher)
 method Map.FitTo([]LonLat, []string, int) error
 method Map.FitWorld() error
 method Map.FollowClock()
@@ -158,6 +157,7 @@ method Map.SafeRamps(bool)
 method Map.Scale() (Scaled, bool)
 method Map.Set(Overlay) (SetResult, error)
 method Map.SetBound(Bound) error
+method Map.SetFetchOptions(FetchOptions) error
 method Map.SetImageBudget(int64) error
 method Map.SetNearby(float64) error
 method Map.SetPalette(map[string]RGB) ([]string, error)
@@ -190,7 +190,7 @@ type Drop struct{ Kind DropKind; Overlay string; Label string; Shown string }
 type DropKind uint8
 type Feature = overlay.Feature
 type FeatureKind = overlay.FeatureKind
-type Fetcher = fetch.Func
+type FetchOptions = fetch.HostOptions
 type Finding = colour.Finding
 type Frame struct{ Lines []string; Status Status; Changed uint64; FrameTicks uint64; Dropped []Drop }
 type Grid = overlay.Grid

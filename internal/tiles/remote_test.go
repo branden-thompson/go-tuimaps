@@ -68,17 +68,18 @@ func TestTileJSONAddressesObeyFetchRules(t *testing.T) {
 		t.Errorf("attribution %q", s)
 	}
 	refused := map[string]string{
-		"plain http":        `http://tiles.example/{z}/{x}/{y}.pbf`,
-		"a user name":       `https://user:secret@tiles.example/{z}/{x}/{y}.pbf`,
-		"another host":      `https://elsewhere.example/{z}/{x}/{y}.pbf`,
-		"another port":      `https://tiles.example:8443/{z}/{x}/{y}.pbf`,
-		"an unknown token":  `https://tiles.example/{s}/{z}/{x}/{y}.pbf`,
-		"a key token":       `https://tiles.example/{z}/{x}/{y}.pbf?key={key}`,
-		"an unclosed brace": `https://tiles.example/{z}/{x}/{y`,
-		"no z":              `https://tiles.example/{x}/{y}.pbf`,
-		"a token in host":   `https://{z}.tiles.example/{x}/{y}.pbf`,
-		"not an address":    `::::`,
-		"a fragment":        `https://tiles.example/tiles#{z}/{x}/{y}`,
+		"plain http":                     `http://tiles.example/{z}/{x}/{y}.pbf`,
+		"a user name":                    `https://user:secret@tiles.example/{z}/{x}/{y}.pbf`,
+		"another host":                   `https://elsewhere.example/{z}/{x}/{y}.pbf`,
+		"no path, the tile in its query": `https://tiles.example?/{z}{x}{y}`,
+		"another port":                   `https://tiles.example:8443/{z}/{x}/{y}.pbf`,
+		"an unknown token":               `https://tiles.example/{s}/{z}/{x}/{y}.pbf`,
+		"a key token":                    `https://tiles.example/{z}/{x}/{y}.pbf?key={key}`,
+		"an unclosed brace":              `https://tiles.example/{z}/{x}/{y`,
+		"no z":                           `https://tiles.example/{x}/{y}.pbf`,
+		"a token in host":                `https://{z}.tiles.example/{x}/{y}.pbf`,
+		"not an address":                 `::::`,
+		"a fragment":                     `https://tiles.example/tiles#{z}/{x}/{y}`,
 	}
 	for name, address := range refused {
 		body := `{"tiles":["` + address + `"]}`

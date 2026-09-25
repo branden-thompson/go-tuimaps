@@ -3,13 +3,13 @@ package tuimaps_test
 import (
 	"context"
 	"errors"
+	"net/http"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	tuimaps "github.com/branden-thompson/go-tuimaps"
 	"github.com/branden-thompson/go-tuimaps/assets"
-	"github.com/branden-thompson/go-tuimaps/internal/fetch"
 	"github.com/branden-thompson/go-tuimaps/internal/testkit"
 )
 
@@ -28,16 +28,16 @@ func urbanTiles() map[[3]uint32]string {
 // fromFixture is a source that serves the pinned fixture's own tiles and
 // reaches no network at all: the test hands the library its own way of
 // fetching, so nothing is dialled (FR-22b).
-func fromFixture(t *testing.T, asked *int) tuimaps.Fetcher {
+func fromFixture(t *testing.T, asked *int) http.RoundTripper {
 	t.Helper()
 	root, err := testkit.FixtureRoot()
 	if err != nil {
 		t.Fatal(err)
 	}
 	held := urbanTiles()
-	return func(_ context.Context, r fetch.Request) ([]byte, error) {
+	return answering(func(address string) ([]byte, error) {
 		*asked++
-		z, x, y, ok := tileOf(r.URL)
+		z, x, y, ok := tileOf(address)
 		if !ok {
 			return nil, errors.New("not a tile address")
 		}
@@ -46,7 +46,7 @@ func fromFixture(t *testing.T, asked *int) tuimaps.Fetcher {
 			return nil, errors.New("no such tile")
 		}
 		return testkit.LoadFixture(root, filepath.ToSlash(rel))
-	}
+	})
 }
 
 // TestLocalZoomDrawsLocalDetail is the answer to the question a person asks
@@ -94,7 +94,7 @@ func TestLocalZoomDrawsLocalDetail(t *testing.T) {
 	}
 	defer m.Close()
 	asked := 0
-	m.Fetcher(fromFixture(t, &asked))
+	useTransport(t, m, fromFixture(t, &asked))
 	if err := m.Source("https://tiles.example.test/"); err != nil {
 		t.Fatal(err)
 	}
