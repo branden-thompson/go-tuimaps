@@ -15,6 +15,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -92,12 +93,15 @@ type Fetcher struct {
 	agent     string
 	client    *http.Client
 	transport *http.Transport
+	// proxyOf is where the environment says a request should go through a
+	// proxy; proxies are the proxy addresses it has named, so that the one
+	// connection that may skip the address check - the one to the proxy
+	// itself - is told apart per connection, not per request (L-10.3).
+	timeout time.Duration // a whole request's bound
+	proxyOf func(*http.Request) (*url.URL, error)
+	mu      sync.Mutex
+	proxies map[string]bool
 }
-
-// viaProxy marks a request that goes through a proxy from the environment.
-// The connection then lands on the proxy, so the check on the connected
-// address cannot be made; FR-22b documents this.
-type viaProxy struct{}
 
 // errPolicy marks a refusal made inside the HTTP client - a redirect or a
 // dial - so that Get can tell it from a failure of the network.
@@ -124,9 +128,9 @@ func ForSource(source string, opts Options) (*Fetcher, error) {
 	if err != nil {
 		return nil, err
 	}
-	f := &Fetcher{scheme: u.Scheme, host: u.Host, private: ip != nil && !isPublic(ip), agent: agent}
+	f := &Fetcher{scheme: u.Scheme, host: u.Host, private: ip != nil && !isPublic(ip), agent: agent, proxyOf: http.ProxyFromEnvironment}
 	f.transport = &http.Transport{
-		Proxy:                 http.ProxyFromEnvironment,
+		Proxy:                 f.proxy,
 		DialContext:           f.dial,
 		TLSClientConfig:       &tls.Config{RootCAs: opts.RootCAs, MinVersion: tls.VersionTLS12},
 		TLSHandshakeTimeout:   firstByteTimeout,
@@ -141,6 +145,7 @@ func ForSource(source string, opts Options) (*Fetcher, error) {
 	if opts.Transport != nil {
 		through = opts.Transport
 	}
+	f.timeout = timeout
 	f.client = &http.Client{Transport: through, Timeout: timeout, CheckRedirect: f.checkRedirect}
 	return f, nil
 }
@@ -191,12 +196,29 @@ func isPublic(ip net.IP) bool {
 	if ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsMulticast() {
 		return false
 	}
-	_, shared, err := net.ParseCIDR("100.64.0.0/10")
-	if err != nil {
-		return false
+	for _, r := range reserved {
+		if r.Contains(ip) {
+			return false
+		}
 	}
-	return !shared.Contains(ip)
+	return true
 }
+
+// reserved are ranges no public source is reached at: carrier-grade
+// translation's shared space, and since v0.2.0 (L-10.3) "this network", the
+// NAT64 and 6to4 prefixes (each can carry a private IPv4 address inside it),
+// the benchmarking range and the reserved block above 240.
+var reserved = func() []*net.IPNet {
+	var out []*net.IPNet
+	for _, cidr := range []string{"100.64.0.0/10", "0.0.0.0/8", "64:ff9b::/96", "2002::/16", "198.18.0.0/15", "240.0.0.0/4"} {
+		_, r, err := net.ParseCIDR(cidr)
+		if err != nil {
+			panic("fetch: a reserved range that is not a range: " + cidr)
+		}
+		out = append(out, r)
+	}
+	return out
+}()
 
 // checkDial is the check on the address actually being connected to, after
 // name resolution and before any packet: a name that resolves into private
@@ -215,23 +237,76 @@ func checkDial(address string, sourceIsPrivate bool) error {
 	return nil
 }
 
-// dial connects for the transport, with the address check unless the
-// request goes through a proxy.
+// proxy is the transport's proxy function: the environment's answer, with
+// the proxy it names remembered as the one address a connection may reach
+// unchecked.
+func (f *Fetcher) proxy(r *http.Request) (*url.URL, error) {
+	if f.proxyOf == nil {
+		return nil, nil
+	}
+	u, err := f.proxyOf(r)
+	if err != nil || u == nil {
+		return u, err
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.proxies == nil {
+		f.proxies = map[string]bool{}
+	}
+	f.proxies[proxyAddress(u)] = true
+	return u, nil
+}
+
+// proxyAddress is a proxy's host and port, the port its scheme's own when
+// none is written.
+func proxyAddress(u *url.URL) string {
+	if u.Port() != "" {
+		return u.Host
+	}
+	port := map[string]string{"http": "80", "https": "443", "socks5": "1080"}[u.Scheme]
+	return net.JoinHostPort(u.Hostname(), port)
+}
+
+// dial connects for the transport. The address is checked at the moment of
+// connection, unless this one connection is to a proxy the environment
+// named: whether a connection goes through the proxy is decided per
+// connection, so a redirect to a host the proxy does not carry, dialled
+// directly, still meets the check (L-10.3).
 func (f *Fetcher) dial(ctx context.Context, network, address string) (net.Conn, error) {
 	if network == "" || address == "" {
 		return nil, errPolicy
 	}
+	f.mu.Lock()
+	toProxy := f.proxies[address]
+	f.mu.Unlock()
 	d := net.Dialer{Timeout: firstByteTimeout}
-	if ctx.Value(viaProxy{}) == nil {
+	if !toProxy {
 		d.Control = func(_, connected string, _ syscall.RawConn) error { return checkDial(connected, f.private) }
 	}
 	return d.DialContext(ctx, network, address)
 }
 
-// allowed reports whether a request or a redirect may go to this address:
-// the source's own scheme, host and port, and nothing else (L-10.1).
+// allowed reports whether a request or a redirect may go to this address.
 func (f *Fetcher) allowed(u *url.URL) bool {
-	return u != nil && u.User == nil && u.Scheme == f.scheme && u.Host == f.host
+	return Confined(u, &url.URL{Scheme: f.scheme, Host: f.host})
+}
+
+// Confined is the one rule a source's fetching is held to - its requests,
+// their redirects and its TileJSON's tile addresses alike (L-10.1, L-10.2):
+// the source's own scheme, host and port, and no user name.
+func Confined(u, source *url.URL) bool {
+	return u != nil && source != nil && u.User == nil && u.Scheme == source.Scheme && u.Host == source.Host
+}
+
+// Dialer is how a transport connects: the shape of http.Transport's
+// DialContext.
+type Dialer = func(ctx context.Context, network, address string) (net.Conn, error)
+
+// CheckedDialer is the library's own dialer, refusing a private or reserved
+// address at the moment of connection, for a host transport that wants to
+// keep that refusal (L-10.3, D-55).
+func CheckedDialer() Dialer {
+	return (&Fetcher{}).dial
 }
 
 // checkRedirect is the redirect policy: at most three, never from secure to

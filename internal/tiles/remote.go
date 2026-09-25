@@ -54,7 +54,7 @@ func (t Template) URL(tile scene.TileID) string {
 // refusedAddress never repeats the address: it may hold a key.
 func refusedAddress(why textsafe.Text) error {
 	return fault.Make(fault.FetchRefused, textsafe.Const("the tile source was refused"), why,
-		textsafe.Const("name a secure source whose tiles come from its own host, or allow the other host explicitly"))
+		textsafe.Const("name a source whose tiles come from its own scheme, host and port"))
 }
 
 // parseTemplate splits a pattern at its tokens. Anything in braces other
@@ -89,11 +89,11 @@ func parseTemplate(raw string) (Template, error) {
 	return Template{parts: append(parts, rest)}, nil
 }
 
-// checkAddress holds a tile address to the fetch rules (FR-22b): a secure
-// scheme, or the source's own if the host allowed that; no user name; the
-// source's own host unless the application allowed another; no token in
-// the scheme or host.
-func checkAddress(raw string, source *url.URL, allowHosts []string) error {
+// checkAddress holds a tile address to the one rule a source's fetching is
+// held to (fetch.Confined: the source's own scheme, host and port, no user
+// name), and to what a template must be to build one address a tile: written
+// as it parses, with a path, no fragment, and no token in its host.
+func checkAddress(raw string, source *url.URL) error {
 	if source == nil {
 		return refusedAddress(textsafe.Const("there is no source to hold its tile address to"))
 	}
@@ -101,11 +101,11 @@ func checkAddress(raw string, source *url.URL, allowHosts []string) error {
 	if err != nil {
 		return refusedAddress(textsafe.Const("its tile address is not an address"))
 	}
-	if u.Scheme != "https" && u.Scheme != source.Scheme {
-		return refusedAddress(textsafe.Const("its tile address is not secure"))
+	if u.Host == "" {
+		return refusedAddress(textsafe.Const("its tile address has no host"))
 	}
-	if u.User != nil || u.Host == "" {
-		return refusedAddress(textsafe.Const("its tile address carries a user name, or has no host"))
+	if !fetch.Confined(u, source) {
+		return refusedAddress(textsafe.Const("its tiles come from somewhere other than its source's own scheme, host and port"))
 	}
 	// The address is checked as it is parsed but used as it was written, so
 	// the two must be the same text: a scheme written "Https" parses as
@@ -125,15 +125,7 @@ func checkAddress(raw string, source *url.URL, allowHosts []string) error {
 	if at := strings.Index(raw, "://"); at < 0 || strings.ContainsAny(strings.SplitN(raw[at+3:], "/", 2)[0], "{}") {
 		return refusedAddress(textsafe.Const("its tile address has a token in its host"))
 	}
-	if u.Host == source.Host {
-		return nil
-	}
-	for _, h := range allowHosts {
-		if h == u.Host {
-			return nil
-		}
-	}
-	return refusedAddress(textsafe.Const("its tiles come from a host other than its own, which the application has not allowed"))
+	return nil
 }
 
 // TileJSON is what the library reads of a TileJSON document.
@@ -163,7 +155,7 @@ func zoom(n *float64, otherwise uint8) (uint8, bool) {
 
 // ParseTileJSON reads a TileJSON document fetched from source. Its first
 // tile address is used, as upstream does (P-49), held to the fetch rules.
-func ParseTileJSON(body []byte, source string, allowHosts []string) (TileJSON, error) {
+func ParseTileJSON(body []byte, source string) (TileJSON, error) {
 	if len(body) == 0 || source == "" {
 		return TileJSON{}, refusedAddress(textsafe.Const("it sent no TileJSON, or no source was named"))
 	}
@@ -187,7 +179,7 @@ func ParseTileJSON(body []byte, source string, allowHosts []string) (TileJSON, e
 	if err != nil || len(doc.Tiles) == 0 {
 		return TileJSON{}, refusedAddress(textsafe.Const("what it sent is not TileJSON with a tile address"))
 	}
-	err = checkAddress(doc.Tiles[0], from, allowHosts)
+	err = checkAddress(doc.Tiles[0], from)
 	if err != nil {
 		return TileJSON{}, err
 	}
@@ -217,7 +209,6 @@ func ParseTileJSON(body []byte, source string, allowHosts []string) (TileJSON, e
 type Remote struct {
 	source string
 	get    fetch.Func
-	allow  []string
 
 	mu      sync.Mutex // never held across a fetch
 	ready   bool
@@ -226,7 +217,7 @@ type Remote struct {
 }
 
 // NewRemote names a source. It reaches nothing.
-func NewRemote(source string, get fetch.Func, allowHosts []string) (*Remote, error) {
+func NewRemote(source string, get fetch.Func) (*Remote, error) {
 	if get == nil {
 		return nil, refusedOptions(textsafe.Const("a named source was given nothing to fetch with"))
 	}
@@ -240,7 +231,7 @@ func NewRemote(source string, get fetch.Func, allowHosts []string) (*Remote, err
 	if (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" || u.User != nil {
 		return nil, refusedAddress(textsafe.Const("the source is not an http address with a host, or it carries a user name"))
 	}
-	r := &Remote{source: source, get: get, allow: append([]string(nil), allowHosts...)}
+	r := &Remote{source: source, get: get}
 	if strings.HasSuffix(source, "/") {
 		tmpl, err := parseTemplate(source + "{z}/{x}/{y}.pbf")
 		if err != nil {
@@ -304,7 +295,7 @@ func (r *Remote) describe(ctx context.Context) (TileJSON, error) {
 	if err != nil {
 		return TileJSON{}, own(ctx, err) // not kept: the network may come back
 	}
-	info, err = ParseTileJSON(body, r.source, r.allow)
+	info, err = ParseTileJSON(body, r.source)
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.ready || r.refusal != nil {

@@ -21,19 +21,19 @@ const source = "https://tiles.example/planet"
 
 // TestTileJSONLimits is plan task 06.16 (NFR-10): 1 MiB, nesting 64.
 func TestTileJSONLimits(t *testing.T) {
-	if _, err := ParseTileJSON([]byte(goodTileJSON), source, nil); err != nil {
+	if _, err := ParseTileJSON([]byte(goodTileJSON), source); err != nil {
 		t.Fatal(err)
 	}
 	big := `{"tiles":["https://tiles.example/{z}/{x}/{y}.pbf"],"pad":"` + strings.Repeat("x", 1<<20) + `"}`
-	if _, err := ParseTileJSON([]byte(big), source, nil); !isKind(err, fault.OverLimit) {
+	if _, err := ParseTileJSON([]byte(big), source); !isKind(err, fault.OverLimit) {
 		t.Errorf("over 1 MiB: %v", err)
 	}
 	deep := `{"tiles":["https://tiles.example/{z}/{x}/{y}.pbf"],"x":` + strings.Repeat("[", 65) + strings.Repeat("]", 65) + `}`
-	if _, err := ParseTileJSON([]byte(deep), source, nil); !isKind(err, fault.OverLimit) {
+	if _, err := ParseTileJSON([]byte(deep), source); !isKind(err, fault.OverLimit) {
 		t.Errorf("nested 66 deep: %v", err)
 	}
 	quoted := `{"tiles":["https://tiles.example/{z}/{x}/{y}.pbf"],"x":"` + strings.Repeat("[", 200) + `"}`
-	if _, err := ParseTileJSON([]byte(quoted), source, nil); err != nil {
+	if _, err := ParseTileJSON([]byte(quoted), source); err != nil {
 		t.Errorf("brackets inside a string are not nesting: %v", err)
 	}
 	for name, body := range map[string]string{
@@ -43,18 +43,18 @@ func TestTileJSONLimits(t *testing.T) {
 		"zooms reversed": `{"tiles":["https://tiles.example/{z}/{x}/{y}.pbf"],"minzoom":9,"maxzoom":3}`,
 		"zoom too deep":  `{"tiles":["https://tiles.example/{z}/{x}/{y}.pbf"],"maxzoom":40}`,
 	} {
-		if _, err := ParseTileJSON([]byte(body), source, nil); !isKind(err, fault.FetchRefused) {
+		if _, err := ParseTileJSON([]byte(body), source); !isKind(err, fault.FetchRefused) {
 			t.Errorf("%s: %v; want the fetch-refused kind", name, err)
 		}
 	}
-	if _, err := ParseTileJSON([]byte(`{"tiles":["https://tiles.example/{z}/{x}/{y}.pbf"],"vector_layers":[{"id":"roads"},{"id":"earth"}]}`), source, nil); !isKind(err, fault.UnsupportedSchema) {
+	if _, err := ParseTileJSON([]byte(`{"tiles":["https://tiles.example/{z}/{x}/{y}.pbf"],"vector_layers":[{"id":"roads"},{"id":"earth"}]}`), source); !isKind(err, fault.UnsupportedSchema) {
 		t.Errorf("unknown layers: %v; want the unsupported-schema kind", err)
 	}
 }
 
 // TestTileJSONAddressesObeyFetchRules is the other half of 06.16 (FR-22b).
 func TestTileJSONAddressesObeyFetchRules(t *testing.T) {
-	info, err := ParseTileJSON([]byte(goodTileJSON), source, nil)
+	info, err := ParseTileJSON([]byte(goodTileJSON), source)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,21 +83,22 @@ func TestTileJSONAddressesObeyFetchRules(t *testing.T) {
 	}
 	for name, address := range refused {
 		body := `{"tiles":["` + address + `"]}`
-		if _, err := ParseTileJSON([]byte(body), source, nil); !isKind(err, fault.FetchRefused) {
+		if _, err := ParseTileJSON([]byte(body), source); !isKind(err, fault.FetchRefused) {
 			t.Errorf("%s: %v; want the fetch-refused kind", name, err)
 		}
 	}
-	allowed := `{"tiles":["https://cdn.example/{z}/{x}/{y}.pbf"]}`
-	if _, err := ParseTileJSON([]byte(allowed), source, []string{"cdn.example"}); err != nil {
-		t.Errorf("a host the application allowed: %v", err)
+	// There is one allow-list, and no other host is on it (L-10.1).
+	cdn := `{"tiles":["https://cdn.example/{z}/{x}/{y}.pbf"]}`
+	if _, err := ParseTileJSON([]byte(cdn), source); !isKind(err, fault.FetchRefused) {
+		t.Errorf("a tile host other than the source's: %v; want refused", err)
 	}
-	for _, err := range []error{mustFail(ParseTileJSON([]byte(goodTileJSON), "", nil)), mustFail(ParseTileJSON(nil, source, nil))} {
+	for _, err := range []error{mustFail(ParseTileJSON([]byte(goodTileJSON), "")), mustFail(ParseTileJSON(nil, source))} {
 		if err == nil {
 			t.Error("an empty source or body must be refused")
 		}
 	}
 	// No refusal repeats the address: it may hold a key.
-	_, err = ParseTileJSON([]byte(`{"tiles":["https://elsewhere.example/{z}/{x}/{y}.pbf?key=SECRET"]}`), source, nil)
+	_, err = ParseTileJSON([]byte(`{"tiles":["https://elsewhere.example/{z}/{x}/{y}.pbf?key=SECRET"]}`), source)
 	if err == nil || strings.Contains(err.Error(), "SECRET") || strings.Contains(err.Error(), "elsewhere") {
 		t.Errorf("%v", err)
 	}
@@ -111,7 +112,7 @@ func FuzzTileJSON(f *testing.F) {
 	f.Add([]byte(`{"tiles":[1],"minzoom":"x","vector_layers":{}}`))
 	f.Add([]byte(strings.Repeat("[", 100)))
 	f.Fuzz(func(t *testing.T, body []byte) {
-		info, err := ParseTileJSON(body, source, nil)
+		info, err := ParseTileJSON(body, source)
 		if err != nil {
 			var own *fault.Error
 			if !errors.As(err, &own) {
@@ -152,7 +153,7 @@ func (f *fetcher) get(_ context.Context, r fetch.Request) ([]byte, error) {
 // is TileJSON, whose first template is used and fetched once.
 func TestParityP49_UrlModes(t *testing.T) {
 	f := &fetcher{}
-	prefix, err := NewRemote("https://tiles.example/planet/", f.get, nil)
+	prefix, err := NewRemote("https://tiles.example/planet/", f.get)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -164,7 +165,7 @@ func TestParityP49_UrlModes(t *testing.T) {
 	}
 
 	f = &fetcher{tileJSON: goodTileJSON}
-	described, err := NewRemote(source, f.get, nil)
+	described, err := NewRemote(source, f.get)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -196,7 +197,7 @@ func TestParityP49_UrlModes(t *testing.T) {
 
 	// A TileJSON that is refused is refused once, and asked for no more.
 	f = &fetcher{tileJSON: `{"tiles":["https://elsewhere.example/{z}/{x}/{y}.pbf"]}`}
-	bad, _ := NewRemote(source, f.get, nil)
+	bad, _ := NewRemote(source, f.get)
 	for range 3 {
 		if _, err := bad.Get(context.Background(), id(1, 1, 0)); !isKind(err, fault.FetchRefused) {
 			t.Errorf("%v", err)
@@ -207,11 +208,11 @@ func TestParityP49_UrlModes(t *testing.T) {
 	}
 
 	for _, s := range []string{"", "ftp://tiles.example/", "https://user@tiles.example/", "https:///planet/", "tiles.example/planet/"} {
-		if _, err := NewRemote(s, f.get, nil); !isKind(err, fault.FetchRefused) {
+		if _, err := NewRemote(s, f.get); !isKind(err, fault.FetchRefused) {
 			t.Errorf("source %q: %v", s, err)
 		}
 	}
-	if _, err := NewRemote(source, nil, nil); err == nil {
+	if _, err := NewRemote(source, nil); err == nil {
 		t.Error("no fetcher must be refused")
 	}
 }
@@ -220,7 +221,7 @@ func TestParityP49_UrlModes(t *testing.T) {
 // failure is the tile's failure - upstream checked no status and set no limit.
 func TestParityP50_Http(t *testing.T) {
 	f := &fetcher{tileJSON: goodTileJSON}
-	r, _ := NewRemote(source, f.get, nil)
+	r, _ := NewRemote(source, f.get)
 	if _, err := r.Get(context.Background(), id(1, 1, 0)); err != nil {
 		t.Fatal(err)
 	}
@@ -244,7 +245,7 @@ func TestParityP50_Http(t *testing.T) {
 // is tried again, and a stand-in is drawn meanwhile.
 func TestParityP51_FetchFailure(t *testing.T) {
 	f := &fetcher{fail: errors.New("offline")}
-	r, _ := NewRemote("https://tiles.example/planet/", f.get, nil)
+	r, _ := NewRemote("https://tiles.example/planet/", f.get)
 	p := pipeline(t, Options{Network: r.Network(), Embedded: assets.Tile, EmbeddedMaxZoom: assets.MaxZoom})
 	if failed := runAll(t, p.Plan(t0, []scene.TileID{id(6, 16, 26)})); failed != 1 {
 		t.Errorf("%d jobs failed, want the one network job", failed)
@@ -274,13 +275,13 @@ func TestAddressWrittenAsItParses(t *testing.T) {
 		`{"tiles":["Https://tiles.example/{z}/{x}/{y}.pbf"]}`,
 		`{"tiles":["HTTPS://tiles.example/{z}/{x}/{y}.pbf"]}`,
 	} {
-		if _, err := ParseTileJSON([]byte(raw), source, nil); !isKind(err, fault.FetchRefused) {
+		if _, err := ParseTileJSON([]byte(raw), source); !isKind(err, fault.FetchRefused) {
 			t.Errorf("%s: %v; want it refused", raw, err)
 		}
 	}
 	// Written as it parses, it is taken.
 	good := `{"tiles":["https://tiles.example/{z}/{x}/{y}.pbf"]}`
-	info, err := ParseTileJSON([]byte(good), source, nil)
+	info, err := ParseTileJSON([]byte(good), source)
 	if err != nil {
 		t.Fatal(err)
 	}

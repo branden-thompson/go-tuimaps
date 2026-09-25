@@ -102,6 +102,7 @@ const VisionSafe
 const WaterLayer
 const WebMercator
 func CheckRamp([]RGB, RampCheck) []Finding
+func CheckedDialer() Dialer
 func Embed(func(z uint8, x, y uint32) ([]byte, bool), uint8) Option
 func KindOf(error) (Kind, bool)
 func Kinds() []Kind
@@ -186,6 +187,7 @@ type CacheUse struct{ Need int64; Held int64; Limit int64 }
 type Caches struct{ Tiles CacheUse; Shapes CacheUse; Disk CacheUse }
 type Class struct{ Label string; Colour RGB; Drawn bool; Mark string }
 type Depth = colour.Depth
+type Dialer = fetch.Dialer
 type Drop struct{ Kind DropKind; Overlay string; Label string; Shown string }
 type DropKind uint8
 type Feature = overlay.Feature

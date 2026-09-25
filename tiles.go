@@ -19,6 +19,18 @@ import (
 // while it honours its request's context (L-7.3).
 type FetchOptions = fetch.HostOptions
 
+// Dialer is how a transport connects: the shape of an http.Transport's
+// DialContext.
+type Dialer = fetch.Dialer
+
+// CheckedDialer is the library's own dialer, which refuses a private or
+// reserved address at the moment of connection. A host transport that dials
+// through it keeps that refusal (L-10.3); one that dials some other way does
+// not, and nothing the library does can check where a proxy goes beyond it.
+func CheckedDialer() Dialer {
+	return fetch.CheckedDialer()
+}
+
 // CacheUse is what one cache holds and is allowed to hold (D-90).
 type CacheUse struct {
 	Need  int64 // the bytes the views on hand need
@@ -64,7 +76,7 @@ func (m *Map) useSourceLocked(address string) error {
 	if err != nil {
 		return err
 	}
-	remote, err := tiles.NewRemote(address, own.Fetch, nil)
+	remote, err := tiles.NewRemote(address, own.Fetch)
 	if err != nil {
 		return err
 	}

@@ -474,3 +474,59 @@ func TestAHostTransport(t *testing.T) {
 		t.Errorf("a transport's error must not be passed on: %v", err)
 	}
 }
+
+// TestReservedRangesRefused is v0.2.0 L8.6's second half (L-10.3): each of the
+// ranges added in v0.2.0 is refused at the moment of connection.
+func TestReservedRangesRefused(t *testing.T) {
+	for _, address := range []string{"0.0.0.1:443", "[64:ff9b::a00:1]:443", "[2002:a00:1::1]:443", "198.18.0.1:443", "198.19.255.254:443", "240.0.0.1:443", "255.255.255.254:443"} {
+		if err := checkDial(address, false); !errors.Is(err, errPolicy) {
+			t.Errorf("%s: %v; want it refused", address, err)
+		}
+	}
+	for _, address := range []string{"8.8.8.8:443", "[2606:4700::1111]:443", "198.20.0.1:443"} {
+		if err := checkDial(address, false); err != nil {
+			t.Errorf("%s, a public address: %v", address, err)
+		}
+	}
+}
+
+// TestTheProxyDecisionIsPerConnection is L8.6 (L-10.3): the address check is
+// skipped only for a connection to the proxy itself. A redirect to a host the
+// proxy does not carry is dialled directly, and meets the check.
+func TestTheProxyDecisionIsPerConnection(t *testing.T) {
+	server := httptest.NewServer(body("the proxy"))
+	defer server.Close()
+	proxyAddress := strings.TrimPrefix(server.URL, "http://")
+	f, err := ForSource("https://tiles.example/", Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.proxyOf = func(r *http.Request) (*url.URL, error) {
+		if r.URL.Hostname() == "tiles.example" {
+			return url.Parse("http://" + proxyAddress)
+		}
+		return nil, nil // a host the proxy settings except
+	}
+	// Before any request has gone through the proxy, a loopback address is
+	// refused like any private one.
+	if conn, err := f.dial(context.Background(), "tcp", proxyAddress); err == nil {
+		conn.Close()
+		t.Fatal("a loopback address was dialled with no proxy in use")
+	}
+	if u, _ := f.proxy(httptest.NewRequest(http.MethodGet, "https://tiles.example/x", nil)); u == nil {
+		t.Fatal("the source's request was not proxied")
+	}
+	conn, err := f.dial(context.Background(), "tcp", proxyAddress)
+	if err != nil {
+		t.Errorf("the connection to the proxy itself was refused: %v", err)
+	} else {
+		conn.Close()
+	}
+	if u, _ := f.proxy(httptest.NewRequest(http.MethodGet, "https://internal.example/x", nil)); u != nil {
+		t.Fatal("a host the settings except was proxied")
+	}
+	if conn, err := f.dial(context.Background(), "tcp", "10.0.0.1:443"); err == nil {
+		conn.Close()
+		t.Error("a redirect's direct connection to a private address skipped the check")
+	}
+}

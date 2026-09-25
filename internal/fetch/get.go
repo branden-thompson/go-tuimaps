@@ -47,12 +47,22 @@ func tooLarge() error {
 		textsafe.Const("check the source; the limits protect the host's memory"))
 }
 
+// errTooLate is why a request's own deadline ends it: the source, or the
+// host's transport, did not answer in time. The caller's own cancellation is
+// told apart from it by its cause.
+var errTooLate = errors.New("fetch: no answer in time")
+
 // Fetch fetches one request from the source. The transport's own error is
 // never returned or wrapped: it holds the address.
 func (f *Fetcher) Fetch(ctx context.Context, r Request) ([]byte, error) {
 	if f == nil || ctx == nil {
 		return nil, refusedSource()
 	}
+	// The request's own deadline, not only the caller's: the client's timeout
+	// cannot take back an answer from a transport that ignores cancellation,
+	// so the answer is judged against this context once it is read (L-7.3).
+	ctx, cancel := context.WithTimeoutCause(ctx, f.timeout, errTooLate)
+	defer cancel()
 	resp, err := f.send(ctx, r)
 	if err != nil {
 		return nil, err
@@ -63,7 +73,7 @@ func (f *Fetcher) Fetch(ctx context.Context, r Request) ([]byte, error) {
 		// A late answer is never used (L-7.3): a transport that ignored its
 		// context has held this call past its end, and what it brought back
 		// is thrown away.
-		return nil, f.problem(fault.Cancelled, textsafe.Text{})
+		return nil, f.transportError(ctx, ctx.Err())
 	}
 	return data, err
 }
@@ -89,13 +99,6 @@ func (f *Fetcher) send(ctx context.Context, r Request) (*http.Response, error) {
 	if r.RangeLen > 0 {
 		req.Header.Set("Range", "bytes="+strconv.FormatInt(r.RangeStart, 10)+"-"+strconv.FormatInt(r.RangeStart+r.RangeLen-1, 10))
 	}
-	proxy, err := f.transport.Proxy(req)
-	if err != nil {
-		return nil, f.problem(fault.FetchFailed, textsafe.Const("the proxy settings in the environment could not be read"))
-	}
-	if proxy != nil {
-		req = req.WithContext(context.WithValue(ctx, viaProxy{}, true))
-	}
 	resp, err := f.client.Do(req)
 	if err != nil {
 		return nil, f.transportError(ctx, err)
@@ -106,8 +109,8 @@ func (f *Fetcher) send(ctx context.Context, r Request) (*http.Response, error) {
 // transportError turns the client's error into one of the library's own,
 // keeping nothing of it.
 func (f *Fetcher) transportError(ctx context.Context, err error) error {
-	if ctx.Err() != nil {
-		return f.problem(fault.Cancelled, textsafe.Text{})
+	if ctx.Err() != nil && context.Cause(ctx) != errTooLate {
+		return f.problem(fault.Cancelled, textsafe.Text{}) // the caller's work ended
 	}
 	if errors.Is(err, errPolicy) {
 		return f.problem(fault.FetchRefused, textsafe.Text{})
