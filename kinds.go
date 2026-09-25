@@ -59,6 +59,7 @@ const (
 	CacheWriteFailed      = fault.CacheWriteFailed
 	RenderFailed          = fault.RenderFailed
 	CacheUnderNeed        = fault.CacheUnderNeed
+	TableFallback         = fault.TableFallback // valued by the provider's legend gradient, off its table (v0.2.0)
 )
 
 // KindOf is the kind of an error the library raised, and false for an error
@@ -85,8 +86,8 @@ func Kinds() []Kind {
 
 // WarningKinds are every warning kind there is, in the contract's order.
 func WarningKinds() []WarningKind {
-	out := make([]WarningKind, 0, int(CacheUnderNeed))
-	for k := RampRuleBroken; k <= CacheUnderNeed; k++ {
+	out := make([]WarningKind, 0, int(TableFallback))
+	for k := RampRuleBroken; k <= TableFallback; k++ {
 		out = append(out, k)
 	}
 	return out

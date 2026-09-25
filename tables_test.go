@@ -54,7 +54,7 @@ func TestTheIEMTableIsThePublishedOne(t *testing.T) {
 		derived = append(derived, overlay.TableEntry{Colour: colour.RGB{R: uint8(r), G: uint8(g), B: uint8(b)}, Value: v})
 	}
 	writeTable(t, "internal/overlay/provider_iem.go", "ProviderIEM", "IEM",
-		"the Iowa Environmental Mesonet's N0Q table as it publishes it, -32 to 95 dBZ in steps of 0.5 (spec 29's input)", false, false, derived)
+		"the Iowa Environmental Mesonet's N0Q table as it publishes it, -32 to 95 dBZ in steps of 0.5 (spec 29's input)", false, false, derived, nil)
 	table, ok := overlay.TableOf(overlay.ProviderIEM)
 	if !ok {
 		t.Fatal("IEM has no table")
@@ -179,7 +179,7 @@ func TestAProviderIsOneFileOfItsOwn(t *testing.T) {
 // writeTable writes a provider's registration file from its evidence when
 // TUIMAPS_WRITE_TABLES is set, so that the table the library carries and
 // the test that holds it to its evidence can never be two different things.
-func writeTable(t *testing.T, path, constant, name, source string, approximate, unverified bool, entries []overlay.TableEntry) {
+func writeTable(t *testing.T, path, constant, name, source string, approximate, unverified bool, entries, gradient []overlay.TableEntry) {
 	t.Helper()
 	if os.Getenv("TUIMAPS_WRITE_TABLES") == "" {
 		return
@@ -194,7 +194,16 @@ func writeTable(t *testing.T, path, constant, name, source string, approximate, 
 		b.WriteString("\t\t{Colour: colour.RGB{R: " + strconv.Itoa(int(e.Colour.R)) + ", G: " + strconv.Itoa(int(e.Colour.G)) + ", B: " + strconv.Itoa(int(e.Colour.B)) +
 			"}, Value: " + strconv.FormatFloat(e.Value, 'g', -1, 64) + "},\n")
 	}
-	b.WriteString("\t}})\n}\n")
+	b.WriteString("\t}")
+	if len(gradient) > 0 {
+		b.WriteString(", Gradient: []TableEntry{\n")
+		for _, e := range gradient {
+			b.WriteString("\t\t{Colour: colour.RGB{R: " + strconv.Itoa(int(e.Colour.R)) + ", G: " + strconv.Itoa(int(e.Colour.G)) + ", B: " + strconv.Itoa(int(e.Colour.B)) +
+				"}, Value: " + strconv.FormatFloat(e.Value, 'g', -1, 64) + "},\n")
+		}
+		b.WriteString("\t}")
+	}
+	b.WriteString("})\n}\n")
 	if err := os.WriteFile(path, []byte(b.String()), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -309,7 +318,7 @@ func TestTheMRMSTableIsTheObservedPalette(t *testing.T) {
 	}
 	writeTable(t, "internal/overlay/provider_mrms.go", "ProviderMRMS", "MRMS",
 		"the 111 colours observed in fifteen recorded national frames and three views (wave 2), each valued by the nearest pixel of MRMS's own legend; approximate, and its heavy end unverified until a severe day is captured (L-2.3, OW-12)",
-		true, true, derived)
+		true, true, derived, mrmsGradient(t))
 	table, ok := overlay.TableOf(overlay.ProviderMRMS)
 	if !ok {
 		t.Fatal("MRMS has no table")
@@ -328,6 +337,40 @@ func TestTheMRMSTableIsTheObservedPalette(t *testing.T) {
 	if err := overlay.CheckTable(table.Entries); err != nil {
 		t.Errorf("MRMS's table breaks the table rules: %v", err)
 	}
+	gradient := mrmsGradient(t)
+	if len(table.Gradient) != len(gradient) {
+		t.Fatalf("%d gradient stops; the legend gives %d", len(table.Gradient), len(gradient))
+	}
+	for i := range gradient {
+		if table.Gradient[i] != gradient[i] {
+			t.Errorf("gradient stop %d: %+v; the legend gives %+v", i, table.Gradient[i], gradient[i])
+		}
+	}
+}
+
+// mrmsGradient is MRMS's legend from 30 dBZ up, a stop a column along its
+// first row: the heavy end an off-table colour is valued along (L6.5).
+func mrmsGradient(t *testing.T) []overlay.TableEntry {
+	t.Helper()
+	f, err := os.Open("06_docs/02_features/radar-loops/02-analysis/programs/inputs/mrms/legend.png")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	img, err := png.Decode(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out []overlay.TableEntry
+	for x := 0; x < 500; x++ {
+		v := math.Round((-20+(float64(x)+0.5)*0.18)*1000) / 1000
+		if v < 30 {
+			continue
+		}
+		c := color.NRGBAModel.Convert(img.At(img.Bounds().Min.X+x, img.Bounds().Min.Y)).(color.NRGBA)
+		out = append(out, overlay.TableEntry{Colour: colour.RGB{R: c.R, G: c.G, B: c.B}, Value: v})
+	}
+	return out
 }
 
 // TestTheLegendSaysWhenATableIsApproximate is L5.6 (L-13.10) and L6.7: an

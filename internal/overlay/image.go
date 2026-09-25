@@ -90,6 +90,7 @@ type LoopFrame struct {
 type Report struct {
 	Unmatched int
 	Samples   []colour.RGB
+	Fallback  int // pixels valued along the provider's legend gradient, off its table (L-2.3)
 }
 
 func imageRefused(why, todo textsafe.Text) error {
@@ -323,14 +324,23 @@ type matcher struct {
 	table     []TableEntry
 	breaks    []float64
 	tolerance float64
-	known     map[colour.RGB]int8
+	known     map[colour.RGB]reading
 	report    Report
 	sampled   map[colour.RGB]bool
+	gradient  gradient // the provider's heavy end, if the image is read with a provider's table
+}
+
+// reading is what a colour was found to be, remembered so that a picture of
+// few colours costs few searches: its class, and whether the class came from
+// the provider's legend gradient rather than its table.
+type reading struct {
+	class int8
+	fell  bool
 }
 
 const unmatched = int8(-2)
 
-func (m *matcher) class(c colour.RGB) int8 {
+func (m *matcher) class(c colour.RGB) reading {
 	if got, ok := m.known[c]; ok {
 		return got
 	}
@@ -353,8 +363,16 @@ func (m *matcher) class(c colour.RGB) int8 {
 			got = int8(Classify(m.table[best].Value, m.breaks))
 		}
 	}
-	m.known[c] = got
-	return got
+	out := reading{class: got}
+	if got == unmatched && len(m.gradient.at) > 1 {
+		// Off the table: valued where it projects onto the legend's heavy
+		// end, if it is near enough to it to be rain at all (L6.5).
+		if v, off := m.gradient.value(c); off <= fallbackReach {
+			out = reading{class: int8(Classify(v, m.breaks)), fell: true}
+		}
+	}
+	m.known[c] = out
+	return out
 }
 
 // pixel classifies one pixel. A fully transparent pixel is nothing at all,
@@ -365,8 +383,11 @@ func (m *matcher) pixel(c color.NRGBA) int8 {
 	}
 	rgb := colour.RGB{R: c.R, G: c.G, B: c.B}
 	got := m.class(rgb)
-	if got != unmatched {
-		return got
+	if got.fell {
+		m.report.Fallback++
+	}
+	if got.class != unmatched {
+		return got.class
 	}
 	m.report.Unmatched++
 	if !m.sampled[rgb] && len(m.report.Samples) < maxSamples {
@@ -404,7 +425,10 @@ func rasterise(img *Image, file []byte, kind Kind, imageCap int) (scene.Raster, 
 	if img.Exact {
 		tolerance = 0
 	}
-	m := &matcher{table: img.Table, breaks: kind.Breaks, tolerance: tolerance, known: map[colour.RGB]int8{}, sampled: map[colour.RGB]bool{}}
+	m := &matcher{table: img.Table, breaks: kind.Breaks, tolerance: tolerance, known: map[colour.RGB]reading{}, sampled: map[colour.RGB]bool{}}
+	if t, ok := TableOf(img.Provider); ok && len(t.Gradient) > 1 {
+		m.gradient = gradientOf(t.Gradient) // the provider's own table: its heavy end too
+	}
 	raster := scene.Raster{West: img.West, South: img.South, East: img.East, North: img.North, Projection: uint8(img.Projection),
 		Width: w, Height: h, Classes: make([]int8, w*h), Preset: uint8(kind.Preset), ClassCount: len(kind.Breaks) + 1}
 	for y := range h {
@@ -545,11 +569,14 @@ func (s *Store) keepPictures(r *Reader, pictures []picture) {
 	s.pictures[r.id] = pictures
 	s.landed++
 	delete(s.spare, r.id) // what the new version kept, it now holds
-	unmatched := 0
+	unmatched, fallback := 0, 0
 	for _, p := range pictures {
-		unmatched += p.report.Unmatched
+		unmatched, fallback = unmatched+p.report.Unmatched, fallback+p.report.Fallback
 	}
 	if unmatched > 0 {
 		s.warnCountLocked(fault.UnmatchedImageColours, textsafe.Quote(r.id), unmatched)
+	}
+	if fallback > 0 {
+		s.warnCountLocked(fault.TableFallback, textsafe.Quote(r.id), fallback) // the heavy end is the library's best reading (L6.6)
 	}
 }
