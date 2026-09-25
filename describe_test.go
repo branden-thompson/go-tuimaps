@@ -10,10 +10,10 @@ import (
 	"github.com/branden-thompson/go-tuimaps/assets"
 )
 
-// TestDescribeReadyOrPending is plan task 11.16 (FR-29, contract section 1):
-// the call answers at once, from the host's own data, with nothing left to
-// work out later.
-func TestDescribeReadyOrPending(t *testing.T) {
+// TestReportIsReadyAtOnce is plan task 11.16 (FR-29, contract section 1),
+// ported to Report (v0.2.0 L5.8): the call answers at once, from the host's
+// own data, with nothing left to work out later.
+func TestReportIsReadyAtOnce(t *testing.T) {
 	m := gulfMap(t, 149, 38)
 	if _, err := m.SetPlaces([]tuimaps.Place{{Name: "Home", At: tuimaps.LonLat{Lon: -84.39, Lat: 33.75}}}); err != nil {
 		t.Fatal(err)
@@ -22,25 +22,19 @@ func TestDescribeReadyOrPending(t *testing.T) {
 		t.Fatal(err)
 	}
 	// No Settle, no Work: the answer is there.
-	got, err := m.Describe(nil)
+	got, err := m.Report(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got) != 1 || got[0].Place != "Home" {
-		t.Fatalf("%+v", got)
+	if len(got.Places) != 1 || got.Places[0].Place != "Home" {
+		t.Fatalf("%+v", got.Places)
 	}
-	if got[0].Pending {
-		t.Error("a description is waiting for work that the host's own data made unnecessary")
+	if len(got.Places[0].Alerts) != 1 {
+		t.Fatalf("%d alert answers for one alert", len(got.Places[0].Alerts))
 	}
-	if len(got[0].Answers) != 1 {
-		t.Fatalf("%d answers for one overlay", len(got[0].Answers))
-	}
-	one := got[0].Answers[0]
-	if one.Overlay != "alerts" || one.Form != "area" {
-		t.Errorf("%+v", one)
-	}
-	if one.Relation.String() != "outside" {
-		t.Errorf("Atlanta is %v the Gulf alert area", one.Relation)
+	one := got.Places[0].Alerts[0]
+	if one.Overlay != "alerts" || one.Where != tuimaps.Outside {
+		t.Errorf("Atlanta against the Gulf alert area: %+v; want outside", one)
 	}
 	if one.Distance <= 0 || one.Unit != "kilometres" || one.Compass == "" {
 		t.Errorf("%+v", one)
@@ -50,9 +44,9 @@ func TestDescribeReadyOrPending(t *testing.T) {
 	}
 }
 
-// TestDescribeEveryForm: each shape a host can hand in is described in its
+// TestReportEveryForm: each shape a host can hand in is described in its
 // own terms, and the words are the host's units.
-func TestDescribeEveryForm(t *testing.T) {
+func TestReportEveryForm(t *testing.T) {
 	m := gulfMap(t, 149, 38)
 	home := tuimaps.Place{Name: "Home", At: tuimaps.LonLat{Lon: -84.39, Lat: 33.75}}
 	if _, err := m.Set(warning("alerts")); err != nil {
@@ -69,16 +63,16 @@ func TestDescribeEveryForm(t *testing.T) {
 		t.Fatal(err)
 	}
 	m.Units(true, true) // miles and Fahrenheit
-	got, err := m.Describe([]tuimaps.Place{home})
+	got, err := m.Report([]tuimaps.Place{home})
 	if err != nil {
 		t.Fatal(err)
 	}
 	forms := map[string]tuimaps.Answer{}
-	for _, a := range got[0].Answers {
+	for _, a := range got.Places[0].Answers {
 		forms[a.Overlay] = a
 	}
-	if forms["alerts"].Form != "area" || forms["alerts"].Unit != "miles" {
-		t.Errorf("the alert answer is %+v", forms["alerts"])
+	if alerts := got.Places[0].Alerts; len(alerts) != 1 || alerts[0].Overlay != "alerts" || alerts[0].Unit != "miles" {
+		t.Errorf("the alert answer is %+v", alerts)
 	}
 	if forms["track"].Form != "line" || forms["track"].Label != "storm track" {
 		t.Errorf("the track answer is %+v", forms["track"])
@@ -91,7 +85,7 @@ func TestDescribeEveryForm(t *testing.T) {
 		t.Error("a field that covers the place says it has no data")
 	}
 	// Everything said is speakable: no braille, no glyphs, no escapes.
-	for _, a := range got[0].Answers {
+	for _, a := range got.Places[0].Answers {
 		for _, said := range a.Said() {
 			if strings.ContainsAny(said, "\x1b⠀░") {
 				t.Errorf("an answer carries %q", said)
@@ -100,10 +94,10 @@ func TestDescribeEveryForm(t *testing.T) {
 	}
 }
 
-// TestDescribeMemoised is plan task 11.11 (FR-29): asking twice with
-// nothing changed costs nothing, and anything that would change the answer
-// makes it be worked out again.
-func TestDescribeMemoised(t *testing.T) {
+// TestReportMemoised is plan task 11.11 (FR-29), ported to Report: asking
+// twice with nothing changed costs nothing, and anything that would change
+// the answer makes it be worked out again.
+func TestReportMemoised(t *testing.T) {
 	m := gulfMap(t, 149, 38)
 	if _, err := m.SetPlaces([]tuimaps.Place{{Name: "Home", At: tuimaps.LonLat{Lon: -84.39, Lat: 33.75}}}); err != nil {
 		t.Fatal(err)
@@ -111,48 +105,54 @@ func TestDescribeMemoised(t *testing.T) {
 	if _, err := m.Set(warning("alerts")); err != nil {
 		t.Fatal(err)
 	}
-	first, err := m.Describe(nil)
+	first, err := m.Report(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	again, err := m.Describe(nil)
+	again, err := m.Report(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if &first[0].Answers[0] != &again[0].Answers[0] {
+	if &first.Places[0].Alerts[0] != &again.Places[0].Alerts[0] {
 		t.Error("asking twice with nothing changed worked the answer out again")
 	}
-	if allocs := testing.AllocsPerRun(20, func() { m.Describe(nil) }); allocs > 0 {
-		t.Errorf("repeating an unchanged description allocates %v times", allocs)
+	if allocs := testing.AllocsPerRun(20, func() { m.Report(nil) }); allocs > 0 {
+		t.Errorf("repeating an unchanged report allocates %v times", allocs)
 	}
-	// A change to the overlays, the places or the units is worked out again.
+	// A change to the overlays, the places, the units or nearby is worked out again.
 	if _, err := m.Set(warning("more")); err != nil {
 		t.Fatal(err)
 	}
-	third, err := m.Describe(nil)
+	third, err := m.Report(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(third[0].Answers) != 2 {
-		t.Errorf("after a second overlay there are %d answers", len(third[0].Answers))
+	if len(third.Places[0].Alerts) != 2 {
+		t.Errorf("after a second overlay there are %d alert answers", len(third.Places[0].Alerts))
 	}
 	m.Units(true, false)
-	fourth, _ := m.Describe(nil)
-	if fourth[0].Answers[0].Unit != "miles" {
-		t.Error("changing the units did not work the description out again")
+	fourth, _ := m.Report(nil)
+	if fourth.Places[0].Alerts[0].Unit != "miles" {
+		t.Error("changing the units did not work the report out again")
 	}
 	if _, err := m.AddPlace(tuimaps.Place{Name: "Away", At: tuimaps.LonLat{Lon: 0, Lat: 0}}); err != nil {
 		t.Fatal(err)
 	}
-	fifth, _ := m.Describe(nil)
-	if len(fifth) != 2 {
-		t.Errorf("after a second place there are %d descriptions", len(fifth))
+	fifth, _ := m.Report(nil)
+	if len(fifth.Places) != 2 {
+		t.Errorf("after a second place there are %d place reports", len(fifth.Places))
+	}
+	near := fifth.Places[0].Alerts[0].Where
+	must(t, m.SetNearby(1000))
+	sixth, _ := m.Report(nil)
+	if sixth.Places[0].Alerts[0].Where == near {
+		t.Error("changing what nearby means did not work the report out again")
 	}
 }
 
-// TestDescribeNeverInsideRender is plan task 11.12: drawing does not
-// describe, and describing does not draw. A host pays for what it asks for.
-func TestDescribeNeverInsideRender(t *testing.T) {
+// TestReportNeverInsideRender is plan task 11.12: drawing does not
+// report, and reporting does not draw. A host pays for what it asks for.
+func TestReportNeverInsideRender(t *testing.T) {
 	m := gulfMap(t, 80, 24)
 	if _, err := m.SetPlaces([]tuimaps.Place{{Name: "Home", At: tuimaps.LonLat{Lon: -84.39, Lat: 33.75}}}); err != nil {
 		t.Fatal(err)
@@ -167,26 +167,26 @@ func TestDescribeNeverInsideRender(t *testing.T) {
 	// Drawing again allocates what drawing allocates; if it described as
 	// well, the count would carry the description's own work.
 	drawing := testing.AllocsPerRun(10, func() { m.Render(tuimaps.Size{Cols: 80, Rows: 24}, noon) })
-	m.Describe(nil)
+	m.Report(nil)
 	describing := testing.AllocsPerRun(10, func() { m.Render(tuimaps.Size{Cols: 80, Rows: 24}, noon) })
 	if describing > drawing {
 		t.Errorf("drawing allocates %v before a description and %v after it", drawing, describing)
 	}
 }
 
-// TestDescribeOnAClosedMap: a closed map describes nothing and says why.
-func TestDescribeOnAClosedMap(t *testing.T) {
+// TestReportOnAClosedMap: a closed map reports nothing and says why.
+func TestReportOnAClosedMap(t *testing.T) {
 	m := world(t, 40, 12)
 	m.Close()
-	if _, err := m.Describe(nil); err == nil {
-		t.Error("a closed map described something")
+	if _, err := m.Report(nil); err == nil {
+		t.Error("a closed map reported something")
 	}
 }
 
-// BenchmarkDescribeSixtyPlaces is plan task 11.15 (FR-29's cost): sixty
+// BenchmarkReportSixtyPlaces is plan task 11.15 (FR-29's cost): sixty
 // places against a handful of overlays, which is the fixture the target of
 // fifty milliseconds was set against. The figure is recorded, not gated.
-func BenchmarkDescribeSixtyPlaces(b *testing.B) {
+func BenchmarkReportSixtyPlaces(b *testing.B) {
 	m, err := tuimaps.New(tuimaps.WithSize(149, 38), tuimaps.Embed(assets.Tile, assets.MaxZoom))
 	if err != nil {
 		b.Fatal(err)
@@ -224,7 +224,7 @@ func BenchmarkDescribeSixtyPlaces(b *testing.B) {
 		if _, err := m.AddPlace(tuimaps.Place{ID: "moving", Name: "moving", At: tuimaps.LonLat{Lon: -84, Lat: 33 + float64(version%7)/100}}); err != nil {
 			b.Fatal(err)
 		}
-		if _, err := m.Describe(nil); err != nil {
+		if _, err := m.Report(nil); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -252,14 +252,14 @@ func TestStalenessIsJudgedByTheFramesOwnRule(t *testing.T) {
 	if _, err := m.Set(warning("alerts")); err != nil {
 		t.Fatal(err)
 	}
-	// Described before anything is drawn: the host has said nothing about
+	// Reported before anything is drawn: the host has said nothing about
 	// the time, so nothing is said back about it.
-	said, err := m.Describe(nil)
+	said, err := m.Report(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, one := range said {
-		for _, a := range one.Answers {
+	for _, one := range said.Places {
+		for _, a := range one.Alerts {
 			if a.Stale {
 				t.Errorf("%s in %s is called stale, and no clock has been given", one.Place, a.Overlay)
 			}
@@ -272,12 +272,12 @@ func TestStalenessIsJudgedByTheFramesOwnRule(t *testing.T) {
 	if _, err := m.Render(tuimaps.Size{Cols: cols, Rows: rows}, noon.Add(9*time.Hour)); err != nil {
 		t.Fatal(err)
 	}
-	said, err = m.Describe(nil)
+	said, err = m.Report(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, one := range said {
-		for _, a := range one.Answers {
+	for _, one := range said.Places {
+		for _, a := range one.Alerts {
 			if !a.Stale {
 				t.Errorf("%s in %s is not stale nine hours after its data was valid", one.Place, a.Overlay)
 			}
@@ -287,12 +287,12 @@ func TestStalenessIsJudgedByTheFramesOwnRule(t *testing.T) {
 	if _, err := m.Render(tuimaps.Size{Cols: cols, Rows: rows}, noon.Add(time.Minute)); err != nil {
 		t.Fatal(err)
 	}
-	said, err = m.Describe(nil)
+	said, err = m.Report(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, one := range said {
-		for _, a := range one.Answers {
+	for _, one := range said.Places {
+		for _, a := range one.Alerts {
 			if a.Stale {
 				t.Errorf("%s in %s is stale a minute after its data was valid", one.Place, a.Overlay)
 			}

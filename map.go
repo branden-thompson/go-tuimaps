@@ -181,8 +181,8 @@ type Map struct {
 	placesVersion uint64          // raised whenever the places change
 	wallClock     time.Time       // the clock of the last frame, which staleness is judged by
 	staleNow      bool
-	described     []Description
-	describedKey  describeKey
+	reported      *Report // the report last worked out, and what it was worked out from (FR-29)
+	reportedKey   describeKey
 	remote        *tiles.Remote // the source named, if any: nothing is reached until one is (D-65)
 	disk          *tiles.Disk   // the disk cache, if the host named a directory
 	fetcher       fetch.Func    // a replacement for the library's own way of reaching a source

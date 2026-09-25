@@ -117,7 +117,7 @@ func (m *Map) SetPlaces(places []Place) (ids []string, err error) {
 	}
 	m.places = kept
 	m.placesVersion++
-	m.described = nil
+	m.reported = nil
 	m.changed++
 	return ids, nil
 }
@@ -147,14 +147,14 @@ func (m *Map) AddPlace(p Place) (id string, err error) {
 		if m.places[i].ID == one.ID {
 			m.places[i] = one
 			m.placesVersion++
-			m.described = nil
+			m.reported = nil
 			m.changed++
 			return one.ID, nil
 		}
 	}
 	m.places = append(m.places, one)
 	m.placesVersion++
-	m.described = nil
+	m.reported = nil
 	m.changed++
 	return one.ID, nil
 }
@@ -182,7 +182,7 @@ func (m *Map) RemovePlace(id string) (gone int, err error) {
 	gone = was - len(m.places)
 	if gone > 0 {
 		m.placesVersion++
-		m.described = nil
+		m.reported = nil
 		m.changed++
 	}
 	return gone, nil

@@ -74,6 +74,11 @@ func TestTheAlertsShown(t *testing.T) {
 	if strings.ContainsAny(r.Alerts[2].Label, "\x1b\u202e") {
 		t.Errorf("a hostile label came back as it went in: %q", r.Alerts[2].Label)
 	}
+	// Moving the view changes what is shown, though nothing else changed.
+	must(t, m.Recentre(tuimaps.LonLat{Lon: 10.5, Lat: 10.5}))
+	if r, err := m.Report(nil); err != nil || len(r.Alerts) != 1 || r.Alerts[0].Feature != "far" {
+		t.Errorf("after moving the view to the far alert: %+v, %v", r.Alerts, err)
+	}
 }
 
 // TestEachAlertIsAnsweredOnItsOwn is L5.4 (L-13.6, D-43): for a named place,

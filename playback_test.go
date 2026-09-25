@@ -435,7 +435,7 @@ func TestAFrameAdvanceIsATickNotAChange(t *testing.T) {
 		t.Errorf("Play's jump to the oldest frame moved FrameTicks from %d to %d", before, m.FrameTicks())
 	}
 	places := []tuimaps.Place{{ID: "home", Name: "Home", At: tuimaps.LonLat{Lon: 0, Lat: 10}}}
-	if _, err := m.Describe(places); err != nil {
+	if _, err := m.Report(places); err != nil {
 		t.Fatal(err)
 	}
 	// The advances come from the animation clock at one wall time: a new
@@ -454,8 +454,8 @@ func TestAFrameAdvanceIsATickNotAChange(t *testing.T) {
 	if m.Changed() != changed {
 		t.Errorf("ten advances moved Changed from %d to %d; an advance is not an input", changed, m.Changed())
 	}
-	if !tuimaps.DescriptionRemembered(m, places) {
-		t.Error("an advance changed the description's key")
+	if !tuimaps.ReportRemembered(m, places) {
+		t.Error("an advance changed the report's key")
 	}
 	// A refresh while playing is an input too: the moment it moves the loop
 	// to is not an advance.

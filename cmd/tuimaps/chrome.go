@@ -107,24 +107,14 @@ func (a *app) panelText() []string {
 // map's own rows: the same words --describe writes, so that a person who
 // reads rather than looks sees no less (FR-5, D-52).
 func (a *app) describedLines() []string {
-	said, err := a.m.Describe(nil)
+	said, err := a.m.Report(nil)
 	if err != nil {
 		return []string{printable(err.Error(), wholeComplaint)}
 	}
-	if len(said) == 0 {
+	if len(said.Places) == 0 {
 		return []string{"no place is named; the map has nothing to say about anywhere"}
 	}
-	lines := make([]string, 0, len(said)*2)
-	for _, one := range said {
-		lines = append(lines, one.Place)
-		for _, answer := range one.Answers {
-			lines = append(lines, "  "+answer.Overlay+": "+sentence(answer))
-		}
-		if len(one.Answers) == 0 {
-			lines = append(lines, "  nothing is set over this place")
-		}
-	}
-	return lines
+	return reported(said)
 }
 
 // cut is a line of the app's own, cut to the width of the terminal. The

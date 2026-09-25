@@ -33,8 +33,10 @@ func TestAPlaceInsideTwoOverlappingAreasIsInside(t *testing.T) {
 	// A covers -85..-83 / 41..43, B covers -84..-82 / 42..44.
 	// They overlap on -84..-83 / 42..43, and the house is in the middle of it.
 	house := tuimaps.LonLat{Lon: -83.5, Lat: 42.5}
-	areaA := tuimaps.Feature{Kind: tuimaps.Polygon, Role: tuimaps.AlertSevere, Rings: [][]tuimaps.LonLat{rect(-85, 41, -83, 43)}}
-	areaB := tuimaps.Feature{Kind: tuimaps.Polygon, Role: tuimaps.AlertSevere, Rings: [][]tuimaps.LonLat{rect(-84, 42, -82, 44)}}
+	// One hazard's areas share its ID (v0.2.0 L5.4): Report answers the
+	// hazard once, inside if inside any of them.
+	areaA := tuimaps.Feature{Kind: tuimaps.Polygon, Role: tuimaps.AlertSevere, ID: "hazard", Rings: [][]tuimaps.LonLat{rect(-85, 41, -83, 43)}}
+	areaB := tuimaps.Feature{Kind: tuimaps.Polygon, Role: tuimaps.AlertSevere, ID: "hazard", Rings: [][]tuimaps.LonLat{rect(-84, 42, -82, 44)}}
 
 	for _, c := range []struct {
 		what  string
@@ -54,16 +56,33 @@ func TestAPlaceInsideTwoOverlappingAreasIsInside(t *testing.T) {
 		}); err != nil {
 			t.Fatal(err)
 		}
-		got, err := m.Describe([]tuimaps.Place{{ID: "home", Name: "Home", At: house}})
+		got, err := m.Report([]tuimaps.Place{{ID: "home", Name: "Home", At: house}})
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(got) != 1 || len(got[0].Answers) != 1 {
-			t.Fatalf("%s: %+v", c.what, got)
+		if len(got.Places) != 1 || len(got.Places[0].Alerts) != 1 {
+			t.Fatalf("%s: %+v; want one answer, for the one hazard", c.what, got.Places)
 		}
-		if a := got[0].Answers[0]; a.Relation.String() != "inside" {
-			t.Errorf("%s: the house is %s; it is within every area named", c.what, a.Relation)
+		if a := got.Places[0].Alerts[0]; a.Where != tuimaps.Inside {
+			t.Errorf("%s: the house is %v; it is within every area named", c.what, a.Where)
 		}
+	}
+	// Areas with no ID are alerts of their own, each answered.
+	a, b := areaA, areaB
+	a.ID, b.ID = "", ""
+	m, err := tuimaps.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Set(tuimaps.Overlay{ID: "alerts", Valid: time.Now(), Keeps: time.Hour, Features: []tuimaps.Feature{a, b}}); err != nil {
+		t.Fatal(err)
+	}
+	got, err := m.Report([]tuimaps.Place{{ID: "home", Name: "Home", At: house}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n := len(got.Places[0].Alerts); n != 2 || got.Places[0].Alerts[0].Where != tuimaps.Inside || got.Places[0].Alerts[1].Where != tuimaps.Inside {
+		t.Errorf("two areas with no ID: %+v; want two answers, both inside", got.Places[0].Alerts)
 	}
 }
 
@@ -89,32 +108,32 @@ func TestAPlaceInAHoleIsStillOutside(t *testing.T) {
 	for _, c := range []struct {
 		what string
 		at   tuimaps.LonLat
-		want string
+		want tuimaps.Where
 	}{
-		{"in the lake", tuimaps.LonLat{Lon: -84, Lat: 42}, "outside"},
-		{"on the land around it", tuimaps.LonLat{Lon: -83.2, Lat: 42.8}, "inside"},
+		{"in the lake", tuimaps.LonLat{Lon: -84, Lat: 42}, tuimaps.Outside}, // about 41 km from the shore: beyond nearby
+		{"on the land around it", tuimaps.LonLat{Lon: -83.2, Lat: 42.8}, tuimaps.Inside},
 	} {
-		got, err := m.Describe([]tuimaps.Place{{ID: "p", Name: "P", At: c.at}})
+		got, err := m.Report([]tuimaps.Place{{ID: "p", Name: "P", At: c.at}})
 		if err != nil {
 			t.Fatal(err)
 		}
-		if a := got[0].Answers[0]; a.Relation.String() != c.want {
-			t.Errorf("a place %s is %s; it is %s", c.what, a.Relation, c.want)
+		if a := got.Places[0].Alerts[0]; a.Where != c.want {
+			t.Errorf("a place %s is %v; it is %v", c.what, a.Where, c.want)
 		}
 	}
 }
 
 // TestDescribingADifferentPlaceDoesNotReuseTheLastAnswer.
 //
-// `Describe` takes the places to ask about, so a host may ask about places the
+// `Report` takes the places to ask about, so a host may ask about places the
 // map does not store - **which is exactly what a weather station watching
 // several locations does**: one alert, and "where is each of my places
 // relative to it".
 //
-// The description is memoised, and the memo must change whenever the answer
+// The report is memoised, and the memo must change whenever the answer
 // would (FR-29). Counting the places asked about is not enough: two calls
 // about *different* places are both a call about one place.
-func TestDescribingADifferentPlaceDoesNotReuseTheLastAnswer(t *testing.T) {
+func TestAskingAboutADifferentPlaceDoesNotReuseTheLastAnswer(t *testing.T) {
 	m, err := tuimaps.New()
 	if err != nil {
 		t.Fatal(err)
@@ -128,25 +147,25 @@ func TestDescribingADifferentPlaceDoesNotReuseTheLastAnswer(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	ask := func(name string, at tuimaps.LonLat) tuimaps.Answer {
+	ask := func(name string, at tuimaps.LonLat) tuimaps.PlaceAlert {
 		t.Helper()
-		got, err := m.Describe([]tuimaps.Place{{ID: name, Name: name, At: at}})
+		got, err := m.Report([]tuimaps.Place{{ID: name, Name: name, At: at}})
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(got) != 1 || len(got[0].Answers) != 1 {
-			t.Fatalf("%s: %+v", name, got)
+		if len(got.Places) != 1 || len(got.Places[0].Alerts) != 1 {
+			t.Fatalf("%s: %+v", name, got.Places)
 		}
-		if got[0].Place != name {
-			t.Errorf("asked about %s and was answered about %s", name, got[0].Place)
+		if got.Places[0].Place != name {
+			t.Errorf("asked about %s and was answered about %s", name, got.Places[0].Place)
 		}
-		return got[0].Answers[0]
+		return got.Places[0].Alerts[0]
 	}
-	if in := ask("Fort Wayne", tuimaps.LonLat{Lon: -84, Lat: 42}); in.Relation.String() != "inside" {
-		t.Fatalf("a place within the area is %s", in.Relation)
+	if in := ask("Fort Wayne", tuimaps.LonLat{Lon: -84, Lat: 42}); in.Where != tuimaps.Inside {
+		t.Fatalf("a place within the area is %v", in.Where)
 	}
 	// A different place, a thousand kilometres away, asked about second.
-	if out := ask("Denver", tuimaps.LonLat{Lon: -105, Lat: 39.7}); out.Relation.String() != "outside" {
-		t.Errorf("a place a thousand kilometres from the area is %s - the last answer was reused", out.Relation)
+	if out := ask("Denver", tuimaps.LonLat{Lon: -105, Lat: 39.7}); out.Where != tuimaps.Outside {
+		t.Errorf("a place a thousand kilometres from the area is %v - the last answer was reused", out.Where)
 	}
 }

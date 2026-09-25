@@ -46,22 +46,15 @@ func describing(s settings, out, errs io.Writer) int {
 	if err := settled(m); err != nil {
 		return complain(errs, err, exitFailed)
 	}
-	said, err := m.Describe(nil)
+	said, err := m.Report(nil)
 	if err != nil {
 		return complain(errs, err, exitFailed)
 	}
-	if len(said) == 0 {
+	if len(said.Places) == 0 {
 		return complain(errs, errNothingToDescribe(), exitMistake)
 	}
-	for _, one := range said {
-		fmt.Fprintln(out, one.Place)
-		if len(one.Answers) == 0 {
-			fmt.Fprintln(out, "  nothing is set over this place")
-			continue
-		}
-		for _, answer := range one.Answers {
-			fmt.Fprintln(out, "  "+answer.Overlay+": "+sentence(answer))
-		}
+	for _, line := range reported(said) {
+		fmt.Fprintln(out, line)
 	}
 	for _, warning := range m.Warnings() {
 		fmt.Fprintln(errs, "tuimaps: "+noted(warning))
@@ -117,6 +110,53 @@ func sizeOf(s settings) (int, int) {
 // sentence is one answer in words. The library hands out data and never a
 // sentence of its own (D-52); this is the app making one, and it is the
 // app's to change without the library moving.
+// reported is a report as the app prints it, a place and then a line for
+// each alert and each other answer: the words --describe writes and the
+// describe panel shows (FR-5, D-52).
+func reported(r tuimaps.Report) []string {
+	lines := make([]string, 0, len(r.Places)*2)
+	for _, one := range r.Places {
+		lines = append(lines, one.Place)
+		for _, alert := range one.Alerts {
+			lines = append(lines, "  "+alert.Overlay+": "+warned(alert))
+		}
+		for _, answer := range one.Answers {
+			lines = append(lines, "  "+answer.Overlay+": "+sentence(answer))
+		}
+		if len(one.Alerts) == 0 && len(one.Answers) == 0 {
+			lines = append(lines, "  nothing is set over this place")
+		}
+	}
+	return lines
+}
+
+// warned is one alert against a place, in words: what it is, how severe,
+// and whether the place is inside it, near it or outside it.
+func warned(a tuimaps.PlaceAlert) string {
+	what := a.Label
+	if what == "" {
+		what = "an alert"
+	}
+	if word := strings.ToLower(a.Severity.Word()); word != "" {
+		what += " (" + word + ")"
+	}
+	where := "outside this area"
+	switch a.Where {
+	case tuimaps.Inside:
+		where = "inside this area"
+	case tuimaps.Nearby:
+		where = "near this area, outside it"
+	}
+	parts := []string{what + ": " + where + ", " + reach("the nearest edge is", a.Distance, a.Unit, a.Compass)}
+	if a.UnderOneCell {
+		parts = append(parts, "closer than one cell of this map, so only these words can settle it")
+	}
+	if a.Stale {
+		parts = append(parts, "this data is out of date")
+	}
+	return strings.Join(parts, "; ")
+}
+
 func sentence(a tuimaps.Answer) string {
 	parts := []string{body(a)}
 	if a.UnderOneCell {

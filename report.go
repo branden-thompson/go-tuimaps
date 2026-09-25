@@ -84,8 +84,8 @@ type AlertShown struct {
 }
 
 // PlaceReport is everything the map says about one place: each alert on its
-// own, and every other overlay's answer as Describe gave it - an image's
-// class, a field's value, the nearest point or line.
+// own, and every other overlay's answer - an image's class, a field's
+// value, the nearest point or line, an area that is no alert.
 type PlaceReport struct {
 	Place   string
 	Alerts  []PlaceAlert
@@ -93,7 +93,10 @@ type PlaceReport struct {
 }
 
 // PlaceAlert is one alert against one place (L-13.6): inside, nearby or
-// outside, how far its edge is and which way, with its label and severity.
+// outside, how far its edge is and which way, with its label and severity;
+// when its data was valid and whether it is stale, by the map's own rule;
+// and whether the distance is under one cell, where the picture cannot
+// settle it and the words must (D-67).
 type PlaceAlert struct {
 	Overlay, Feature, Label string
 	Severity                Severity
@@ -102,6 +105,8 @@ type PlaceAlert struct {
 	Unit                    string
 	Bearing                 float64
 	Compass                 string
+	Valid                   time.Time
+	Stale, UnderOneCell     bool
 }
 
 // SetNearby sets how close to an alert's edge a place outside it is said to
@@ -129,8 +134,11 @@ func (m *Map) SetNearby(km float64) (err error) {
 
 // Report answers, beside the picture: the alerts in view, and for each place
 // - the ones given, or the map's own - each alert on its own and every other
-// overlay's answer. Like Describe it is computed from the host's geometry,
-// never from the drawn cells, and it needs no Work to have run.
+// overlay's answer. It is computed from the host's geometry, unsimplified,
+// never from the drawn cells, which cannot show a distance smaller than one
+// cell, and it needs no Work to have run. Asked again with nothing changed,
+// it costs nothing, so a host may ask on every frame (FR-29); the slices it
+// returns are the map's until the answer changes.
 func (m *Map) Report(places []Place) (out Report, err error) {
 	defer guard("Report", &err)
 	m.plant("Report")
@@ -147,6 +155,9 @@ func (m *Map) Report(places []Place) (out Report, err error) {
 	if len(asked) == 0 {
 		asked = m.places
 	}
+	if kept, ok := m.rememberedReport(asked); ok {
+		return kept, nil
+	}
 	out = Report{Alerts: []AlertShown{}, Places: []PlaceReport{}, Motion: []MotionReport{}}
 	for _, id := range m.store.IDs() {
 		reader, ok := m.store.Read(id)
@@ -156,10 +167,11 @@ func (m *Map) Report(places []Place) (out Report, err error) {
 		o := reader.Overlay()
 		reader.Done()
 		stale := m.staleOverlay(o)
-		for _, f := range o.Features {
-			if overlay.SeverityOf(f) == 0 || !m.inView(f) {
+		for _, alert := range alertsOf(o.Features) {
+			if !m.anyInView(alert) {
 				continue
 			}
+			f := alert[0]
 			valid := f.Valid
 			if valid.IsZero() {
 				valid = o.Valid
@@ -176,6 +188,8 @@ func (m *Map) Report(places []Place) (out Report, err error) {
 		out.Places = append(out.Places, m.placeReport(one))
 	}
 	out.Motion = m.observedMotion(asked, out.Motion)
+	kept := out // a copy for the memo: keeping out's own address would put every call's result on the heap
+	m.reported, m.reportedKey = &kept, m.describeKey(asked)
 	return out, nil
 }
 
@@ -265,9 +279,15 @@ func (m *Map) placeReport(place Place) PlaceReport {
 		for _, f := range o.Features {
 			if overlay.SeverityOf(f) == 0 {
 				rest.Features = append(rest.Features, f)
-				continue
 			}
-			out.Alerts = append(out.Alerts, m.placeAlert(place, id, f, nearby))
+		}
+		for _, alert := range alertsOf(o.Features) {
+			a := m.placeAlert(place, id, alert, nearby)
+			if a.Valid.IsZero() {
+				a.Valid = o.Valid
+			}
+			a.Stale = m.staleOverlay(o)
+			out.Alerts = append(out.Alerts, a)
 		}
 		if len(o.Features) > 0 && len(rest.Features) == 0 {
 			continue // every feature was an alert, answered on its own above
@@ -277,12 +297,51 @@ func (m *Map) placeReport(place Place) PlaceReport {
 	return out
 }
 
-// placeAlert is one alert against one place: the area test and the nearest
-// edge of that alert alone, and nearby when outside within the distance set.
-func (m *Map) placeAlert(place Place, id string, f Feature, nearbyKm float64) PlaceAlert {
-	a := describe.OfArea(nameOf(place), id, place.At, [][][]project.LonLat{f.Rings}, m.units)
+// alertsOf groups an overlay's alert features into alerts, in the order they
+// first appear: the features that share an ID are one alert - one hazard,
+// whose areas a service often sends as several overlapping zones - and a
+// feature with no ID is an alert of its own.
+func alertsOf(features []Feature) [][]Feature {
+	var out [][]Feature
+	at := map[string]int{}
+	for _, f := range features {
+		if overlay.SeverityOf(f) == 0 {
+			continue
+		}
+		if i, ok := at[f.ID]; ok && f.ID != "" {
+			out[i] = append(out[i], f)
+			continue
+		}
+		at[f.ID] = len(out)
+		out = append(out, []Feature{f})
+	}
+	return out
+}
+
+// anyInView reports whether any area of an alert meets the view.
+func (m *Map) anyInView(alert []Feature) bool {
+	for _, f := range alert {
+		if m.inView(f) {
+			return true
+		}
+	}
+	return false
+}
+
+// placeAlert is one alert against one place: inside if inside any of its
+// areas, one at a time so that two overlapping areas never cancel; the
+// nearest edge of all of them; and nearby when outside within the distance
+// set. Its label and severity are its first area's.
+func (m *Map) placeAlert(place Place, id string, alert []Feature, nearbyKm float64) PlaceAlert {
+	areas := make([][][]project.LonLat, 0, len(alert))
+	for _, f := range alert {
+		areas = append(areas, f.Rings)
+	}
+	f := alert[0]
+	a := describe.OfArea(nameOf(place), id, place.At, areas, m.units)
 	out := PlaceAlert{Overlay: clean(id), Feature: clean(f.ID), Label: clean(f.Label), Severity: overlay.SeverityOf(f),
-		Where: a.Relation, Distance: a.Distance, Unit: a.Unit, Bearing: a.Bearing, Compass: a.Compass}
+		Where: a.Relation, Distance: a.Distance, Unit: a.Unit, Bearing: a.Bearing, Compass: a.Compass, Valid: f.Valid,
+		UnderOneCell: m.underOneCell(a)}
 	km := a.Distance
 	if a.Unit == "miles" {
 		km *= 1.609344

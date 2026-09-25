@@ -62,17 +62,17 @@ func TestAHostBuildsAFeatureFromItsOwnPoints(t *testing.T) {
 	for _, c := range []struct {
 		what string
 		at   tuimaps.LonLat
-		want string
+		want tuimaps.Where
 	}{
-		{"on the land", tuimaps.LonLat{Lon: -83.2, Lat: 42.8}, "inside"},
-		{"in the hole", tuimaps.LonLat{Lon: -84, Lat: 42}, "outside"},
+		{"on the land", tuimaps.LonLat{Lon: -83.2, Lat: 42.8}, tuimaps.Inside},
+		{"in the hole", tuimaps.LonLat{Lon: -84, Lat: 42}, tuimaps.Outside},
 	} {
-		got, err := m.Describe([]tuimaps.Place{{ID: c.what, Name: c.what, At: c.at}})
+		got, err := m.Report([]tuimaps.Place{{ID: c.what, Name: c.what, At: c.at}})
 		if err != nil {
 			t.Fatal(err)
 		}
-		if a := got[0].Answers[0]; a.Relation.String() != c.want {
-			t.Errorf("a place %s is %s; it is %s", c.what, a.Relation, c.want)
+		if a := got.Places[0].Alerts[0]; a.Where != c.want {
+			t.Errorf("a place %s is %v; it is %v", c.what, a.Where, c.want)
 		}
 	}
 }

@@ -116,6 +116,27 @@ func TestEachPlaceGetsItsNearestCell(t *testing.T) {
 	}
 }
 
+// TestMotionAppearsWhenTheFramesAreRead: asked before any work, the frames
+// are not read and there is no motion; asked again after, there is - the
+// remembered report does not hide what the work landed.
+func TestMotionAppearsWhenTheFramesAreRead(t *testing.T) {
+	c := tuimaps.LonLat{Lon: -91, Lat: 35}
+	m := world(t, 80, 24)
+	must(t, m.Recentre(c))
+	mustSet(t, m, motionLoop(
+		tuimaps.LoopFrame{Valid: noon.Add(-10 * time.Minute), PNG: blobs(t, c)},
+		tuimaps.LoopFrame{Valid: noon, PNG: blobs(t, c)},
+	))
+	home := []tuimaps.Place{{ID: "home", Name: "Home", At: tuimaps.LonLat{Lon: -90.5, Lat: 35}}}
+	if r, err := m.Report(home); err != nil || len(r.Motion) != 0 {
+		t.Fatalf("before any work: %+v, %v; want no motion yet", r.Motion, err)
+	}
+	settle(t, m)
+	if r, err := m.Report(home); err != nil || len(r.Motion) != 1 {
+		t.Errorf("after the frames are read: %+v, %v; want motion", r.Motion, err)
+	}
+}
+
 // TestAGapAtTheOldestFrame: the oldest usable frame is the oldest that is
 // not a gap.
 func TestAGapAtTheOldestFrame(t *testing.T) {

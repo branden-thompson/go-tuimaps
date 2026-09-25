@@ -164,7 +164,7 @@ func (m *Map) Set(o Overlay) (res SetResult, err error) {
 		return res, err
 	}
 	m.overlays++
-	m.described = nil
+	m.reported = nil
 	m.play.seen = m.shownLocked() // a refresh that moves the moment is an input, not an advance
 	m.changed++
 	return res, nil
@@ -189,7 +189,7 @@ func (m *Map) Remove(id string) (res RemoveResult, err error) {
 		return res, err
 	}
 	m.overlays++
-	m.described = nil
+	m.reported = nil
 	m.play.seen = m.shownLocked() // a refresh that moves the moment is an input, not an advance
 	m.changed++
 	return res, nil
