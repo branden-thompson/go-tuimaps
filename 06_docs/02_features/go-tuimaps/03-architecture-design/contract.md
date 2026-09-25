@@ -223,6 +223,8 @@ the sentence says what v0.2.0 will do, not what v0.1.0 does.
 | L-9.6 | Put the cache root under the operating system's user cache directory, readable and writable by its owner only. Purging deletes files; it is not secure erasure | text |
 | L-12.3 | Hand in frames at the view's dot grid: 298×152 dots at 149×38 cells; twelve of them fit the default budget. A host that raises the budget with `SetImageBudget` owns the memory it asks for | TestTheImageBudgetIsTheHosts |
 | L-8.3 | Inside rain cells, a shade glyph takes the whole cell and the hatch cannot draw. There, an alert's severity is carried by its outline and the severity digit repeated along it (D-65), and the legend carries the digit key | owed: L3.10 |
+| L-6.3 | The default memory tile cache, 500,000 bytes, is smaller than one large view can need: a 200×60 view at zoom 4 needs about 800 KB. The cap is a target, not a limit: a live view keeps every tile it draws and no spares, `cache-under-need` is raised once, and `CacheUse` gives the figures. A host that shows large views passes a larger cap with `NewShared` and `SharedCaches` | TestTheDefaultTileCacheAgainstALargeView |
+| L-13.8 | The library reads two things from the environment, and nothing else: `NO_COLOR`, when the host has not hinted a colour depth; and, for its own transport only, the proxy variables `HTTP_PROXY`, `HTTPS_PROXY` and `NO_PROXY` (with their lower-case forms), through `net/http`. A host transport reads what it likes | TestEveryEnvironmentReadIsListed |
 
 ## 12 · Changelog: what v0.2.0 breaks (D-58)
 

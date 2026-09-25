@@ -300,3 +300,47 @@ func TestPurgeEmptiesTheSharedReadings(t *testing.T) {
 		t.Errorf("image use %d after a purge, %d before; want the shared reading's %d bytes gone", after, before, 8*6)
 	}
 }
+
+// TestTheDefaultTileCacheAgainstALargeView is v0.2.0 L10.6 (L-6.3): one
+// large view needs more than the default memory cache. The cap is a target,
+// not a limit: the view keeps every tile it draws, no spares, and the host is
+// told once, with the figures in CacheUse.
+func TestTheDefaultTileCacheAgainstALargeView(t *testing.T) {
+	size := tuimaps.Size{Cols: 200, Rows: 60}
+	m, err := tuimaps.New(tuimaps.WithSize(size.Cols, size.Rows))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer m.Close()
+	useTransport(t, m, answering(func(string) ([]byte, error) { // every tile real bytes, so the view is whole
+		body, _ := assets.Tile(2, 1, 1)
+		return body, nil
+	}))
+	must(t, m.Source("https://tiles.example.test/"))
+	must(t, m.Recentre(tuimaps.LonLat{Lon: -97, Lat: 38}))
+	must(t, m.Zoom(4))
+	if _, err := m.Render(size, noon); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Settle(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Render(size, noon); err != nil {
+		t.Fatal(err)
+	}
+	use := m.CacheUse().Tiles
+	if use.Limit != 500_000 || use.Need <= use.Limit || use.Held != use.Need {
+		t.Fatalf("tile cache %+v; want the default 500000, a need over it, and exactly the need held", use)
+	}
+	told := 0
+	for range 2 {
+		for _, w := range m.Warnings() {
+			if w.Kind == tuimaps.CacheUnderNeed {
+				told++
+			}
+		}
+	}
+	if told != 1 {
+		t.Errorf("cache-under-need told %d times; want once", told)
+	}
+}

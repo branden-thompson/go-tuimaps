@@ -321,7 +321,7 @@ func TestTheContractSaysWhatAHostNeeds(t *testing.T) {
 			t.Errorf("%s is held by %q: not text, not owed by a task, and not a test that exists", id, by)
 		}
 	}
-	for _, id := range []string{"L-1.10d", "L-7.3", "L-10.3", "L-9.3", "L-9.6", "L-12.3", "L-8.3"} {
+	for _, id := range []string{"L-1.10d", "L-7.3", "L-10.3", "L-9.3", "L-9.6", "L-12.3", "L-8.3", "L-6.3", "L-13.8"} {
 		if !held[id] {
 			t.Errorf("the contract says nothing a host needs to know for %s", id)
 		}

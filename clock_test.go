@@ -115,12 +115,14 @@ func TestNextCall(t *testing.T) {
 	if !ok || due.After(noon.Add(time.Second)) {
 		t.Errorf("with a blinking place the map is due at %v; the next phase is within a second", due)
 	}
-	// With reduce-motion on, the blink is not what is due any more.
+	// With reduce-motion on, the blink is not what is due any more, but the
+	// overlay's stale moment still is: reduce-motion stops motion, not the
+	// clock's other work (v0.2.0 L10.2, L-13.4, ReduceMotion's comment).
 	m.ReduceMotion(true)
 	frameAtTime(t, m, cols, rows, noon)
 	due, ok = m.NextCall(noon)
-	if !ok || due.Before(noon.Add(time.Minute)) {
-		t.Errorf("with reduce-motion on the map is due at %v; nothing animates, so the stale time is the deadline", due)
+	if want := noon.Add(time.Hour + time.Nanosecond); !ok || !due.Equal(want) {
+		t.Errorf("with reduce-motion on the map is due at %v (%v); nothing animates, so the stale moment %v is the deadline", due, ok, want)
 	}
 }
 

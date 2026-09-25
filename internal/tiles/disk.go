@@ -150,7 +150,7 @@ func (d *Disk) InView(identity string, tiles []scene.TileID) {
 	}
 }
 
-// Use reports the bytes held and the cap.
+// Held reports the bytes held and the cap.
 func (d *Disk) Held() (held, limit int64) {
 	if d == nil {
 		return 0, 0

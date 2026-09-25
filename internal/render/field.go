@@ -80,8 +80,6 @@ func rasterClass(ra *scene.Raster, lon, lat float64) int8 {
 	return ra.Classes[min(max(row, 0), ra.Height-1)*ra.Width+min(col, ra.Width-1)]
 }
 
-// classInk is the ink of a preset's class. Radar's class 0 is below its first
-// floor: no rain, and nothing is drawn.
 // presetOf is the preset an image's or field's class ink belongs to.
 func presetOf(ink uint8) colour.Preset {
 	switch t := colour.Token(ink); {
@@ -93,6 +91,8 @@ func presetOf(ink uint8) colour.Preset {
 	return 0
 }
 
+// classInk is the ink of a preset's class. Radar's class 0 is below its first
+// floor: no rain, and nothing is drawn.
 func classInk(preset uint8, class int8) uint8 {
 	if class < 0 {
 		return 0

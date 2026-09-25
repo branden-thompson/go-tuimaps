@@ -212,8 +212,10 @@ func (m *Map) depthInEffect() Depth {
 	return colour.ChooseDepth(m.look.depth, m.look.depthHinted, os.Getenv)
 }
 
-// ReduceMotion stops the library animating: markers are drawn steadily and
-// nothing is ever due on the clock (NFR-21).
+// ReduceMotion stops the library animating (NFR-21): markers are drawn
+// steadily, and a loop playing stops where it is and cannot be played until
+// it is turned off again. The clock still has work that is not motion: a
+// stale overlay's moment and a failed tile's retry stay due.
 func (m *Map) ReduceMotion(on bool) {
 	defer m.guardQuiet("ReduceMotion")
 	m.plant("ReduceMotion")

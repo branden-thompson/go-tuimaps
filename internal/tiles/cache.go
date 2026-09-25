@@ -270,7 +270,7 @@ func (c *Cache) settleLocked() {
 	c.over = need > c.limit
 }
 
-// Use reports the bytes live views need, the bytes held, and the cap.
+// Bytes reports the bytes live views need, the bytes held, and the cap.
 func (c *Cache) Bytes() Use {
 	if c == nil {
 		return Use{}

@@ -223,7 +223,7 @@ func (p *Pipeline) SetDisk(d *Disk) error {
 	return nil
 }
 
-// Use is what the tile cache in memory needs, holds and may hold (D-90).
+// Holding is what the tile cache in memory needs, holds and may hold (D-90).
 func (p *Pipeline) Holding() Use {
 	if p == nil {
 		return Use{}
@@ -523,8 +523,9 @@ func (p *Pipeline) Draw(tile scene.TileID) (got *scene.Tile, at scene.TileID, ex
 	return got, k.Tile, k == primary, true
 }
 
-// TakeWarnings returns, once, how many tiles failed since it was last
-// called, and the last of them.
+// TakeWarnings returns, once, what the tiles have to tell the host: the disk
+// cache's warnings, the memory cache's need over its cap, and how many tiles
+// failed since it was last called, with the last of them.
 func (p *Pipeline) TakeWarnings() []fault.Warning {
 	if p == nil {
 		return nil
@@ -532,6 +533,9 @@ func (p *Pipeline) TakeWarnings() []fault.Warning {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	out := p.opts.Disk.TakeWarnings()
+	if w, ok := p.opts.Cache.TakeWarning(); ok {
+		out = append(out, w) // need alone over the cap: told once, by whichever map sharing the cache asks first
+	}
 	if p.failed == 0 {
 		return out
 	}
