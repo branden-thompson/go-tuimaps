@@ -517,7 +517,8 @@ func (r *Renderer) compose(in Input, status Status) {
 	// The text of a cell is a contest, not a painting: the first to claim a
 	// cell keeps it, so the order below is the order of precedence. The
 	// frame's own furniture is never overdrawn; a marker keeps its cell
-	// against any name (FR-18a); a marker's own label is checked last (P-60).
+	// against any name (FR-18a); a marker's own label comes before every
+	// other name (L-8.9, D-80).
 	r.furniture(in, status)
 	for _, g := range r.painter.Glyphs() {
 		_ = r.grid.anchor(g, Point{X: g.X, Y: g.Y}) // a marker outside the rectangle is simply not drawn
@@ -649,8 +650,9 @@ func (r *Renderer) bandNames() {
 	}
 }
 
-// markerNames places the markers' labels, which are checked against the
-// map's own names and so are placed after them (P-60).
+// markerNames places the markers' labels. They are placed before any other
+// name - an overlay's, the basemap's - so the host's own places are never
+// pushed off by the map's names (L-8.9, D-80).
 func (r *Renderer) markerNames() {
 	r.grid.world = box{}
 	for _, l := range r.painter.MarkerLabels() {

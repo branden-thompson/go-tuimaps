@@ -74,8 +74,8 @@ func (m *Map) stale(wall time.Time) bool {
 }
 
 // NextCall is the wall-clock moment by which the map wants another Render:
-// the earliest of the next marker phase, a failed tile's retry time and an
-// overlay going stale (FR-25). It is false when nothing at all is due, and
+// the earliest of the next marker phase, a playing loop's next frame advance,
+// a failed tile's retry time and an overlay going stale (FR-25, L-1.8). It is false when nothing at all is due, and
 // then a host may sleep until something happens to it instead.
 func (m *Map) NextCall(wall time.Time) (time.Time, bool) {
 	defer m.guardQuiet("NextCall")
