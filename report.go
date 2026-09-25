@@ -4,6 +4,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/branden-thompson/go-tuimaps/internal/colour"
 	"github.com/branden-thompson/go-tuimaps/internal/describe"
 	"github.com/branden-thompson/go-tuimaps/internal/fault"
 	"github.com/branden-thompson/go-tuimaps/internal/overlay"
@@ -35,6 +36,41 @@ const defaultNearby = 10.0
 type Report struct {
 	Alerts []AlertShown
 	Places []PlaceReport
+	Motion []MotionReport
+}
+
+// Trend is how a cell's distance from a place went over a loop.
+type Trend = describe.Trend
+
+// The trends: the heavier rain came closer, moved away, or held.
+const (
+	Held   = describe.Held
+	Closer = describe.Closer
+	Away   = describe.Away
+)
+
+// MotionReport is observed motion (L-1.12, D-42): where the heavier rain was
+// at the oldest usable frame of a loop and where it is at the newest,
+// relative to a named place - or, with Place empty, to the view's centre -
+// and whether it came closer, moved away or held, over the span between.
+// It is data about what was seen: nothing in it can say what will happen.
+type MotionReport struct {
+	Overlay, Place string
+	Threshold      int // the class taken as heavier rain, held for the whole loop
+	From, To       Sighting
+	Trend          Trend
+	Span           time.Duration
+}
+
+// Sighting is where the heavier rain was seen, and when: how far from the
+// place and which way, in the units Units set.
+type Sighting struct {
+	Valid    time.Time
+	At       LonLat
+	Distance float64
+	Unit     string
+	Bearing  float64
+	Compass  string
 }
 
 // AlertShown is one alert in view (L-13.5): the overlay and feature it is,
@@ -111,7 +147,7 @@ func (m *Map) Report(places []Place) (out Report, err error) {
 	if len(asked) == 0 {
 		asked = m.places
 	}
-	out = Report{Alerts: []AlertShown{}, Places: []PlaceReport{}}
+	out = Report{Alerts: []AlertShown{}, Places: []PlaceReport{}, Motion: []MotionReport{}}
 	for _, id := range m.store.IDs() {
 		reader, ok := m.store.Read(id)
 		if !ok {
@@ -139,7 +175,75 @@ func (m *Map) Report(places []Place) (out Report, err error) {
 		}
 		out.Places = append(out.Places, m.placeReport(one))
 	}
+	out.Motion = m.observedMotion(asked, out.Motion)
 	return out, nil
+}
+
+// observedMotion is each loop's observed motion relative to each place asked about,
+// or with none, to the view's centre (D-42).
+func (m *Map) observedMotion(asked []Place, out []MotionReport) []MotionReport {
+	refs := make([]Place, 0, len(asked))
+	for _, p := range asked {
+		refs = append(refs, Place{Name: nameOf(p), At: p.At})
+	}
+	if len(refs) == 0 {
+		refs = append(refs, Place{At: LonLat{Lon: m.view.Centre.Lon, Lat: m.view.Centre.Lat}})
+	}
+	for _, id := range m.store.IDs() {
+		reader, ok := m.store.Read(id)
+		if !ok {
+			continue
+		}
+		o := reader.Overlay()
+		reader.Done()
+		if o.Image == nil || len(o.Image.Frames) == 0 {
+			continue
+		}
+		kind, err := overlay.ResolveType(o.Image.Type)
+		if err != nil {
+			continue
+		}
+		threshold := heavierClass(kind)
+		var frames []describe.Frame
+		for _, f := range m.store.ObservedFrames(id) {
+			r := f.Raster
+			frames = append(frames, describe.Frame{Valid: f.Valid, Image: describe.Image{West: r.West, South: r.South, East: r.East, North: r.North,
+				Width: r.Width, Height: r.Height, Classes: r.Classes}})
+		}
+		for _, ref := range refs {
+			from, to, ok := describe.Track(frames, threshold, ref.At)
+			if !ok {
+				continue
+			}
+			a, b := m.sighting(ref.At, from), m.sighting(ref.At, to)
+			fromKm, _, _, _ := describe.Measure(ref.At, from.At)
+			toKm, _, _, _ := describe.Measure(ref.At, to.At)
+			out = append(out, MotionReport{Overlay: clean(id), Place: clean(ref.Name), Threshold: threshold,
+				From: a, To: b, Trend: describe.TrendOf(fromKm, toKm), Span: to.Valid.Sub(from.Valid)})
+		}
+	}
+	return out
+}
+
+// sighting is a cell seen from a place, in the host's units.
+func (m *Map) sighting(from LonLat, s describe.Sighting) Sighting {
+	km, bearing, compass, _ := describe.Measure(from, s.At)
+	d, unit := m.units.Distance(km)
+	return Sighting{Valid: s.Valid, At: s.At, Distance: d, Unit: unit, Bearing: bearing, Compass: compass}
+}
+
+// heavierClass is the one class a loop takes as heavier rain, held for the
+// whole loop (L-1.12): for radar, the class from 40 dBZ, where rain is heavy;
+// for any other type, the top third of its classes.
+func heavierClass(kind overlay.Kind) int {
+	if kind.Preset == colour.Radar {
+		for i, b := range kind.Breaks {
+			if b >= 40 {
+				return i + 1
+			}
+		}
+	}
+	return (2*(len(kind.Breaks)+1) + 2) / 3
 }
 
 // placeReport is one place's part of the report.

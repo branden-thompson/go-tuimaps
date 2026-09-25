@@ -192,3 +192,32 @@ func CheckFrameTimes(img *Image, now time.Time) error {
 	}
 	return nil
 }
+
+// ObservedFrame is one observed frame of a loop, decoded.
+type ObservedFrame struct {
+	Valid  time.Time
+	Raster scene.Raster
+}
+
+// ObservedFrames are a loop's observed frames that are decoded, oldest
+// first: no gap and no forecast, for motion is observation (D-42).
+func (s *Store) ObservedFrames(id string) []ObservedFrame {
+	if s == nil || id == "" {
+		return nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	h, ok := s.current[id]
+	if !ok || h.overlay.Image == nil {
+		return nil
+	}
+	pictures := s.pictures[id]
+	var out []ObservedFrame
+	for i, f := range h.overlay.Image.Frames {
+		if f.Forecast || i >= len(pictures) || !pictures[i].ready { // a gap is never decoded
+			continue
+		}
+		out = append(out, ObservedFrame{Valid: f.Valid, Raster: pictures[i].raster})
+	}
+	return out
+}

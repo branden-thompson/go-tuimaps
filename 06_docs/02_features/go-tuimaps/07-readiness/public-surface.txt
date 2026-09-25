@@ -3,6 +3,7 @@ const AlertMinor
 const AlertModerate
 const AlertSevere
 const AlertUnknown
+const Away
 const BadCurrency
 const BorderLayer
 const CacheRefused
@@ -12,6 +13,7 @@ const Cancelled
 const Celsius
 const Circle
 const Closed
+const Closer
 const Colours16
 const Colours256
 const Complete Status
@@ -22,6 +24,7 @@ const Fahrenheit
 const FetchFailed
 const FetchRefused
 const FutureValidTime
+const Held
 const High
 const ImageRefused
 const ImplausibleUnit
@@ -197,6 +200,7 @@ type LoopFrame = overlay.LoopFrame
 type LoopState struct{ At time.Time; Now time.Time; Oldest time.Time; Newest time.Time; Index int; Count int; Playing bool; Advancing bool; Gap bool; Forecast bool; CeilingLifted bool; Playback Playback; Step time.Duration; Off OffReason }
 type Map struct{  }
 type MarkerStyle = render.MarkerShape
+type MotionReport struct{ Overlay string; Place string; Threshold int; From Sighting; To Sighting; Trend Trend; Span time.Duration }
 type OffReason uint8
 type Option func(*config) error
 type Overlay = overlay.Overlay
@@ -209,17 +213,19 @@ type Projection = overlay.Projection
 type RGB = colour.RGB
 type RampCheck = colour.RampCheck
 type RemoveResult = overlay.RemoveResult
-type Report struct{ Alerts []AlertShown; Places []PlaceReport }
+type Report struct{ Alerts []AlertShown; Places []PlaceReport; Motion []MotionReport }
 type Rule = colour.Rule
 type Scaled struct{ KmPerCell float64; Km float64; Cells int }
 type SetResult = overlay.SetResult
 type SettleResult struct{ Ran int; Failed int; InFlight int; Why error }
 type Severity = overlay.Severity
 type Shared struct{  }
+type Sighting struct{ Valid time.Time; At LonLat; Distance float64; Unit string; Bearing float64; Compass string }
 type Size struct{ Cols int; Rows int }
 type Status uint8
 type TableEntry = overlay.TableEntry
 type Token = colour.Token
+type Trend = describe.Trend
 type Type = overlay.Type
 type Unit = colour.Unit
 type Warning = fault.Warning
