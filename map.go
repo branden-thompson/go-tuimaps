@@ -163,6 +163,7 @@ type Map struct {
 	// kept and only the rectangle around it changes (task 14.19).
 	placed        bool
 	view          project.View
+	bound         *Bound       // where the host keeps the map, if anywhere (L-3.1)
 	noted         project.View // the view whose tiles were last asked for
 	pipe          *tiles.Pipeline
 	member        *work.Member
@@ -283,13 +284,21 @@ func (m *Map) resize(s Size) error {
 // different zoom from the whole world at another, so that one is refitted
 // (NFR-19).
 func (m *Map) viewAt(s Size) (project.View, error) {
+	whole := func() (project.View, error) { // the whole world - or, with a bound, the part of it the host keeps to
+		v, err := project.WholeWorld(s.Cols, s.Rows)
+		if err != nil {
+			return v, err
+		}
+		return m.boundedLocked(v), nil
+	}
 	if !m.sized || !m.placed {
-		return project.WholeWorld(s.Cols, s.Rows)
+		return whole()
 	}
 	kept := m.view
 	kept.Cols, kept.Rows = s.Cols, s.Rows
+	kept = m.boundedLocked(kept)
 	if err := kept.Validate(); err != nil {
-		return project.WholeWorld(s.Cols, s.Rows) // a size the chosen view cannot be drawn at
+		return whole() // a size the chosen view cannot be drawn at
 	}
 	return kept, nil
 }

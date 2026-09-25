@@ -157,6 +157,7 @@ method Map.Reset() error
 method Map.SafeRamps(bool)
 method Map.Scale() (Scaled, bool)
 method Map.Set(Overlay) (SetResult, error)
+method Map.SetBound(Bound) error
 method Map.SetImageBudget(int64) error
 method Map.SetNearby(float64) error
 method Map.SetPalette(map[string]RGB) ([]string, error)
@@ -180,6 +181,7 @@ method Shared.Use() CacheUse
 method Status.String() string
 type AlertShown struct{ Overlay string; Feature string; Label string; Severity Severity; Valid time.Time; Expires time.Time; Stale bool }
 type Answer = describe.Answer
+type Bound struct{ MinZoom float64; W float64; S float64; E float64; N float64 }
 type CacheUse struct{ Need int64; Held int64; Limit int64 }
 type Caches struct{ Tiles CacheUse; Shapes CacheUse; Disk CacheUse }
 type Class struct{ Label string; Colour RGB; Drawn bool; Mark string }
