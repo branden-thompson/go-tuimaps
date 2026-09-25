@@ -14,7 +14,7 @@ import (
 )
 
 // solidPNG is a picture of one colour.
-func solidPNG(t *testing.T, w, h int, c color.Color) []byte {
+func solidPNG(t testing.TB, w, h int, c color.Color) []byte {
 	t.Helper()
 	img := image.NewNRGBA(image.Rect(0, 0, w, h))
 	for y := range h {
