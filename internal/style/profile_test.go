@@ -110,7 +110,7 @@ func TestLayerToggle(t *testing.T) {
 		ParkLayer:      {"park"},
 		BorderLayer:    {"border-country", "border-region"},
 		RiverLayer:     {"river"},
-		WaterLayer:     {"coast", "water-edge", "water"},
+		WaterLayer:     {"water-edge", "water"}, // inland water; the sea is never switched (watchpost U1-39)
 		LabelLayer:     {"label-place", "label-region", "label-water"},
 	}
 	for layer, ids := range byLayer {

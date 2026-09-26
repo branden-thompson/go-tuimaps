@@ -30,7 +30,7 @@ func sorted(ids ...string) []string { sort.Strings(ids); return ids }
 // level everything the one below draws, and Full everything - the picture as
 // it was for a host that never asks.
 func TestEachDetailLevelDrawsItsRules(t *testing.T) {
-	essential := []string{"coast", "water-edge", "water", "border-country", "border-region"}
+	essential := []string{"coast", "sea", "water-edge", "water", "border-country", "border-region"}
 	weather := append(slices.Clone(essential), "river", "label-region", "label-place", "label-water", "road-major")
 	standard := append(slices.Clone(weather), "park", "rail")
 	full := append(slices.Clone(standard), "road-minor", "runway")

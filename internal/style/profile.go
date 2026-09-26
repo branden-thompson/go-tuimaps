@@ -17,8 +17,9 @@ const (
 // Layer is a basemap layer a host can switch off and on (FR-36).
 type Layer uint8
 
-// The layers that can be switched. Water and the coast are one: a map whose
-// water is off is a map with no shore at all.
+// The layers that can be switched. WaterLayer is the lakes and inland water:
+// the sea and its coast are never switched, since a map without them has no
+// shore at all (watchpost UAT-1 U1-39).
 const (
 	RoadLayer Layer = iota + 1
 	RailLayer
@@ -103,8 +104,8 @@ func NewProfile(load Load, cols, rows int, off Switches) Profile {
 // rule that draws names belongs to the labels whatever it reads, and every
 // other rule belongs to the layer of the tile it reads.
 func (r *Rule) Group() Layer {
-	if r == nil {
-		return 0
+	if r == nil || r.always {
+		return 0 // no switch takes it
 	}
 	if r.Kind == Symbol {
 		return LabelLayer
@@ -219,7 +220,7 @@ func (p Profile) Detail() Detail {
 // ruleDetail is the least level each built-in rule is drawn at (D-82). A rule
 // not named here - a host's own - is drawn at every level.
 var ruleDetail = map[string]Detail{
-	"coast": DetailEssential, "water-edge": DetailEssential, "water": DetailEssential,
+	"coast": DetailEssential, "sea": DetailEssential, "water-edge": DetailEssential, "water": DetailEssential,
 	"border-country": DetailEssential, "border-region": DetailEssential,
 	"river": DetailWeather, "label-region": DetailWeather, "label-place": DetailWeather,
 	"label-water": DetailWeather, "road-major": DetailWeather,

@@ -37,7 +37,7 @@ const (
 	ParkLayer   = style.ParkLayer
 	BorderLayer = style.BorderLayer
 	RiverLayer  = style.RiverLayer
-	WaterLayer  = style.WaterLayer
+	WaterLayer  = style.WaterLayer // lakes and inland water: the sea and its coast are never switched
 	LabelLayer  = style.LabelLayer
 	// MinorRoadLayer is the minor roads, switched apart from RoadLayer's
 	// motorways, trunks and primaries (v0.2.0 D-82).

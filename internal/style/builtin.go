@@ -47,7 +47,12 @@ func BuiltIn() *Style {
 		return Rule{ID: id, Layer: layer, Kind: Line, Token: token, priority: priority, MinZoom: from, filter: filter}
 	}
 	return levelled(&Style{rules: []Rule{
-		line("coast", "water", colour.Coast, 10, 0, classIn("ocean")),
+		// THE SEA AND ITS COAST ARE NEVER SWITCHED (watchpost UAT-1 U1-39): a
+		// map with its water off keeps the land's edge. Rules match in order,
+		// so the ocean is the coast's and the sea's, and every other water
+		// area falls through to the edge and fill the Water switch takes.
+		{ID: "coast", Layer: "water", Kind: Line, Token: colour.Coast, priority: 10, filter: []step{classIn("ocean")}, always: true},
+		{ID: "sea", Layer: "water", Kind: Fill, Token: colour.WaterFill, priority: 9, filter: []step{classIn("ocean")}, always: true},
 		line("water-edge", "water", colour.WaterLine, 9, 0),
 		{ID: "water", Layer: "water", Kind: Fill, Token: colour.WaterFill, priority: 9},
 		line("border-country", "boundary", colour.BorderCountry, 8, 0, level(1, 2)...),
