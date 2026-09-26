@@ -18,6 +18,10 @@ const Closer
 const Colours16
 const Colours256
 const Complete Status
+const DetailEssential
+const DetailFull
+const DetailStandard
+const DetailWeather
 const Distinct
 const DropAlertLabel DropKind
 const DropPlaceName
@@ -49,6 +53,7 @@ const MaxFrames
 const MaxZoom
 const Middle
 const MinZoom
+const MinorRoadLayer
 const MissingTable
 const NearDuplicateID
 const Nearby
@@ -160,6 +165,7 @@ method Map.Scale() (Scaled, bool)
 method Map.Set(Overlay) (SetResult, error)
 method Map.SetBound(Bound) error
 method Map.SetCacheMaxAge(time.Duration) error
+method Map.SetDetail(Detail) error
 method Map.SetFetchOptions(FetchOptions) error
 method Map.SetImageBudget(int64) error
 method Map.SetNearby(float64) error
@@ -189,6 +195,7 @@ type CacheUse struct{ Need int64; Held int64; Limit int64 }
 type Caches struct{ Tiles CacheUse; Shapes CacheUse; Disk CacheUse }
 type Class struct{ Label string; Colour RGB; Drawn bool; Mark string }
 type Depth = colour.Depth
+type Detail = style.Detail
 type Dialer = fetch.Dialer
 type Drop struct{ Kind DropKind; Overlay string; Label string; Shown string }
 type DropKind uint8

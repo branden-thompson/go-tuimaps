@@ -100,6 +100,7 @@ Set here because D-49 item 3 gives them to PLAN; each goes to the HUM LEAD in th
 | L8 | Fetch options and confinement | L-7, L-10 | L1 |
 | L9 | Cache age and purge | L-9 | L8 |
 | L10 | Defects, the first release's close-out, the gate's own evidence | L-5, L-6, L-13.1–L-13.4, L-13.8, M4, M6, OW-4 | L5–L9 |
+| L11 | Watchpost UAT-1's library needs (D-82, D-83): detail levels, major and minor roads apart, the footer | L-14 (new), L-8 | L3 |
 
 L2 → L4 → L3 → L5 is the critical path (L3's frame-identity tasks need a way to advance the shown
 frame, which L4 gives). L6, L7 and L8 → L9 run beside it once L1 lands.
@@ -246,6 +247,19 @@ L4 comes before L3 in the build order, because L3.1 and L3.2 need to advance the
 | L10.10 | **M6:** five consecutive full runs with no unattributable failure before SHIP | `06_docs/gate-runs.md` | Counted from the log | A test reads the log and reports the current run of green |
 | L10.11 | **v0.2.0's REVIEW covers everything v0.1.0 shipped** (L-5.4, D-72): the review's scope written as a list of v0.1.0's packages and requirements, and the red team briefed on it | `release-checklist.md`, `08-reports/` | A scope statement | The checklist row names the scope; the SHIP report shows each item reviewed |
 | L10.12 | The integration map and both plans kept in step (D-72): each plan records the map commit it was reconciled against, and a docs-lane test refuses a plan that names a work package the map does not | `scripts/gate`, `gate_test.go` | — | A plan citing a package missing from the map fails the docs lane |
+
+## WP-L11 — Watchpost UAT-1's library needs (D-82, D-83)
+
+**Added 2026-09-25 by D-82 and D-83**: every go-tuiMaps change watchpost 0.18.0 needs is v0.2.0 scope,
+and v0.2.0 is tagged only when 0.18.0 is accepted. **L-14** is new: *a host chooses how much of the
+basemap is drawn for its purpose, and the picture it does not ask to thin is the picture as it was.*
+
+| # | Task | Files | Shape | Test first (RED) |
+|---|---|---|---|---|
+| L11.1 | Detail levels on the built-in style's ranking (D-82; the ranking is v0.1.0 D-83) | `internal/style/`, `look.go`, `contract.md` | `type Detail uint8`; `DetailEssential` (coast, water, borders), `DetailWeather` (+ rivers, place names, major roads), `DetailStandard` (+ rail, parks), `DetailFull` (+ minor roads, runways, the default); `func (m *Map) SetDetail(d Detail) error`, a value outside the four refused; a level and a switched-off layer both apply; a host's own style's rules draw at every level | A scene holding every built-in rule, drawn at each level, draws exactly that level's rules; `DetailFull` draws every existing golden unchanged; a fifth value is refused *As built: `style.Detail` with a least level per built-in rule (`ruleDetail`), the profile's `WithDetail`, `Map.SetDetail`; a zero level reads as Full, so the picture is unchanged for a host that never asks; `TestEachDetailLevelDrawsItsRules`, `TestSetDetailThinsThePictureAndFullIsTheDefault`* |
+| L11.2 | Major and minor roads switch apart (D-82) | `internal/style/profile.go`, `look.go` | `MinorRoadLayer` joins the switchable layers; `RoadLayer` is the major roads (motorway, trunk, primary) | Minor off: the major roads drawn, the minor not; major off: the reverse *As built: `MinorRoadLayer` groups `road-minor`; `RoadLayer` is `road-major`; both thin together under a cover. `TestLayerToggle` updated to the ruled meaning; a changelog row records the break* |
+| L11.3 | The footer's scale bar and credit never touch (watchpost U1-1) | `internal/render/frame.go` | At least one clear cell between them, or the credit moves to the next row | The 69-wide frame where they met reads with a space between *As built: the defect was an order - the credit measured the cell before it before the scale mark was written. The credit keeps its width (FR-14) and the scale mark takes what is left less one cell, or is not drawn; `TestTheScaleMarkAndTheCreditNeverTouch` was RED at 70 columns, U1-1 exactly; ten reference frames at 69×12 changed on the footer row alone, rewritten by D-84. `TestLayerToggleInFrame` updated to D-82 (major and minor apart, both off draws no road)* |
+| L11.4 | The contract, the surface test, the diagrams and `v0.2.0-rc.9` | `contract.md`, `surface_test.go`, the diagrams | Section rows for L-14; the surface golden gains the new names | The surface test and the contract-sentence test, RED on the new names first |
 
 ## Dependencies within packages
 

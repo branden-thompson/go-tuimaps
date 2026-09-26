@@ -182,6 +182,17 @@ For designers and PMs before engineers, the three visible decisions:
 | L-13.6 | **For a discrete place the host names, each alert is answered on its own** — inside, outside or **nearby** — with its name and severity word, instead of one answer merged across an overlay. **"Nearby" is new in v0.2.0** (v0.1.0 has only inside and outside): within a distance the host sets, default proposed 10 km, PLAN confirms. The description never says "you"; the library returns data, so this binds the contract's, the example's and watchpost's wording. | D-29, D-43 (A F4) | NO INSTRUMENT YET |
 | L-13.7 | *Deferred, "necessity unproven yet" (D-29):* intensity in words for image answers (a host words it from `Legend()`, L-13.10); a general summary of what is in view; new place-to-weather statements beyond inside / outside / nearby — **except L-1.12's motion statement, which D-29 keeps and D-42 widens to views with no place, and the answers v0.1.0 already gives** (`Heavier`, `HeavierAt`). | D-29, D-40, D-42, D-47 | — |
 
+## L-14 — Detail by purpose (D-82, D-83: watchpost UAT-1 U1-10, U1-16)
+
+Added during watchpost 0.18.0's UAT-1. **A host chooses how much of the basemap is drawn for its
+purpose, and the picture it does not ask to thin is the picture as it was.**
+
+| # | Requirement | Source | Instrument |
+|---|---|---|---|
+| L-14.1 | `SetDetail` draws the library's own basemap at a level: Essential (coast, water, borders), Weather (and rivers, place names, the major roads), Standard (and rail, parks), Full (and the minor roads, runways). Full is the default. A level and a switched-off layer both apply; a host's own style draws whole. | D-82 | `TestEachDetailLevelDrawsItsRules`, `TestSetDetailThinsThePictureAndFullIsTheDefault`, `TestALevelChangedOnADrawnMapRedraws` |
+| L-14.2 | The major roads (motorway, trunk, primary) and the minor roads switch apart. | D-82 | `TestMajorAndMinorRoadsSwitchApart`, `TestMajorAndMinorRoadsSwitchApartOnTheMap` |
+| L-14.3 | The footer's scale mark and credit never touch; the credit keeps its width and the scale mark takes what is left, or is not drawn. | D-83 (watchpost U1-1) | `TestTheScaleMarkAndTheCreditNeverTouch` |
+
 ## Metrics of success
 
 The brief's M1–M6 (D-6), with round 1's changes. **This table is the normative one.**

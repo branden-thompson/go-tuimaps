@@ -46,7 +46,7 @@ func BuiltIn() *Style {
 	line := func(id, layer string, token colour.Token, priority int, from float64, filter ...step) Rule {
 		return Rule{ID: id, Layer: layer, Kind: Line, Token: token, priority: priority, MinZoom: from, filter: filter}
 	}
-	return &Style{rules: []Rule{
+	return levelled(&Style{rules: []Rule{
 		line("coast", "water", colour.Coast, 10, 0, classIn("ocean")),
 		line("water-edge", "water", colour.WaterLine, 9, 0),
 		{ID: "water", Layer: "water", Kind: Fill, Token: colour.WaterFill, priority: 9},
@@ -61,5 +61,13 @@ func BuiltIn() *Style {
 		{ID: "label-region", Layer: "place", Kind: Symbol, Token: colour.LabelRegion, priority: 6, filter: named("country", "state", "province", "continent")},
 		{ID: "label-place", Layer: "place", Kind: Symbol, Token: colour.LabelPlace, priority: 6, filter: named()},
 		{ID: "label-water", Layer: "water_name", Kind: Symbol, Token: colour.LabelWater, priority: 6, filter: named()},
-	}}
+	}})
+}
+
+// levelled gives each built-in rule its level (D-82).
+func levelled(s *Style) *Style {
+	for i := range s.rules {
+		s.rules[i].detail = ruleDetail[s.rules[i].ID]
+	}
+	return s
 }

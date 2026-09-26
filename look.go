@@ -39,6 +39,22 @@ const (
 	RiverLayer  = style.RiverLayer
 	WaterLayer  = style.WaterLayer
 	LabelLayer  = style.LabelLayer
+	// MinorRoadLayer is the minor roads, switched apart from RoadLayer's
+	// motorways, trunks and primaries (v0.2.0 D-82).
+	MinorRoadLayer = style.MinorRoadLayer
+)
+
+// Detail is how much of the basemap is drawn, by purpose (v0.2.0 D-82,
+// L-14): each level draws what the one below does and more. Only the
+// library's own style is ranked; a host's own style (SetStyle) draws whole.
+type Detail = style.Detail
+
+// The levels. DetailFull is the picture a host that never asks gets.
+const (
+	DetailEssential = style.DetailEssential // coast, water, borders
+	DetailWeather   = style.DetailWeather   // and rivers, place names, the major roads
+	DetailStandard  = style.DetailStandard  // and rail, parks
+	DetailFull      = style.DetailFull      // and the minor roads, runways
 )
 
 // look is everything a host has said about how the map should be drawn. It
@@ -53,6 +69,7 @@ type look struct {
 	safeRamps   bool
 	reduce      bool
 	off         style.Switches
+	detail      style.Detail // the host's level; zero reads as Full (D-82)
 	language    string
 	blends      colour.Blends // how each alert tint blends over each image ramp (L-11.3)
 	blendsFor   blendKey      // the look the search was run for
@@ -245,7 +262,7 @@ func (m *Map) Layers(layer Layer, on bool) {
 	if m == nil {
 		return
 	}
-	if layer < RoadLayer || layer > LabelLayer {
+	if layer < RoadLayer || layer > MinorRoadLayer {
 		return // a layer the library does not draw is nothing to switch
 	}
 	m.mu.Lock()
@@ -318,6 +335,7 @@ func (m *Map) paint(in *render.Input) {
 	in.Ground = m.look.ground
 	in.Depth = m.depthInEffect()
 	in.Layers = m.look.off
+	in.Detail = m.look.detail
 	m.searchBlendsLocked(in.Depth)
 	in.Blends = m.look.blends
 }
@@ -350,3 +368,29 @@ var presetNames = map[colour.Preset]string{colour.Temperature: "temperature", co
 
 // alertNames are the alert severities, extreme first, as the tints are ordered.
 var alertNames = [5]string{"extreme", "severe", "moderate", "minor", "unknown"}
+
+// SetDetail sets how much of the basemap is drawn (v0.2.0 D-82, L-14): a
+// level and a switched-off layer both apply. A value outside the four levels
+// is refused and the map keeps the level it had.
+func (m *Map) SetDetail(d Detail) (err error) {
+	defer guard("SetDetail", &err)
+	m.plant("SetDetail")
+
+	if m == nil {
+		return closed()
+	}
+	if !d.Valid() {
+		return badView(textsafe.Const("that is not a detail the map has"),
+			textsafe.Const("pass DetailEssential, DetailWeather, DetailStandard or DetailFull"))
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.shut {
+		return closed()
+	}
+	if m.look.detail != d {
+		m.look.detail = d
+		m.changed++
+	}
+	return nil
+}

@@ -98,3 +98,5 @@ A commit made from exactly that has the same tree less this file, so the two can
 | 2026-09-25T10:38:51Z | 91fa894 | 19d113bb1fd4 | full | green | 1322 | - |
 | 2026-09-25T16:53:14Z | 48d6873 | 805a2d65a711 | docs | green | 88 | - |
 | 2026-09-25T20:41:05Z | 2c6f9ce | a54b8261ae3c | full | green | 1616 | - |
+| 2026-09-25T23:59:24Z | 31b69b7 | fc7aafc08839 | full | FAILED | 1558 | - |
+| 2026-09-26T00:25:04Z | 31b69b7 | d35c193f3514 | full | green | 1446 | - |

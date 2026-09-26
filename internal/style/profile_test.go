@@ -104,13 +104,14 @@ func TestProfileBySize(t *testing.T) {
 // one off leaves the others where they were.
 func TestLayerToggle(t *testing.T) {
 	byLayer := map[Layer][]string{
-		RoadLayer:   {"road-major", "road-minor"},
-		RailLayer:   {"rail", "runway"},
-		ParkLayer:   {"park"},
-		BorderLayer: {"border-country", "border-region"},
-		RiverLayer:  {"river"},
-		WaterLayer:  {"coast", "water-edge", "water"},
-		LabelLayer:  {"label-place", "label-region", "label-water"},
+		RoadLayer:      {"road-major"}, // v0.2.0 D-82: the major roads; the minor switch apart
+		MinorRoadLayer: {"road-minor"},
+		RailLayer:      {"rail", "runway"},
+		ParkLayer:      {"park"},
+		BorderLayer:    {"border-country", "border-region"},
+		RiverLayer:     {"river"},
+		WaterLayer:     {"coast", "water-edge", "water"},
+		LabelLayer:     {"label-place", "label-region", "label-water"},
 	}
 	for layer, ids := range byLayer {
 		p := NewProfile(Bare, 149, 38, Off(layer))

@@ -894,7 +894,7 @@ code{font-family:var(--mono);font-size:.92em}
       A2[&#34;&lt;b&gt;Size and view&lt;/b&gt;&lt;br/&gt;WithSize(cols, rows) — state, set BEFORE Settle or Render; Render&#39;s size updates it&lt;br/&gt;intents: PanCells · Zoom · ZoomBy · Recentre · FitWorld · FitTo(places, overlays, margin) (FR-24, D-76)&lt;br/&gt;SetBound(Bound): a least zoom and a box, held on every move (L-3.1) · Centre() · DeepestZoom()&#34;]
       A2b[&#34;&lt;b&gt;Places and markers&lt;/b&gt;&lt;br/&gt;SetPlaces(places) · AddPlace(place) · RemovePlace(id) · Places() — ids as upstream (P-61)&lt;br/&gt;what Report answers for, what FitTo can fit, what markers draw (FR-26)&#34;]
       A3[&#34;&lt;b&gt;Overlays&lt;/b&gt; (D-74, D-86)&lt;br/&gt;Set(overlay) → SetResult: created or replaced · old geometry released yes/no&lt;br/&gt;Remove(id) → RemoveResult: found · released yes/no · InUse(id) · Overlays()&lt;br/&gt;structs: Features · Grid · Image — one PNG, or Frames: a loop of up to MaxFrames 72, gaps and forecasts stated (D-54)&lt;br/&gt;an image&#39;s table, or a Provider&#39;s: IEM · MRMS · SetImageBudget(bytes), 6 MiB by default (L-12)&lt;br/&gt;presets: Temperature · Radar · Alerts (· Wind, VectorGrid, TileImages later) (D-69)&#34;]
-      A4[&#34;&lt;b&gt;Look&lt;/b&gt;&lt;br/&gt;SetPalette(tokens) (D-63) · SafeRamps(on) · Ground(colour) · PaintGround() (D-64)&lt;br/&gt;ColourDepth(depth) · ReduceMotion(on) (NFR-21) · Layers(layer, on) (FR-36) · LabelLanguage(code) (D-82)&lt;br/&gt;SetStyle(body) · ShowFooter(on)&#34;]
+      A4[&#34;&lt;b&gt;Look&lt;/b&gt;&lt;br/&gt;SetPalette(tokens) (D-63) · SafeRamps(on) · Ground(colour) · PaintGround() (D-64)&lt;br/&gt;ColourDepth(depth) · ReduceMotion(on) (NFR-21) · Layers(layer, on) (FR-36; major and minor roads apart, v0.2.0 D-82) · LabelLanguage(code) (D-82)&lt;br/&gt;SetDetail(level) (v0.2.0 L-14) · SetStyle(body) · ShowFooter(on)&#34;]
       A5[&#34;&lt;b&gt;Tiles&lt;/b&gt;&lt;br/&gt;Source(address) (D-65) · CacheRoot(dir, capBytes) · SetCacheMaxAge(age) (D-56)&lt;br/&gt;SetFetchOptions(FetchOptions: Transport · UserAgent · Timeout · AllowHTTP) · CheckedDialer() (D-55)&lt;br/&gt;NewShared · SharedCaches (FR-27, D-85) · CacheUse() (D-90) · Purge() → PurgeReport · Verify() (FR-22a) · SourceCredit()&#34;]
       A6[&#34;&lt;b&gt;Running the work&lt;/b&gt; (D-73, D-84)&lt;br/&gt;Pending() · Work(ctx) → did · Settle(ctx) → SettleResult: ran · failed · in flight · why · OnPending(hook) · InFlight()&lt;br/&gt;Set and Remove say at once whether a borrow is over; InUse(id) answers after (D-86)&#34;]
       A7[&#34;&lt;b&gt;Playback&lt;/b&gt; — one for the map (D-54, D-67, D-76)&lt;br/&gt;SetPlayback(on or off) · SetPlaybackStep(200–1000 ms, 500 by default)&lt;br/&gt;Play · Stop · Reset · Step(by) · Animate(at) · FollowClock()&#34;]
@@ -1009,7 +1009,7 @@ code{font-family:var(--mono);font-size:.92em}
   J-&gt;&gt;D: Store(tile, fetch time, remembered g)
   D--&gt;&gt;J: g changed or released: refused, nothing written
   Note over D: only with g unchanged: temporary file, dated with the fetch time, then rename ·&lt;br/&gt;over the cap, prune to nine tenths, oldest fetched first, never a file the view needs
-</pre></div></article><article class="dia" id="radar-loops-3"><div class="meta"><h3>The order, in one picture (v0.2.0 ⇄ watchpost 0.18.0) — library AS BUILT to rc.8; WP-L10 in part; watchpost&#39;s side is its plan&#39;s</h3><p class="file"><code>06_docs/02_features/radar-loops/03-architecture-design/integration-map.md</code></p><p class="lead"><em>Library status from the tags: WP-L1 to WP-L9 are built (rc.1–rc.7); of WP-L10 only L10.1, L10.2 and L10.6 (rc.8). Watchpost&#39;s W-packages are drawn as its plan has them; their state is watchpost&#39;s to report, not this page&#39;s.</em></p></div><div class="canvas"><pre class="mermaid">flowchart TB
+</pre></div></article><article class="dia" id="radar-loops-3"><div class="meta"><h3>The order, in one picture (v0.2.0 ⇄ watchpost 0.18.0) — library AS BUILT to rc.9; WP-L10 in part; watchpost&#39;s side is its plan&#39;s</h3><p class="file"><code>06_docs/02_features/radar-loops/03-architecture-design/integration-map.md</code></p><p class="lead"><em>Library status from the tags: WP-L1 to WP-L9 are built (rc.1–rc.7); of WP-L10 only L10.1, L10.2 and L10.6 (rc.8); WP-L11, watchpost UAT-1&#39;s library needs, whole (rc.9). Watchpost&#39;s W-packages are drawn as its plan has them; their state is watchpost&#39;s to report, not this page&#39;s.</em></p></div><div class="canvas"><pre class="mermaid">flowchart TB
   subgraph WP1[&#34;watchpost P1-a — lands on go-tuiMaps v0.1.0&#34;]
     W0[&#34;W0 Foundations: the library, fixtures,&lt;br/&gt;the plan-code gate (FR-8.1, FR-8.6)&#34;]
     W1[&#34;W1 Window, its words, Settings&lt;br/&gt;(FR-1, FR-7.4 renderer, FR-9)&#34;]
@@ -1031,6 +1031,7 @@ code{font-family:var(--mono);font-size:.92em}
     WPL8[&#34;WP-L8 Fetch options + confinement (L-7, L-10)&lt;br/&gt;BUILT rc.6 — Fetcher removed&#34;]
     WPL9[&#34;WP-L9 Cache age + purge (L-9)&lt;br/&gt;BUILT rc.7&#34;]
     WPL10[&#34;WP-L10 Defects + close-out (L-5, L-6, L-13, M4, M6)&lt;br/&gt;IN PART rc.8: L10.1, L10.2, L10.6 ·&lt;br/&gt;NOT YET: L10.3–L10.5, L10.7–L10.12&#34;]
+    WPL11[&#34;WP-L11 watchpost UAT-1&#39;s library needs (D-82, D-83)&lt;br/&gt;detail levels · major/minor roads · the footer&lt;br/&gt;BUILT rc.9&#34;]
     WPL1 --&gt; WPL2 --&gt; WPL4 --&gt; WPL3 --&gt; WPL5
     WPL1 --&gt; WPL6 --&gt; WPL5
     WPL1 --&gt; WPL7
@@ -1038,6 +1039,7 @@ code{font-family:var(--mono);font-size:.92em}
     WPL5 --&gt; WPL10
     WPL7 --&gt; WPL10
     WPL9 --&gt; WPL10
+    WPL3 --&gt; WPL11 --&gt; WPL10
   end
   subgraph WP2[&#34;watchpost P1-b — lands on the v0.2.0 tag&#34;]
     W8[&#34;W8 Radar loops, motion Setting, M3, M5, M6&lt;br/&gt;(FR-5, HR-1, HR-9)&#34;]
@@ -1045,7 +1047,7 @@ code{font-family:var(--mono);font-size:.92em}
   end
   WP1 --&gt; WP2
   WPL10 --&gt;|&#34;final v0.2.0 tag: 0.18.0 ships (FR-5.6)&#34;| WP2
-  LIB -.-&gt;|&#34;v0.2.0-rc.N as packages land (D-69): rc.1–rc.8 so far&#34;| WP2
+  LIB -.-&gt;|&#34;v0.2.0-rc.N as packages land (D-69): rc.1–rc.9 so far&#34;| WP2
 </pre></div></article></section></main>
 </div>
 <script type="module">

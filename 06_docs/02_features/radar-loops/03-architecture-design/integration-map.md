@@ -14,9 +14,9 @@ the order in which their work can land, and traces each host requirement to the 
 and ruling that meet it. Each plan cites the work packages here by name; neither plan restates the
 other's.
 
-## The order, in one picture (v0.2.0 ⇄ watchpost 0.18.0) — library AS BUILT to rc.8; WP-L10 in part; watchpost's side is its plan's
+## The order, in one picture (v0.2.0 ⇄ watchpost 0.18.0) — library AS BUILT to rc.9; WP-L10 in part; watchpost's side is its plan's
 
-*Library status from the tags: WP-L1 to WP-L9 are built (rc.1–rc.7); of WP-L10 only L10.1, L10.2 and L10.6 (rc.8). Watchpost's W-packages are drawn as its plan has them; their state is watchpost's to report, not this page's.*
+*Library status from the tags: WP-L1 to WP-L9 are built (rc.1–rc.7); of WP-L10 only L10.1, L10.2 and L10.6 (rc.8); WP-L11, watchpost UAT-1's library needs, whole (rc.9). Watchpost's W-packages are drawn as its plan has them; their state is watchpost's to report, not this page's.*
 
 ```mermaid
 flowchart TB
@@ -41,6 +41,7 @@ flowchart TB
     WPL8["WP-L8 Fetch options + confinement (L-7, L-10)<br/>BUILT rc.6 — Fetcher removed"]
     WPL9["WP-L9 Cache age + purge (L-9)<br/>BUILT rc.7"]
     WPL10["WP-L10 Defects + close-out (L-5, L-6, L-13, M4, M6)<br/>IN PART rc.8: L10.1, L10.2, L10.6 ·<br/>NOT YET: L10.3–L10.5, L10.7–L10.12"]
+    WPL11["WP-L11 watchpost UAT-1's library needs (D-82, D-83)<br/>detail levels · major/minor roads · the footer<br/>BUILT rc.9"]
     WPL1 --> WPL2 --> WPL4 --> WPL3 --> WPL5
     WPL1 --> WPL6 --> WPL5
     WPL1 --> WPL7
@@ -48,6 +49,7 @@ flowchart TB
     WPL5 --> WPL10
     WPL7 --> WPL10
     WPL9 --> WPL10
+    WPL3 --> WPL11 --> WPL10
   end
   subgraph WP2["watchpost P1-b — lands on the v0.2.0 tag"]
     W8["W8 Radar loops, motion Setting, M3, M5, M6<br/>(FR-5, HR-1, HR-9)"]
@@ -55,7 +57,7 @@ flowchart TB
   end
   WP1 --> WP2
   WPL10 -->|"final v0.2.0 tag: 0.18.0 ships (FR-5.6)"| WP2
-  LIB -.->|"v0.2.0-rc.N as packages land (D-69): rc.1–rc.8 so far"| WP2
+  LIB -.->|"v0.2.0-rc.N as packages land (D-69): rc.1–rc.9 so far"| WP2
 ```
 
 **Watchpost's W-numbers are its plan's** (`observer-maps/04-development/implementation-plan.md`). **Inside the library, WP-L4 lands before WP-L3**: the renderer's frame-identity tasks need a way to advance the shown frame.
@@ -83,6 +85,8 @@ once. Its P1-b builds against release candidates, `v0.2.0-rc.N`, as the packages
 | FR-7.4 description | `Report`: alerts shown, per place, motion | L-1.12, L-13.5–L-13.10 | D-42, D-43, D-57 | WP-L5 |
 | Radar over alerts | the blend; furniture never erased | L-11, L-8.3 | D-14, D-27, D-45 | WP-L3 |
 | M5 time to picture | render ≤ 15 ms an advance | L-12.5 | D-61 | WP-L3 |
+| UAT-1 U1-10, U1-16: detail by purpose | `SetDetail(level)` on the built-in style's ranking; major and minor roads switched apart | L-14 (new, D-82) | D-82, D-83, watchpost D-65, D-67 | WP-L11 |
+| UAT-1 U1-1: the footer | the scale bar and the credit never touch | L-8 (furniture) | D-83 | WP-L11 |
 | The loop's shape (host-owned) | per state-regional region, two hours, a step the listener sets (5 minutes by default), images up to about 200,000 pixels; the library accepts up to `MaxFrames` 72 within a host-set budget (6 MiB default) | L-1.15, L-12.1, L-12.2 | D-68, watchpost D-47, D-50 | WP-L2 |
 
 ## Rules for both plans

@@ -94,6 +94,7 @@ type Input struct {
 	// that has not run the work from one that gave the map nothing to draw.
 	Supplied bool
 	Layers   style.Switches // the basemap layers the host has switched off (FR-36)
+	Detail   style.Detail   // how much of the basemap the host asks for (v0.2.0 D-82)
 	Style    *style.Style
 	Palette  colour.Palette
 	// Look counts changes to the palette, which cannot be compared: whoever
@@ -333,7 +334,7 @@ func (r *Renderer) sameLook(in Input) bool {
 	if in.Stale != l.Stale || in.Footer != l.Footer || in.Simplify != l.Simplify {
 		return false
 	}
-	return in.Labels == l.Labels && in.Scale == l.Scale && in.Credit == l.Credit && in.Missing == l.Missing && in.Supplied == l.Supplied && in.Layers == l.Layers
+	return in.Labels == l.Labels && in.Scale == l.Scale && in.Credit == l.Credit && in.Missing == l.Missing && in.Supplied == l.Supplied && in.Layers == l.Layers && in.Detail == l.Detail
 }
 
 // unchanged reports whether nothing a frame is a function of has changed
@@ -415,7 +416,7 @@ func (r *Renderer) paint(in Input) (Status, error) {
 		}
 		return a.Y < b.Y
 	})
-	r.painter.SetProfile(style.NewProfile(load(in), in.View.Cols, in.View.Rows, in.Layers))
+	r.painter.SetProfile(style.NewProfile(load(in), in.View.Cols, in.View.Rows, in.Layers).WithDetail(in.Detail))
 	r.painter.SetDepth(in.Depth)
 	r.painter.SetSimplify(in.Simplify)
 	status := Complete
@@ -710,18 +711,18 @@ func (r *Renderer) furniture(in Input, status Status) {
 		}
 	}
 	credit := textsafe.Fit(in.Credit, g.cols)
-	if w := textsafe.Width(credit); w > 0 {
-		// **A narrow map put the scale mark and the credit against each other**
-		// with nothing between them, so that "50 km" and the credit read as one
-		// word. The credit gives up its first cell rather than touch it.
-		if left := g.cols - w; left > 0 && g.cells[(g.rows-1)*g.cols+left-1].taken {
-			credit = textsafe.Fit(credit, g.cols-1)
-			w = textsafe.Width(credit)
-		}
+	w := textsafe.Width(credit)
+	if w > 0 {
 		g.write(g.cols-w, g.rows-1, credit, uint8(colour.Credit))
 	}
-	if in.Scale {
-		g.write(0, g.rows-1, scaleMark(in.View, g.cols/3), uint8(colour.Scale))
+	// **THE CREDIT KEEPS ITS WIDTH AND THE SCALE MARK TAKES WHAT IS LEFT, less
+	// one clear cell** (v0.2.0 D-83, watchpost UAT-1 U1-1). The credit gave up
+	// a cell when the cell before it was taken - but it was measured before
+	// the scale mark was written, so it never saw it, and at about 70 columns
+	// "50 km" and the credit read as one word. The attribution is the one that
+	// must be whole (FR-14); a scale mark with no room is not drawn.
+	if room := min(g.cols/3, g.cols-w-1); in.Scale && room > 0 {
+		g.write(0, g.rows-1, scaleMark(in.View, room), uint8(colour.Scale))
 	}
 	if footer := textsafe.Fit(in.Footer, g.cols); textsafe.Width(footer) > 0 && g.rows > 1 {
 		g.write(0, g.rows-2, footer, uint8(colour.Credit))
