@@ -183,6 +183,7 @@ type Store struct {
 	warnings []fault.Warning
 
 	prepared   map[string]map[int]*prepared    // by overlay id, then bucket
+	stand      map[string]map[int]*prepared    // a replaced geometry's prepared form, drawn until the new one is (L11.5)
 	fields     map[string]scene.Field          // prepared grids, by overlay id
 	pictures   map[string][]picture            // decoded pictures, by overlay id, one a frame
 	spare      map[string]map[[32]byte]picture // a replaced loop's decoded frames, by key, for its refresh to keep (L-1.7)
@@ -217,7 +218,7 @@ func NewStore(c Caps) (*Store, error) {
 	if c.ImageBytes == 0 {
 		c.ImageBytes = defaultImageBytes
 	}
-	return &Store{budget: defaultImageBudget, caps: c, current: map[string]*held{}, retiring: map[string]int{}, prepared: map[string]map[int]*prepared{}, fields: map[string]scene.Field{}, pictures: map[string][]picture{}, spare: map[string]map[[32]byte]picture{}, fromMemory: map[string]bool{}, views: map[*ShapeView]int{}}, nil
+	return &Store{budget: defaultImageBudget, caps: c, current: map[string]*held{}, retiring: map[string]int{}, prepared: map[string]map[int]*prepared{}, stand: map[string]map[int]*prepared{}, fields: map[string]scene.Field{}, pictures: map[string][]picture{}, spare: map[string]map[[32]byte]picture{}, fromMemory: map[string]bool{}, views: map[*ShapeView]int{}}, nil
 }
 
 func refused(kind fault.Kind, why, todo textsafe.Text) error {
@@ -530,8 +531,8 @@ func (s *Store) HandIn(o Overlay) (SetResult, error) {
 	if vertices > s.IndexFrom() {
 		next.index = buildIndex(o) // one linear pass, inside Set, so the shape draws next frame (D-92)
 	}
-	s.spareFramesLocked(o)     // a refresh keeps the frames it shares with the loop it replaces (L-1.7)
-	s.dropPreparedLocked(o.ID) // what was prepared from the old geometry is not this overlay's
+	s.spareFramesLocked(o)                   // a refresh keeps the frames it shares with the loop it replaces (L-1.7)
+	s.standInLocked(o.ID, next.index == nil) // what was prepared from the old geometry is drawn until this is prepared (L11.5), unless this is drawn from memory (D-92)
 	s.current[o.ID] = next
 	s.vertices += vertices
 	return res, nil
@@ -674,6 +675,7 @@ func (s *Store) Drop(id string) (RemoveResult, error) {
 	delete(s.current, id)
 	delete(s.spare, id)
 	s.dropPreparedLocked(id)
+	s.dropStandInLocked(id) // a removed overlay's stand-in goes with it
 	for i, other := range s.order {
 		if other == id {
 			s.order = append(s.order[:i], s.order[i+1:]...)

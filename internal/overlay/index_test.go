@@ -99,10 +99,12 @@ func TestFallbackChosenByWholeCap(t *testing.T) {
 	if _, _, path := s.Drawn("never-set", 9); path != NotReady {
 		t.Errorf("an overlay that is not set: %v", path)
 	}
-	// A replace drops what was prepared from the old geometry.
+	// A replace keeps the old prepared form as a stand-in, drawn until the new
+	// one is prepared (contract section 4; v0.2.0 L11.5), and a job still
+	// prepares the new one: the path is not Cached.
 	s.HandIn(alert("small", circle(project.LonLat{Lon: -90, Lat: 38}, 3, 400)))
-	if _, _, path := s.Drawn("small", 12); path != NotReady {
-		t.Errorf("after a replace the old prepared form is still drawn: %v", path)
+	if got, _, path := s.Drawn("small", 12); path != StandIn || len(got) == 0 {
+		t.Errorf("after a replace the old prepared form is not drawn until the new one is: path %v, %d shapes", path, len(got))
 	}
 }
 
@@ -204,7 +206,71 @@ func TestOldShapeDrawsFromOwnCopy(t *testing.T) {
 			t.Fatalf("vertex %d moved to %v from %v when the host reused its own memory", i, v, was[i])
 		}
 	}
-	if _, _, path := s.Drawn("warnings", 5); path != NotReady {
-		t.Errorf("path %v for the replaced overlay; nothing prepared from geometry that is gone may be drawn again", path)
+	// UNTIL THE REPLACEMENT IS PREPARED, THE OLD SHAPE IS DRAWN FROM THIS SAME
+	// COPY (contract section 4, v0.2.0 L11.5): the host's reuse of its memory
+	// above cannot reach it.
+	stand, _, path := s.Drawn("warnings", 5)
+	if path != StandIn || len(stand) == 0 || len(stand[0].Rings[0]) != len(was) {
+		t.Fatalf("path %v for the replaced overlay; want its old copy drawn until the new shape is prepared", path)
+	}
+	for i, v := range stand[0].Rings[0] {
+		if v != was[i] {
+			t.Fatalf("the stand-in's vertex %d moved to %v from %v", i, v, was[i])
+		}
+	}
+}
+
+// TestALargeReplacementGetsNoStandIn is D-92 beside L11.5: a replacement
+// large enough to be drawn from the host's memory is drawn so, and the old
+// shape's copy is dropped, not kept as a stand-in.
+func TestALargeReplacementGetsNoStandIn(t *testing.T) {
+	s, err := NewStore(Caps{ShapeBytes: 8250}) // an index from 1,000 vertices
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.HandIn(alert("big", circle(project.LonLat{Lon: -90, Lat: 38}, 3, 40)))
+	if err := s.PrepareJob("big", 12).Run(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, path := s.Drawn("big", 12); path != Cached {
+		t.Fatalf("the small shape is not prepared: %v", path)
+	}
+	s.HandIn(alert("big", circle(project.LonLat{Lon: -90, Lat: 38}, 3, 5000)))
+	if _, _, path := s.Drawn("big", 12); path == StandIn {
+		t.Error("a replacement drawn from memory kept the old shape's copy as a stand-in (D-92 drops it)")
+	}
+}
+
+// TestAStandInIsLetGoOnceItsWorkIsDone is L11.5's accounting: the stand-in's
+// bytes are held while it stands in, and let go when the replacement is
+// prepared or the overlay is removed - never a copy the cap goes on counting.
+func TestAStandInIsLetGoOnceItsWorkIsDone(t *testing.T) {
+	prepare := func(s *Store, id string) {
+		t.Helper()
+		if err := s.PrepareJob(id, 12).Run(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+	}
+	s, _ := NewStore(Caps{})
+	s.HandIn(alert("a", circle(project.LonLat{Lon: -90, Lat: 38}, 3, 400)))
+	prepare(s, "a")
+	old := s.ShapeUse().Held
+	s.HandIn(alert("a", circle(project.LonLat{Lon: -90, Lat: 38}, 2, 200)))
+	if got := s.ShapeUse().Held; got != old {
+		t.Errorf("while it stands in the old copy holds %d bytes, want its %d", got, old)
+	}
+	prepare(s, "a")
+	fresh, _ := NewStore(Caps{})
+	fresh.HandIn(alert("a", circle(project.LonLat{Lon: -90, Lat: 38}, 2, 200)))
+	prepare(fresh, "a")
+	if got, want := s.ShapeUse().Held, fresh.ShapeUse().Held; got != want {
+		t.Errorf("with the replacement prepared %d bytes are held, want the replacement's %d alone", got, want)
+	}
+	s.HandIn(alert("a", circle(project.LonLat{Lon: -90, Lat: 38}, 3, 400))) // a stand-in again
+	if _, err := s.Drop("a"); err != nil {
+		t.Fatal(err)
+	}
+	if got := s.ShapeUse().Held; got != 0 {
+		t.Errorf("a removed overlay's stand-in still holds %d bytes", got)
 	}
 }

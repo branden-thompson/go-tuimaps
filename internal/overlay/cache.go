@@ -34,6 +34,10 @@ const (
 	NotReady   Path = iota // nothing is prepared yet; a job will prepare it
 	Cached                 // from the library's own simplified copy
 	FromMemory             // straight from the host's memory, culled by the run index: its simplified form is larger than the whole shape cap
+	// StandIn is the prepared form of the geometry a Set replaced, drawn until
+	// the replacement is prepared, which a job is still to do (v0.2.0 L11.5,
+	// watchpost UAT-1 U1-28: an alert handed in again blinked out of the frame).
+	StandIn
 )
 
 type prepared struct {
@@ -203,6 +207,30 @@ func (s *Store) ShapeUse() Use {
 	return Use{Need: s.shapeNeed, Held: s.shapeHeld, Cap: int64(s.caps.ShapeBytes)}
 }
 
+// standInLocked keeps what was prepared from an overlay's old geometry, to be
+// drawn until its replacement is prepared - the contract's section 4: "the
+// old shape keeps drawing from the library's own simplified copy until the
+// new one is prepared" (L11.5) - and forgets the rest. A replacement large
+// enough to be drawn from the host's memory is drawn so on the next frame,
+// and the old copy is dropped (D-92): keep is false for it.
+func (s *Store) standInLocked(id string, keep bool) {
+	s.dropStandInLocked(id) // an older stand-in gives way to the newer
+	if p := s.prepared[id]; keep && len(p) > 0 {
+		s.stand[id] = p
+		delete(s.prepared, id) // its bytes stay counted, now the stand-in's
+	}
+	s.dropPreparedLocked(id)
+}
+
+// dropStandInLocked forgets an overlay's stand-in: its replacement is
+// prepared, or the overlay is gone.
+func (s *Store) dropStandInLocked(id string) {
+	for _, p := range s.stand[id] {
+		s.shapeHeld -= p.bytes
+	}
+	delete(s.stand, id)
+}
+
 // dropPreparedLocked forgets what was prepared from an overlay's old geometry.
 func (s *Store) dropPreparedLocked(id string) {
 	for _, p := range s.prepared[id] {
@@ -236,6 +264,13 @@ func (s *Store) Drawn(id string, bucket int) ([]scene.Shape, int, Path) {
 	}
 	if s.fromMemory[id] {
 		return nil, bucket, FromMemory
+	}
+	have = have[:0]
+	for b := range s.stand[id] {
+		have = append(have, b)
+	}
+	if nearest, ok := Nearest(bucket, have); ok {
+		return s.stand[id][nearest].shapes, nearest, StandIn // the library's own copy, never the host's memory (D-86)
 	}
 	return nil, 0, NotReady
 }
@@ -345,6 +380,7 @@ func (s *Store) keep(r *Reader, bucket int, shapes []scene.Shape) {
 		}
 	}
 	bytes := int64(math.Ceil(float64(vertices) * bytesPerVertex))
+	s.dropStandInLocked(r.id) // the replacement is ready: the stand-in has done its work (L11.5)
 	if bytes > int64(s.caps.ShapeBytes) {
 		s.fromMemory[r.id] = true
 		s.landed++

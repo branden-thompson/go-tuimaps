@@ -191,6 +191,7 @@ purpose, and the picture it does not ask to thin is the picture as it was.**
 |---|---|---|---|
 | L-14.1 | `SetDetail` draws the library's own basemap at a level: Essential (coast, water, borders), Weather (and rivers, place names, the major roads), Standard (and rail, parks), Full (and the minor roads, runways). Full is the default. A level and a switched-off layer both apply; a host's own style draws whole. | D-82 | `TestEachDetailLevelDrawsItsRules`, `TestSetDetailThinsThePictureAndFullIsTheDefault`, `TestALevelChangedOnADrawnMapRedraws` |
 | L-14.2 | The major roads (motorway, trunk, primary) and the minor roads switch apart. | D-82 | `TestMajorAndMinorRoadsSwitchApart`, `TestMajorAndMinorRoadsSwitchApartOnTheMap` |
+| L-14.4 | A replaced overlay is drawn as it was until its replacement is prepared (contract section 4): an overlay handed in again never drops out of the frame. | D-83 (watchpost U1-28) | `TestAReplacedOverlayIsDrawnUntilItsReplacementIsReady` |
 | L-14.3 | The footer's scale mark and credit never touch; the credit keeps its width and the scale mark takes what is left, or is not drawn. | D-83 (watchpost U1-1) | `TestTheScaleMarkAndTheCreditNeverTouch` |
 
 ## Metrics of success

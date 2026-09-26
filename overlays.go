@@ -293,7 +293,7 @@ func (m *Map) draw(in *render.Input) {
 		}
 		shapes, _, path := m.store.Drawn(id, bucket)
 		switch path {
-		case overlay.Cached:
+		case overlay.Cached, overlay.StandIn: // a stand-in is drawn while its replacement is prepared (L11.5)
 			m.shapes = append(m.shapes, shapes...)
 		case overlay.FromMemory:
 			m.borrow(id)

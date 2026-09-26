@@ -41,7 +41,7 @@ flowchart TB
     WPL8["WP-L8 Fetch options + confinement (L-7, L-10)<br/>BUILT rc.6 — Fetcher removed"]
     WPL9["WP-L9 Cache age + purge (L-9)<br/>BUILT rc.7"]
     WPL10["WP-L10 Defects + close-out (L-5, L-6, L-13, M4, M6)<br/>IN PART rc.8: L10.1, L10.2, L10.6 ·<br/>NOT YET: L10.3–L10.5, L10.7–L10.12"]
-    WPL11["WP-L11 watchpost UAT-1's library needs (D-82, D-83)<br/>detail levels · major/minor roads · the footer<br/>BUILT rc.9"]
+    WPL11["WP-L11 watchpost UAT-1's library needs (D-82, D-83)<br/>detail levels · major/minor roads · the footer<br/>BUILT rc.9 · a replaced overlay drawn until ready, rc.10"]
     WPL1 --> WPL2 --> WPL4 --> WPL3 --> WPL5
     WPL1 --> WPL6 --> WPL5
     WPL1 --> WPL7
@@ -57,7 +57,7 @@ flowchart TB
   end
   WP1 --> WP2
   WPL10 -->|"final v0.2.0 tag: 0.18.0 ships (FR-5.6)"| WP2
-  LIB -.->|"v0.2.0-rc.N as packages land (D-69): rc.1–rc.9 so far"| WP2
+  LIB -.->|"v0.2.0-rc.N as packages land (D-69): rc.1–rc.10 so far"| WP2
 ```
 
 **Watchpost's W-numbers are its plan's** (`observer-maps/04-development/implementation-plan.md`). **Inside the library, WP-L4 lands before WP-L3**: the renderer's frame-identity tasks need a way to advance the shown frame.
