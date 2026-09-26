@@ -60,16 +60,28 @@ func TestThreeCalls(t *testing.T) {
 	if !strings.Contains(text, "Africa") || !strings.Contains(text, "OpenStreetMap") {
 		t.Errorf("the world map lacks a continent's name or the credit line:\n%s", text)
 	}
-	// On a map wider than the world, names stay on the world.
+	// ON A MAP WIDER THAN THE WORLD, THE WORLD REPEATS (D-86, watchpost D-90:
+	// "Maps should always draw to fill their window"): the western and eastern
+	// quarters both carry land. Upstream left them empty.
 	small, _ := tuimaps.New(tuimaps.WithSize(69, 12), tuimaps.Embed(assets.Tile, assets.MaxZoom))
 	defer small.Close()
 	small.Settle(context.Background())
 	narrow, _ := small.Render(tuimaps.Size{Cols: 69, Rows: 12}, time.Time{})
-	for _, line := range narrow.Lines {
-		plain := regexp.MustCompile("\x1b\\[[0-9;]*m").ReplaceAllString(line, "")
-		if at := strings.Index(plain, "Asia"); at >= 0 && at < len(plain)/2 {
-			t.Errorf("Asia is drawn in the western half of the map: %q", plain)
+	west, east := 0, 0
+	for _, line := range narrow.Lines[1 : len(narrow.Lines)-1] {
+		cells := []rune(regexp.MustCompile("\x1b\\[[0-9;]*m").ReplaceAllString(line, ""))
+		for i, r := range cells {
+			if r > 0x2800 && r <= 0x28ff {
+				if i < len(cells)/4 {
+					west++
+				} else if i >= 3*len(cells)/4 {
+					east++
+				}
+			}
 		}
+	}
+	if west == 0 || east == 0 {
+		t.Errorf("a map wider than the world is empty at an edge: %d cells drawn in the west quarter, %d in the east", west, east)
 	}
 	if again, _ := m.Settle(context.Background()); again.Ran != 0 {
 		t.Errorf("a second settle ran %d jobs; everything is on hand", again.Ran)

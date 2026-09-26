@@ -300,6 +300,25 @@ func cut(v float64, places int) string {
 	return strconv.FormatFloat(whole, 'f', places, 64)
 }
 
+// ShowStamp draws the top row's stamp - the loop's moment and the stale word
+// - or, off, leaves them to the host, which must then show both itself: a
+// frame's age is never hidden (L-1.9, D-87). It is on by default.
+func (m *Map) ShowStamp(on bool) {
+	defer m.guardQuiet("ShowStamp")
+	m.plant("ShowStamp")
+
+	if m == nil {
+		return
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.shut || m.stampOff == !on {
+		return
+	}
+	m.stampOff = !on
+	m.changed++
+}
+
 // ShowFooter draws the footer inside the map, or takes it off again. It is
 // off by default (P-57).
 func (m *Map) ShowFooter(on bool) {

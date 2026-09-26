@@ -193,6 +193,9 @@ purpose, and the picture it does not ask to thin is the picture as it was.**
 | L-14.2 | The major roads (motorway, trunk, primary) and the minor roads switch apart. | D-82 | `TestMajorAndMinorRoadsSwitchApart`, `TestMajorAndMinorRoadsSwitchApartOnTheMap` |
 | L-14.4 | A replaced overlay is drawn as it was until its replacement is prepared (contract section 4): an overlay handed in again never drops out of the frame. | D-83 (watchpost U1-28) | `TestAReplacedOverlayIsDrawnUntilItsReplacementIsReady` |
 | L-14.3 | The footer's scale mark and credit never touch; the credit keeps its width and the scale mark takes what is left, or is not drawn. | D-83 (watchpost U1-1) | `TestTheScaleMarkAndTheCreditNeverTouch` |
+| L-14.5 | `WaterLayer` is the lakes and inland water; the sea and its coast are never switched, so the land keeps its edge. | D-85 (watchpost U1-39) | `TestTheSeaOutlastsTheWaterSwitch` |
+| L-14.6 | The world repeats across the antimeridian: a view past 180° draws the other side there, and every overlay, marker and name in each copy of the world the view reaches, each whole. | D-86 (watchpost U2-7) | `TestTheWorldRepeatsAcrossTheAntimeridian`, `TestAnOverlayAcrossTheSeamIsDrawnWhole` |
+| L-14.7 | `ShowStamp(false)` leaves the top row's stamp - the loop's moment and the stale word - to the host, which must then show both; on by default. | D-87 (watchpost D-92) | `TestAHostCanTakeTheStampOver` |
 
 ## Metrics of success
 

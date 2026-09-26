@@ -83,4 +83,9 @@ func TestAFrameAdvanceAllocates(t *testing.T) {
 // frameAdvanceAllocs is the pin: 469 measured on 2026-09-25 (most of them
 // the rows the advance redraws), with about ten per cent of room for noise.
 // The same run measured 3.8 ms an advance on the reference machine.
-const frameAdvanceAllocs = 520
+//
+// RE-PINNED at L11.7 (D-86): 639 measured, the pin 700. This map is the whole
+// world at 149 columns - wider than the world - and the world now repeats
+// across the antimeridian, so an advance draws about one and a half worlds
+// where it drew one. A view inside one world draws what it did.
+const frameAdvanceAllocs = 700

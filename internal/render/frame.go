@@ -64,6 +64,7 @@ type Drawn struct {
 	Tile  *scene.Tile
 	At    scene.TileID
 	Exact bool
+	Shift int // worlds east (or west) of its own place it is drawn: the world repeats (D-86)
 }
 
 // Input is everything a frame is a function of (NFR-6).
@@ -334,6 +335,9 @@ func (r *Renderer) sameLook(in Input) bool {
 	if in.Stale != l.Stale || in.Footer != l.Footer || in.Simplify != l.Simplify {
 		return false
 	}
+	if (in.FrameTime.String() == "") != (l.FrameTime.String() == "") {
+		return false // the stamp taken over or given back (D-87): its row is redrawn; an advance's new time is not a new look
+	}
 	return in.Labels == l.Labels && in.Scale == l.Scale && in.Credit == l.Credit && in.Missing == l.Missing && in.Supplied == l.Supplied && in.Layers == l.Layers && in.Detail == l.Detail
 }
 
@@ -414,7 +418,10 @@ func (r *Renderer) paint(in Input) (Status, error) {
 		if a.X != b.X {
 			return a.X < b.X
 		}
-		return a.Y < b.Y
+		if a.Y != b.Y {
+			return a.Y < b.Y
+		}
+		return r.order[i].Shift < r.order[j].Shift // one tile in two copies of the world: west first (D-86)
 	})
 	r.painter.SetProfile(style.NewProfile(load(in), in.View.Cols, in.View.Rows, in.Layers).WithDetail(in.Detail))
 	r.painter.SetDepth(in.Depth)
@@ -439,7 +446,7 @@ func (r *Renderer) paint(in Input) (Status, error) {
 		if !d.Exact {
 			status = Sharpening
 		}
-		err := r.painter.Tile(in.View, d.Tile, d.At, in.Style)
+		err := r.painter.TileShifted(in.View, d.Tile, d.At, d.Shift, in.Style)
 		if err != nil {
 			return status, err
 		}
@@ -456,28 +463,46 @@ func (r *Renderer) paint(in Input) (Status, error) {
 
 // overlays draws the prepared shapes, then the ones read straight from
 // the host's memory through their run index (D-92).
+//
+// ONCE FOR EACH COPY OF THE WORLD THE VIEW REACHES (D-86), each through a view
+// of its copy: a shape is moved whole, so a line near the antimeridian is
+// never torn between two copies.
 func (r *Renderer) overlays(in Input) error {
-	for _, s := range in.Shapes {
-		err := r.painter.Shape(in.View, s)
-		if err != nil {
-			return err
-		}
+	lo, hi, err := in.View.Shifts()
+	if err != nil {
+		return err
 	}
-	for _, b := range in.Borrowed {
-		err := r.painter.Borrow(in.View, b)
-		if err != nil {
-			return err
+	for shift := lo; shift <= hi; shift++ {
+		v := in.View
+		v.Shift = shift
+		for _, s := range in.Shapes {
+			if err := r.painter.Shape(v, s); err != nil {
+				return err
+			}
+		}
+		for _, b := range in.Borrowed {
+			if err := r.painter.Borrow(v, b); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
-// marks draws the host's places over everything already drawn.
+// marks draws the host's places over everything already drawn, in each copy
+// of the world the view reaches (D-86).
 func (r *Renderer) marks(in Input) error {
-	for _, m := range in.Markers {
-		err := r.painter.Mark(in.View, m, in.MarkerPhase)
-		if err != nil {
-			return err
+	lo, hi, err := in.View.Shifts()
+	if err != nil {
+		return err
+	}
+	for shift := lo; shift <= hi; shift++ {
+		v := in.View
+		v.Shift = shift
+		for _, m := range in.Markers {
+			if err := r.painter.Mark(v, m, in.MarkerPhase); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -547,6 +572,9 @@ func (r *Renderer) compose(in Input, status Status) {
 	}
 	if x, y, side, err := in.View.TilePlace(scene.TileID{}); err == nil {
 		g.world = box{left: toDot(x), top: toDot(y), right: toDot(x + side), bottom: toDot(y + side)}
+		if lo, hi, err := in.View.Shifts(); err == nil { // D-86: every copy of the world the view reaches
+			g.world.left, g.world.right = toDot(x+float64(lo)*side), toDot(x+float64(hi+1)*side)
+		}
 	}
 	// **A field's values are placed before the basemap's names, and only
 	// then.** A field drawn without colour is contour lines, and a contour

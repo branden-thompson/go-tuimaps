@@ -174,6 +174,7 @@ type Map struct {
 	changed       uint64
 	driven        bool            // the host drives the animation clock itself (D-114)
 	footer        bool            // the footer is drawn inside the map (P-57)
+	stampOff      bool            // the host shows the loop's moment and staleness itself (D-87)
 	own           []fault.Warning // what the map itself noticed, for the next Warnings call
 	planted       func(string)    // set only by the library's own tests, to plant a panic
 	units         describe.Units  // the units descriptions come back in
@@ -424,8 +425,10 @@ func (m *Map) Render(size Size, now time.Time) (frame Frame, err error) {
 	m.alignBlinkLocked()
 	in.MarkerPhase = m.motion.Phase(m.animationAt(now))
 	m.noteWallClock(now)
-	in.Stale = m.staleNow
-	in.FrameTime = m.frameTimeLocked()
+	if !m.stampOff { // D-87: a host that says the moment itself takes the stamp over
+		in.Stale = m.staleNow
+		in.FrameTime = m.frameTimeLocked()
+	}
 	in.Markers = m.markers()
 	m.draw(&in)
 	in.Tiles, in.Missing = m.onHand()
@@ -447,28 +450,30 @@ func (m *Map) Render(size Size, now time.Time) (frame Frame, err error) {
 // onHand is what can be drawn for the view now: each wanted tile, or what
 // stands in for it, once each; and how many have nothing at all.
 func (m *Map) onHand() ([]render.Drawn, int) {
-	wanted, err := m.view.Tiles()
+	placed, err := m.view.Placements()
 	if err != nil {
 		return nil, 0
 	}
 	m.drawn = m.drawn[:0]
 	missing := 0
-	for _, id := range wanted {
-		tile, at, exact, ok := m.pipe.Draw(id)
+	for _, p := range placed {
+		tile, at, exact, ok := m.pipe.Draw(p.ID)
 		if !ok {
 			missing++
 			continue
 		}
-		if !seen(m.drawn, at) {
-			m.drawn = append(m.drawn, render.Drawn{Tile: tile, At: at, Exact: exact})
+		if !seen(m.drawn, at, p.Shift) {
+			m.drawn = append(m.drawn, render.Drawn{Tile: tile, At: at, Exact: exact, Shift: p.Shift})
 		}
 	}
 	return m.drawn, missing
 }
 
-func seen(drawn []render.Drawn, at scene.TileID) bool {
+// seen reports whether a tile is already drawn at that copy of the world
+// (D-86: one tile is drawn once in each copy the view reaches).
+func seen(drawn []render.Drawn, at scene.TileID, shift int) bool {
 	for _, d := range drawn {
-		if d.At == at {
+		if d.At == at && d.Shift == shift {
 			return true
 		}
 	}

@@ -176,6 +176,7 @@ method Map.SetPlaybackStep(time.Duration) error
 method Map.SetStyle([]byte) error
 method Map.Settle(context.Context) (SettleResult, error)
 method Map.ShowFooter(bool)
+method Map.ShowStamp(bool)
 method Map.Source(string) error
 method Map.SourceCredit() string
 method Map.Step(int) error

@@ -435,9 +435,16 @@ type frame struct {
 // Tile paints one tile on hand. at is the tile it is - the wanted tile, or an
 // ancestor standing in for it, which is drawn larger (D-30).
 func (p *Painter) Tile(v project.View, tile *scene.Tile, at scene.TileID, s *style.Style) error {
+	return p.TileShifted(v, tile, at, 0, s)
+}
+
+// TileShifted paints a tile a number of worlds east or west of its own place
+// (D-86: the world repeats across the antimeridian).
+func (p *Painter) TileShifted(v project.View, tile *scene.Tile, at scene.TileID, shift int, s *style.Style) error {
 	if p == nil || tile == nil || s == nil {
 		return badTile()
 	}
+	v.Shift = shift
 	x, y, side, err := v.TilePlace(at)
 	if err != nil {
 		return err
