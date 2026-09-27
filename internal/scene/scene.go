@@ -149,6 +149,9 @@ type Field struct {
 	// From and Speeds make it a vector field (FR-8): each cell's direction,
 	// where the wind blows from, and its speed. Nil for a scalar field.
 	From, Speeds []float64
+	// Marks are the host's text, one a cell, cleaned on hand-in; empty
+	// where there is none (L-17.2).
+	Marks []string
 }
 
 // Raster is a prepared image: one class a pixel, one byte each, in the

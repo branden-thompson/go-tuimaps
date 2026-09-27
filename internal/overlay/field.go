@@ -30,7 +30,15 @@ type Grid struct {
 	// value; NaN where there is none. The values are the speeds. It is drawn
 	// as arrows (L-16), never as bands.
 	From []float64
+	// Marks are the host's text, one a value, "" where there is none: each
+	// written on the map at the arrows' spacing, on the points an arrow leaves
+	// unlabelled (L-17.2) - a day's total over its heaviest rain. At most
+	// eight cells wide each.
+	Marks []string
 }
+
+// MaxMarkWidth is the widest a grid's mark may be, in cells (L-17.2).
+const MaxMarkWidth = 8
 
 // checkGrid validates a grid on hand-in and resolves its type.
 func checkGrid(g *Grid) (Kind, error) {
@@ -48,6 +56,16 @@ func checkGrid(g *Grid) (Kind, error) {
 	if g.From != nil && len(g.From) != len(g.Values) {
 		return Kind{}, refused(fault.SizeMismatch, textsafe.Const("its directions are not one a value"),
 			textsafe.Const("give From exactly as many directions as the grid has values, NaN where there is none"))
+	}
+	if g.Marks != nil && len(g.Marks) != len(g.Values) {
+		return Kind{}, refused(fault.SizeMismatch, textsafe.Const("its marks are not one a value"),
+			textsafe.Const("give Marks exactly as many texts as the grid has values, \"\" where there is none"))
+	}
+	for _, s := range g.Marks {
+		if textsafe.Width(textsafe.Clean(s)) > MaxMarkWidth {
+			return Kind{}, refused(fault.SizeMismatch, textsafe.Const("one of its marks is wider than eight cells"),
+				textsafe.Const("give each mark in at most eight cells: a number and its unit"))
+		}
 	}
 	for _, f := range g.From {
 		if !math.IsNaN(f) && !(f >= 0 && f <= 360) {
@@ -102,6 +120,12 @@ func classify(g *Grid, kind Kind) scene.Field {
 		Labels: bandLabels(kind.Breaks), Lines: g.Lines}
 	if g.From != nil { // a vector grid keeps its speeds and directions: its arrows are drawn from them (L-16)
 		field.From, field.Speeds = append([]float64(nil), g.From...), append([]float64(nil), g.Values...)
+	}
+	if g.Marks != nil { // cleaned once, here: the host's text is never drawn as it came (L-17.2)
+		field.Marks = make([]string, len(g.Marks))
+		for i, s := range g.Marks {
+			field.Marks[i] = textsafe.Clean(s).String()
+		}
 	}
 	for i, v := range g.Values {
 		field.Classes[i] = int8(Classify(v, kind.Breaks))

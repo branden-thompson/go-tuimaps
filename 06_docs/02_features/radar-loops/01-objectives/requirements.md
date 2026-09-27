@@ -215,6 +215,15 @@ purpose, and the picture it does not ask to thin is the picture as it was.**
 | L-16.3 | The wind preset: six classes in mph, km/h, m/s or knots, calmest first, its colours `wind.1` to `wind.6`, passing the ramp checker as line work on both grounds. | D-90 | `TestTheWindLegendIsItsSixClasses`, `TestTokensMatchTheDocumentedList` |
 | L-16.4 | `From` has one direction a value, each 0 to 360 or NaN; else the grid is refused. | D-90 | `TestAWindGridsDirectionsAreChecked` |
 
+## L-17 — Rain as a grid, and a grid's marks (D-91: watchpost D-115 to D-118)
+
+| # | Requirement | Source | Test |
+|---|---|---|---|
+| L-17.1 | A grid in radar's scale is drawn as rain: its own colours at full strength, over the sea, over any field, never lined; a field beside it takes its lines. | D-91 | `TestARadarGridIsDrawnAsRain` |
+| L-17.2 | `Grid.Marks`, the host's text a value, is written at the arrows' spacing on the points an arrow leaves unlabelled, a cell from its neighbours, before any value a field writes. | D-91 | `TestAGridsMarksAreWrittenOnTheMap` |
+| L-17.3 | Marks are one a value, each at most eight cells wide; else the grid is refused. | D-91 | `TestAGridsMarksAreChecked` |
+| L-17.4 | The legend keys radar's classes in the colours drawn: the class below the first floor not drawn, a grid of rain never faint. | D-91 | `TestTheRainLegendKeysTheColoursDrawn` |
+
 ## Metrics of success
 
 The brief's M1–M6 (D-6), with round 1's changes. **This table is the normative one.**

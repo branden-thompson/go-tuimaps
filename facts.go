@@ -96,7 +96,7 @@ func (m *Map) legendOf(id string) (LegendEntry, bool) {
 	}
 	entry := LegendEntry{ID: id, Unit: kind.Unit, Preset: kind.Preset,
 		Classes: m.classesOf(resolved), Blended: m.blendedUnder(resolved.Preset)}
-	if o.Grid != nil && o.Grid.Lines { // keyed as drawn: faint on the ground (L-15.4)
+	if o.Grid != nil && o.Grid.Lines && resolved.Preset != colour.Radar { // keyed as drawn: faint on the ground (L-15.4); rain never is (L-17.1)
 		ground, _ := m.look.ground.InEffect(m.look.palette)
 		for i, c := range entry.Classes {
 			if c.Drawn {
@@ -172,8 +172,12 @@ func (m *Map) classesOf(kind overlay.Kind) []Class {
 	out := make([]Class, 0, len(kind.Breaks)+1)
 	for i := range len(kind.Breaks) + 1 {
 		one := Class{Label: classLabel(kind.Breaks, i)}
-		if ramped && depth != NoColour {
-			one.Colour, one.Drawn = m.look.palette.ResolveAt(first+Token(i), ground, depth)
+		tok := first + Token(i)
+		if kind.Preset == colour.Radar { // below radar's first floor is no rain, and nothing is drawn: the frame's own rule (L-17.1)
+			tok--
+		}
+		if ramped && depth != NoColour && tok >= first {
+			one.Colour, one.Drawn = m.look.palette.ResolveAt(tok, ground, depth)
 		}
 		out = append(out, one)
 	}

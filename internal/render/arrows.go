@@ -4,6 +4,7 @@ import (
 	"math"
 	"strconv"
 
+	"github.com/branden-thompson/go-tuimaps/internal/colour"
 	"github.com/branden-thompson/go-tuimaps/internal/scene"
 	"github.com/branden-thompson/go-tuimaps/internal/textsafe"
 )
@@ -23,6 +24,16 @@ const (
 
 // arrows draws a vector field.
 func (r *Renderer) arrows(in Input, f *scene.Field) {
+	r.spaced(in, f, func(i, x, y int, labelled bool) {
+		if i < len(f.Speeds) && i < len(f.From) {
+			r.arrow(f, i, x, y, labelled)
+		}
+	})
+}
+
+// spaced calls at with each of the arrows' points a field covers: its value,
+// the dot, and whether it is the arrows' labelled half.
+func (r *Renderer) spaced(in Input, f *scene.Field, at func(i, x, y int, labelled bool)) {
 	if !r.axes(in.View) {
 		return
 	}
@@ -33,12 +44,25 @@ func (r *Renderer) arrows(in Input, f *scene.Field) {
 		col := 0
 		for x := arrowStepX/2 + shift; x < w; x += arrowStepX {
 			if i, ok := fieldIndex(f, r.lons[x], r.lats[y]); ok {
-				r.arrow(f, i, x, y, (row+col)%2 == 0)
+				at(i, x, y, (row+col)%2 == 0)
 			}
 			col++
 		}
 		row++
 	}
+}
+
+// gridMarks writes a grid's marks (L-17.2; watchpost D-116) at the arrows'
+// spacing, on the half an arrow leaves unlabelled, each where an arrow's
+// speed would sit - a cell apart, where a name keeps its margin.
+func (r *Renderer) gridMarks(in Input, f *scene.Field) {
+	r.spaced(in, f, func(i, x, y int, labelled bool) {
+		if labelled || i >= len(f.Marks) || f.Marks[i] == "" || len(r.painter.bandLabels) >= maxLabels {
+			return
+		}
+		r.painter.bandLabels = append(r.painter.bandLabels, Label{X: x + 3, Y: y + 2,
+			Name: textsafe.Clean(f.Marks[i]), Ink: uint8(colour.LabelRegion), tight: true})
+	})
 }
 
 // arrow draws one arrow centred on a dot, and its speed when labelled.
@@ -81,5 +105,5 @@ func fieldIndex(f *scene.Field, lon, lat float64) (int, bool) {
 	col := int((lon - f.West) / (f.East - f.West) * float64(f.Cols))
 	row := int((f.North - lat) / (f.North - f.South) * float64(f.Rows))
 	i := min(row, f.Rows-1)*f.Cols + min(col, f.Cols-1)
-	return i, i < len(f.Speeds) && i < len(f.From)
+	return i, i < len(f.Classes)
 }

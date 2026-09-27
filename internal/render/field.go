@@ -2,6 +2,7 @@ package render
 
 import (
 	"math"
+	"slices"
 
 	"github.com/branden-thompson/go-tuimaps/internal/colour"
 	"github.com/branden-thompson/go-tuimaps/internal/project"
@@ -133,12 +134,20 @@ func (r *Renderer) underlays(in Input) {
 	// D-95): both ramps run blue to red, so a band under an echo would read as
 	// rain. The field is its labelled contours, over its bands drawn faintly
 	// where the image has no echo; the image keeps its own colours.
-	shared := in.ImageHeld || len(in.Rasters) > 0
+	shared := in.ImageHeld || len(in.Rasters) > 0 || slices.ContainsFunc(in.Fields, func(f scene.Field) bool { return isRain(&f) })
+	for i := range in.Fields {
+		if f := &in.Fields[i]; f.Marks != nil {
+			r.gridMarks(in, f) // before any value the fields write: a day's total takes the place of a speed or an isotherm's value beside it (L-17.2)
+		}
+	}
 	for i := range in.Fields {
 		f := &in.Fields[i]
 		if f.From != nil {
 			r.arrows(in, f) // a vector field is its arrows, never bands (L-16)
 			continue
+		}
+		if isRain(f) {
+			continue // drawn as an image is, after every field (L-17.1)
 		}
 		lined := shared || f.Lines // L-15.4: the host may ask for the look alone
 		if rampless(in.Depth) || lined {
@@ -159,9 +168,34 @@ func (r *Renderer) underlays(in Input) {
 			}
 		}
 	}
+	for i := range in.Fields {
+		if f := &in.Fields[i]; isRain(f) {
+			r.rain(in, f.Preset, f.ClassCount, func(col, row int) int8 { return r.heaviestOf(f, col, row) })
+		}
+	}
 	for i := range in.Rasters {
 		r.image(in, &in.Rasters[i])
 	}
+}
+
+// isRain reports whether a field is in radar's scale: A GRID OF RAIN IS
+// DRAWN AS RAIN (L-17.1, watchpost D-115, D-116) - in its own colours at full
+// strength, over the sea, over any field, never lined - and a field beside it
+// takes its lines, as beside an image.
+func isRain(f *scene.Field) bool {
+	return f.From == nil && colour.Preset(f.Preset) == colour.Radar
+}
+
+// heaviestOf is the heaviest class of a field among a cell's eight dots, as
+// an image's is (D-78).
+func (r *Renderer) heaviestOf(f *scene.Field, col, row int) int8 {
+	best := int8(-1)
+	for dy := range 4 {
+		for dx := range 2 {
+			best = max(best, fieldClass(f, r.lons[2*col+dx], r.lats[4*row+dy]))
+		}
+	}
+	return best
 }
 
 // maxSpan bounds how many pixels across and down one dot's footprint is
@@ -199,17 +233,23 @@ func (r *Renderer) heaviest(ra *scene.Raster, col, row int) int8 {
 	return best
 }
 
-// image colours the cells an image covers - over water as over land, because
-// rain falls on the sea (D-87) - or with no ramp shades them.
+// image colours the cells an image covers.
 func (r *Renderer) image(in Input, ra *scene.Raster) {
+	r.rain(in, ra.Preset, ra.ClassCount, func(col, row int) int8 { return r.heaviest(ra, col, row) })
+}
+
+// rain colours the cells an image or a grid of rain covers - over water as
+// over land, because rain falls on the sea (D-87) - or with no ramp shades
+// them; class is a cell's heaviest.
+func (r *Renderer) rain(in Input, preset uint8, classCount int, class func(col, row int) int8) {
 	g := r.grid
 	for row := range g.rows {
 		for col := range g.cols {
 			if in.ImagesMaskedByWater && r.painter.Water(col, row) {
 				continue
 			}
-			class := r.heaviest(ra, col, row)
-			ink := classInk(ra.Preset, class)
+			k := class(col, row)
+			ink := classInk(preset, k)
 			if ink == 0 {
 				continue
 			}
@@ -219,9 +259,9 @@ func (r *Renderer) image(in Input, ra *scene.Raster) {
 				continue
 			}
 			shade := shadeLight
-			if 3*int(class) > 2*(ra.ClassCount-1) {
+			if 3*int(k) > 2*(classCount-1) {
 				shade = shadeHeavy
-			} else if 3*int(class) > ra.ClassCount-1 {
+			} else if 3*int(k) > classCount-1 {
 				shade = shadeMedium
 			}
 			c.shade = max(c.shade, shade) // laid last, by shades: it claims nothing now (L-8.3)

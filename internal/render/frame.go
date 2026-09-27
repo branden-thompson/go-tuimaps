@@ -259,7 +259,11 @@ func (g *grid) anchor(l Label, at Point) bool {
 	if !l.fromPoint {
 		col -= width / 2 // a name is centred on its place; a marker's label begins at its point
 	}
-	mine := box{left: col - labelMargin, right: col + labelMargin + width, top: row - labelMargin/2, bottom: row + labelMargin/2}
+	across, down := labelMargin, labelMargin/2
+	if l.tight {
+		across, down = 1, 0
+	}
+	mine := box{left: col - across, right: col + across + width, top: row - down, bottom: row + down}
 	for _, b := range g.boxes {
 		if mine.left <= b.right && b.left <= mine.right && mine.top <= b.bottom && b.top <= mine.bottom {
 			return false

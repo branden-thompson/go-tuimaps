@@ -30,6 +30,7 @@ type Label struct {
 	Ink        uint8
 	fromPoint  bool // placed from its point, not centred on it: a marker's label (P-60)
 	place      bool // a host's place: a label that cannot fit whole is a DropPlaceName
+	tight      bool // one of a grid's marks: on an even spacing already, so kept a cell from its neighbours, not a name's margin (L-17.2)
 	first, end int  // its vertices, among the painter's: each is tried in turn (P-32)
 }
 

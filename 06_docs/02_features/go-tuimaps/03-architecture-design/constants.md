@@ -46,6 +46,7 @@ Measured on real tiles across the whole range the map uses. **Zoom 0 to 4:** all
 | What one 149×38 view draws, in kept form | 0.33 MB on the Gulf coast at zoom 6; 0.80 MB in the Midwest at zoom 5 | Measured in PLAN |
 | Vertices an overlay · a map | 2,000,000 · 4,000,000 | Set in DISCOVER round 3 |
 | Pixels an image | 1,048,576, read from the header before decoding | Set in DISCOVER round 2 |
+| A grid's mark | 8 cells wide at most, cleaned on hand-in | Set in BUILD (L-17.3): a number and its unit - "0.75in", "12cm" - fits, and a mark is a value, not a sentence |
 | Pump width the peak line is measured at | 2 `Work` calls | Ruled (D-84) |
 | Warnings kept | 64, de-duplicated | Set in DISCOVER round 3 |
 | The longest id of an overlay or a place | 256 bytes | Set in BUILD (task 02.8). Ids are validated and never cleaned (FR-34) |

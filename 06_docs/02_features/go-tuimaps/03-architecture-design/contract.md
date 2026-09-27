@@ -237,6 +237,10 @@ the sentence says what v0.2.0 will do, not what v0.1.0 does.
 | L-16.1 | A wind grid (`WindGrid`, or a `Grid` with `From`) is drawn as arrows, never bands: braille, pointing where the wind blows to, length and colour by speed, every other one labelled with its speed; a cell with no speed or no direction draws nothing (D-90) | TestAWindGridIsItsArrowsAndItsWords |
 | L-16.2 | A place's answer against a wind grid is the speed in the grid's unit and `From`, the compass word it blows from (D-90) | TestAWindGridIsItsArrowsAndItsWords |
 | L-16.4 | `From` is one direction a value, each from 0 to 360 degrees clockwise from north, where the wind blows from; NaN where there is none (D-90) | TestAWindGridsDirectionsAreChecked |
+| L-17.1 | A grid in radar's scale (the preset `"radar"`, in dBZ) is drawn as rain, as an image is: its own colours at full strength, over the sea as over land, over any field, never lined though it asks; a field beside it takes its lines, as beside an image (D-91) | TestARadarGridIsDrawnAsRain |
+| L-17.2 | `Grid.Marks` is the host's text, one a value, "" where there is none: each written at the arrows' spacing on the points an arrow leaves unlabelled, a cell from its neighbours, and before any value a field writes - a mark takes the place of a wind's speed or an isotherm's value beside it (D-91) | TestAGridsMarksAreWrittenOnTheMap |
+| L-17.3 | Marks are one a value, each at most eight cells wide, or the grid is refused (D-91) | TestAGridsMarksAreChecked |
+| L-17.4 | The legend keys radar's classes, an image's or a grid's, in the colours the frame draws them: the class below the first floor not drawn, and a grid of rain never keyed faint (D-91) | TestTheRainLegendKeysTheColoursDrawn |
 
 ## 12 · Changelog: what v0.2.0 breaks (D-58)
 
