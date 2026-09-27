@@ -206,6 +206,15 @@ purpose, and the picture it does not ask to thin is the picture as it was.**
 | L-15.4 | A grid marked `Lines` takes L-15.3's look with or without an image on the map, and the legend gives its bands as drawn, faint. | D-89 (watchpost D-102) | `TestAFieldCanAskForItsLinesAlone` |
 | L-15.3 | A field that shares the map with an image - drawn in the frame, or on a gap of its loop - is its labelled contours over its bands made faint; the image keeps its own colours. | D-88 (watchpost D-95) | `TestAFieldSharingTheMapWithAnImageIsItsLines` |
 
+## L-16 — Wind (D-90: watchpost D-108 to D-110; go-tuiMaps FR-8)
+
+| # | Requirement | Source | Test |
+|---|---|---|---|
+| L-16.1 | A vector grid - speeds, and `From`, the direction each blows from - is drawn as braille arrows on an even spacing, pointing downwind, length and colour by class, every other labelled with its speed; a cell with no speed or no direction draws nothing; there is no fill. | D-90 | `TestAnArrowPointsWhereTheWindBlows`, `TestNoWindIsNoArrow`, `TestAStrongerWindIsALongerArrow`, `TestEveryOtherArrowCarriesItsSpeed` |
+| L-16.2 | A place's answer is the speed in the grid's unit and the compass word it blows from. | D-90 | `TestAWindGridIsItsArrowsAndItsWords` |
+| L-16.3 | The wind preset: six classes in mph, km/h, m/s or knots, calmest first, its colours `wind.1` to `wind.6`, passing the ramp checker as line work on both grounds. | D-90 | `TestTheWindLegendIsItsSixClasses`, `TestTokensMatchTheDocumentedList` |
+| L-16.4 | `From` has one direction a value, each 0 to 360 or NaN; else the grid is refused. | D-90 | `TestAWindGridsDirectionsAreChecked` |
+
 ## Metrics of success
 
 The brief's M1–M6 (D-6), with round 1's changes. **This table is the normative one.**

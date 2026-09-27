@@ -1,6 +1,7 @@
 package overlay
 
 import (
+	"math"
 	"strconv"
 
 	"github.com/branden-thompson/go-tuimaps/internal/fault"
@@ -24,6 +25,11 @@ type Grid struct {
 	// faint, whatever shares the map - the look it takes anyway with an image
 	// on the map (L-15.3, L-15.4).
 	Lines bool
+	// From makes the grid a vector grid (FR-8): the direction each value's
+	// wind blows FROM, meteorological degrees clockwise from north, one a
+	// value; NaN where there is none. The values are the speeds. It is drawn
+	// as arrows (L-16), never as bands.
+	From []float64
 }
 
 // checkGrid validates a grid on hand-in and resolves its type.
@@ -38,6 +44,16 @@ func checkGrid(g *Grid) (Kind, error) {
 	if g.Cols > maxGridCells || g.Rows > maxGridCells || g.Cols*g.Rows > maxGridCells {
 		return Kind{}, refused(fault.OverImageCap, textsafe.Const("its grid has more than 1,048,576 cells"),
 			textsafe.Const("hand in a coarser grid: a terminal map shows a few thousand cells at most"))
+	}
+	if g.From != nil && len(g.From) != len(g.Values) {
+		return Kind{}, refused(fault.SizeMismatch, textsafe.Const("its directions are not one a value"),
+			textsafe.Const("give From exactly as many directions as the grid has values, NaN where there is none"))
+	}
+	for _, f := range g.From {
+		if !math.IsNaN(f) && !(f >= 0 && f <= 360) {
+			return Kind{}, refused(fault.InvalidCoordinates, textsafe.Const("one of its directions is not from 0 to 360 degrees"),
+				textsafe.Const("give each direction in degrees clockwise from north, where the wind blows from"))
+		}
 	}
 	if len(g.Values) != g.Cols*g.Rows {
 		return Kind{}, refused(fault.SizeMismatch,
@@ -84,6 +100,9 @@ func classify(g *Grid, kind Kind) scene.Field {
 	field := scene.Field{West: g.West, South: g.South, East: g.East, North: g.North, Cols: g.Cols, Rows: g.Rows,
 		Classes: make([]int8, len(g.Values)), Preset: uint8(kind.Preset), ClassCount: len(kind.Breaks) + 1,
 		Labels: bandLabels(kind.Breaks), Lines: g.Lines}
+	if g.From != nil { // a vector grid keeps its speeds and directions: its arrows are drawn from them (L-16)
+		field.From, field.Speeds = append([]float64(nil), g.From...), append([]float64(nil), g.Values...)
+	}
 	for i, v := range g.Values {
 		field.Classes[i] = int8(Classify(v, kind.Breaks))
 	}

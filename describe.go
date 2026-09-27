@@ -177,6 +177,10 @@ func (m *Map) fieldAnswer(place Place, id string, o Overlay) Answer {
 		return Answer{Place: nameOf(place), Overlay: id, Form: describe.FieldForm, NoData: true}
 	}
 	reading := grid.At(place.At, kind.Breaks)
+	if o.Grid.From != nil { // a vector field: its speed and where it blows from (FR-8)
+		dir := describe.Grid{West: grid.West, South: grid.South, East: grid.East, North: grid.North, Cols: grid.Cols, Rows: grid.Rows, Values: o.Grid.From}
+		return describe.OfWind(nameOf(place), id, reading, dir.At(place.At, nil).Value, o.Grid.Type.Unit)
+	}
 	return describe.OfField(nameOf(place), id, reading, o.Grid.Type.Preset == "temperature", m.units)
 }
 

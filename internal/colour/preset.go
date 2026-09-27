@@ -7,7 +7,34 @@ type Preset uint8
 const (
 	Temperature Preset = iota + 1
 	Radar
+	Wind // FR-8: a vector grid's speed (watchpost D-109)
 )
+
+// SpeedUnit is a unit of wind speed.
+type SpeedUnit uint8
+
+// The units of wind speed.
+const (
+	MilesPerHour SpeedUnit = iota + 1
+	KilometresPerHour
+	MetresPerSecond
+	Knots
+)
+
+// WindBreaks are the wind preset's five breaks in a unit: calm, light,
+// breezy, windy, strong and gale, round numbers in each unit rather than one
+// set converted (a break at 12.4 mph reads as a mistake).
+func WindBreaks(u SpeedUnit) []float64 {
+	switch u {
+	case KilometresPerHour:
+		return []float64{10, 20, 30, 50, 65}
+	case MetresPerSecond:
+		return []float64{3, 6, 9, 14, 18}
+	case Knots:
+		return []float64{5, 10, 17, 25, 35}
+	}
+	return []float64{5, 10, 20, 30, 40}
+}
 
 // Unit is a unit of temperature.
 type Unit uint8
@@ -66,8 +93,22 @@ func Ramp(p Preset, ground GroundKind, depth Depth) ([]RGB, bool) {
 		return temperatureRamp(ground, depth), true
 	case Radar:
 		return radarRamp(ground, depth), true
+	case Wind:
+		return windRamp(ground), true
 	}
 	return nil, false
+}
+
+// windRamp is the wind preset's six classes, calmest first, for arrows drawn
+// on the ground (FR-8): on a dark ground plasma's upper half, violet to
+// yellow, stronger lighter; on a light ground stronger darker. Both were
+// searched for against the checker as line work, at truecolor and in the
+// 256-colour palette, and pass it at both.
+func windRamp(ground GroundKind) []RGB {
+	if ground == Light {
+		return []RGB{{36, 147, 119}, {128, 106, 156}, {114, 78, 231}, {167, 29, 64}, {123, 22, 148}, {119, 24, 0}}
+	}
+	return []RGB{{188, 57, 130}, {215, 90, 107}, {234, 124, 82}, {247, 161, 60}, {244, 205, 47}, {240, 249, 33}}
 }
 
 // temperatureRamp is specimen 21's scale: seventeen classes, coldest first.
@@ -143,6 +184,9 @@ func rampDefault(t Token, ground GroundKind, depth Depth) (RGB, bool) {
 	case t >= Temperature1 && t <= Temperature17:
 		ramp, ok := Ramp(Temperature, ground, depth)
 		return pick(ramp, int(t-Temperature1), ok)
+	case t >= Wind1 && t <= Wind6:
+		ramp, ok := Ramp(Wind, ground, depth)
+		return pick(ramp, int(t-Wind1), ok)
 	}
 	return RGB{}, false
 }

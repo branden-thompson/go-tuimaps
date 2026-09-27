@@ -29,7 +29,7 @@ func ToSixteen(c RGB) (uint8, RGB) {
 // form at this depth (D-59). Roads and borders differ in hue, not only in
 // brightness (PL-AX-6).
 func Sixteen(t Token, ground GroundKind) (uint8, bool) {
-	if t < Ground || t > TrackLabel {
+	if t < Ground || t > lastToken {
 		return 0, false
 	}
 	if t >= AlertExtremeOutline && t <= High {

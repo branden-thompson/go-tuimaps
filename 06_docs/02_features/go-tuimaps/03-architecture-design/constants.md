@@ -107,6 +107,7 @@ Stable names; adding one is a minor version. A host sets any subset; the rest ke
 | Temperature | `temperature.1` to `temperature.17` — numbered by position, coldest first |
 | A host's own type | `low` · `middle` · `high` — interpolated across its classes |
 | Line features | `track` · `track.label` |
+| Wind (FR-8, v0.2.0) | `wind.1` to `wind.6` |
 
 The sixteen-colour depth has its own small set of values for the basemap tokens, chosen from the sixteen by hand (specimen 23, D-79).
 

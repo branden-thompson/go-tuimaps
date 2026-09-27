@@ -146,6 +146,9 @@ type Field struct {
 	// Lines is the host's ask for the field's lines over faint bands, with
 	// or without an image on the map (L-15.4).
 	Lines bool
+	// From and Speeds make it a vector field (FR-8): each cell's direction,
+	// where the wind blows from, and its speed. Nil for a scalar field.
+	From, Speeds []float64
 }
 
 // Raster is a prepared image: one class a pixel, one byte each, in the

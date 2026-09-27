@@ -70,6 +70,9 @@ func checkBreaks(breaks []float64) error {
 	return nil
 }
 
+// speedUnits are the wind preset's units by the name a grid gives them.
+var speedUnits = map[string]colour.SpeedUnit{"mph": colour.MilesPerHour, "km/h": colour.KilometresPerHour, "m/s": colour.MetresPerSecond, "kt": colour.Knots}
+
 // presetBreaks are a preset's own breaks for a unit.
 func presetBreaks(preset, unit string) (colour.Preset, []float64, error) {
 	switch {
@@ -79,6 +82,11 @@ func presetBreaks(preset, unit string) (colour.Preset, []float64, error) {
 		return colour.Temperature, colour.TemperatureBreaks(colour.Fahrenheit), nil
 	case preset == "radar" && unit == "dBZ":
 		return colour.Radar, colour.RadarFloors(), nil
+	case preset == "wind":
+		if u, ok := speedUnits[unit]; ok {
+			return colour.Wind, colour.WindBreaks(u), nil
+		}
+		return 0, nil, unknownPreset(textsafe.Const("the preset is not defined in that unit"))
 	case preset == "temperature" || preset == "radar":
 		return 0, nil, unknownPreset(textsafe.Const("the preset is not defined in that unit"))
 	}

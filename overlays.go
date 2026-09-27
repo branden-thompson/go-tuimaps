@@ -129,6 +129,40 @@ func TemperatureGrid(id string, grid Grid, unit Unit, validAt time.Time) Overlay
 	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &grid}
 }
 
+// SpeedUnit is a unit of wind speed (FR-8).
+type SpeedUnit = colour.SpeedUnit
+
+// The units of wind speed.
+const (
+	MilesPerHour      = colour.MilesPerHour
+	KilometresPerHour = colour.KilometresPerHour
+	MetresPerSecond   = colour.MetresPerSecond
+	Knots             = colour.Knots
+)
+
+// WindGrid is a wind field in one call (FR-8, L-16): the speeds in a unit,
+// and the direction each blows FROM, meteorological degrees clockwise from
+// north, one a speed, NaN where there is none. It is drawn as arrows, never
+// bands, and the preset supplies the classes and their colours.
+func WindGrid(id string, speed Grid, from []float64, unit SpeedUnit, validAt time.Time) Overlay {
+	speed.From = from
+	speed.Type = Type{Preset: "wind", Unit: speedUnitName(unit)}
+	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &speed}
+}
+
+// speedUnitName is the name the overlay store knows a speed unit by.
+func speedUnitName(u SpeedUnit) string {
+	switch u {
+	case KilometresPerHour:
+		return "km/h"
+	case MetresPerSecond:
+		return "m/s"
+	case Knots:
+		return "kt"
+	}
+	return "mph"
+}
+
 // RadarImage is a radar image in one call: the host gives the picture, the
 // table that says what its colours mean, and when it was valid (D-45, D-69).
 func RadarImage(id string, image Image, validAt time.Time) Overlay {

@@ -72,6 +72,7 @@ type Answer struct {
 	Class     int
 	Heavier   string // the compass word towards the nearest heavier class
 	HeavierAt float64
+	From      string // for wind, the compass word it blows from (FR-8), or empty
 	NoData    bool
 
 	// What is true of the overlay itself, whatever its shape.
@@ -138,6 +139,19 @@ func OfField(place, overlay string, reading Reading, temperature bool, u Units) 
 	if reading.Rising {
 		out.Rises = compassOf(reading.Rises)
 	}
+	return out
+}
+
+// OfWind is the answer for one place against a vector field (FR-8): the
+// speed here in the grid's unit, and the compass word it blows from - "wind
+// from the south-west at 15 mph" (M1 scenario 5).
+func OfWind(place, overlay string, speed Reading, from float64, unit string) Answer {
+	out := Answer{Place: place, Overlay: overlay, Form: FieldForm, Band: speed.Band}
+	if speed.NoData || math.IsNaN(from) {
+		out.NoData = true
+		return out
+	}
+	out.Value, out.ValueUnit, out.From = speed.Value, unit, compassOf(from)
 	return out
 }
 

@@ -37,6 +37,8 @@ const Inside
 const Internal
 const InvalidCoordinates
 const InvalidID
+const KilometresPerHour
+const Knots
 const LabelLayer
 const Line
 const Low
@@ -51,7 +53,9 @@ const MarkerGlyph
 const MarkerRing
 const MaxFrames
 const MaxZoom
+const MetresPerSecond
 const Middle
+const MilesPerHour
 const MinZoom
 const MinorRoadLayer
 const MissingTable
@@ -121,6 +125,7 @@ func SharedCaches(*Shared) Option
 func TemperatureGrid(string, Grid, Unit, time.Time) Overlay
 func TokenNames() []string
 func WarningKinds() []WarningKind
+func WindGrid(string, Grid, []float64, SpeedUnit, time.Time) Overlay
 func WithSize(int, int) Option
 method Map.AddPlace(Place) (string, error)
 method Map.Animate(time.Time)
@@ -241,6 +246,7 @@ type Shared struct{  }
 type Sighting struct{ Valid time.Time; At LonLat; Distance float64; Unit string; Bearing float64; Compass string }
 type Size struct{ Cols int; Rows int }
 type Span = overlay.Span
+type SpeedUnit = colour.SpeedUnit
 type Status uint8
 type TableEntry = overlay.TableEntry
 type Token = colour.Token

@@ -188,6 +188,8 @@ func rampToken(preset colour.Preset) (Token, bool) {
 		return colour.Temperature1, true
 	case colour.Radar:
 		return colour.Radar1, true
+	case colour.Wind:
+		return colour.Wind1, true
 	}
 	return 0, false
 }

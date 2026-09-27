@@ -60,6 +60,12 @@ const (
 	High          = Middle + 1
 	Track         = High + 1
 	TrackLabel    = Track + 1
+	// Wind1 to Wind6 are the wind preset's classes, calmest first (FR-8,
+	// watchpost D-109): after the rest, so no token already named moves.
+	Wind1 = TrackLabel + 1
+	Wind6 = Wind1 + 5
+	// lastToken is the last token there is.
+	lastToken = Wind6
 )
 
 // fixedNames are the names of the tokens before the numbered ramps.
@@ -74,7 +80,7 @@ func fixedNames() []string {
 
 // Name is the token's stable name, or nothing for a value that is no token.
 func (t Token) Name() string {
-	if t < Ground || t > TrackLabel {
+	if t < Ground || t > lastToken {
 		return ""
 	}
 	switch {
@@ -92,14 +98,16 @@ func (t Token) Name() string {
 		return "high"
 	case t == Track:
 		return "track"
+	case t == TrackLabel:
+		return "track.label"
 	}
-	return "track.label"
+	return "wind." + strconv.Itoa(int(t-Wind1)+1)
 }
 
 // Tokens lists every token, in the documented order.
 func Tokens() []Token {
-	out := make([]Token, 0, TrackLabel)
-	for t := Ground; t <= TrackLabel; t++ {
+	out := make([]Token, 0, lastToken)
+	for t := Ground; t <= lastToken; t++ {
 		out = append(out, t)
 	}
 	return out
@@ -110,7 +118,7 @@ func ParseToken(name string) (Token, bool) {
 	if name == "" || len(name) > 32 {
 		return 0, false
 	}
-	for t := Ground; t <= TrackLabel; t++ {
+	for t := Ground; t <= lastToken; t++ {
 		if t.Name() == name {
 			return t, true
 		}

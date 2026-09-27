@@ -87,6 +87,8 @@ func presetOf(ink uint8) colour.Preset {
 		return colour.Radar
 	case t >= colour.Temperature1 && t <= colour.Temperature17:
 		return colour.Temperature
+	case t >= colour.Wind1 && t <= colour.Wind6:
+		return colour.Wind
 	}
 	return 0
 }
@@ -105,6 +107,8 @@ func classInk(preset uint8, class int8) uint8 {
 			return 0
 		}
 		return uint8(colour.Radar1) + uint8(min(int(class), 6)) - 1
+	case colour.Wind:
+		return uint8(colour.Wind1) + uint8(min(int(class), 5))
 	}
 	return 0
 }
@@ -132,6 +136,10 @@ func (r *Renderer) underlays(in Input) {
 	shared := in.ImageHeld || len(in.Rasters) > 0
 	for i := range in.Fields {
 		f := &in.Fields[i]
+		if f.From != nil {
+			r.arrows(in, f) // a vector field is its arrows, never bands (L-16)
+			continue
+		}
 		lined := shared || f.Lines // L-15.4: the host may ask for the look alone
 		if rampless(in.Depth) || lined {
 			r.contours(in, f)

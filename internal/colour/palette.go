@@ -66,7 +66,7 @@ func (p Palette) Resolve(t Token, ground GroundKind) (RGB, bool) {
 // own ramp for that depth; every other colour is the same at every depth and
 // is mapped to the depth's palette when it is drawn.
 func (p Palette) ResolveAt(t Token, ground GroundKind, depth Depth) (RGB, bool) {
-	if t < Ground || t > TrackLabel {
+	if t < Ground || t > lastToken {
 		return RGB{}, false
 	}
 	ramp := t >= AlertExtremeOutline && t <= High
@@ -135,6 +135,9 @@ func (p Palette) Warnings(ground GroundKind, depth Depth) []fault.Warning {
 	}
 	if p.sets(Radar1, Radar6) {
 		report(textsafe.Const("radar"), len(Check(p.effective(Radar1, Radar6, 1, ground, depth), RampCheck{Ground: under, Depth: depth, Midpoint: -1})))
+	}
+	if p.sets(Wind1, Wind6) {
+		report(textsafe.Const("wind"), len(Check(p.effective(Wind1, Wind6, 1, ground, depth), RampCheck{Ground: under, Depth: depth, Midpoint: -1, Lines: true})))
 	}
 	if p.sets(Temperature1, Temperature17) {
 		mid := Midpoint(Temperature, ground, depth)
