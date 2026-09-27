@@ -164,8 +164,15 @@ func (p *Painter) World(v project.View) error {
 	if err != nil {
 		return err
 	}
+	lo, hi, err := v.Shifts()
+	if err != nil {
+		return err
+	}
 	w, h := p.areas.Dots()
-	left, top, right, bottom := toDot(x), toDot(y), toDot(x+side), toDot(y+side)
+	// EAST AND WEST OF THE WORLD IS MORE WORLD (D-86): only above and below
+	// the poles is beyond it. Painting ocean either side of the one copy put
+	// the sea over every land the view reached past the antimeridian.
+	left, top, right, bottom := toDot(x+float64(lo)*side), toDot(y), toDot(x+float64(hi+1)*side), toDot(y+side)
 	ink := uint8(colour.WaterFill)
 	for _, r := range [4][4]int{{0, 0, left, h}, {right, 0, w, h}, {0, 0, w, top}, {0, bottom, w, h}} {
 		if r[0] >= r[2] || r[1] >= r[3] {
