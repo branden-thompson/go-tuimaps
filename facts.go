@@ -96,6 +96,14 @@ func (m *Map) legendOf(id string) (LegendEntry, bool) {
 	}
 	entry := LegendEntry{ID: id, Unit: kind.Unit, Preset: kind.Preset,
 		Classes: m.classesOf(resolved), Blended: m.blendedUnder(resolved.Preset)}
+	if o.Grid != nil && o.Grid.Lines { // keyed as drawn: faint on the ground (L-15.4)
+		ground, _ := m.look.ground.InEffect(m.look.palette)
+		for i, c := range entry.Classes {
+			if c.Drawn {
+				entry.Classes[i].Colour = colour.Blend(ground, c.Colour, colour.FaintField)
+			}
+		}
+	}
 	if o.Image != nil {
 		if t, ok := overlay.TableOf(o.Image.Provider); ok {
 			entry.Approximate, entry.Unverified = t.Approximate, t.Unverified

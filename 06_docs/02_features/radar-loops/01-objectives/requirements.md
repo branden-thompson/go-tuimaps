@@ -203,6 +203,7 @@ purpose, and the picture it does not ask to thin is the picture as it was.**
 |---|---|---|---|
 | L-15.1 | An overlay may carry a span, `During`; it is drawn only while the map's moment meets it, both ends included, and a zero end is open. It stays prepared while it is not drawn, so the frame that meets it draws it at once. A span that ends before it begins is refused. | D-88 (watchpost D-96, D-98) | `TestAnOverlayIsDrawnOnlyWhileTheLoopsFrameMeetsIt`, `TestTheClockCrossingASpanRedraws`, `TestASpanOrMomentBackwardsIsRefused` |
 | L-15.2 | The moment is the loop's frame while a loop is held; else the span the host says with `ShowMoment(from, to)`; else the frame's clock. A moment the host moves is an input. | D-88 (watchpost D-94, D-97) | `TestTheHostSaysTheMomentWhileNoLoopIsHeld`, `TestAStepSwapsOneDaysFieldForAnother` |
+| L-15.4 | A grid marked `Lines` takes L-15.3's look with or without an image on the map, and the legend gives its bands as drawn, faint. | D-89 (watchpost D-102) | `TestAFieldCanAskForItsLinesAlone` |
 | L-15.3 | A field that shares the map with an image - drawn in the frame, or on a gap of its loop - is its labelled contours over its bands made faint; the image keeps its own colours. | D-88 (watchpost D-95) | `TestAFieldSharingTheMapWithAnImageIsItsLines` |
 
 ## Metrics of success

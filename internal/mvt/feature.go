@@ -11,6 +11,7 @@ import (
 type attrs struct {
 	class     string
 	nameLang  string
+	nameColon string // name:<lang>, read after name_<lang> (L11.14)
 	name      string
 	houseNum  string
 	localRank []byte // the Value message, read only if no better rank is found
@@ -174,6 +175,8 @@ func (d *layerDecoder) keep(a *attrs, role uint8, value []byte) error {
 		a.class = d.intern(text)
 	case roleNameLang:
 		a.nameLang = string(text)
+	case roleNameColon:
+		a.nameColon = string(text)
 	case roleName:
 		a.name = string(text)
 	case roleHouseNum:
@@ -214,10 +217,15 @@ func (d *layerDecoder) intern(text []byte) string {
 	return s
 }
 
-// label is the feature's name by upstream's order with one language kept.
+// label is the feature's name by upstream's order with one language kept:
+// name_<lang>, then name:<lang>, then the local name - whatever order the
+// tags came in (L11.14).
 func (a attrs) label() string {
 	if a.nameLang != "" {
 		return a.nameLang
+	}
+	if a.nameColon != "" {
+		return a.nameColon
 	}
 	if a.name != "" {
 		return a.name

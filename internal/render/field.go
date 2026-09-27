@@ -132,7 +132,8 @@ func (r *Renderer) underlays(in Input) {
 	shared := in.ImageHeld || len(in.Rasters) > 0
 	for i := range in.Fields {
 		f := &in.Fields[i]
-		if rampless(in.Depth) || shared {
+		lined := shared || f.Lines // L-15.4: the host may ask for the look alone
+		if rampless(in.Depth) || lined {
 			r.contours(in, f)
 		}
 		if rampless(in.Depth) {
@@ -145,7 +146,7 @@ func (r *Renderer) underlays(in Input) {
 				}
 				lon, lat := (r.lons[2*col]+r.lons[2*col+1])/2, (r.lats[4*row+1]+r.lats[4*row+2])/2
 				if ink := classInk(f.Preset, fieldClass(f, lon, lat)); ink != 0 {
-					g.cells[row*g.cols+col].under, g.cells[row*g.cols+col].faint = ink, shared
+					g.cells[row*g.cols+col].under, g.cells[row*g.cols+col].faint = ink, lined
 				}
 			}
 		}
@@ -154,11 +155,6 @@ func (r *Renderer) underlays(in Input) {
 		r.image(in, &in.Rasters[i])
 	}
 }
-
-// faintField is how far a field's band shifts the ground where an image
-// shares the map and has no echo there (L-15.3): a hint of the band, well
-// short of any echo's colour.
-const faintField = 0.3
 
 // maxSpan bounds how many pixels across and down one dot's footprint is
 // searched; an image finer than that is strode over, evenly.

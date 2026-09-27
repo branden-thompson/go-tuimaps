@@ -233,6 +233,7 @@ the sentence says what v0.2.0 will do, not what v0.1.0 does.
 | L-15.1 | An overlay with a span, `During`, is drawn only while the map's moment meets it, and stays prepared meanwhile, so the frame that meets it draws it at once. Hand in every hour's or day's overlay up front, each with its span, rather than swapping one in: a swapped-in overlay is not drawn until `Work` prepares it (D-88) | TestAnOverlayIsDrawnOnlyWhileTheLoopsFrameMeetsIt |
 | L-15.2 | The moment is the loop's frame while a loop is held, the host's `ShowMoment` while none is, and the frame's clock otherwise. The report and the description are not bounded by it: they speak of the place now (D-88) | TestTheHostSaysTheMomentWhileNoLoopIsHeld |
 | L-15.3 | A field sharing the map with an image is its labelled contours over faint bands, so a band never reads as an echo; alone, it fills its bands (D-88) | TestAFieldSharingTheMapWithAnImageIsItsLines |
+| L-15.4 | `Grid.Lines` asks for that look alone; the legend then keys the bands as drawn, faint on the ground (D-89) | TestAFieldCanAskForItsLinesAlone |
 
 ## 12 · Changelog: what v0.2.0 breaks (D-58)
 

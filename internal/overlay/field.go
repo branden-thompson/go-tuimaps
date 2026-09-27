@@ -20,6 +20,10 @@ type Grid struct {
 	Cols, Rows               int
 	Values                   []float64
 	Type                     Type
+	// Lines draws the field as its labelled contours over its bands made
+	// faint, whatever shares the map - the look it takes anyway with an image
+	// on the map (L-15.3, L-15.4).
+	Lines bool
 }
 
 // checkGrid validates a grid on hand-in and resolves its type.
@@ -79,7 +83,7 @@ func implausible(g *Grid) bool {
 func classify(g *Grid, kind Kind) scene.Field {
 	field := scene.Field{West: g.West, South: g.South, East: g.East, North: g.North, Cols: g.Cols, Rows: g.Rows,
 		Classes: make([]int8, len(g.Values)), Preset: uint8(kind.Preset), ClassCount: len(kind.Breaks) + 1,
-		Labels: bandLabels(kind.Breaks)}
+		Labels: bandLabels(kind.Breaks), Lines: g.Lines}
 	for i, v := range g.Values {
 		field.Classes[i] = int8(Classify(v, kind.Breaks))
 	}

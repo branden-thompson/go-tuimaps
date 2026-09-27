@@ -143,6 +143,9 @@ type Field struct {
 	// (D-35). Labels[c] is the value of the boundary below class c, so class
 	// 0 - everything under the first break - has none.
 	Labels []string
+	// Lines is the host's ask for the field's lines over faint bands, with
+	// or without an image on the map (L-15.4).
+	Lines bool
 }
 
 // Raster is a prepared image: one class a pixel, one byte each, in the

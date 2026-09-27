@@ -806,7 +806,7 @@ func (r *Renderer) colours(c cell, in Input, groundColour colour.RGB, kind colou
 	if under, ok := r.painter.Colour(c.under, in.Palette, kind, in.Depth); ok {
 		switch s, blended := in.Blends.Strength(presetOf(c.under), int(colour.Token(c.area)-colour.AlertExtremeOutline)/2); {
 		case c.faint:
-			bg = colour.Blend(bg, under, faintField) // the band a hint on the ground, or on the alert's tint (L-15.3)
+			bg = colour.Blend(bg, under, colour.FaintField) // the band a hint on the ground, or on the alert's tint (L-15.3)
 		case tinted && blended:
 			bg = colour.Blend(under, bg, s)
 		default:

@@ -7,6 +7,11 @@ import "math"
 // inside the blend (L-11.5, D-45).
 const visibleFloor = 5.0
 
+// FaintField is how far a lined field's band shifts the ground (L-15.3,
+// L-15.4): a hint of the band, well short of any echo's colour. The frame
+// paints with it and the legend keys with it, so the two agree.
+const FaintField = 0.3
+
 // Blend shifts an image's class colour toward an alert's tint, in linear
 // light, by a strength from 0 (the image alone) to 1 (the tint alone): the
 // radar stays readable inside the area and the area stays visible (L-11.1).

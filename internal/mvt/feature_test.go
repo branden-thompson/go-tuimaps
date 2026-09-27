@@ -345,3 +345,39 @@ func TestAPointIsOneMoveTo(t *testing.T) {
 		t.Fatalf("one MoveTo of two points was refused: %v %+v", err, kept)
 	}
 }
+
+// TestNameUnderscoreLangOutranksColon is the fourth disagreement the oracle's
+// fuzzer found (L11.14). A feature carrying both name_<lang> and name:<lang>
+// kept whichever came last; upstream's order - and the proven decoder's
+// reading of it - is name_<lang>, then name:<lang>, then name. Real tiles
+// carry the two equal, which is why it never showed.
+func TestNameUnderscoreLangOutranksColon(t *testing.T) {
+	for _, order := range [][2]string{{"name_en", "name:en"}, {"name:en", "name_en"}} {
+		values := map[string]string{"name_en": "Underscore", "name:en": "Colon"}
+		keys := []string{order[0], order[1]}
+		var kv []byte
+		for _, k := range keys {
+			kv = append(kv, 0x1a, byte(len(k)))
+			kv = append(kv, k...)
+		}
+		for _, k := range keys {
+			v := values[k]
+			val := append([]byte{0x0a, byte(len(v))}, v...)
+			kv = append(kv, 0x22, byte(len(val)))
+			kv = append(kv, val...)
+		}
+		geom := []byte{0x09, 0x02, 0x02}
+		feature := []byte{0x12, 0x04, 0x00, 0x00, 0x01, 0x01, 0x18, 0x01, 0x22, byte(len(geom))}
+		feature = append(feature, geom...)
+		layer := append([]byte{0x78, 0x02, 0x0a, 0x05, 'p', 'l', 'a', 'c', 'e', 0x12, byte(len(feature))}, feature...)
+		layer = append(layer, kv...)
+		tile := append([]byte{0x1a, byte(len(layer))}, layer...)
+		got, err := Decode(tile, Want{Layers: []string{"place"}, Language: "en"}, DefaultLimits())
+		if err != nil || len(got.Layers) != 1 || len(got.Layers[0].Features) != 1 {
+			t.Fatalf("%v: %v %+v", order, err, got)
+		}
+		if name := got.Layers[0].Features[0].Name.String(); name != "Underscore" {
+			t.Errorf("tags in the order %v: the name is %q; want name_en's", order, name)
+		}
+	}
+}

@@ -179,12 +179,18 @@ func warmField() tuimaps.Grid {
 func bandGrounds(m *tuimaps.Map, raw string) int {
 	n := 0
 	for _, e := range m.Legend() {
-		if e.Preset != "temperature" {
-			continue
+		if e.Preset == "temperature" {
+			n += groundsOf(e.Classes, raw)
 		}
-		for _, c := range e.Classes {
-			n += strings.Count(raw, "48;2;"+strconv.Itoa(int(c.Colour.R))+";"+strconv.Itoa(int(c.Colour.G))+";"+strconv.Itoa(int(c.Colour.B))+"m")
-		}
+	}
+	return n
+}
+
+// groundsOf counts the frame's cells painted in any of the classes' colours.
+func groundsOf(classes []tuimaps.Class, raw string) int {
+	n := 0
+	for _, c := range classes {
+		n += strings.Count(raw, "48;2;"+strconv.Itoa(int(c.Colour.R))+";"+strconv.Itoa(int(c.Colour.G))+";"+strconv.Itoa(int(c.Colour.B))+"m")
 	}
 	return n
 }
@@ -228,5 +234,52 @@ func TestAFieldSharingTheMapWithAnImageIsItsLines(t *testing.T) {
 	}
 	if n := bandGrounds(m, shared); n != 0 {
 		t.Errorf("with an image on the map %d cells keep a band's own colour; the bands are faint there", n)
+	}
+}
+
+// TestAFieldCanAskForItsLinesAlone is L-15.4 (watchpost D-102): a grid
+// marked Lines is drawn as with an image on the map - labelled contours over
+// faint bands - with no image there; and the legend gives its bands as
+// drawn, faint, so the key matches the map.
+func TestAFieldCanAskForItsLinesAlone(t *testing.T) {
+	m := world(t, 120, 40)
+	m.ColourDepth(tuimaps.Truecolor)
+	must(t, m.Recentre(tuimaps.LonLat{Lon: -96, Lat: 37}))
+	must(t, m.Zoom(3))
+	o := tuimaps.TemperatureGrid("temp", warmField(), tuimaps.Celsius, noon)
+	full := func() []tuimaps.Class {
+		for _, e := range m.Legend() {
+			if e.Preset == "temperature" {
+				return e.Classes
+			}
+		}
+		return nil
+	}
+	mustSet(t, m, o)
+	settle(t, m)
+	bands := full()
+	o.Grid.Lines = true
+	mustSet(t, m, o)
+	settle(t, m)
+	f, err := m.Render(tuimaps.Size{Cols: 120, Rows: 40}, noon)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw := strings.Join(f.Lines, "\n")
+	body := colours.ReplaceAllString(strings.Join(f.Lines[:len(f.Lines)-1], "\n"), "")
+	if !aValue.MatchString(body) {
+		t.Errorf("a lined field alone carries no contour value:\n%s", body)
+	}
+	if n := groundsOf(bands, raw); n != 0 {
+		t.Errorf("a lined field alone kept %d cells in a band's own colour; its bands are faint", n)
+	}
+	faint := full()
+	if len(faint) != len(bands) {
+		t.Fatalf("the legend has %d classes lined and %d plain", len(faint), len(bands))
+	}
+	for i := range faint {
+		if faint[i].Drawn && faint[i].Colour == bands[i].Colour {
+			t.Errorf("class %s is keyed in its full colour %v; the map draws it faint", faint[i].Label, faint[i].Colour)
+		}
 	}
 }
