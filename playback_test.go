@@ -656,3 +656,26 @@ func TestTheFrameCarriesItsCounters(t *testing.T) {
 		t.Errorf("nothing was dropped, and the frame says %v", f.Dropped)
 	}
 }
+
+// TestRightNowIsTheNewestObservedFrameAcrossLoops is L11.16 (watchpost D-113):
+// a loop of forecast frames alone, beside an observed loop, never makes "right
+// now" a forecast: right now is the newest observed frame of every loop.
+func TestRightNowIsTheNewestObservedFrameAcrossLoops(t *testing.T) {
+	m := world(t, 80, 24)
+	must(t, m.SetPlayback(tuimaps.PlaybackOn))
+	mustSet(t, m, loopAt(t, "observed", []int{-10, -5, 0}, nil, nil))
+	mustSet(t, m, loopAt(t, "ahead", []int{15, 30, 45}, map[int]bool{15: true, 30: true, 45: true}, nil))
+	settle(t, m)
+	st := m.Loop()
+	if !st.Now.Equal(at(0)) || !st.At.Equal(at(0)) || st.Forecast {
+		t.Errorf("right now is %v, shown %v (forecast %v); want the observed loop's newest, %v", st.Now, st.At, st.Forecast, at(0))
+	}
+	must(t, m.Step(1))
+	if st := m.Loop(); !st.Forecast || !st.At.Equal(at(15)) {
+		t.Errorf("a step from now is %v (forecast %v); want the first frame ahead", st.At, st.Forecast)
+	}
+	must(t, m.Reset())
+	if st := m.Loop(); !st.At.Equal(at(0)) {
+		t.Errorf("reset went to %v; want right now, %v", st.At, at(0))
+	}
+}

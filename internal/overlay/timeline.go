@@ -59,15 +59,27 @@ func (s *Store) RightNow() time.Time {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	var newest time.Time
+	// THE NEWEST OBSERVED FRAME OF EVERY LOOP (L11.16). A loop of forecast
+	// frames alone, beside an observed one, offered its newest forecast as its
+	// own "shown", and "right now" became the far end of the forecast. Only
+	// where no loop has an observed frame does the loops' own rule stand.
+	var newest, observed time.Time
 	for _, h := range s.current {
 		img := h.overlay.Image
 		if img == nil || len(img.Frames) == 0 {
 			continue
 		}
+		for _, f := range img.Frames {
+			if !f.Gap && !f.Forecast && f.Valid.After(observed) {
+				observed = f.Valid
+			}
+		}
 		if i := shown(img); i >= 0 && img.Frames[i].Valid.After(newest) {
 			newest = img.Frames[i].Valid
 		}
+	}
+	if !observed.IsZero() {
+		return observed
 	}
 	return newest
 }
