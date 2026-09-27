@@ -323,3 +323,25 @@ func TestAPointDoesNotAcceptALine(t *testing.T) {
 		t.Fatalf("a line of three positions was refused: %v %+v", err, kept)
 	}
 }
+
+// TestAPointIsOneMoveTo is the third disagreement the oracle's fuzzer found
+// (L11.12). A point's geometry is one MoveTo whose count is its points (MVT
+// 2.1, 4.3.5); a second MoveTo command is a damaged stream. This decoder read
+// each as more points, where the proven decoder kept the first - so both
+// read fifteen and one "points" from bytes neither should have accepted.
+func TestAPointIsOneMoveTo(t *testing.T) {
+	tile := func(geom []byte) []byte {
+		feature := append([]byte{0x18, 0x01, 0x22, byte(len(geom))}, geom...)
+		layer := append([]byte{0x78, 0x02, 0x0a, 0x05, 'w', 'a', 't', 'e', 'r', 0x12, byte(len(feature))}, feature...)
+		return append([]byte{0x1a, byte(len(layer))}, layer...)
+	}
+	// MoveTo 1 point, then MoveTo 1 more: two commands.
+	if _, err := Decode(tile([]byte{0x09, 0x02, 0x02, 0x09, 0x02, 0x02}), Want{Layers: []string{"water"}}, DefaultLimits()); err == nil {
+		t.Error("a point of two MoveTo commands was accepted")
+	}
+	// One MoveTo of two points is a multipoint, and is kept.
+	kept, err := Decode(tile([]byte{0x11, 0x02, 0x02, 0x02, 0x02}), Want{Layers: []string{"water"}}, DefaultLimits())
+	if err != nil || len(kept.Layers) != 1 || len(kept.Layers[0].Features) != 1 {
+		t.Fatalf("one MoveTo of two points was refused: %v %+v", err, kept)
+	}
+}

@@ -82,7 +82,10 @@ type Input struct {
 	OverlaysVersion uint64
 	// FieldsOverWater and ImagesMaskedByWater flip the two defaults: a field
 	// stops at the shore (D-32), and an image never does (D-87).
-	FieldsOverWater     bool
+	FieldsOverWater bool
+	// ImageHeld is an image on the map, drawn in this frame or on a gap of
+	// its loop: a field sharing the map with one is drawn as its lines (L-15.3).
+	ImageHeld           bool
 	ImagesMaskedByWater bool
 	// Markers are the host's places, drawn over everything beneath them
 	// (FR-26); MarkerPhase is which half of the blink this frame draws, and
@@ -151,6 +154,7 @@ type cell struct {
 	taken  bool   // text occupies the cell: a label, or the second half of a wide character
 	strict bool   // the cell holds text, held to the text contrast
 	shade  string // with no ramp, an image's shade: laid last, only where nothing else claimed the cell (L-8.3)
+	faint  bool   // under is a field's band drawn faintly, where an image shares the map and has no echo (L-15.3)
 }
 
 type box struct{ left, right, top, bottom int }
@@ -206,9 +210,9 @@ func (g *grid) write(col, row int, text textsafe.Text, ink uint8) bool {
 		// Text keeps what colours the cell under it - an alert's area and an
 		// image's class - so that a name inside an alert over radar sits on
 		// the blend, as it sits on the radar outside (L-11.1).
-		g.cells[at] = cell{text: cluster, ink: ink, taken: true, strict: true, area: g.cells[at].area, under: g.cells[at].under}
+		g.cells[at] = cell{text: cluster, ink: ink, taken: true, strict: true, area: g.cells[at].area, under: g.cells[at].under, faint: g.cells[at].faint}
 		if w == 2 {
-			g.cells[at+1] = cell{ink: ink, taken: true, strict: true, area: g.cells[at+1].area, under: g.cells[at+1].under}
+			g.cells[at+1] = cell{ink: ink, taken: true, strict: true, area: g.cells[at+1].area, under: g.cells[at+1].under, faint: g.cells[at+1].faint}
 		}
 		at += w
 		return true
@@ -311,7 +315,7 @@ func (r *Renderer) sameOverlays(in Input) bool {
 		return false
 	}
 	l := r.last
-	if in.FieldsOverWater != l.FieldsOverWater || in.ImagesMaskedByWater != l.ImagesMaskedByWater {
+	if in.FieldsOverWater != l.FieldsOverWater || in.ImagesMaskedByWater != l.ImagesMaskedByWater || in.ImageHeld != l.ImageHeld {
 		return false
 	}
 	if in.MarkerPhase != l.MarkerPhase || len(in.Markers) != len(l.Markers) {
@@ -801,6 +805,8 @@ func (r *Renderer) colours(c cell, in Input, groundColour colour.RGB, kind colou
 	}
 	if under, ok := r.painter.Colour(c.under, in.Palette, kind, in.Depth); ok {
 		switch s, blended := in.Blends.Strength(presetOf(c.under), int(colour.Token(c.area)-colour.AlertExtremeOutline)/2); {
+		case c.faint:
+			bg = colour.Blend(bg, under, faintField) // the band a hint on the ground, or on the alert's tint (L-15.3)
 		case tinted && blended:
 			bg = colour.Blend(under, bg, s)
 		default:
@@ -912,6 +918,9 @@ func (g *grid) rowSum(row int, sum uint64) uint64 {
 		}
 		if c.strict {
 			flags |= 2
+		}
+		if c.faint {
+			flags |= 4
 		}
 		sum = mix(sum, uint64(c.glyph)<<32|uint64(c.under)<<24|uint64(c.ink)<<16|uint64(c.area)<<8|flags)
 		for i := range len(c.text) {

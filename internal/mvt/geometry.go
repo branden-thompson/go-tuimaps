@@ -68,6 +68,12 @@ func (d *layerDecoder) runCommands(geometry []byte, kind scene.GeomKind) error {
 			return malformed() // each point is two integers of at least a byte each
 		}
 		switch {
+		case id == cmdMoveTo && kind == scene.GeomPoint && c.partStart >= 0:
+			// **A point is one MoveTo** (MVT 2.1, 4.3.5), its count the points.
+			// A second MoveTo command grew more points the proven decoder never
+			// reads - the third disagreement the oracle's fuzzer found
+			// (L11.12). A damaged stream is refused (D-75).
+			err = malformed()
 		case id == cmdMoveTo:
 			rest, err = d.moveTo(&c, rest, int(count), kind)
 		case kind == scene.GeomPoint:

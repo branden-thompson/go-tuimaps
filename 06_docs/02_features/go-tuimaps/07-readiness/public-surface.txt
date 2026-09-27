@@ -176,6 +176,7 @@ method Map.SetPlaybackStep(time.Duration) error
 method Map.SetStyle([]byte) error
 method Map.Settle(context.Context) (SettleResult, error)
 method Map.ShowFooter(bool)
+method Map.ShowMoment(time.Time, time.Time) error
 method Map.ShowStamp(bool)
 method Map.Source(string) error
 method Map.SourceCredit() string
@@ -239,6 +240,7 @@ type Severity = overlay.Severity
 type Shared struct{  }
 type Sighting struct{ Valid time.Time; At LonLat; Distance float64; Unit string; Bearing float64; Compass string }
 type Size struct{ Cols int; Rows int }
+type Span = overlay.Span
 type Status uint8
 type TableEntry = overlay.TableEntry
 type Token = colour.Token

@@ -87,6 +87,7 @@ once. Its P1-b builds against release candidates, `v0.2.0-rc.N`, as the packages
 | M5 time to picture | render ≤ 15 ms an advance | L-12.5 | D-61 | WP-L3 |
 | UAT-1 U1-10, U1-16: detail by purpose | `SetDetail(level)` on the built-in style's ranking; major and minor roads switched apart | L-14 (new, D-82) | D-82, D-83, watchpost D-65, D-67 | WP-L11 |
 | UAT-1 U1-1: the footer | the scale bar and the credit never touch | L-8 (furniture) | D-83 | WP-L11 |
+| Watchpost W10: temperature and the map's two modes (its D-93 to D-98) | every hour's and day's grid handed in with its span, the moment the loop's or the host's; a field over an image drawn as its lines | L-15 (new, D-88) | D-88 | WP-L11 (L11.10, L11.11) |
 | The loop's shape (host-owned) | per state-regional region, two hours, a step the listener sets (5 minutes by default), images up to about 200,000 pixels; the library accepts up to `MaxFrames` 72 within a host-set budget (6 MiB default) | L-1.15, L-12.1, L-12.2 | D-68, watchpost D-47, D-50 | WP-L2 |
 
 ## Rules for both plans

@@ -51,6 +51,11 @@ type Image = overlay.Image
 // forecast frame is one the provider forecast rather than observed.
 type LoopFrame = overlay.LoopFrame
 
+// Span is when an overlay is drawn: while the map's moment meets it - the
+// loop's frame, or the host's moment (ShowMoment), or the frame's clock. A
+// zero end is open (L-15.1).
+type Span = overlay.Span
+
 // MaxFrames is the most frames a loop may have, gaps included.
 const MaxFrames = overlay.MaxFrames
 
@@ -282,13 +287,26 @@ func (m *Map) draw(in *render.Input) {
 		m.play.drawn = shown
 	}
 	m.shapes, m.fields, m.rasters, m.borrowed = m.shapes[:0], m.fields[:0], m.rasters[:0], m.borrowed[:0]
+	from, to := m.momentLocked(shown)
+	hidden := uint64(0)
 	for _, id := range m.store.IDs() {
+		// AN OVERLAY OUTSIDE THE MOMENT IS NOT DRAWN (L-15.1), but it stays
+		// prepared: the frame that meets it draws it at once, never a frame late.
+		if span, ok := m.store.During(id); ok && !span.Meets(from, to) {
+			hidden = hidden*1099511628211 ^ idHash(id)
+			continue
+		}
 		if field, ok := m.store.Field(id); ok {
 			m.fields = append(m.fields, field)
 			continue
 		}
 		if raster, _, ok := m.store.RasterAt(id, shown); ok {
 			m.rasters = append(m.rasters, raster)
+			in.ImageHeld = true
+			continue
+		}
+		if _, _, ok := m.store.Raster(id); ok {
+			in.ImageHeld = true // a loop on a gap still shares the map: the field's look holds across it (L-15.3)
 			continue
 		}
 		shapes, _, path := m.store.Drawn(id, bucket)
@@ -299,8 +317,21 @@ func (m *Map) draw(in *render.Input) {
 			m.borrow(id)
 		}
 	}
+	if hidden != m.play.hidden {
+		m.play.moved++ // another set of overlays is drawn: the last frame cannot be reused
+		m.play.hidden = hidden
+	}
 	in.Shapes, in.Fields, in.Rasters, in.Borrowed = m.shapes, m.fields, m.rasters, m.borrowed
 	in.OverlaysVersion = m.overlays + m.play.moved // the description's key reads only the first (L-1.10e)
+}
+
+// idHash is an overlay id's FNV-1a hash, for the set of those left out.
+func idHash(id string) uint64 {
+	h := uint64(14695981039346656037)
+	for i := range len(id) {
+		h = (h ^ uint64(id[i])) * 1099511628211
+	}
+	return h
 }
 
 // borrow reads one overlay where it lies, through its run index: the frame

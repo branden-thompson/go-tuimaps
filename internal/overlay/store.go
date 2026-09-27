@@ -128,10 +128,23 @@ type Overlay struct {
 	ID       string
 	Valid    time.Time
 	Keeps    time.Duration
+	During   Span // when it is drawn: while the map's moment meets it; the zero span, always (L-15.1)
 	Credit   string
 	Features []Feature
 	Grid     *Grid  // a scalar grid; an overlay is features, or a grid, or an image, and one only
 	Image    *Image // a georeferenced image with its colour table
+}
+
+// Span is when an overlay is drawn (L-15.1): while the map's moment - the
+// loop's frame, the host's moment, or the frame's clock - meets it. A zero
+// From is open into the past, a zero Until open into the future, so the zero
+// span is always.
+type Span struct{ From, Until time.Time }
+
+// Meets reports whether the span meets a moment from one time to another,
+// both ends included.
+func (sp Span) Meets(from, to time.Time) bool {
+	return (sp.Until.IsZero() || !sp.Until.Before(from)) && (sp.From.IsZero() || !sp.From.After(to))
 }
 
 // Caps are a store's limits, fixed when it is made.
@@ -301,6 +314,10 @@ func (s *Store) check(o Overlay) (int, error) {
 	err := CheckCurrency(o.Valid, o.Keeps)
 	if err != nil {
 		return 0, err
+	}
+	if sp := o.During; !sp.From.IsZero() && !sp.Until.IsZero() && sp.Until.Before(sp.From) {
+		return 0, refused(fault.BadCurrency, textsafe.Const("its span ends before it begins"),
+			textsafe.Const("give During a From at or before its Until, or leave either zero for open"))
 	}
 	kinds := 0
 	for _, has := range []bool{len(o.Features) != 0, o.Grid != nil, o.Image != nil} {
@@ -694,6 +711,20 @@ func (s *Store) Reading(id string) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.retiring[id] > 0
+}
+
+// During is when an overlay is drawn (L-15.1), and false when none is set.
+func (s *Store) During(id string) (Span, bool) {
+	if s == nil || id == "" {
+		return Span{}, false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	h, ok := s.current[id]
+	if !ok {
+		return Span{}, false
+	}
+	return h.overlay.During, true
 }
 
 // IDs lists the overlays set, in the order they were first set.

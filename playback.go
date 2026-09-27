@@ -79,6 +79,10 @@ type playback struct {
 	moved    uint64    // the moment drawn changed: the renderer's reason to redraw
 	seen     time.Time // the moment as of the last time the map was given, or a control moved it
 	ticks    uint64    // frame advances (D-66)
+	// hostFrom and hostTo are the host's moment, drawn while no loop is held
+	// (L-15.2); zero, the frame's clock.
+	hostFrom, hostTo time.Time
+	hidden           uint64 // which overlays the moment left out of the last frame, as a hash: a change redraws
 }
 
 // FrameTicks counts frame advances as of the last time the map was given an
@@ -351,6 +355,47 @@ func (m *Map) shownLocked() time.Time {
 	run := step * time.Duration(len(timeline)-1)
 	elapsed := max(m.play.given.Sub(m.play.from), 0) % (run + hold)
 	return timeline[min(int(elapsed/step), len(timeline)-1)].Valid
+}
+
+// ShowMoment sets the moment the map shows while it holds no loop, from one
+// time to another (L-15.2): an overlay is drawn while its span meets it
+// (L-15.1). A host that steps through days of a forecast says each day this
+// way. Zero for both is the frame's own clock again; while a loop is held,
+// the loop's frame is the moment and this one waits.
+func (m *Map) ShowMoment(from, to time.Time) (err error) {
+	defer guard("ShowMoment", &err)
+	m.plant("ShowMoment")
+
+	if m == nil {
+		return closed()
+	}
+	if to.Before(from) {
+		return fault.Make(fault.BadCurrency, textsafe.Const("the moment was not set"),
+			textsafe.Const("it ends before it begins"), textsafe.Const("pass a from at or before the to, or zero for both"))
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.shut {
+		return closed()
+	}
+	if m.play.hostFrom.Equal(from) && m.play.hostTo.Equal(to) {
+		return nil
+	}
+	m.play.hostFrom, m.play.hostTo = from, to
+	m.changed++ // the host moved it: an input
+	return nil
+}
+
+// momentLocked is the moment an overlay's span is met against: the loop's
+// frame while a loop is held; else the host's moment; else the frame's clock.
+func (m *Map) momentLocked(shown time.Time) (from, to time.Time) {
+	switch {
+	case !shown.IsZero():
+		return shown, shown
+	case !m.play.hostFrom.IsZero() || !m.play.hostTo.IsZero():
+		return m.play.hostFrom, m.play.hostTo
+	}
+	return m.wallClock, m.wallClock
 }
 
 // indexOf is where a moment falls on the timeline: the last valid time at or
