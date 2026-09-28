@@ -39,8 +39,9 @@ func (m *Member) RunOne(ctx context.Context) (did bool, err error) {
 	return true, m.finish(ctx, e, failure)
 }
 
-// takeLocked picks the next job - the newest view's first, then the order
-// asked for - and marks it in flight under a context of its own.
+// takeLocked picks the next job - the newest view's first, its tiles before
+// anything else (the basemap first, L-22), then the order asked for - and
+// marks it in flight under a context of its own.
 func (m *Member) takeLocked(ctx context.Context) (*entry, context.Context, error) {
 	m.q.mu.Lock()
 	defer m.q.mu.Unlock()
@@ -49,8 +50,23 @@ func (m *Member) takeLocked(ctx context.Context) (*entry, context.Context, error
 	}
 	m.idle, m.warned = 0, false
 	best := -1
+	tile := func(e *entry) bool { return e.job.Kind() == scene.KindTile }
 	for i, e := range m.q.waiting {
-		if best < 0 || e.view > m.q.waiting[best].view || (e.view == m.q.waiting[best].view && e.seq < m.q.waiting[best].seq) {
+		if best < 0 {
+			best = i
+			continue
+		}
+		b := m.q.waiting[best]
+		switch {
+		case e.view != b.view:
+			if e.view > b.view {
+				best = i
+			}
+		case tile(e) != tile(b):
+			if tile(e) {
+				best = i
+			}
+		case e.seq < b.seq:
 			best = i
 		}
 	}

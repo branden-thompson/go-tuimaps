@@ -149,7 +149,7 @@ flowchart TB
           direction LR
           DESC["<b>describe</b><br/>answers as data: areas, points, lines, fields, images;<br/>motion helpers for Report (D-52, D-42)"]
           TXT["<b>textsafe</b><br/>cleaning · clusters · width (FR-34, NFR-8)"]
-          WORKQ["<b>work</b><br/>capped queue · newest view wins · no limiter: the pump's width is the host's (D-73, D-84)"]
+          WORKQ["<b>work</b><br/>capped queue · newest view wins · tiles first, dropped last (L-22) · no limiter: the pump's width is the host's (D-73, D-84)"]
           FAULT["<b>fault</b><br/>the typed error · both closed lists of kinds"]
         end
         subgraph TESTONLY["for tests only — a static check says so"]

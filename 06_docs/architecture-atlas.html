@@ -366,7 +366,7 @@ code{font-family:var(--mono);font-size:.92em}
     NEED[&#34;Render — or Settle — notes: tile z/x/y is wanted&lt;br/&gt;AND its nearest ancestors the sources can supply, so there is a stand-in to draw&#34;] --&gt; MEM{&#34;In the memory cache?&lt;br/&gt;keyed by source identity + label language + z/x/y&lt;br/&gt;(never by style — FR-31, D-82)&#34;}
     MEM -- yes --&gt; USE[&#34;On hand → drawn next frame&#34;]
     MEM -- no --&gt; ANC[&#34;Meanwhile: draw the nearest ancestor ON HAND as a stand-in (D-30).&lt;br/&gt;None is on hand until a Work call has decoded one — before that the frame shows&lt;br/&gt;ground, places, overlays and the notice (FR-23). With embedded tiles passed, the z0–3 ancestor&lt;br/&gt;is wanted first and is the cheapest job, so it arrives first&#34;]
-    MEM -- no --&gt; Q[(&#34;Pending work&lt;br/&gt;capped · de-duplicated · newest view wins&#34;)]
+    MEM -- no --&gt; Q[(&#34;Pending work&lt;br/&gt;capped · de-duplicated · newest view wins · its tiles first and dropped last (L-22)&#34;)]
     Q -- &#34;host calls Work (D-73)&#34; --&gt; ORDER
 
     subgraph ORDER[&#34;Two kinds of job, each keyed by its source&#34;]
@@ -484,7 +484,7 @@ code{font-family:var(--mono);font-size:.92em}
     Note over M: Tiles on hand are redrawn shifted. The new column uses stand-ins.&lt;br/&gt;Wanted tiles join the queue. jobs for tiles that left the view are cancelled (FR-30)
     M--&gt;&gt;H: frame · &#34;still sharpening&#34;
     H-&gt;&gt;M: PanCells(east) again, before the first tiles arrive
-    Note over M: The queue is re-ordered: newest view first. The cap drops the oldest
+    Note over M: The queue is re-ordered: newest view first, its tiles first. The cap drops a view no longer shown,&lt;br/&gt;then the oldest that is no tile - a tile last (L-22)
     P-&gt;&gt;M: Work(ctx) …
     M--&gt;&gt;P: done · Changed() +1
     H-&gt;&gt;M: Render(size, now)
@@ -809,7 +809,7 @@ code{font-family:var(--mono);font-size:.92em}
           direction LR
           DESC[&#34;&lt;b&gt;describe&lt;/b&gt;&lt;br/&gt;answers as data: areas, points, lines, fields, images;&lt;br/&gt;motion helpers for Report (D-52, D-42)&#34;]
           TXT[&#34;&lt;b&gt;textsafe&lt;/b&gt;&lt;br/&gt;cleaning · clusters · width (FR-34, NFR-8)&#34;]
-          WORKQ[&#34;&lt;b&gt;work&lt;/b&gt;&lt;br/&gt;capped queue · newest view wins · no limiter: the pump&#39;s width is the host&#39;s (D-73, D-84)&#34;]
+          WORKQ[&#34;&lt;b&gt;work&lt;/b&gt;&lt;br/&gt;capped queue · newest view wins · tiles first, dropped last (L-22) · no limiter: the pump&#39;s width is the host&#39;s (D-73, D-84)&#34;]
           FAULT[&#34;&lt;b&gt;fault&lt;/b&gt;&lt;br/&gt;the typed error · both closed lists of kinds&#34;]
         end
         subgraph TESTONLY[&#34;for tests only — a static check says so&#34;]

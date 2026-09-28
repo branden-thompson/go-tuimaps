@@ -15,7 +15,7 @@ flowchart LR
     NEED["Render — or Settle — notes: tile z/x/y is wanted<br/>AND its nearest ancestors the sources can supply, so there is a stand-in to draw"] --> MEM{"In the memory cache?<br/>keyed by source identity + label language + z/x/y<br/>(never by style — FR-31, D-82)"}
     MEM -- yes --> USE["On hand → drawn next frame"]
     MEM -- no --> ANC["Meanwhile: draw the nearest ancestor ON HAND as a stand-in (D-30).<br/>None is on hand until a Work call has decoded one — before that the frame shows<br/>ground, places, overlays and the notice (FR-23). With embedded tiles passed, the z0–3 ancestor<br/>is wanted first and is the cheapest job, so it arrives first"]
-    MEM -- no --> Q[("Pending work<br/>capped · de-duplicated · newest view wins")]
+    MEM -- no --> Q[("Pending work<br/>capped · de-duplicated · newest view wins · its tiles first and dropped last (L-22)")]
     Q -- "host calls Work (D-73)" --> ORDER
 
     subgraph ORDER["Two kinds of job, each keyed by its source"]

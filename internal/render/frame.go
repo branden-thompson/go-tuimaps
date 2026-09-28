@@ -729,7 +729,10 @@ func (r *Renderer) furniture(in Input, status Status) {
 		// nothing of the pump, the one thing that would have helped (14.19).
 		notice := textsafe.Const("no map tiles: name a source, or pass the assets package's tiles")
 		if in.Supplied {
-			notice = textsafe.Const("no map tiles yet: call Settle, or run Work until it has none left")
+			// WORDS FOR A PERSON, NOT A PROGRAMMER (L-22.2, watchpost D-124):
+			// "call Settle, or run Work" was shown to listeners, whose map
+			// was only loading. The host's pump is the host's to know of.
+			notice = textsafe.Const("Loading the map…")
 		}
 		fit := textsafe.Fit(notice, g.cols)
 		g.write((g.cols-textsafe.Width(fit))/2, g.rows/2, fit, uint8(colour.Notice))

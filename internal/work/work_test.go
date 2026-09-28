@@ -136,8 +136,8 @@ func TestNewestViewFirst(t *testing.T) {
 	m.NewView()
 	add(t, m, record("c", scene.KindTile), record("d", scene.KindDescribe), record("e", scene.KindTile))
 	drain(t, m)
-	if strings.Join(ran, " ") != "c d e a b" {
-		t.Errorf("ran %v; want the newest view's jobs first, each view's in the order asked for", ran)
+	if strings.Join(ran, " ") != "c e d a b" { // the basemap first within a view (L-22)
+		t.Errorf("ran %v; want the newest view's jobs first, its tiles before the rest, each in the order asked for", ran)
 	}
 }
 

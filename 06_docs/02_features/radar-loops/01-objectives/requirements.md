@@ -252,6 +252,13 @@ purpose, and the picture it does not ask to thin is the picture as it was.**
 |---|---|---|---|
 | L-21.1 | `Buoy` and `Tide`, tokens `buoy` and `tide`, apart from every other feature role and the waves' scale, readable on each ground's water; never an alert. | D-95 | `TestBuoysAndTidesAreRolesOfTheirOwn`, `TestBuoysAndTidesHaveTheirColoursOnBothGrounds` |
 
+## L-22 — The basemap always shows (D-96: watchpost U2-34, D-124)
+
+| # | Requirement | Source | Test |
+|---|---|---|---|
+| L-22.1 | The basemap is never starved by the overlays: past the queue's cap, a job of a view no map shows goes first, then the oldest that is no tile, a tile last; within a view the tiles run first. | D-96 | `TestTheBasemapDrawsUnderAFloodOfOverlays`, `TestTheBasemapIsNeverStarved`, `TestAViewNoLongerShownGoesFirst`, `TestNewestViewFirst` |
+| L-22.2 | While the tiles load, the map says "Loading the map…" and names no call; the host learns it from the `NoTiles` status. | D-96 | `TestTheNoticeWhileTheMapLoadsSpeaksToAPerson`, `TestTheNoTilesNoticeNamesTheRealCause` |
+
 ## Metrics of success
 
 The brief's M1–M6 (D-6), with round 1's changes. **This table is the normative one.**

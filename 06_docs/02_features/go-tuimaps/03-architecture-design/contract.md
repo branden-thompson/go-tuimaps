@@ -248,6 +248,8 @@ the sentence says what v0.2.0 will do, not what v0.1.0 does.
 | L-20.2 | The wave preset: six classes, calmest first - under 2 ft, 2-4, 4-6, 6-9, 9-13, 13 and over, or 0.5, 1, 2, 3 and 4 m - tokens `wave.1` to `wave.6`, passing the checker on each ground's water (D-94) | TestTheWaveLegendIsItsSixClasses |
 | L-20.3 | The wave preset is defined in `ft` and `m` alone, or the grid is refused (D-94) | TestTheWavePresetIsCheckedAndNamed |
 | L-21.1 | `Buoy` and `Tide` are the sea's stations' roles, tokens `buoy` and `tide`, settable as any colour; a feature in them is never an alert (D-95) | TestBuoysAndTidesAreRolesOfTheirOwn |
+| L-22.1 | The basemap is never starved by the overlays: past the queue's cap the tiles of the view shown are dropped last, and within a view they run first (D-96) | TestTheBasemapDrawsUnderAFloodOfOverlays |
+| L-22.2 | While the tiles load the frame says "Loading the map…" and names no call; the host reads `NoTiles` (D-96) | TestTheNoticeWhileTheMapLoadsSpeaksToAPerson |
 | L-17.4 | The legend keys radar's classes, an image's or a grid's, in the colours the frame draws them: the class below the first floor not drawn, and a grid of rain never keyed faint (D-91) | TestTheRainLegendKeysTheColoursDrawn |
 
 ## 12 · Changelog: what v0.2.0 breaks (D-58)

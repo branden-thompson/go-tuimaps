@@ -56,7 +56,7 @@ sequenceDiagram
     Note over M: Tiles on hand are redrawn shifted. The new column uses stand-ins.<br/>Wanted tiles join the queue. jobs for tiles that left the view are cancelled (FR-30)
     M-->>H: frame · "still sharpening"
     H->>M: PanCells(east) again, before the first tiles arrive
-    Note over M: The queue is re-ordered: newest view first. The cap drops the oldest
+    Note over M: The queue is re-ordered: newest view first, its tiles first. The cap drops a view no longer shown,<br/>then the oldest that is no tile - a tile last (L-22)
     P->>M: Work(ctx) …
     M-->>P: done · Changed() +1
     H->>M: Render(size, now)

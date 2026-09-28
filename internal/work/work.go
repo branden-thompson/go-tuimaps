@@ -297,20 +297,29 @@ func (q *Queue) addLocked(m *Member, job scene.Job) {
 	}
 }
 
-// dropOneLocked drops the oldest job of a view no map is showing any more,
-// or failing that the oldest job.
+// dropOneLocked drops the oldest job of a view no map is showing any more;
+// failing that the oldest job that is no tile; and only then the oldest.
+// THE BASEMAP IS NEVER STARVED BY THE OVERLAYS (L-22, watchpost U2-34): a
+// flood of overlays past the cap dropped the view's tiles, the oldest jobs,
+// and the map drew its overlays over no basemap at all.
 func (q *Queue) dropOneLocked() {
-	victim, stale := -1, false
+	victim, rank := -1, 0
 	for i, e := range q.waiting {
+		r := 1 // a tile of a view shown: the last to go
+		if e.job.Kind() != scene.KindTile {
+			r = 2
+		}
 		old := true
 		for w := range e.wanters {
 			if e.view >= w.view {
 				old = false
 			}
 		}
-		better := victim < 0 || (old && !stale) || (old == stale && e.seq < q.waiting[victim].seq)
-		if better {
-			victim, stale = i, old
+		if old {
+			r = 3
+		}
+		if victim < 0 || r > rank || (r == rank && e.seq < q.waiting[victim].seq) {
+			victim, rank = i, r
 		}
 	}
 	if victim >= 0 {
