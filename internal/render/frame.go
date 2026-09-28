@@ -559,19 +559,23 @@ func (r *Renderer) compose(in Input, status Status) {
 	}
 	r.drops = r.drops[:0]
 	r.markerNames() // the host's places, before any other name (L-8.9, D-80)
-	// An overlay's labels are placed before any name of the basemap's, so that
-	// a place name never hides a warning's word; they are not the basemap's
-	// labels and do not go when those are turned off.
+	// An alert's words are placed before any name of the basemap's, so that
+	// a place name never hides a warning's word. EVERY OTHER OVERLAY'S WORDS
+	// COME AFTER THE NAMES (L-23, watchpost D-135): placed first, a map's
+	// buoys, tides, quakes and fires took every cell and the place names
+	// were lost (watchpost UAT-2 U2-38).
 	g.world = box{}
 	for _, l := range r.painter.OverlayLabels() {
 		// An alert's label that does not fit falls back to its severity word;
 		// either way the host is told (L-8.5). The outline's digit carries
 		// the severity whatever happens to the label (D-65).
-		r.placeOrShorten(l)
+		if first(l) {
+			r.placeOrShorten(l)
+		}
 	}
-	r.digits(in) // after the overlays' labels, before any name of the basemap's (D-65)
+	r.digits(in) // after the alerts' words, before any name of the basemap's (D-65)
 	if !in.Labels {
-		r.bandNames()
+		r.dataNames() // not the basemap's labels: they do not go when those are turned off
 		r.shades()
 		if rampless(in.Depth) {
 			r.hatch() // at sixteen colours as at none (L-8.7)
@@ -584,20 +588,14 @@ func (r *Renderer) compose(in Input, status Status) {
 			g.world.left, g.world.right = toDot(x+float64(lo)*side), toDot(x+float64(hi+1)*side)
 		}
 	}
-	// **A field's values are placed before the basemap's names, and only
-	// then.** A field drawn without colour is contour lines, and a contour
-	// with no value says where a band changes but not to what - so on such a
-	// frame the values are the data the host asked for and a place name is
-	// the decoration (D-124). The host's own places were placed before all of
-	// them, and before the overlays' labels too (L-8.9, D-60, D-81), so that
-	// nothing can cost the map its "you are here". That departs from P-60,
-	// which places marker labels after the map's names; the parity row
-	// records it.
-	if bands := r.painter.BandLabels(); len(bands) > 0 {
-		r.bandNames()
-	}
-	// Names last, most important first; the order among equals is the order
-	// the tiles gave them, and the tiles were sorted (P-25).
+	// **The basemap's names before the data's words (L-23, watchpost D-135,
+	// overturning D-124's field values first).** With every layer on, the
+	// stations' readings and the contours' values took every cell, and the
+	// map lost the names that say where it is. The host's own places were
+	// placed before all of them, and the alerts' words too (L-8.9, D-60,
+	// D-81), so nothing can cost the map its "you are here" or a warning.
+	// Names, most important first; the order among equals is the order the
+	// tiles gave them, and the tiles were sorted (P-25).
 	r.labels = append(r.labels[:0], r.painter.Labels()...)
 	sort.SliceStable(r.labels, func(i, j int) bool { return r.labels[i].Rank < r.labels[j].Rank })
 	budget := style.NewProfile(load(in), g.cols, g.rows, in.Layers).Labels()
@@ -610,6 +608,7 @@ func (r *Renderer) compose(in Input, status Status) {
 			placed++
 		}
 	}
+	r.dataNames()
 	r.shades()
 	if rampless(in.Depth) {
 		r.hatch() // last of all, at sixteen colours as at none (FR-18a, L-8.7): it fills what nothing else has taken
@@ -673,6 +672,27 @@ func (r *Renderer) shades() {
 		}
 		*c = cell{text: c.shade, ink: uint8(colour.LabelRegion), taken: true, area: area}
 	}
+}
+
+// first reports whether an overlay's label is placed before the basemap's
+// names: an alert's - a warning's word is never hidden - and a marker's, the
+// host's own place (L-8.5, L-8.9, L-23).
+func first(l Label) bool {
+	t := colour.Token(l.Ink)
+	return t == colour.Marker || (t >= colour.AlertExtremeOutline && t <= colour.AlertUnknownTint)
+}
+
+// dataNames places the words of what the host drew that is no alert - a
+// station's reading, a quake's magnitude, a fire's name - and then the
+// contours' values: after the basemap's names, in the room they left (L-23).
+func (r *Renderer) dataNames() {
+	r.grid.world = box{}
+	for _, l := range r.painter.OverlayLabels() {
+		if !first(l) {
+			r.placeOrShorten(l)
+		}
+	}
+	r.bandNames()
 }
 
 // bandNames places the values a field's contours carry, after every other

@@ -259,6 +259,12 @@ purpose, and the picture it does not ask to thin is the picture as it was.**
 | L-22.1 | The basemap is never starved by the overlays: past the queue's cap, a job of a view no map shows goes first, then the oldest that is no tile, a tile last; within a view the tiles run first. | D-96 | `TestTheBasemapDrawsUnderAFloodOfOverlays`, `TestTheBasemapIsNeverStarved`, `TestAViewNoLongerShownGoesFirst`, `TestNewestViewFirst` |
 | L-22.2 | While the tiles load, the map says "Loading the map…" and names no call; the host learns it from the `NoTiles` status. | D-96 | `TestTheNoticeWhileTheMapLoadsSpeaksToAPerson`, `TestTheNoTilesNoticeNamesTheRealCause` |
 
+## L-23 — The place names before the data (D-97: watchpost U2-38, D-135)
+
+| # | Requirement | Source | Test |
+|---|---|---|---|
+| L-23.1 | A frame's words claim cells in this order: the host's places; an alert's label and a marker-role overlay's; the alerts' digits; the basemap's names within their budget; every other overlay's label; the contours' values. | D-97 | `TestThePlaceNamesComeBeforeTheData`, `TestAFieldsContoursCarryTheirValues`, `TestOverlayLabelBeforeBasemap` |
+
 ## Metrics of success
 
 The brief's M1–M6 (D-6), with round 1's changes. **This table is the normative one.**
