@@ -107,6 +107,8 @@ const (
 	AlertMinor    = colour.AlertMinorOutline
 	AlertUnknown  = colour.AlertUnknownOutline
 	Track         = colour.Track
+	Fire          = colour.Fire      // a fire's perimeter, its incident, a strong hotspot (L-18)
+	FireFaint     = colour.FireFaint // a weaker hotspot
 	Low           = colour.Low
 	Middle        = colour.Middle
 	High          = colour.High

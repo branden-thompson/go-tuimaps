@@ -49,6 +49,10 @@ func darkFurniture(t Token) (RGB, bool) {
 		return RGB{255, 214, 90}, true
 	case Stale:
 		return RGB{255, 170, 80}, true
+	case Fire:
+		return RGB{255, 80, 40}, true
+	case FireFaint:
+		return RGB{205, 120, 80}, true
 	}
 	return RGB{}, false
 }
@@ -104,6 +108,10 @@ func lightFurniture(t Token) (RGB, bool) {
 		return RGB{150, 70, 0}, true
 	case Track:
 		return RGB{120, 60, 160}, true
+	case Fire:
+		return RGB{190, 30, 0}, true
+	case FireFaint:
+		return RGB{160, 90, 50}, true
 	}
 	return RGB{}, false
 }

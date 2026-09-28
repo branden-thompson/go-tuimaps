@@ -28,6 +28,8 @@ const DropPlaceName
 const Fahrenheit
 const FetchFailed
 const FetchRefused
+const Fire
+const FireFaint
 const FutureValidTime
 const Held
 const High

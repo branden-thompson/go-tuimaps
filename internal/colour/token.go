@@ -64,8 +64,12 @@ const (
 	// watchpost D-109): after the rest, so no token already named moves.
 	Wind1 = TrackLabel + 1
 	Wind6 = Wind1 + 5
+	// Fire and FireFaint are a fire's (watchpost D-121): its perimeter, its
+	// incident and a strong hotspot; a weaker hotspot. Never an alert.
+	Fire      = Wind6 + 1
+	FireFaint = Fire + 1
 	// lastToken is the last token there is.
-	lastToken = Wind6
+	lastToken = FireFaint
 )
 
 // fixedNames are the names of the tokens before the numbered ramps.
@@ -100,6 +104,10 @@ func (t Token) Name() string {
 		return "track"
 	case t == TrackLabel:
 		return "track.label"
+	case t == Fire:
+		return "fire"
+	case t == FireFaint:
+		return "fire.faint"
 	}
 	return "wind." + strconv.Itoa(int(t-Wind1)+1)
 }

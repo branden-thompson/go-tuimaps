@@ -67,6 +67,10 @@ func sixteenDark(t Token) uint8 {
 		return 9
 	case Track:
 		return 13
+	case Fire:
+		return 9
+	case FireFaint:
+		return 1
 	}
 	return 15 // country borders, place names, the focus, a marker's label, a track's
 }
@@ -81,7 +85,7 @@ func sixteenLight(t Token) uint8 {
 		return 4
 	case RoadMajor, Track:
 		return 5
-	case Rail, Notice, Stale, Marker:
+	case Rail, Notice, Stale, Marker, Fire, FireFaint:
 		return 1
 	case BorderRegion, RoadMinor, Park, Runway, LabelRegion, Credit:
 		return 8

@@ -224,6 +224,12 @@ purpose, and the picture it does not ask to thin is the picture as it was.**
 | L-17.3 | Marks are one a value, each at most eight cells wide; else the grid is refused. | D-91 | `TestAGridsMarksAreChecked` |
 | L-17.4 | The legend keys radar's classes in the colours drawn: the class below the first floor not drawn, a grid of rain never faint. | D-91 | `TestTheRainLegendKeysTheColoursDrawn` |
 
+## L-18 — Fire (D-92: watchpost D-121)
+
+| # | Requirement | Source | Test |
+|---|---|---|---|
+| L-18.1 | Fire is a role of its own: `Fire` for a perimeter, an incident and a strong hotspot, `FireFaint` for a weaker hotspot, tokens `fire` and `fire.faint`; a feature in them is never an alert. | D-92 | `TestFireIsARoleOfItsOwn` |
+
 ## Metrics of success
 
 The brief's M1–M6 (D-6), with round 1's changes. **This table is the normative one.**
