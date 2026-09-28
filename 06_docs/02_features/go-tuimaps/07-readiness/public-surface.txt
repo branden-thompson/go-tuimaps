@@ -26,6 +26,7 @@ const Distinct
 const DropAlertLabel DropKind
 const DropPlaceName
 const Fahrenheit
+const Feet
 const FetchFailed
 const FetchRefused
 const Fire
@@ -55,6 +56,7 @@ const MarkerGlyph
 const MarkerRing
 const MaxFrames
 const MaxZoom
+const Metres
 const MetresPerSecond
 const Middle
 const MilesPerHour
@@ -130,6 +132,7 @@ func SharedCaches(*Shared) Option
 func TemperatureGrid(string, Grid, Unit, time.Time) Overlay
 func TokenNames() []string
 func WarningKinds() []WarningKind
+func WaveGrid(string, Grid, WaveUnit, time.Time) Overlay
 func WindGrid(string, Grid, []float64, SpeedUnit, time.Time) Overlay
 func WithSize(int, int) Option
 method Map.AddPlace(Place) (string, error)
@@ -260,4 +263,5 @@ type Type = overlay.Type
 type Unit = colour.Unit
 type Warning = fault.Warning
 type WarningKind = fault.WarningKind
+type WaveUnit = colour.WaveUnit
 type Where = describe.Where

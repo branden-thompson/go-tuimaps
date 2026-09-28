@@ -7,8 +7,40 @@ type Preset uint8
 const (
 	Temperature Preset = iota + 1
 	Radar
-	Wind // FR-8: a vector grid's speed (watchpost D-109)
+	Wind  // FR-8: a vector grid's speed (watchpost D-109)
+	Waves // L-20: wave height, drawn over the sea alone (watchpost D-126)
 )
+
+// WaveUnit is a unit of wave height (L-20).
+type WaveUnit uint8
+
+// The units of wave height.
+const (
+	Feet WaveUnit = iota + 1
+	Metres
+)
+
+// WaveBreaks are the wave preset's five breaks in a unit: calm, slight,
+// moderate, rough, very rough and high - round numbers in each unit, as the
+// wind's are (watchpost D-126).
+func WaveBreaks(u WaveUnit) []float64 {
+	if u == Metres {
+		return []float64{0.5, 1, 2, 3, 4}
+	}
+	return []float64{2, 4, 6, 9, 13}
+}
+
+// waveRamp is the wave preset's six classes, calmest first, for bands over
+// the sea (L-20): higher lighter on the dark ground, the "ice" scale
+// reversed; higher darker on the light ground, part of "mako". Both were
+// searched for against the checker as areas on each ground's water, at
+// truecolor and in the 256-colour palette, and pass it at both.
+func waveRamp(ground GroundKind) []RGB {
+	if ground == Light {
+		return []RGB{{78, 199, 173}, {53, 160, 169}, {53, 120, 160}, {60, 79, 139}, {54, 43, 86}, {25, 14, 26}}
+	}
+	return []RGB{{92, 42, 128}, {95, 76, 183}, {77, 119, 204}, {79, 169, 214}, {126, 212, 230}, {189, 247, 244}}
+}
 
 // SpeedUnit is a unit of wind speed.
 type SpeedUnit uint8
@@ -95,6 +127,8 @@ func Ramp(p Preset, ground GroundKind, depth Depth) ([]RGB, bool) {
 		return radarRamp(ground, depth), true
 	case Wind:
 		return windRamp(ground), true
+	case Waves:
+		return waveRamp(ground), true
 	}
 	return nil, false
 }
@@ -187,6 +221,9 @@ func rampDefault(t Token, ground GroundKind, depth Depth) (RGB, bool) {
 	case t >= Wind1 && t <= Wind6:
 		ramp, ok := Ramp(Wind, ground, depth)
 		return pick(ramp, int(t-Wind1), ok)
+	case t >= Wave1 && t <= Wave6:
+		ramp, ok := Ramp(Waves, ground, depth)
+		return pick(ramp, int(t-Wave1), ok)
 	}
 	return RGB{}, false
 }

@@ -49,3 +49,26 @@ func TestTheQuakesHaveTheirColoursOnBothGrounds(t *testing.T) {
 		}
 	}
 }
+
+// TestTheWaveScalePassesOnTheSea is L-20.2's scale: six classes that pass
+// the checker as areas on each ground's water - the waves are the sea's
+// alone - at truecolor and at 256 colours.
+func TestTheWaveScalePassesOnTheSea(t *testing.T) {
+	for _, ground := range []GroundKind{Dark, Light} {
+		water, _ := Palette{}.ResolveAt(WaterFill, ground, Truecolor)
+		for _, depth := range []Depth{Truecolor, Colours256} {
+			ramp, ok := Ramp(Waves, ground, depth)
+			if !ok || len(ramp) != 6 {
+				t.Fatalf("%v %v: the wave scale is %d classes", ground, depth, len(ramp))
+			}
+			if depth == Colours256 {
+				for i, c := range ramp {
+					_, ramp[i] = To256(c)
+				}
+			}
+			if f := Check(ramp, RampCheck{Ground: water, Depth: depth, Midpoint: -1}); len(f) != 0 {
+				t.Errorf("%v %v: %+v", ground, depth, f)
+			}
+		}
+	}
+}

@@ -238,6 +238,14 @@ purpose, and the picture it does not ask to thin is the picture as it was.**
 | L-19.2 | A radius in km or in dots, never both; in dots 1 to 48. | D-93 | `TestAScreenRingIsChecked` |
 | L-19.3 | Three quake roles by age, `quake.hour`, `quake.day`, `quake.older`, apart from fire's and the track's; never an alert. | D-93 | `TestTheQuakesColoursAreTokens`, `TestTheQuakesHaveTheirColoursOnBothGrounds` |
 
+## L-20 — Waves (D-94: watchpost D-125, D-126)
+
+| # | Requirement | Source | Test |
+|---|---|---|---|
+| L-20.1 | `WaveGrid`, feet or metres, is drawn over the sea alone. | D-94 | `TestWavesAreDrawnOverTheSeaAlone` |
+| L-20.2 | Six classes, calmest first, round in each unit, tokens `wave.1` to `wave.6`, passing the checker on each ground's water. | D-94 | `TestTheWaveLegendIsItsSixClasses`, `TestTheWaveScalePassesOnTheSea` |
+| L-20.3 | Feet and metres alone. | D-94 | `TestTheWavePresetIsCheckedAndNamed` |
+
 ## Metrics of success
 
 The brief's M1–M6 (D-6), with round 1's changes. **This table is the normative one.**

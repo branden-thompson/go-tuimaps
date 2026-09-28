@@ -168,6 +168,26 @@ func speedUnitName(u SpeedUnit) string {
 	return "mph"
 }
 
+// WaveUnit is a unit of wave height (L-20).
+type WaveUnit = colour.WaveUnit
+
+// The units of wave height.
+const (
+	Feet   = colour.Feet
+	Metres = colour.Metres
+)
+
+// WaveGrid is a wave-height field in one call (L-20): the preset supplies
+// the classes and their colours, and the field is drawn over the sea alone.
+func WaveGrid(id string, grid Grid, unit WaveUnit, validAt time.Time) Overlay {
+	name := "ft"
+	if unit == Metres {
+		name = "m"
+	}
+	grid.Type = Type{Preset: "waves", Unit: name}
+	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &grid}
+}
+
 // RadarImage is a radar image in one call: the host gives the picture, the
 // table that says what its colours mean, and when it was valid (D-45, D-69).
 func RadarImage(id string, image Image, validAt time.Time) Overlay {

@@ -73,8 +73,11 @@ const (
 	QuakeHour  = FireFaint + 1
 	QuakeDay   = QuakeHour + 1
 	QuakeOlder = QuakeDay + 1
+	// Wave1 to Wave6 are the wave preset's classes, calmest first (L-20).
+	Wave1 = QuakeOlder + 1
+	Wave6 = Wave1 + 5
 	// lastToken is the last token there is.
-	lastToken = QuakeOlder
+	lastToken = Wave6
 )
 
 // fixedNames are the names of the tokens before the numbered ramps.
@@ -119,6 +122,8 @@ func (t Token) Name() string {
 		return "quake.day"
 	case t == QuakeOlder:
 		return "quake.older"
+	case t >= Wave1 && t <= Wave6:
+		return "wave." + strconv.Itoa(int(t-Wave1)+1)
 	}
 	return "wind." + strconv.Itoa(int(t-Wind1)+1)
 }

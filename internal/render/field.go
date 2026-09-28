@@ -90,6 +90,8 @@ func presetOf(ink uint8) colour.Preset {
 		return colour.Temperature
 	case t >= colour.Wind1 && t <= colour.Wind6:
 		return colour.Wind
+	case t >= colour.Wave1 && t <= colour.Wave6:
+		return colour.Waves
 	}
 	return 0
 }
@@ -110,6 +112,8 @@ func classInk(preset uint8, class int8) uint8 {
 		return uint8(colour.Radar1) + uint8(min(int(class), 6)) - 1
 	case colour.Wind:
 		return uint8(colour.Wind1) + uint8(min(int(class), 5))
+	case colour.Waves:
+		return uint8(colour.Wave1) + uint8(min(int(class), 5))
 	}
 	return 0
 }
@@ -158,8 +162,8 @@ func (r *Renderer) underlays(in Input) {
 		}
 		for row := range g.rows {
 			for col := range g.cols {
-				if !in.FieldsOverWater && r.painter.Water(col, row) {
-					continue // temperature stops at the shore (D-32)
+				if offItsGround(f, in, r.painter.Water(col, row)) {
+					continue
 				}
 				lon, lat := (r.lons[2*col]+r.lons[2*col+1])/2, (r.lats[4*row+1]+r.lats[4*row+2])/2
 				if ink := classInk(f.Preset, fieldClass(f, lon, lat)); ink != 0 {
@@ -176,6 +180,16 @@ func (r *Renderer) underlays(in Input) {
 	for i := range in.Rasters {
 		r.image(in, &in.Rasters[i])
 	}
+}
+
+// offItsGround reports whether a field is not drawn over a cell: a field
+// stops at the shore (D-32) unless the host says otherwise; waves are the
+// sea's alone (L-20.1), whatever the host says.
+func offItsGround(f *scene.Field, in Input, water bool) bool {
+	if colour.Preset(f.Preset) == colour.Waves {
+		return !water
+	}
+	return water && !in.FieldsOverWater
 }
 
 // isRain reports whether a field is in radar's scale: A GRID OF RAIN IS
@@ -279,7 +293,7 @@ func (r *Renderer) contours(in Input, f *scene.Field) {
 	for y := range h - 1 {
 		for x := range w - 1 {
 			here := fieldClass(f, r.lons[x], r.lats[y])
-			if here < 0 || (!in.FieldsOverWater && r.painter.Water(x/2, y/4)) {
+			if here < 0 || offItsGround(f, in, r.painter.Water(x/2, y/4)) {
 				continue
 			}
 			east, south := fieldClass(f, r.lons[x+1], r.lats[y]), fieldClass(f, r.lons[x], r.lats[y+1])
