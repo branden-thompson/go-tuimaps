@@ -26,3 +26,26 @@ func TestFireHasItsColoursOnBothGrounds(t *testing.T) {
 		}
 	}
 }
+
+// TestTheQuakesHaveTheirColoursOnBothGrounds is L-19.3's defaults: the three
+// ages apart from each other, from fire's and from the track's, readable as
+// line work on either ground.
+func TestTheQuakesHaveTheirColoursOnBothGrounds(t *testing.T) {
+	for _, ground := range []GroundKind{Dark, Light} {
+		behind, _ := Palette{}.ResolveAt(Ground, ground, Truecolor)
+		seen := map[RGB]string{}
+		for _, tok := range []Token{QuakeHour, QuakeDay, QuakeOlder, Fire, FireFaint, Track} {
+			c, ok := Palette{}.ResolveAt(tok, ground, Truecolor)
+			if !ok {
+				t.Fatalf("ground %v: %s has no colour", ground, tok.Name())
+			}
+			if other, dup := seen[c]; dup {
+				t.Errorf("ground %v: %s shares %s's colour %v", ground, tok.Name(), other, c)
+			}
+			seen[c] = tok.Name()
+			if tok >= QuakeHour && Contrast(c, behind) < 3 {
+				t.Errorf("ground %v: %s %v is %.1f:1 on the ground; want 3:1", ground, tok.Name(), c, Contrast(c, behind))
+			}
+		}
+	}
+}

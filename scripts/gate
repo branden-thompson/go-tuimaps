@@ -144,6 +144,7 @@ log_run() {
   local rc="$1" result="FAILED" head tree overrides=""
   [ -f "$root/06_docs/gate-runs.md" ] || return 0
   [ "$rc" = 0 ] && result="green"
+  [ "$interrupted" = 1 ] && result="INTERRUPTED" # never green, whatever status the signal left
   head="$(git -C "$root" rev-parse --short HEAD 2>/dev/null || echo none)"
   tree="$(tested_tree || echo unknown)"
   [ -n "${GATE_FUZZ_LIMIT:-}" ] && overrides="GATE_FUZZ_LIMIT=$GATE_FUZZ_LIMIT"
@@ -153,6 +154,13 @@ log_run() {
 fuzz_legs="$(mktemp)" || exit 2
 cleanup() { [ "$made_work" = 1 ] && rm -f "$root/go.work" "$root/go.work.sum"; rm -f "$fuzz_legs"; return 0; }
 trap 'rc=$?; cleanup; log_run "$rc"; exit "$rc"' EXIT
+# A RUN STOPPED BY A SIGNAL IS INTERRUPTED, NEVER GREEN. Stopped with TERM, the
+# shell reached the EXIT trap with a status of 0 and the run was logged green
+# after five seconds - a line M6 would have counted as clean (L11.21).
+interrupted=0
+trap 'interrupted=1; exit 130' INT
+trap 'interrupted=1; exit 143' TERM
+trap 'interrupted=1; exit 129' HUP
 
 # --- the docs lane decides from the change, not from a promise ---------------
 # THE LANE IS A RULE THE SCRIPT HOLDS, NOT ONE ANYONE HAS TO REMEMBER. The

@@ -217,6 +217,9 @@ func (p *Painter) Shape(v project.View, s scene.Shape) error {
 	p.lines.Forcing(false)
 	if s.Label != "" && len(p.overlayLabels) < maxLabels {
 		l := Label{X: (box[0] + box[2]) / 2, Y: (box[1] + box[3]) / 2, Name: textsafe.Clean(s.Label), Ink: s.Role}
+		if s.Dots > 0 { // a ring's words begin beside it, not over it (L-19)
+			l.X, l.fromPoint = box[0]+s.Dots+2, true
+		}
 		if s.Word != "" {
 			l.Short, l.Overlay = textsafe.Clean(s.Word), s.Overlay
 		}
@@ -253,6 +256,10 @@ func (p *Painter) place(rings [][]scene.Vertex, x, y, side float64) ([4]int, boo
 // an area's edge as a line.
 func (p *Painter) mark(ring []Point, s scene.Shape) {
 	if len(ring) == 0 {
+		return
+	}
+	if s.Kind == scene.ShapePoint && s.Dots > 0 {
+		p.markCircle(ring[0], s.Dots, false, s.Role) // a ring fixed on the screen (L-19)
 		return
 	}
 	if s.Kind == scene.ShapePoint {

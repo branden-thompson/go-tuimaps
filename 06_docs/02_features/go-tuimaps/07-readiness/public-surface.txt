@@ -83,6 +83,9 @@ const Point
 const Polygon
 const ProviderIEM
 const ProviderMRMS
+const QuakeDay
+const QuakeHour
+const QuakeOlder
 const RailLayer
 const RampRuleBroken
 const Readable

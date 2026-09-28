@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -343,6 +344,44 @@ func TestEveryRunIsLogged(t *testing.T) {
 	last = last[strings.LastIndex(last, "\n")+1:]
 	if !strings.Contains(last, "FAILED") || strings.Contains(last, "green") {
 		t.Errorf("a failed run must be logged as FAILED: %q", last)
+	}
+}
+
+// TestAStoppedRunIsLoggedInterrupted: a run stopped by a signal - the
+// operator's ^C, a harness's TERM - is logged INTERRUPTED, never green. A
+// stopped run once logged "green" after five seconds, a line M6 would have
+// counted as clean (v0.2.0 D-31).
+func TestAStoppedRunIsLoggedInterrupted(t *testing.T) {
+	if testing.Short() {
+		t.Skip("runs the gate; skipped with -short")
+	}
+	root := plantTree(t, true)
+	writeFile(t, root, "06_docs/gate-runs.md", "# Gate runs\n\n| When (UTC) | Commit | Uncommitted | Mode | Result | Seconds |\n|---|---|---|---|---|---|\n")
+	writeFile(t, root, "slow_test.go", "package lib\n\nimport (\n\t\"testing\"\n\t\"time\"\n)\n\nfunc TestSlow(t *testing.T) { time.Sleep(15 * time.Second) }\n")
+	gate, err := filepath.Abs(filepath.Join("scripts", "gate"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.Command(gate, "--quick")
+	cmd.Env = append(os.Environ(), "GATE_ROOT="+root, "GOPROXY=off")
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(4 * time.Second)
+	if err := cmd.Process.Signal(syscall.SIGTERM); err != nil {
+		t.Fatal(err)
+	}
+	if err := cmd.Wait(); err == nil {
+		t.Error("a stopped gate exited 0")
+	}
+	log, err := os.ReadFile(filepath.Join(root, "06_docs", "gate-runs.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	last := strings.TrimSpace(string(log))
+	last = last[strings.LastIndex(last, "\n")+1:]
+	if !strings.Contains(last, "INTERRUPTED") || strings.Contains(last, "green") {
+		t.Errorf("a stopped run is logged %q; want INTERRUPTED", last)
 	}
 }
 

@@ -230,6 +230,14 @@ purpose, and the picture it does not ask to thin is the picture as it was.**
 |---|---|---|---|
 | L-18.1 | Fire is a role of its own: `Fire` for a perimeter, an incident and a strong hotspot, `FireFaint` for a weaker hotspot, tokens `fire` and `fire.faint`; a feature in them is never an alert. | D-92 | `TestFireIsARoleOfItsOwn` |
 
+## L-19 — Quakes as USGS draws them (D-93: watchpost D-122, D-123)
+
+| # | Requirement | Source | Test |
+|---|---|---|---|
+| L-19.1 | A circle with `RadiusDots` is a braille ring that size on the screen at every zoom, its label beside it. | D-93 | `TestAScreenRingKeepsItsSizeAtEveryZoom` |
+| L-19.2 | A radius in km or in dots, never both; in dots 1 to 48. | D-93 | `TestAScreenRingIsChecked` |
+| L-19.3 | Three quake roles by age, `quake.hour`, `quake.day`, `quake.older`, apart from fire's and the track's; never an alert. | D-93 | `TestTheQuakesColoursAreTokens`, `TestTheQuakesHaveTheirColoursOnBothGrounds` |
+
 ## Metrics of success
 
 The brief's M1–M6 (D-6), with round 1's changes. **This table is the normative one.**

@@ -107,8 +107,11 @@ const (
 	AlertMinor    = colour.AlertMinorOutline
 	AlertUnknown  = colour.AlertUnknownOutline
 	Track         = colour.Track
-	Fire          = colour.Fire      // a fire's perimeter, its incident, a strong hotspot (L-18)
-	FireFaint     = colour.FireFaint // a weaker hotspot
+	Fire          = colour.Fire       // a fire's perimeter, its incident, a strong hotspot (L-18)
+	FireFaint     = colour.FireFaint  // a weaker hotspot
+	QuakeHour     = colour.QuakeHour  // a quake of the past hour (L-19)
+	QuakeDay      = colour.QuakeDay   // of the past day
+	QuakeOlder    = colour.QuakeOlder // older
 	Low           = colour.Low
 	Middle        = colour.Middle
 	High          = colour.High

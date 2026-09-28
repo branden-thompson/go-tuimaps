@@ -53,6 +53,12 @@ func darkFurniture(t Token) (RGB, bool) {
 		return RGB{255, 80, 40}, true
 	case FireFaint:
 		return RGB{205, 120, 80}, true
+	case QuakeHour:
+		return RGB{255, 70, 130}, true
+	case QuakeDay:
+		return RGB{255, 175, 40}, true
+	case QuakeOlder:
+		return RGB{235, 225, 110}, true
 	}
 	return RGB{}, false
 }
@@ -112,6 +118,12 @@ func lightFurniture(t Token) (RGB, bool) {
 		return RGB{190, 30, 0}, true
 	case FireFaint:
 		return RGB{160, 90, 50}, true
+	case QuakeHour:
+		return RGB{190, 0, 80}, true
+	case QuakeDay:
+		return RGB{170, 95, 0}, true
+	case QuakeOlder:
+		return RGB{120, 110, 0}, true
 	}
 	return RGB{}, false
 }

@@ -52,8 +52,13 @@ type Feature struct {
 	Rings    [][]project.LonLat
 	Centre   project.LonLat
 	RadiusKm float64
-	Role     colour.Token // the token it is drawn in; for an alert, its outline's
-	Label    string
+	// RadiusDots makes a circle a ring fixed on the screen (L-19): its
+	// radius in braille dots, the same at every zoom - a quake's, sized by
+	// its magnitude as USGS's map sizes it. A circle has one radius or the
+	// other, never both.
+	RadiusDots int
+	Role       colour.Token // the token it is drawn in; for an alert, its outline's
+	Label      string
 	// Severity is an alert's, as data; zero means the one its role implies
 	// (L-13.9). Valid and Expires are its times, zero when not given.
 	Severity       Severity
@@ -260,6 +265,10 @@ func checkRing(ring []project.LonLat) error {
 	return nil
 }
 
+// MaxRingDots is the largest ring on the screen, in braille dots: 24 cells
+// across, a quake of magnitude 8 or more.
+const MaxRingDots = 48
+
 // checkFeature validates one feature and counts its vertices.
 func checkFeature(f Feature) (int, error) {
 	if f.Kind < Point || f.Kind > Circle {
@@ -277,6 +286,13 @@ func checkFeature(f Feature) (int, error) {
 	if f.Kind == Circle && len(f.Rings) != 0 {
 		return 0, refused(fault.InvalidCoordinates, textsafe.Const("a circle has a centre and a radius and no rings, and this one has rings as well"),
 			textsafe.Const("hand a circle in with its centre and radius alone, or hand the rings in as a polygon"))
+	}
+	if f.Kind == Circle && f.RadiusDots != 0 {
+		if f.RadiusKm != 0 || f.RadiusDots < 1 || f.RadiusDots > MaxRingDots {
+			return 0, refused(fault.InvalidCoordinates, textsafe.Const("a ring's radius on the screen is not from 1 to 48 dots, or it has a radius in kilometres as well"),
+				textsafe.Const("give a circle its radius in kilometres or in dots, one of them; in dots, from 1 to 48"))
+		}
+		return 1, checkRing([]project.LonLat{f.Centre})
 	}
 	if f.Kind == Circle {
 		if !(f.RadiusKm > 0 && f.RadiusKm <= 20040) {

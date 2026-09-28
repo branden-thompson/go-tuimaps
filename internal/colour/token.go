@@ -68,8 +68,13 @@ const (
 	// incident and a strong hotspot; a weaker hotspot. Never an alert.
 	Fire      = Wind6 + 1
 	FireFaint = Fire + 1
+	// QuakeHour, QuakeDay and QuakeOlder are a quake's ring by its age, as
+	// USGS colours it (watchpost D-123): the past hour, the past day, older.
+	QuakeHour  = FireFaint + 1
+	QuakeDay   = QuakeHour + 1
+	QuakeOlder = QuakeDay + 1
 	// lastToken is the last token there is.
-	lastToken = FireFaint
+	lastToken = QuakeOlder
 )
 
 // fixedNames are the names of the tokens before the numbered ramps.
@@ -108,6 +113,12 @@ func (t Token) Name() string {
 		return "fire"
 	case t == FireFaint:
 		return "fire.faint"
+	case t == QuakeHour:
+		return "quake.hour"
+	case t == QuakeDay:
+		return "quake.day"
+	case t == QuakeOlder:
+		return "quake.older"
 	}
 	return "wind." + strconv.Itoa(int(t-Wind1)+1)
 }
