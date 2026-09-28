@@ -30,6 +30,10 @@ type Grid struct {
 	// value; NaN where there is none. The values are the speeds. It is drawn
 	// as arrows (L-16), never as bands.
 	From []float64
+	// Gusts are a vector grid's gusts (L-24, watchpost D-136), one a value in
+	// the speeds' unit; NaN where none is to be said. An arrow's label reads
+	// "15G30" where one is given. The host chooses which are worth saying.
+	Gusts []float64
 	// Marks are the host's text, one a value, "" where there is none: each
 	// written on the map at the arrows' spacing, on the points an arrow leaves
 	// unlabelled (L-17.2) - a day's total over its heaviest rain. At most
@@ -56,6 +60,16 @@ func checkGrid(g *Grid) (Kind, error) {
 	if g.From != nil && len(g.From) != len(g.Values) {
 		return Kind{}, refused(fault.SizeMismatch, textsafe.Const("its directions are not one a value"),
 			textsafe.Const("give From exactly as many directions as the grid has values, NaN where there is none"))
+	}
+	if g.Gusts != nil && (g.From == nil || len(g.Gusts) != len(g.Values)) {
+		return Kind{}, refused(fault.SizeMismatch, textsafe.Const("its gusts are not one a value of a wind grid"),
+			textsafe.Const("give Gusts only with From, exactly as many as the grid has values, NaN where there is none"))
+	}
+	for _, v := range g.Gusts {
+		if !math.IsNaN(v) && !(v >= 0) {
+			return Kind{}, refused(fault.SizeMismatch, textsafe.Const("one of its gusts is below zero"),
+				textsafe.Const("give each gust in the speeds' unit, or NaN where there is none"))
+		}
 	}
 	if g.Marks != nil && len(g.Marks) != len(g.Values) {
 		return Kind{}, refused(fault.SizeMismatch, textsafe.Const("its marks are not one a value"),
@@ -120,6 +134,7 @@ func classify(g *Grid, kind Kind) scene.Field {
 		Labels: bandLabels(kind.Breaks), Lines: g.Lines}
 	if g.From != nil { // a vector grid keeps its speeds and directions: its arrows are drawn from them (L-16)
 		field.From, field.Speeds = append([]float64(nil), g.From...), append([]float64(nil), g.Values...)
+		field.Gusts = append([]float64(nil), g.Gusts...) // L-24: said beside the speed
 	}
 	if g.Marks != nil { // cleaned once, here: the host's text is never drawn as it came (L-17.2)
 		field.Marks = make([]string, len(g.Marks))

@@ -265,6 +265,13 @@ purpose, and the picture it does not ask to thin is the picture as it was.**
 |---|---|---|---|
 | L-23.1 | A frame's words claim cells in this order: the host's places; an alert's label and a marker-role overlay's; the alerts' digits; the basemap's names within their budget; every other overlay's label; the contours' values. | D-97 | `TestThePlaceNamesComeBeforeTheData`, `TestAFieldsContoursCarryTheirValues`, `TestOverlayLabelBeforeBasemap` |
 
+## L-24 — Gusts on the arrows (D-98: watchpost D-136)
+
+| # | Requirement | Source | Test |
+|---|---|---|---|
+| L-24.1 | A wind grid's `Gusts`, one a value, NaN where none: an arrow's label reads "15G30" where one is given, the speed alone where not. | D-98 | `TestAGustIsSaidBesideItsSpeed` |
+| L-24.2 | Gusts only with `From`, one a value, none below zero, or the grid is refused. | D-98 | `TestAWindGridsGustsAreChecked` |
+
 ## Metrics of success
 
 The brief's M1–M6 (D-6), with round 1's changes. **This table is the normative one.**

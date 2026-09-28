@@ -11,7 +11,8 @@ import (
 
 // A vector field is drawn as arrows (L-16, FR-8; watchpost D-109): braille
 // strokes on an even spacing, each pointing where its wind blows TO, its
-// length and its colour by speed, every other one labelled with its speed.
+// length and its colour by speed, every other one labelled with its speed -
+// and its gust, "15G30", where the host gives one (L-24).
 // There is no fill, so it lies over radar and over a field's faint bands.
 const (
 	arrowStepX   = 16 // dots between arrows across: eight cells
@@ -82,8 +83,11 @@ func (r *Renderer) arrow(f *scene.Field, i, x, y int, labelled bool) {
 		r.stroke(tipX, tipY, tipX+math.Sin(back)*arrowHead, tipY-math.Cos(back)*arrowHead, ink)
 	}
 	if labelled && len(r.painter.bandLabels) < maxLabels {
-		r.painter.bandLabels = append(r.painter.bandLabels, Label{X: x + 3, Y: y + 2,
-			Name: textsafe.Clean(strconv.Itoa(int(math.Round(speed)))), Ink: ink})
+		words := strconv.Itoa(int(math.Round(speed)))
+		if i < len(f.Gusts) && !math.IsNaN(f.Gusts[i]) {
+			words += "G" + strconv.Itoa(int(math.Round(f.Gusts[i]))) // "15G30", as aviation says it (L-24)
+		}
+		r.painter.bandLabels = append(r.painter.bandLabels, Label{X: x + 3, Y: y + 2, Name: textsafe.Clean(words), Ink: ink})
 	}
 }
 

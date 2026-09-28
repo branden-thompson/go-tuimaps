@@ -92,3 +92,48 @@ func TestAWindGridsDirectionsAreChecked(t *testing.T) {
 		t.Errorf("a missing direction was refused: %v", err)
 	}
 }
+
+// TestAGustIsSaidBesideItsSpeed is L-24.1 (watchpost D-136): a wind grid's
+// gusts, one a value, are said on an arrow's label as aviation says them -
+// "15G30" - where one is given, and the speed alone where it is NaN.
+func TestAGustIsSaidBesideItsSpeed(t *testing.T) {
+	m := reportMap(t)
+	m.ColourDepth(tuimaps.Truecolor)
+	g, from := westerly()
+	for range g.Values {
+		g.Gusts = append(g.Gusts, 30)
+	}
+	mustSet(t, m, tuimaps.WindGrid("wind", g, from, tuimaps.MilesPerHour, noon))
+	settle(t, m)
+	if frame := colours.ReplaceAllString(momentFrame(t, m, noon), ""); !strings.Contains(frame, "15G30") {
+		t.Errorf("no arrow says its gust:\n%s", frame)
+	}
+	for i := range g.Gusts {
+		g.Gusts[i] = math.NaN()
+	}
+	mustSet(t, m, tuimaps.WindGrid("wind", g, from, tuimaps.MilesPerHour, noon))
+	settle(t, m)
+	if frame := colours.ReplaceAllString(momentFrame(t, m, noon), ""); strings.Contains(frame, "15G") || !strings.Contains(frame, "15") {
+		t.Errorf("with no gust given, an arrow says one, or no speed:\n%s", frame)
+	}
+}
+
+// TestAWindGridsGustsAreChecked is L-24.2: gusts belong to a wind grid, one a
+// value, each a speed or NaN.
+func TestAWindGridsGustsAreChecked(t *testing.T) {
+	m := reportMap(t)
+	g, from := westerly()
+	g.Gusts = []float64{30, 30}
+	if _, err := m.Set(tuimaps.WindGrid("short", g, from, tuimaps.MilesPerHour, noon)); !isKind(err, fault.SizeMismatch) {
+		t.Errorf("too few gusts: %v; want refused", err)
+	}
+	g.Gusts = make([]float64, len(g.Values))
+	g.Gusts[0] = -5
+	if _, err := m.Set(tuimaps.WindGrid("below", g, from, tuimaps.MilesPerHour, noon)); !isKind(err, fault.SizeMismatch) {
+		t.Errorf("a gust of -5: %v; want refused", err)
+	}
+	g.Gusts[0] = 30
+	if _, err := m.Set(tuimaps.TemperatureGrid("temp", g, tuimaps.Fahrenheit, noon)); !isKind(err, fault.SizeMismatch) {
+		t.Errorf("gusts on a temperature grid: %v; want refused", err)
+	}
+}

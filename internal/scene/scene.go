@@ -152,6 +152,9 @@ type Field struct {
 	// From and Speeds make it a vector field (FR-8): each cell's direction,
 	// where the wind blows from, and its speed. Nil for a scalar field.
 	From, Speeds []float64
+	// Gusts are a vector field's gusts, one a cell, NaN where none is said
+	// (L-24); empty when it has none.
+	Gusts []float64
 	// Marks are the host's text, one a cell, cleaned on hand-in; empty
 	// where there is none (L-17.2).
 	Marks []string
