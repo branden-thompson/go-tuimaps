@@ -6,6 +6,7 @@ const AlertUnknown
 const Away
 const BadCurrency
 const BorderLayer
+const Buoy
 const CacheRefused
 const CacheRootReadable
 const CacheUnderNeed
@@ -106,6 +107,7 @@ const Sharpening
 const SizeMismatch
 const StaleOverlay
 const TableFallback
+const Tide
 const TileFailed
 const Track
 const Truecolor

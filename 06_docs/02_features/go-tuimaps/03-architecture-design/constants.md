@@ -112,6 +112,7 @@ Stable names; adding one is a minor version. A host sets any subset; the rest ke
 | Fire (v0.2.0, L-18) | `fire` · `fire.faint` — a fire's perimeter, its incident and a strong hotspot; a weaker hotspot. Never an alert |
 | Quakes (v0.2.0, L-19) | `quake.hour` · `quake.day` · `quake.older` — a quake's ring by its age, as USGS colours it |
 | Waves (v0.2.0, L-20) | `wave.1` to `wave.6` — calmest first; the classes of a wave grid, drawn over the sea alone |
+| The sea's stations (v0.2.0, L-21) | `buoy` · `tide` — a buoy's marker and words; a tide station's. Never an alert |
 
 The sixteen-colour depth has its own small set of values for the basemap tokens, chosen from the sixteen by hand (specimen 23, D-79).
 

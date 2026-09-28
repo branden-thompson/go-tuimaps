@@ -72,3 +72,26 @@ func TestTheWaveScalePassesOnTheSea(t *testing.T) {
 		}
 	}
 }
+
+// TestBuoysAndTidesHaveTheirColoursOnBothGrounds is L-21.1's defaults: apart
+// from each other, from the waves', fire's, the quakes' and the track's, and
+// readable as line work on either ground's water - where they stand.
+func TestBuoysAndTidesHaveTheirColoursOnBothGrounds(t *testing.T) {
+	for _, ground := range []GroundKind{Dark, Light} {
+		water, _ := Palette{}.ResolveAt(WaterFill, ground, Truecolor)
+		seen := map[RGB]string{}
+		for _, tok := range []Token{Buoy, Tide, Fire, FireFaint, QuakeHour, QuakeDay, QuakeOlder, Track, Wave1, Wave1 + 1, Wave1 + 2, Wave1 + 3, Wave1 + 4, Wave6} {
+			c, ok := Palette{}.ResolveAt(tok, ground, Truecolor)
+			if !ok {
+				t.Fatalf("ground %v: %s has no colour", ground, tok.Name())
+			}
+			if other, dup := seen[c]; dup {
+				t.Errorf("ground %v: %s shares %s's colour %v", ground, tok.Name(), other, c)
+			}
+			seen[c] = tok.Name()
+			if (tok == Buoy || tok == Tide) && Contrast(c, water) < 3 {
+				t.Errorf("ground %v: %s %v is %.1f:1 on the water; want 3:1", ground, tok.Name(), c, Contrast(c, water))
+			}
+		}
+	}
+}

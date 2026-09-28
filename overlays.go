@@ -112,6 +112,8 @@ const (
 	QuakeHour     = colour.QuakeHour  // a quake of the past hour (L-19)
 	QuakeDay      = colour.QuakeDay   // of the past day
 	QuakeOlder    = colour.QuakeOlder // older
+	Buoy          = colour.Buoy       // a buoy's marker and words (L-21)
+	Tide          = colour.Tide       // a tide station's
 	Low           = colour.Low
 	Middle        = colour.Middle
 	High          = colour.High

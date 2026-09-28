@@ -246,6 +246,12 @@ purpose, and the picture it does not ask to thin is the picture as it was.**
 | L-20.2 | Six classes, calmest first, round in each unit, tokens `wave.1` to `wave.6`, passing the checker on each ground's water. | D-94 | `TestTheWaveLegendIsItsSixClasses`, `TestTheWaveScalePassesOnTheSea` |
 | L-20.3 | Feet and metres alone. | D-94 | `TestTheWavePresetIsCheckedAndNamed` |
 
+## L-21 — The sea's stations (D-95: watchpost D-127, D-128)
+
+| # | Requirement | Source | Test |
+|---|---|---|---|
+| L-21.1 | `Buoy` and `Tide`, tokens `buoy` and `tide`, apart from every other feature role and the waves' scale, readable on each ground's water; never an alert. | D-95 | `TestBuoysAndTidesAreRolesOfTheirOwn`, `TestBuoysAndTidesHaveTheirColoursOnBothGrounds` |
+
 ## Metrics of success
 
 The brief's M1–M6 (D-6), with round 1's changes. **This table is the normative one.**

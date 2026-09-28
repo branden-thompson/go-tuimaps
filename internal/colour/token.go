@@ -76,8 +76,12 @@ const (
 	// Wave1 to Wave6 are the wave preset's classes, calmest first (L-20).
 	Wave1 = QuakeOlder + 1
 	Wave6 = Wave1 + 5
+	// Buoy and Tide are the sea's stations (L-21, watchpost D-127, D-128): a
+	// buoy's marker and words, a tide station's. Never an alert.
+	Buoy = Wave6 + 1
+	Tide = Buoy + 1
 	// lastToken is the last token there is.
-	lastToken = Wave6
+	lastToken = Tide
 )
 
 // fixedNames are the names of the tokens before the numbered ramps.
@@ -124,6 +128,10 @@ func (t Token) Name() string {
 		return "quake.older"
 	case t >= Wave1 && t <= Wave6:
 		return "wave." + strconv.Itoa(int(t-Wave1)+1)
+	case t == Buoy:
+		return "buoy"
+	case t == Tide:
+		return "tide"
 	}
 	return "wind." + strconv.Itoa(int(t-Wind1)+1)
 }
