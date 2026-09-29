@@ -136,6 +136,12 @@ func (p Palette) Warnings(ground GroundKind, depth Depth) []fault.Warning {
 	if p.sets(Radar1, Radar6) {
 		report(textsafe.Const("radar"), len(Check(p.effective(Radar1, Radar6, 1, ground, depth), RampCheck{Ground: under, Depth: depth, Midpoint: -1})))
 	}
+	if p.sets(UV1, UV5) {
+		report(textsafe.Const("uv"), len(Check(p.effective(UV1, UV5, 1, ground, depth), RampCheck{Ground: under, Depth: depth, Midpoint: -1})))
+	}
+	if p.sets(AQI1, AQI6) {
+		report(textsafe.Const("aqi"), len(Check(p.effective(AQI1, AQI6, 1, ground, depth), RampCheck{Ground: under, Depth: depth, Midpoint: -1})))
+	}
 	if p.sets(Wave1, Wave6) {
 		report(textsafe.Const("waves"), len(Check(p.effective(Wave1, Wave6, 1, ground, depth), RampCheck{Ground: under, Depth: depth, Midpoint: -1})))
 	}

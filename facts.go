@@ -196,6 +196,10 @@ func rampToken(preset colour.Preset) (Token, bool) {
 		return colour.Wind1, true
 	case colour.Waves:
 		return colour.Wave1, true
+	case colour.UV:
+		return colour.UV1, true
+	case colour.AirQuality:
+		return colour.AQI1, true
 	}
 	return 0, false
 }

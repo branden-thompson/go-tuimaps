@@ -272,6 +272,14 @@ purpose, and the picture it does not ask to thin is the picture as it was.**
 | L-24.1 | A wind grid's `Gusts`, one a value, NaN where none: an arrow's label reads "15G30" where one is given, the speed alone where not. | D-98 | `TestAGustIsSaidBesideItsSpeed` |
 | L-24.2 | Gusts only with `From`, one a value, none below zero, or the grid is refused. | D-98 | `TestAWindGridsGustsAreChecked` |
 
+## L-25 — UV and air quality (D-99: watchpost D-137 to D-140)
+
+| # | Requirement | Source | Test |
+|---|---|---|---|
+| L-25.1 | `uv` and `aqi` presets, their categories' breaks, tokens `uv.1`-`uv.5`, `aqi.1`-`aqi.6`, passing the checker on both grounds at truecolor and 256. | D-99 | `TestUVAndAirQualityAreTheirScales`, `TestTheUVAndAirQualityScalesPass` |
+| L-25.2 | Each preset in its one unit, or refused. | D-99 | `TestUVAndAirQualityAreChecked` |
+| L-25.3 | `AirQualityRole`: a reading's category as a feature's role; its words in the markers' ink. | D-99 | `TestAMonitorIsDrawnInItsCategory` |
+
 ## Metrics of success
 
 The brief's M1–M6 (D-6), with round 1's changes. **This table is the normative one.**

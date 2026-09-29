@@ -190,6 +190,33 @@ func WaveGrid(id string, grid Grid, unit WaveUnit, validAt time.Time) Overlay {
 	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &grid}
 }
 
+// UVGrid is a UV index field in one call (L-25): the preset supplies its
+// five categories and their colours.
+func UVGrid(id string, grid Grid, validAt time.Time) Overlay {
+	grid.Type = Type{Preset: "uv", Unit: "index"}
+	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &grid}
+}
+
+// AirQualityGrid is a US AQI field in one call (L-25): the preset supplies
+// its six categories and their colours.
+func AirQualityGrid(id string, grid Grid, validAt time.Time) Overlay {
+	grid.Type = Type{Preset: "aqi", Unit: "AQI"}
+	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &grid}
+}
+
+// AirQualityRole is the role a feature is drawn in to show an AQI - a
+// monitor's reading - in its category's colour, as the AQI preset draws it
+// (L-25). Its words are drawn in the markers' ink, which reads on the ground.
+func AirQualityRole(aqi float64) Token {
+	c := 0
+	for _, b := range colour.AirQualityBreaks() {
+		if aqi >= b {
+			c++
+		}
+	}
+	return colour.AQI1 + Token(c)
+}
+
 // RadarImage is a radar image in one call: the host gives the picture, the
 // table that says what its colours mean, and when it was valid (D-45, D-69).
 func RadarImage(id string, image Image, validAt time.Time) Overlay {

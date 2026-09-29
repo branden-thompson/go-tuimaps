@@ -216,7 +216,11 @@ func (p *Painter) Shape(v project.View, s scene.Shape) error {
 	}
 	p.lines.Forcing(false)
 	if s.Label != "" && len(p.overlayLabels) < maxLabels {
-		l := Label{X: (box[0] + box[2]) / 2, Y: (box[1] + box[3]) / 2, Name: textsafe.Clean(s.Label), Ink: s.Role}
+		ink := s.Role
+		if colour.ScaleClass(colour.Token(ink)) {
+			ink = uint8(colour.MarkerLabel) // a scale's colour marks the point; its words need a colour that reads (L-25)
+		}
+		l := Label{X: (box[0] + box[2]) / 2, Y: (box[1] + box[3]) / 2, Name: textsafe.Clean(s.Label), Ink: ink}
 		if s.Dots > 0 { // a ring's words begin beside it, not over it (L-19)
 			l.X, l.fromPoint = box[0]+s.Dots+2, true
 		}

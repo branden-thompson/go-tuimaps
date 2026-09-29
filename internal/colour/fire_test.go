@@ -95,3 +95,27 @@ func TestBuoysAndTidesHaveTheirColoursOnBothGrounds(t *testing.T) {
 		}
 	}
 }
+
+// TestTheUVAndAirQualityScalesPass is L-25's scales (watchpost D-140): the
+// official scales' hues in their order, each running pale to dark, pass the
+// checker on each ground at truecolor and at 256 colours - colour-vision
+// safe, where the official colours are not.
+func TestTheUVAndAirQualityScalesPass(t *testing.T) {
+	for _, p := range []struct {
+		preset  Preset
+		classes int
+	}{{UV, 5}, {AirQuality, 6}} {
+		for _, ground := range []GroundKind{Dark, Light} {
+			under, _ := Palette{}.ResolveAt(Ground, ground, Truecolor)
+			for _, depth := range []Depth{Truecolor, Colours256} {
+				ramp, ok := Ramp(p.preset, ground, depth)
+				if !ok || len(ramp) != p.classes {
+					t.Fatalf("%v %v %v: %d classes", p.preset, ground, depth, len(ramp))
+				}
+				if f := Check(ramp, RampCheck{Ground: under, Depth: depth, Midpoint: -1}); len(f) != 0 {
+					t.Errorf("%v %v %v: %+v", p.preset, ground, depth, f)
+				}
+			}
+		}
+	}
+}

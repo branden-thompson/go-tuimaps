@@ -113,6 +113,8 @@ Stable names; adding one is a minor version. A host sets any subset; the rest ke
 | Quakes (v0.2.0, L-19) | `quake.hour` · `quake.day` · `quake.older` — a quake's ring by its age, as USGS colours it |
 | Waves (v0.2.0, L-20) | `wave.1` to `wave.6` — calmest first; the classes of a wave grid, drawn over the sea alone |
 | The sea's stations (v0.2.0, L-21) | `buoy` · `tide` — a buoy's marker and words; a tide station's. Never an alert |
+| UV (v0.2.0, L-25) | `uv.1` to `uv.5` — Low to Extreme, broken at 3, 6, 8 and 11; the official scale's hues, lightness set to pass the checker (watchpost D-140) |
+| Air quality (v0.2.0, L-25) | `aqi.1` to `aqi.6` — the US AQI's Good to Hazardous, broken at 51, 101, 151, 201 and 301; the EPA's hues, lightness set to pass the checker; a monitor's marker in its category (`AirQualityRole`) |
 
 The sixteen-colour depth has its own small set of values for the basemap tokens, chosen from the sixteen by hand (specimen 23, D-79).
 

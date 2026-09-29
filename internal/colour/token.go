@@ -80,8 +80,14 @@ const (
 	// buoy's marker and words, a tide station's. Never an alert.
 	Buoy = Wave6 + 1
 	Tide = Buoy + 1
+	// UV1 to UV5 are the UV preset's classes, AQI1 to AQI6 the US AQI's,
+	// lowest first (L-25, watchpost D-137 to D-140).
+	UV1  = Tide + 1
+	UV5  = UV1 + 4
+	AQI1 = UV5 + 1
+	AQI6 = AQI1 + 5
 	// lastToken is the last token there is.
-	lastToken = Tide
+	lastToken = AQI6
 )
 
 // fixedNames are the names of the tokens before the numbered ramps.
@@ -132,8 +138,18 @@ func (t Token) Name() string {
 		return "buoy"
 	case t == Tide:
 		return "tide"
+	case t >= UV1 && t <= UV5:
+		return "uv." + strconv.Itoa(int(t-UV1)+1)
+	case t >= AQI1 && t <= AQI6:
+		return "aqi." + strconv.Itoa(int(t-AQI1)+1)
 	}
 	return "wind." + strconv.Itoa(int(t-Wind1)+1)
+}
+
+// ScaleClass reports whether a token is one of a preset's classes: drawn in
+// the scale's colour, never a word's (L-25).
+func ScaleClass(t Token) bool {
+	return (t >= Radar1 && t <= High) || (t >= Wind1 && t <= Wind6) || (t >= Wave1 && t <= Wave6) || (t >= UV1 && t <= AQI6)
 }
 
 // Tokens lists every token, in the documented order.

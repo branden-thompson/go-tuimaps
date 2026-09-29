@@ -120,6 +120,8 @@ const UnsupportedTile
 const VisionSafe
 const WaterLayer
 const WebMercator
+func AirQualityGrid(string, Grid, time.Time) Overlay
+func AirQualityRole(float64) Token
 func CheckRamp([]RGB, RampCheck) []Finding
 func CheckedDialer() Dialer
 func Embed(func(z uint8, x, y uint32) ([]byte, bool), uint8) Option
@@ -133,6 +135,7 @@ func Rings([]R) [][]LonLat
 func SharedCaches(*Shared) Option
 func TemperatureGrid(string, Grid, Unit, time.Time) Overlay
 func TokenNames() []string
+func UVGrid(string, Grid, time.Time) Overlay
 func WarningKinds() []WarningKind
 func WaveGrid(string, Grid, WaveUnit, time.Time) Overlay
 func WindGrid(string, Grid, []float64, SpeedUnit, time.Time) Overlay

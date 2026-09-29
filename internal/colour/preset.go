@@ -7,9 +7,34 @@ type Preset uint8
 const (
 	Temperature Preset = iota + 1
 	Radar
-	Wind  // FR-8: a vector grid's speed (watchpost D-109)
-	Waves // L-20: wave height, drawn over the sea alone (watchpost D-126)
+	Wind       // FR-8: a vector grid's speed (watchpost D-109)
+	Waves      // L-20: wave height, drawn over the sea alone (watchpost D-126)
+	UV         // L-25: the UV index (watchpost D-137)
+	AirQuality // L-25: the US AQI (watchpost D-139)
 )
+
+// UVBreaks are the UV index's categories' floors: Low under 3, Moderate 3
+// to 6, High 6 to 8, Very High 8 to 11, Extreme 11 and over (watchpost
+// D-137).
+func UVBreaks() []float64 { return []float64{3, 6, 8, 11} }
+
+// AirQualityBreaks are the US AQI's categories' floors: Good to 50,
+// Moderate 51-100, Unhealthy for Sensitive Groups 101-150, Unhealthy
+// 151-200, Very Unhealthy 201-300, Hazardous 301 and over (watchpost D-139).
+func AirQualityBreaks() []float64 { return []float64{51, 101, 151, 201, 301} }
+
+// uvRamp and airQualityRamp are the official scales' hues in their order -
+// green, yellow, orange, red, and UV's violet or the AQI's purple and
+// maroon - their lightness set so each runs pale to dark and passes the
+// checker, colour-vision safe, on both grounds at truecolor and 256 colours
+// (watchpost D-140: "close", and to our rules). Searched for, not converted.
+func uvRamp() []RGB {
+	return []RGB{{156, 255, 122}, {250, 229, 0}, {240, 100, 0}, {229, 0, 19}, {91, 0, 219}}
+}
+
+func airQualityRamp() []RGB {
+	return []RGB{{112, 255, 112}, {235, 227, 0}, {224, 112, 0}, {214, 0, 0}, {170, 0, 204}, {194, 0, 65}}
+}
 
 // WaveUnit is a unit of wave height (L-20).
 type WaveUnit uint8
@@ -129,6 +154,10 @@ func Ramp(p Preset, ground GroundKind, depth Depth) ([]RGB, bool) {
 		return windRamp(ground), true
 	case Waves:
 		return waveRamp(ground), true
+	case UV:
+		return uvRamp(), true
+	case AirQuality:
+		return airQualityRamp(), true
 	}
 	return nil, false
 }
@@ -224,6 +253,12 @@ func rampDefault(t Token, ground GroundKind, depth Depth) (RGB, bool) {
 	case t >= Wave1 && t <= Wave6:
 		ramp, ok := Ramp(Waves, ground, depth)
 		return pick(ramp, int(t-Wave1), ok)
+	case t >= UV1 && t <= UV5:
+		ramp, ok := Ramp(UV, ground, depth)
+		return pick(ramp, int(t-UV1), ok)
+	case t >= AQI1 && t <= AQI6:
+		ramp, ok := Ramp(AirQuality, ground, depth)
+		return pick(ramp, int(t-AQI1), ok)
 	}
 	return RGB{}, false
 }

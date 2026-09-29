@@ -364,7 +364,7 @@ func (m *Map) searchBlendsLocked(depth Depth) {
 }
 
 // presetNames are the image presets by name.
-var presetNames = map[colour.Preset]string{colour.Temperature: "temperature", colour.Radar: "radar", colour.Wind: "wind", colour.Waves: "waves"}
+var presetNames = map[colour.Preset]string{colour.Temperature: "temperature", colour.Radar: "radar", colour.Wind: "wind", colour.Waves: "waves", colour.UV: "uv", colour.AirQuality: "aqi"}
 
 // alertNames are the alert severities, extreme first, as the tints are ordered.
 var alertNames = [5]string{"extreme", "severe", "moderate", "minor", "unknown"}

@@ -92,6 +92,10 @@ func presetOf(ink uint8) colour.Preset {
 		return colour.Wind
 	case t >= colour.Wave1 && t <= colour.Wave6:
 		return colour.Waves
+	case t >= colour.UV1 && t <= colour.UV5:
+		return colour.UV
+	case t >= colour.AQI1 && t <= colour.AQI6:
+		return colour.AirQuality
 	}
 	return 0
 }
@@ -114,6 +118,10 @@ func classInk(preset uint8, class int8) uint8 {
 		return uint8(colour.Wind1) + uint8(min(int(class), 5))
 	case colour.Waves:
 		return uint8(colour.Wave1) + uint8(min(int(class), 5))
+	case colour.UV:
+		return uint8(colour.UV1) + uint8(min(int(class), 4))
+	case colour.AirQuality:
+		return uint8(colour.AQI1) + uint8(min(int(class), 5))
 	}
 	return 0
 }
