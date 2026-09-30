@@ -92,3 +92,15 @@ func TestAMonitorIsDrawnInItsCategory(t *testing.T) {
 		t.Error("the monitor's words are not in the markers' ink: a pale class's colour does not read on a light ground")
 	}
 }
+
+// A UV READING IS DRAWN IN ITS BAND (watchpost W18.4, its D-167): EPA's UV
+// index for a city, as a marker, in the UV preset's own colour for its band -
+// Low under 3, Moderate to 6, High to 8, Very High to 11, Extreme past it.
+func TestAUVReadingIsDrawnInItsBand(t *testing.T) {
+	names := map[float64]string{0: "uv.1", 2.9: "uv.1", 3: "uv.2", 6: "uv.3", 8: "uv.4", 11: "uv.5", 14: "uv.5"}
+	for index, want := range names {
+		if got := tuimaps.UVRole(index).Name(); got != want {
+			t.Errorf("a UV index of %v is %s; want %s", index, got, want)
+		}
+	}
+}

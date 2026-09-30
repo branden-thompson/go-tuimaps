@@ -217,6 +217,20 @@ func AirQualityRole(aqi float64) Token {
 	return colour.AQI1 + Token(c)
 }
 
+// UVRole is the role a feature is drawn in to show a UV index - a city's
+// reading - in its band's colour, as the UV preset draws it (watchpost W18.4,
+// its D-167: EPA's UV index as markers). Its words are drawn in the markers'
+// ink, as AirQualityRole's.
+func UVRole(index float64) Token {
+	c := 0
+	for _, b := range colour.UVBreaks() {
+		if index >= b {
+			c++
+		}
+	}
+	return colour.UV1 + Token(c)
+}
+
 // RadarImage is a radar image in one call: the host gives the picture, the
 // table that says what its colours mean, and when it was valid (D-45, D-69).
 func RadarImage(id string, image Image, validAt time.Time) Overlay {

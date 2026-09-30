@@ -136,6 +136,7 @@ func SharedCaches(*Shared) Option
 func TemperatureGrid(string, Grid, Unit, time.Time) Overlay
 func TokenNames() []string
 func UVGrid(string, Grid, time.Time) Overlay
+func UVRole(float64) Token
 func WarningKinds() []WarningKind
 func WaveGrid(string, Grid, WaveUnit, time.Time) Overlay
 func WindGrid(string, Grid, []float64, SpeedUnit, time.Time) Overlay
