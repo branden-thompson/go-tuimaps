@@ -53,11 +53,13 @@ func (m *Map) animationAt(wall time.Time) time.Time {
 }
 
 // stale reports whether any overlay on the frame is out of date on the wall
-// clock. Data whose valid time is far ahead of the clock counts, so that a
-// bad timestamp cannot keep old data looking fresh (FR-32).
-func (m *Map) stale(wall time.Time) bool {
+// clock, and which: a fingerprint of the stale overlays' IDs, which is what
+// a description depends on the clock through (W14, P-11). Data whose valid
+// time is far ahead of the clock counts, so that a bad timestamp cannot keep
+// old data looking fresh (FR-32).
+func (m *Map) stale(wall time.Time) (some bool, which uint64) {
 	if wall.IsZero() {
-		return false // a host that gives no time is told nothing about time
+		return false, 0 // a host that gives no time is told nothing about time
 	}
 	for _, id := range m.store.IDs() {
 		reader, ok := m.store.Read(id)
@@ -67,10 +69,10 @@ func (m *Map) stale(wall time.Time) bool {
 		o := reader.Overlay()
 		reader.Done()
 		if overlay.FreshnessAt(overlay.Valid(o), o.Keeps, wall).DrawnStale() {
-			return true
+			some, which = true, which*1099511628211^idHash(id)
 		}
 	}
-	return false
+	return some, which
 }
 
 // NextCall is the wall-clock moment by which the map wants another Render:

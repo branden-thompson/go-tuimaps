@@ -49,19 +49,20 @@ func nameOf(p Place) string {
 // describeKey is what a description was computed from: it changes whenever
 // the answer would (FR-29).
 type describeKey struct {
-	overlays uint64
-	places   uint64
-	units    describe.Units
-	stale    bool
-	asked    uint64
-	nearby   float64      // what "nearby" means (L-13.6)
-	view     project.View // which alerts are in view, and the view's centre, for motion with no place
-	landed   uint64       // what work has landed: a picture decoded is a frame motion can read
+	overlays   uint64
+	places     uint64
+	units      describe.Units
+	stale      bool
+	staleWhich uint64 // which overlays are stale: the clock's one part in an answer (W14, P-11)
+	asked      uint64
+	nearby     float64      // what "nearby" means (L-13.6)
+	view       project.View // which alerts are in view, and the view's centre, for motion with no place
+	landed     uint64       // what work has landed: a picture decoded is a frame motion can read
 }
 
 // describeKey is the key for this call.
 func (m *Map) describeKey(asked []Place) describeKey {
-	return describeKey{overlays: m.overlays, places: m.placesVersion, units: m.units, stale: m.staleNow, asked: askedFingerprint(asked),
+	return describeKey{overlays: m.overlays, places: m.placesVersion, units: m.units, stale: m.staleNow, staleWhich: m.staleWhich, asked: askedFingerprint(asked),
 		nearby: m.nearby, view: m.view, landed: m.store.Landed()}
 }
 
@@ -218,14 +219,13 @@ func (m *Map) underOneCell(a Answer) bool {
 }
 
 // noteWallClock keeps the time the last frame was drawn at, which is what
-// staleness in a description is judged by (D-114).
+// staleness in a description is judged by (D-114). The clock alone is no
+// change to a description: which overlays are stale is, and the kept report
+// is keyed by it (W14, P-11) - a host passes its clock to every Render.
 func (m *Map) noteWallClock(now time.Time) {
 	if now.IsZero() {
 		return
 	}
-	stale := m.stale(now)
-	if m.wallClock != now || m.staleNow != stale {
-		m.reported = nil // the answer would differ; it is worked out again
-	}
-	m.wallClock, m.staleNow = now, stale
+	m.wallClock = now
+	m.staleNow, m.staleWhich = m.stale(now)
 }

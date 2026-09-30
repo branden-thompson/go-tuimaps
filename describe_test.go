@@ -237,6 +237,73 @@ func warningAt(id string, west, south, east, north float64) tuimaps.Overlay {
 			Rings: [][]tuimaps.LonLat{{{Lon: west, Lat: south}, {Lon: east, Lat: south}, {Lon: east, Lat: north}, {Lon: west, Lat: north}, {Lon: west, Lat: south}}}}}}
 }
 
+// A FRAME DRAWN AT A LATER CLOCK IS NOT A CHANGE TO THE ANSWER (watchpost
+// W14, P-11). A host passes its clock to every Render, so keying the kept
+// report on the clock worked it out again on every frame - 9.8 ms and 11 MB
+// a time with a twelve-frame loop, all of it the loop's motion, which the
+// clock does not touch. What the clock does change is which overlays are
+// stale, and that is what the report is kept by.
+func TestAReportIsKeptWhileOnlyTheClockMoves(t *testing.T) {
+	const cols, rows = 69, 12
+	m := gulfMap(t, cols, rows)
+	if _, err := m.Set(warning("alerts")); err != nil {
+		t.Fatal(err)
+	}
+	size := tuimaps.Size{Cols: cols, Rows: rows}
+	if _, err := m.Render(size, noon.Add(time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+	first, err := m.Report(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Render(size, noon.Add(2*time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+	again, err := m.Report(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(first.Alerts) == 0 || &first.Alerts[0] != &again.Alerts[0] {
+		t.Error("a frame a minute later, with nothing gone stale, worked the report out again")
+	}
+}
+
+// AND EACH OVERLAY'S AGEING IS A CHANGE: one overlay going stale while
+// another already is changes the answer, though "is anything stale" does not.
+func TestAReportFollowsEachOverlayGoingStale(t *testing.T) {
+	const cols, rows = 69, 12
+	m := gulfMap(t, cols, rows)
+	short, long := warning("short"), warning("long")
+	long.Keeps = 6 * time.Hour
+	for _, o := range []tuimaps.Overlay{short, long} {
+		if _, err := m.Set(o); err != nil {
+			t.Fatal(err)
+		}
+	}
+	staleAt := func(at time.Time) map[string]bool {
+		t.Helper()
+		if _, err := m.Render(tuimaps.Size{Cols: cols, Rows: rows}, at); err != nil {
+			t.Fatal(err)
+		}
+		said, err := m.Report(nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		out := map[string]bool{}
+		for _, a := range said.Alerts {
+			out[a.Overlay] = a.Stale
+		}
+		return out
+	}
+	if got := staleAt(noon.Add(2 * time.Hour)); !got["short"] || got["long"] {
+		t.Fatalf("two hours on, the short overlay alone is stale; got %v", got)
+	}
+	if got := staleAt(noon.Add(7 * time.Hour)); !got["short"] || !got["long"] {
+		t.Errorf("seven hours on, both are stale; got %v", got)
+	}
+}
+
 // TestStalenessIsJudgedByTheFramesOwnRule is a defect the app found: the
 // frame's stale mark says plainly that a host which has given no time is
 // told nothing about time (D-114), and every answer of a description said
