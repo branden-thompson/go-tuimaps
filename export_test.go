@@ -30,3 +30,11 @@ func ImageUse(m *Map) int64 {
 	defer m.mu.Unlock()
 	return m.store.ImageUse()
 }
+
+// AreasMeasured is how many times the map has measured a place against an
+// alert's areas - the description's costliest sum - since it was made.
+func AreasMeasured(m *Map) int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.areas.measured
+}

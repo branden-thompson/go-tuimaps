@@ -182,8 +182,9 @@ type Map struct {
 	placesVersion uint64          // raised whenever the places change
 	wallClock     time.Time       // the clock of the last frame, which staleness is judged by
 	staleNow      bool
-	staleWhich    uint64  // which overlays are stale: a description's key (W14, P-11)
-	reported      *Report // the report last worked out, and what it was worked out from (FR-29)
+	staleWhich    uint64   // which overlays are stale: a description's key (W14, P-11)
+	areas         areaMemo // a place measured against each alert, kept while the overlays and units stand (W14)
+	reported      *Report  // the report last worked out, and what it was worked out from (FR-29)
 	reportedKey   describeKey
 	remote        *tiles.Remote // the source named, if any: nothing is reached until one is (D-65)
 	disk          *tiles.Disk   // the disk cache, if the host named a directory

@@ -281,8 +281,8 @@ func (m *Map) placeReport(place Place) PlaceReport {
 				rest.Features = append(rest.Features, f)
 			}
 		}
-		for _, alert := range alertsOf(o.Features) {
-			a := m.placeAlert(place, id, alert, nearby)
+		for n, alert := range alertsOf(o.Features) {
+			a := m.placeAlert(place, id, n, alert, nearby)
 			if a.Valid.IsZero() {
 				a.Valid = o.Valid
 			}
@@ -332,13 +332,15 @@ func (m *Map) anyInView(alert []Feature) bool {
 // areas, one at a time so that two overlapping areas never cancel; the
 // nearest edge of all of them; and nearby when outside within the distance
 // set. Its label and severity are its first area's.
-func (m *Map) placeAlert(place Place, id string, alert []Feature, nearbyKm float64) PlaceAlert {
-	areas := make([][][]project.LonLat, 0, len(alert))
-	for _, f := range alert {
-		areas = append(areas, f.Rings)
-	}
+func (m *Map) placeAlert(place Place, id string, n int, alert []Feature, nearbyKm float64) PlaceAlert {
 	f := alert[0]
-	a := describe.OfArea(nameOf(place), id, place.At, areas, m.units)
+	a := m.areas.measure(m, areaKey{overlay: id, alert: n, place: nameOf(place), at: place.At}, func() describe.Answer {
+		areas := make([][][]project.LonLat, 0, len(alert))
+		for _, f := range alert {
+			areas = append(areas, f.Rings)
+		}
+		return describe.OfArea(nameOf(place), id, place.At, areas, m.units)
+	})
 	out := PlaceAlert{Overlay: clean(id), Feature: clean(f.ID), Label: clean(f.Label), Severity: overlay.SeverityOf(f),
 		Where: a.Relation, Distance: a.Distance, Unit: a.Unit, Bearing: a.Bearing, Compass: a.Compass, Valid: f.Valid,
 		UnderOneCell: m.underOneCell(a)}
@@ -369,3 +371,43 @@ func (m *Map) inView(f Feature) bool {
 }
 
 func clean(s string) string { return textsafe.Clean(s).String() }
+
+// areaKey is one measure: a place against one alert of one overlay, the
+// alert by its place in the overlay's order.
+type areaKey struct {
+	overlay string
+	alert   int
+	place   string
+	at      project.LonLat
+}
+
+// areaMemo keeps each place's measure against each alert - the nearest edge
+// of every area, the description's costliest sum - while nothing it depends
+// on changes: the overlays (any Set or Remove) and the units. The view, the
+// clock and the work landing do not touch it, and a report is worked out
+// again on each of those (W14: 28 ms a report, paid by each of twenty-four
+// jobs landing after a feed).
+type areaMemo struct {
+	overlays uint64
+	units    describe.Units
+	kept     map[areaKey]describe.Answer
+	measured int // how many measures were worked out, for the library's tests
+}
+
+// maxAreaMeasures bounds the kept measures: a host asking about ever more
+// places between two changes of its overlays starts afresh, never grows it.
+const maxAreaMeasures = 4096
+
+// measure is the kept measure for key, or work's, kept.
+func (a *areaMemo) measure(m *Map, key areaKey, work func() describe.Answer) describe.Answer {
+	if a.kept == nil || a.overlays != m.overlays || a.units != m.units || len(a.kept) >= maxAreaMeasures {
+		a.kept, a.overlays, a.units = map[areaKey]describe.Answer{}, m.overlays, m.units
+	}
+	if out, ok := a.kept[key]; ok {
+		return out
+	}
+	out := work()
+	a.measured++
+	a.kept[key] = out
+	return out
+}

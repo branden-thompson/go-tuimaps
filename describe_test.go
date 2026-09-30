@@ -304,6 +304,85 @@ func TestAReportFollowsEachOverlayGoingStale(t *testing.T) {
 	}
 }
 
+// A PLACE'S DISTANCE TO AN ALERT IS MEASURED ONCE (watchpost W14): the sum
+// is the nearest edge of every area, great circle by great circle - 28 ms a
+// report over a day's alerts - and it depends on the place, the alert's
+// areas and the units alone. A report is worked out again whenever work
+// lands or the view moves, and a host asks one every frame: after a feed,
+// twenty-four jobs landed one by one and each paid it again. Now a pan and a
+// landing measure nothing; a new overlay, new units or another place do.
+func TestAnAlertsDistanceIsMeasuredOnce(t *testing.T) {
+	const cols, rows = 69, 12
+	m := gulfMap(t, cols, rows)
+	if _, err := m.SetPlaces([]tuimaps.Place{miami()}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Set(warning("alerts")); err != nil {
+		t.Fatal(err)
+	}
+	report := func() tuimaps.Report {
+		t.Helper()
+		r, err := m.Report(nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return r
+	}
+	first := report()
+	measured := tuimaps.AreasMeasured(m)
+	if measured == 0 {
+		t.Fatal("the first report measured nothing")
+	}
+	if err := m.Recentre(tuimaps.LonLat{Lon: -83, Lat: 27}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Settle(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	moved := report()
+	if got := tuimaps.AreasMeasured(m); got != measured {
+		t.Errorf("a pan and the work it landed measured %d more times", got-measured)
+	}
+	if moved.Places[0].Alerts[0].Distance != first.Places[0].Alerts[0].Distance || moved.Places[0].Alerts[0].Where != first.Places[0].Alerts[0].Where {
+		t.Errorf("the kept measure differs: %+v, then %+v", first.Places[0].Alerts[0], moved.Places[0].Alerts[0])
+	}
+	m.Units(true, false)
+	if report().Places[0].Alerts[0].Unit != "miles" || tuimaps.AreasMeasured(m) == measured {
+		t.Error("new units were not measured again")
+	}
+	measured = tuimaps.AreasMeasured(m)
+	if _, err := m.Set(warning("more")); err != nil {
+		t.Fatal(err)
+	}
+	if len(report().Places[0].Alerts) != 2 || tuimaps.AreasMeasured(m) == measured {
+		t.Error("a new overlay was not measured")
+	}
+	// The same overlay handed in again with other areas is measured again.
+	before := report().Places[0].Alerts[0].Distance
+	if _, err := m.Set(warningAt("alerts", -81, 26, -80.5, 26.5)); err != nil {
+		t.Fatal(err)
+	}
+	if got := report().Places[0].Alerts[0].Distance; got == before {
+		t.Errorf("an overlay replaced with other areas kept its old measure, %v", got)
+	}
+	measured = tuimaps.AreasMeasured(m)
+	away, err := m.Report([]tuimaps.Place{{Name: "Away", At: tuimaps.LonLat{Lon: -90, Lat: 30}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tuimaps.AreasMeasured(m) == measured || away.Places[0].Alerts[0].Distance == first.Places[0].Alerts[0].Distance {
+		t.Error("another place was answered with the first place's measure")
+	}
+	// Two places of one name are two places (a Springfield in each state).
+	here, err := m.Report([]tuimaps.Place{{Name: "Away", At: tuimaps.LonLat{Lon: -80, Lat: 25}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if here.Places[0].Alerts[0].Distance == away.Places[0].Alerts[0].Distance {
+		t.Error("a place of the same name elsewhere was answered with the other's measure")
+	}
+}
+
 // TestStalenessIsJudgedByTheFramesOwnRule is a defect the app found: the
 // frame's stale mark says plainly that a host which has given no time is
 // told nothing about time (D-114), and every answer of a description said

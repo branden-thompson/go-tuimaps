@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/binary"
 	"errors"
+	"image"
 	"image/color"
 	"image/png"
 	"math"
@@ -418,6 +419,16 @@ func rasterise(img *Image, file []byte, kind Kind, imageCap int) (scene.Raster, 
 	if w <= 0 || h <= 0 || w*h > maxPixels {
 		return scene.Raster{}, Report{}, imageRefused(textsafe.Const("its size as decoded is not the size its header gave"), textsafe.Const("check the image"))
 	}
+	m := newMatcher(img, kind)
+	raster := scene.Raster{West: img.West, South: img.South, East: img.East, North: img.North, Projection: uint8(img.Projection),
+		Width: w, Height: h, Classes: make([]int8, w*h), Preset: uint8(kind.Preset), ClassCount: len(kind.Breaks) + 1}
+	readClasses(m, decoded, raster.Classes)
+	return raster, m.report, nil
+}
+
+// newMatcher is the colour matcher for an image of a kind: its table, its
+// tolerance, and the provider's own gradient where there is one.
+func newMatcher(img *Image, kind Kind) *matcher {
 	tolerance := img.Tolerance
 	if tolerance == 0 {
 		tolerance = defaultTolerance
@@ -429,14 +440,51 @@ func rasterise(img *Image, file []byte, kind Kind, imageCap int) (scene.Raster, 
 	if t, ok := TableOf(img.Provider); ok && len(t.Gradient) > 1 {
 		m.gradient = gradientOf(t.Gradient) // the provider's own table: its heavy end too
 	}
-	raster := scene.Raster{West: img.West, South: img.South, East: img.East, North: img.North, Projection: uint8(img.Projection),
-		Width: w, Height: h, Classes: make([]int8, w*h), Preset: uint8(kind.Preset), ClassCount: len(kind.Breaks) + 1}
-	for y := range h {
-		for x := range w {
-			raster.Classes[y*w+x] = m.pixel(color.NRGBAModel.Convert(decoded.At(bounds.Min.X+x, bounds.Min.Y+y)).(color.NRGBA))
+	return m
+}
+
+// readClasses reads every pixel of a decoded picture into out, row by row.
+//
+// THE TWO LAYOUTS A RADAR PNG DECODES TO ARE READ FROM THEIR PIXELS (watchpost
+// W14, P-12): through image.Image every pixel's colour was an allocation -
+// 165,049 for a 600x275 frame, 2.7 ms. A paletted picture's colours are
+// converted once, a palette entry each; an NRGBA picture's bytes are its
+// colours. Every other layout keeps the general reading, and each reads
+// exactly as it would.
+func readClasses(m *matcher, decoded image.Image, out []int8) {
+	bounds := decoded.Bounds()
+	w := bounds.Dx()
+	switch p := decoded.(type) {
+	case *image.NRGBA:
+		for y := range bounds.Dy() { // bounded by the picture (P10-02)
+			row := p.Pix[y*p.Stride : y*p.Stride+4*w]
+			for x := range w {
+				px := row[4*x : 4*x+4 : 4*x+4]
+				out[y*w+x] = m.pixel(color.NRGBA{R: px[0], G: px[1], B: px[2], A: px[3]})
+			}
+		}
+	case *image.Paletted:
+		pal := make([]color.NRGBA, len(p.Palette))
+		for i, c := range p.Palette { // at most 256 (P10-02)
+			pal[i] = color.NRGBAModel.Convert(c).(color.NRGBA)
+		}
+		for y := range bounds.Dy() {
+			row := p.Pix[y*p.Stride : y*p.Stride+w]
+			for x, idx := range row {
+				c := color.NRGBA{} // never met: the PNG decoder pads a short palette to 256 entries
+				if int(idx) < len(pal) {
+					c = pal[idx]
+				}
+				out[y*w+x] = m.pixel(c)
+			}
+		}
+	default:
+		for y := range bounds.Dy() {
+			for x := range w {
+				out[y*w+x] = m.pixel(color.NRGBAModel.Convert(decoded.At(bounds.Min.X+x, bounds.Min.Y+y)).(color.NRGBA))
+			}
 		}
 	}
-	return raster, m.report, nil
 }
 
 // readPicture is the reading of one picture: the set every map of a shared
