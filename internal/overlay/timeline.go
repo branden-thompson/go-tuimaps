@@ -120,7 +120,7 @@ func (s *Store) RasterAt(id string, at time.Time) (scene.Raster, Report, bool) {
 	}
 	pictures, i := s.pictures[id], frameShownAt(h.overlay.Image, at)
 	if i < 0 || i >= len(pictures) || !pictures[i].ready {
-		return scene.Raster{}, Report{}, false
+		return s.standRasterLocked(id, func(img *Image) int { return frameShownAt(img, at) }) // the loop it replaced, until its own land (L11.32)
 	}
 	return pictures[i].raster, pictures[i].report, true
 }

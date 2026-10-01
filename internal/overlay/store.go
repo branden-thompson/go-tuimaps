@@ -205,6 +205,7 @@ type Store struct {
 	fields     map[string]scene.Field          // prepared grids, by overlay id
 	pictures   map[string][]picture            // decoded pictures, by overlay id, one a frame
 	spare      map[string]map[[32]byte]picture // a replaced loop's decoded frames, by key, for its refresh to keep (L-1.7)
+	standPics  map[string]standLoop            // a replaced loop's pictures, drawn until the new ones land (L11.32)
 	decodes    int                             // pictures decoded, counted so a test can see a refresh reuse them
 	budget     int64                           // what the images may hold in all (L-12.1)
 	landed     uint64                          // prepared forms kept, for Work to see (D-66)
@@ -236,7 +237,7 @@ func NewStore(c Caps) (*Store, error) {
 	if c.ImageBytes == 0 {
 		c.ImageBytes = defaultImageBytes
 	}
-	return &Store{budget: defaultImageBudget, caps: c, current: map[string]*held{}, retiring: map[string]int{}, prepared: map[string]map[int]*prepared{}, stand: map[string]map[int]*prepared{}, fields: map[string]scene.Field{}, pictures: map[string][]picture{}, spare: map[string]map[[32]byte]picture{}, fromMemory: map[string]bool{}, views: map[*ShapeView]int{}}, nil
+	return &Store{budget: defaultImageBudget, caps: c, current: map[string]*held{}, retiring: map[string]int{}, prepared: map[string]map[int]*prepared{}, stand: map[string]map[int]*prepared{}, fields: map[string]scene.Field{}, pictures: map[string][]picture{}, spare: map[string]map[[32]byte]picture{}, standPics: map[string]standLoop{}, fromMemory: map[string]bool{}, views: map[*ShapeView]int{}}, nil
 }
 
 func refused(kind fault.Kind, why, todo textsafe.Text) error {
@@ -565,6 +566,7 @@ func (s *Store) HandIn(o Overlay) (SetResult, error) {
 		next.index = buildIndex(o) // one linear pass, inside Set, so the shape draws next frame (D-92)
 	}
 	s.spareFramesLocked(o)                   // a refresh keeps the frames it shares with the loop it replaces (L-1.7)
+	s.standPicturesLocked(o)                 // and draws the old ones until its own land (L11.32)
 	s.standInLocked(o.ID, next.index == nil) // what was prepared from the old geometry is drawn until this is prepared (L11.5), unless this is drawn from memory (D-92)
 	s.current[o.ID] = next
 	s.vertices += vertices
@@ -675,6 +677,44 @@ func (s *Store) spareFramesLocked(o Overlay) {
 	}
 }
 
+// standLoop is a replaced image's pictures and the image they were decoded
+// from: what a moment shows until the replacement's pictures land.
+type standLoop struct {
+	img      *Image
+	pictures []picture
+}
+
+// standPicturesLocked keeps an image's decoded pictures as its stand-in when
+// it is handed in again (L11.32): a refreshed radar loop drew nothing until
+// its job decoded the new version - the picture form of what L11.5 does for
+// shapes. A stand-in already held, its replacement not yet landed, is kept:
+// it is the newest drawn. The pictures are the spare set's own, so nothing
+// more is held.
+func (s *Store) standPicturesLocked(o Overlay) {
+	old, ok := s.current[o.ID]
+	if !ok || old.overlay.Image == nil || o.Image == nil {
+		delete(s.standPics, o.ID)
+		return
+	}
+	if pics := s.pictures[o.ID]; len(pics) > 0 {
+		s.standPics[o.ID] = standLoop{img: old.overlay.Image, pictures: pics}
+	}
+}
+
+// standRasterLocked is the stand-in's picture for frame index i of its own
+// image, or false.
+func (s *Store) standRasterLocked(id string, pick func(*Image) int) (scene.Raster, Report, bool) {
+	st, ok := s.standPics[id]
+	if !ok {
+		return scene.Raster{}, Report{}, false
+	}
+	i := pick(st.img)
+	if i < 0 || i >= len(st.pictures) || !st.pictures[i].ready {
+		return scene.Raster{}, Report{}, false
+	}
+	return st.pictures[i].raster, st.pictures[i].report, true
+}
+
 // Purge drops the decoded pictures kept only to be used again: a replaced
 // loop's spare frames, and the shared set of readings (L-9.3). What an
 // overlay shows now is the host's, and stays.
@@ -707,6 +747,7 @@ func (s *Store) Drop(id string) (RemoveResult, error) {
 	}
 	delete(s.current, id)
 	delete(s.spare, id)
+	delete(s.standPics, id) // a removed loop's stand-in goes with it
 	s.dropPreparedLocked(id)
 	s.dropStandInLocked(id) // a removed overlay's stand-in goes with it
 	for i, other := range s.order {

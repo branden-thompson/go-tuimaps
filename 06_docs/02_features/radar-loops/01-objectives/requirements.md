@@ -287,6 +287,12 @@ purpose, and the picture it does not ask to thin is the picture as it was.**
 | L-26.1 | A `qpf` preset in mm: WPC's seven classes from 0.25 to 101.6 mm, tokens `qpf.1`-`qpf.7`, passing the checker on both grounds at truecolor and 256; below 0.25, a trace, nothing drawn. | D-100 | `TestRainTotalsAreWPCsScale`, `TestTheRainTotalsScalePasses` |
 | L-26.2 | The preset in mm alone, or refused. | D-100 | `TestRainTotalsAreChecked` |
 
+## L-27 — A refreshed loop keeps drawing (watchpost U2-47, its C-10 and D-199)
+
+| # | Requirement | Source | Test |
+|---|---|---|---|
+| L-27.1 | A loop handed in again draws its old pictures, at the moment shown, until its new ones are decoded - as a replaced shape draws its old form (L11.5) - and keeps none once they land or the loop is removed. | watchpost D-199 | `TestARefreshedLoopKeepsDrawing`, `TestARefreshedLoopDrawsTheOldFramesUntilTheNewLand` |
+
 ## Metrics of success
 
 The brief's M1–M6 (D-6), with round 1's changes. **This table is the normative one.**

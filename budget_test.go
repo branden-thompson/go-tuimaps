@@ -71,3 +71,32 @@ func TestTheImageBudgetIsTheHosts(t *testing.T) {
 		t.Errorf("SetImageBudget on a closed map: %v", err)
 	}
 }
+
+// A REFRESHED LOOP KEEPS DRAWING (L-27.1, watchpost U2-47's blink, its C-10
+// and D-199): a loop handed in again is drawn from its old frames until the
+// new ones are decoded - the frame drawn straight after the hand-in, before
+// any work, still shows the radar - as a replaced shape draws its old form
+// (L11.5). Live runs saw one frame with no radar on every refresh.
+func TestARefreshedLoopKeepsDrawing(t *testing.T) {
+	m := world(t, 80, 24)
+	m.ColourDepth(tuimaps.Truecolor)
+	if _, err := m.Set(radarLoop(t, "radar", 12, 160, 96)); err != nil {
+		t.Fatal(err)
+	}
+	settle(t, m)
+	var radar []tuimaps.Class
+	for _, e := range m.Legend() {
+		if e.Preset == "radar" {
+			radar = e.Classes
+		}
+	}
+	if before := groundsOf(radar, momentFrame(t, m, noon)); before == 0 {
+		t.Fatal("the settled loop draws no radar")
+	}
+	if _, err := m.Set(radarLoop(t, "radar", 13, 160, 96)); err != nil { // the refresh: a frame more
+		t.Fatal(err)
+	}
+	if after := groundsOf(radar, momentFrame(t, m, noon)); after == 0 {
+		t.Error("the frame drawn after the refresh, before its decoding, shows no radar: the loop blinks")
+	}
+}

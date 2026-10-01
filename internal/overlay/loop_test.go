@@ -433,3 +433,56 @@ func TestPurgeDropsOnlyPicturesKeptForReuse(t *testing.T) {
 		t.Errorf("the refresh after a purge decoded %d, want %d, as the first hand-in did", got, first)
 	}
 }
+
+// A REFRESHED LOOP KEEPS DRAWING WHILE ITS NEW FRAMES ARE DECODED (L11.32,
+// watchpost U2-47's blink, its C-10): a loop handed in again drew nothing
+// from the hand-in until its job decoded the new version - the old pictures
+// dropped at once, where a replaced shape keeps drawing its old form (L11.5).
+// The old loop's frame at the moment stands in until the new frames land; a
+// dropped overlay keeps none.
+func TestARefreshedLoopDrawsTheOldFramesUntilTheNewLand(t *testing.T) {
+	var frames []LoopFrame
+	for i := 12; i >= 0; i-- {
+		frames = append(frames, frameAt(t, i, rain))
+	}
+	s := storeWith(t, loopOf(frames[:12]...))
+	classesOf(t, s, "loop")
+	at := frames[11].Valid
+	if _, _, ok := s.RasterAt("loop", at); !ok {
+		t.Fatal("the decoded loop draws nothing")
+	}
+	if _, err := s.HandIn(loopOf(frames[1:]...)); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, ok := s.RasterAt("loop", at); !ok {
+		t.Error("between the refresh and its decoding, the moment drew nothing: the radar blinks")
+	}
+	if _, _, ok := s.Raster("loop"); !ok {
+		t.Error("between the refresh and its decoding, the loop's shown frame drew nothing")
+	}
+	if _, err := s.HandIn(loopOf(frames[1:]...)); err != nil { // a second refresh before any work
+		t.Fatal(err)
+	}
+	if _, _, ok := s.RasterAt("loop", at); !ok {
+		t.Error("a second refresh before any work lost the stand-in the first kept")
+	}
+	classesOf(t, s, "loop")
+	if _, _, ok := s.RasterAt("loop", frames[12].Valid); !ok {
+		t.Error("the refresh's own newest frame does not draw once decoded")
+	}
+	if len(s.standPics) != 0 {
+		t.Error("the stand-in was kept after the new frames landed: held for nothing")
+	}
+	if _, err := s.HandIn(loopOf(frames[2:]...)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Drop("loop"); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, ok := s.RasterAt("loop", at); ok {
+		t.Error("a dropped loop still drew its stand-in")
+	}
+	if len(s.standPics) != 0 {
+		t.Error("a dropped loop's stand-in was kept: held for nothing")
+	}
+}

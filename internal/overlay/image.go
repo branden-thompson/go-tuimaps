@@ -559,7 +559,7 @@ func (s *Store) Raster(id string) (scene.Raster, Report, bool) {
 	}
 	pictures, at := s.pictures[id], shown(h.overlay.Image)
 	if at < 0 || at >= len(pictures) || !pictures[at].ready {
-		return scene.Raster{}, Report{}, false
+		return s.standRasterLocked(id, shown) // the loop it replaced, until its own land (L11.32)
 	}
 	return pictures[at].raster, pictures[at].report, true
 }
@@ -615,6 +615,7 @@ func (s *Store) keepPictures(r *Reader, pictures []picture) {
 		return
 	}
 	s.pictures[r.id] = pictures
+	delete(s.standPics, r.id) // its own pictures landed: the stand-in gives way (L11.32)
 	s.landed++
 	delete(s.spare, r.id) // what the new version kept, it now holds
 	unmatched, fallback := 0, 0
