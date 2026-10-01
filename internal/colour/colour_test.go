@@ -67,8 +67,8 @@ func flatten(m [][]string) []string {
 // TestTokensMatchTheDocumentedList is plan task 08.1 (D-63).
 func TestTokensMatchTheDocumentedList(t *testing.T) {
 	want := documentedTokens(t)
-	if len(want) != 90 {
-		t.Fatalf("read %d tokens from the document, want 90: %v", len(want), want)
+	if len(want) != 97 {
+		t.Fatalf("read %d tokens from the document, want 97: %v", len(want), want)
 	}
 	var got []string
 	for _, tok := range Tokens() {

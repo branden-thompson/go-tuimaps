@@ -86,8 +86,12 @@ const (
 	UV5  = UV1 + 4
 	AQI1 = UV5 + 1
 	AQI6 = AQI1 + 5
+	// QPF1 to QPF7 are the rain totals' classes, lightest first (L-26,
+	// watchpost D-184).
+	QPF1 = AQI6 + 1
+	QPF7 = QPF1 + 6
 	// lastToken is the last token there is.
-	lastToken = AQI6
+	lastToken = QPF7
 )
 
 // fixedNames are the names of the tokens before the numbered ramps.
@@ -142,6 +146,8 @@ func (t Token) Name() string {
 		return "uv." + strconv.Itoa(int(t-UV1)+1)
 	case t >= AQI1 && t <= AQI6:
 		return "aqi." + strconv.Itoa(int(t-AQI1)+1)
+	case t >= QPF1 && t <= QPF7:
+		return "qpf." + strconv.Itoa(int(t-QPF1)+1)
 	}
 	return "wind." + strconv.Itoa(int(t-Wind1)+1)
 }
@@ -149,7 +155,7 @@ func (t Token) Name() string {
 // ScaleClass reports whether a token is one of a preset's classes: drawn in
 // the scale's colour, never a word's (L-25).
 func ScaleClass(t Token) bool {
-	return (t >= Radar1 && t <= High) || (t >= Wind1 && t <= Wind6) || (t >= Wave1 && t <= Wave6) || (t >= UV1 && t <= AQI6)
+	return (t >= Radar1 && t <= High) || (t >= Wind1 && t <= Wind6) || (t >= Wave1 && t <= Wave6) || (t >= UV1 && t <= QPF7)
 }
 
 // Tokens lists every token, in the documented order.

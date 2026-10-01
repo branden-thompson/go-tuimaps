@@ -115,6 +115,7 @@ Stable names; adding one is a minor version. A host sets any subset; the rest ke
 | The sea's stations (v0.2.0, L-21) | `buoy` · `tide` — a buoy's marker and words; a tide station's. Never an alert |
 | UV (v0.2.0, L-25) | `uv.1` to `uv.5` — Low to Extreme, broken at 3, 6, 8 and 11; the official scale's hues, lightness set to pass the checker (watchpost D-140) |
 | Air quality (v0.2.0, L-25) | `aqi.1` to `aqi.6` — the US AQI's Good to Hazardous, broken at 51, 101, 151, 201 and 301; the EPA's hues, lightness set to pass the checker; a monitor's marker in its category (`AirQualityRole`) |
+| Rain totals (v0.2.0, L-26) | `qpf.1` to `qpf.7` — a period's rain and snow, liquid-equivalent, in the NWS WPC's breaks at 0.01, 0.1, 0.25, 0.5, 1, 2 and 4 inches (0.25 to 101.6 mm); below a trace nothing is drawn; WPC's hues, lightness searched to pass the checker (watchpost D-184) |
 
 The sixteen-colour depth has its own small set of values for the basemap tokens, chosen from the sixteen by hand (specimen 23, D-79).
 

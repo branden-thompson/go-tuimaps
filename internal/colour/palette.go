@@ -142,6 +142,9 @@ func (p Palette) Warnings(ground GroundKind, depth Depth) []fault.Warning {
 	if p.sets(AQI1, AQI6) {
 		report(textsafe.Const("aqi"), len(Check(p.effective(AQI1, AQI6, 1, ground, depth), RampCheck{Ground: under, Depth: depth, Midpoint: -1})))
 	}
+	if p.sets(QPF1, QPF7) {
+		report(textsafe.Const("qpf"), len(Check(p.effective(QPF1, QPF7, 1, ground, depth), RampCheck{Ground: under, Depth: depth, Midpoint: -1})))
+	}
 	if p.sets(Wave1, Wave6) {
 		report(textsafe.Const("waves"), len(Check(p.effective(Wave1, Wave6, 1, ground, depth), RampCheck{Ground: under, Depth: depth, Midpoint: -1})))
 	}

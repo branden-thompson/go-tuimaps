@@ -173,7 +173,7 @@ func (m *Map) classesOf(kind overlay.Kind) []Class {
 	for i := range len(kind.Breaks) + 1 {
 		one := Class{Label: classLabel(kind.Breaks, i)}
 		tok := first + Token(i)
-		if kind.Preset == colour.Radar { // below radar's first floor is no rain, and nothing is drawn: the frame's own rule (L-17.1)
+		if colour.FloorsFirst(kind.Preset) { // below radar's first floor is no rain, below a total's a trace, and nothing is drawn (L-17.1, L-26)
 			tok--
 		}
 		if ramped && depth != NoColour && tok >= first {
@@ -200,6 +200,8 @@ func rampToken(preset colour.Preset) (Token, bool) {
 		return colour.UV1, true
 	case colour.AirQuality:
 		return colour.AQI1, true
+	case colour.QPF:
+		return colour.QPF1, true
 	}
 	return 0, false
 }
@@ -218,12 +220,22 @@ func classLabel(breaks []float64, i int) string {
 	return number(breaks[i-1]) + " to " + number(breaks[i])
 }
 
-// number is a break written as shortly as it can be read.
+// number is a break written as shortly as it can be read: a second decimal
+// where one would misstate it - a trace of rain is 0.25 mm, not 0.2 (L-26).
 func number(v float64) string {
 	if v == math.Trunc(v) {
 		return strconv.FormatFloat(v, 'f', 0, 64)
 	}
-	return strconv.FormatFloat(v, 'f', 1, 64)
+	if one := strconv.FormatFloat(v, 'f', 1, 64); math.Abs(v-mustFloat(one)) < 1e-9 {
+		return one
+	}
+	return strconv.FormatFloat(v, 'f', 2, 64)
+}
+
+// mustFloat is a number this file wrote, read back.
+func mustFloat(s string) float64 {
+	v, _ := strconv.ParseFloat(s, 64)
+	return v
 }
 
 // Credits are every credit the map owes: the basemap's, then each overlay's

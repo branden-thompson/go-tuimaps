@@ -11,6 +11,7 @@ const (
 	Waves      // L-20: wave height, drawn over the sea alone (watchpost D-126)
 	UV         // L-25: the UV index (watchpost D-137)
 	AirQuality // L-25: the US AQI (watchpost D-139)
+	QPF        // L-26: a period's rain and snow totals, liquid-equivalent (watchpost D-184)
 )
 
 // UVBreaks are the UV index's categories' floors: Low under 3, Moderate 3
@@ -22,6 +23,24 @@ func UVBreaks() []float64 { return []float64{3, 6, 8, 11} }
 // Moderate 51-100, Unhealthy for Sensitive Groups 101-150, Unhealthy
 // 151-200, Very Unhealthy 201-300, Hazardous 301 and over (watchpost D-139).
 func AirQualityBreaks() []float64 { return []float64{51, 101, 151, 201, 301} }
+
+// QPFFloors are the rain totals' class floors, in mm: the NWS WPC's breaks
+// at 0.01, 0.1, 0.25, 0.5, 1, 2 and 4 inches (watchpost D-184). Below the
+// first is a trace, and nothing is drawn.
+func QPFFloors() []float64 { return []float64{0.25, 2.5, 6.35, 12.7, 25.4, 50.8, 101.6} }
+
+// FloorsFirst reports whether a preset's first break is a floor: below it
+// there is nothing to draw - no rain on radar, a trace of a total (L-17.1,
+// L-26).
+func FloorsFirst(p Preset) bool { return p == Radar || p == QPF }
+
+// qpfRamp is WPC's hues in their order - lime, greens, blues, purple and
+// plum - their lightness searched to run pale to dark and pass the checker,
+// colour-vision safe, on both grounds at truecolor and 256 colours
+// (watchpost D-184). Searched for, not converted.
+func qpfRamp() []RGB {
+	return []RGB{{133, 248, 24}, {74, 234, 97}, {51, 192, 129}, {42, 147, 178}, {46, 73, 156}, {85, 47, 123}, {80, 9, 72}}
+}
 
 // uvRamp and airQualityRamp are the official scales' hues in their order -
 // green, yellow, orange, red, and UV's violet or the AQI's purple and
@@ -158,6 +177,8 @@ func Ramp(p Preset, ground GroundKind, depth Depth) ([]RGB, bool) {
 		return uvRamp(), true
 	case AirQuality:
 		return airQualityRamp(), true
+	case QPF:
+		return qpfRamp(), true
 	}
 	return nil, false
 }
@@ -259,6 +280,9 @@ func rampDefault(t Token, ground GroundKind, depth Depth) (RGB, bool) {
 	case t >= AQI1 && t <= AQI6:
 		ramp, ok := Ramp(AirQuality, ground, depth)
 		return pick(ramp, int(t-AQI1), ok)
+	case t >= QPF1 && t <= QPF7:
+		ramp, ok := Ramp(QPF, ground, depth)
+		return pick(ramp, int(t-QPF1), ok)
 	}
 	return RGB{}, false
 }

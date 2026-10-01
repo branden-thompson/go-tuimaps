@@ -204,6 +204,14 @@ func AirQualityGrid(id string, grid Grid, validAt time.Time) Overlay {
 	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &grid}
 }
 
+// QPFGrid is a field of rain and snow totals, liquid-equivalent, in mm, in
+// one call (L-26): the preset supplies WPC's seven classes and their
+// colours, and draws nothing under a trace.
+func QPFGrid(id string, grid Grid, validAt time.Time) Overlay {
+	grid.Type = Type{Preset: "qpf", Unit: "mm"}
+	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &grid}
+}
+
 // AirQualityRole is the role a feature is drawn in to show an AQI - a
 // monitor's reading - in its category's colour, as the AQI preset draws it
 // (L-25). Its words are drawn in the markers' ink, which reads on the ground.

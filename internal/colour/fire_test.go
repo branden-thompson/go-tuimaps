@@ -119,3 +119,21 @@ func TestTheUVAndAirQualityScalesPass(t *testing.T) {
 		}
 	}
 }
+
+// TestTheRainTotalsScalePasses is L-26's scale (watchpost D-184): WPC's hues
+// in their order, pale to dark, pass the checker on each ground at
+// truecolor and at 256 colours, colour-vision safe.
+func TestTheRainTotalsScalePasses(t *testing.T) {
+	for _, ground := range []GroundKind{Dark, Light} {
+		under, _ := Palette{}.ResolveAt(Ground, ground, Truecolor)
+		for _, depth := range []Depth{Truecolor, Colours256} {
+			ramp, ok := Ramp(QPF, ground, depth)
+			if !ok || len(ramp) != len(QPFFloors()) {
+				t.Fatalf("%v %v: %d classes for %d floors", ground, depth, len(ramp), len(QPFFloors()))
+			}
+			if f := Check(ramp, RampCheck{Ground: under, Depth: depth, Midpoint: -1}); len(f) != 0 {
+				t.Errorf("%v %v: %+v", ground, depth, f)
+			}
+		}
+	}
+}

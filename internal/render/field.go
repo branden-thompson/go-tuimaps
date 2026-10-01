@@ -96,24 +96,25 @@ func presetOf(ink uint8) colour.Preset {
 		return colour.UV
 	case t >= colour.AQI1 && t <= colour.AQI6:
 		return colour.AirQuality
+	case t >= colour.QPF1 && t <= colour.QPF7:
+		return colour.QPF
 	}
 	return 0
 }
 
 // classInk is the ink of a preset's class. Radar's class 0 is below its first
-// floor: no rain, and nothing is drawn.
+// floor: no rain, and nothing is drawn; so is a total's, a trace (L-26).
 func classInk(preset uint8, class int8) uint8 {
-	if class < 0 {
+	if class < 0 || (class == 0 && colour.FloorsFirst(colour.Preset(preset))) {
 		return 0
 	}
 	switch colour.Preset(preset) {
 	case colour.Temperature:
 		return uint8(colour.Temperature1) + uint8(min(int(class), 16))
 	case colour.Radar:
-		if class == 0 {
-			return 0
-		}
 		return uint8(colour.Radar1) + uint8(min(int(class), 6)) - 1
+	case colour.QPF:
+		return uint8(colour.QPF1) + uint8(min(int(class), 7)) - 1
 	case colour.Wind:
 		return uint8(colour.Wind1) + uint8(min(int(class), 5))
 	case colour.Waves:

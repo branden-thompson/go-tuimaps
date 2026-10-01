@@ -129,6 +129,7 @@ func KindOf(error) (Kind, bool)
 func Kinds() []Kind
 func New(...Option) (*Map, error)
 func NewShared(int64) (*Shared, error)
+func QPFGrid(string, Grid, time.Time) Overlay
 func RadarImage(string, Image, time.Time) Overlay
 func Ring(R) []LonLat
 func Rings([]R) [][]LonLat

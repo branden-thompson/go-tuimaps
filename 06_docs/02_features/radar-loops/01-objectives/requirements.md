@@ -280,6 +280,13 @@ purpose, and the picture it does not ask to thin is the picture as it was.**
 | L-25.2 | Each preset in its one unit, or refused. | D-99 | `TestUVAndAirQualityAreChecked` |
 | L-25.3 | `AirQualityRole`: a reading's category as a feature's role; its words in the markers' ink. | D-99 | `TestAMonitorIsDrawnInItsCategory` |
 
+## L-26 — Rain and snow totals (D-100: watchpost D-168, D-184)
+
+| # | Requirement | Source | Test |
+|---|---|---|---|
+| L-26.1 | A `qpf` preset in mm: WPC's seven classes from 0.25 to 101.6 mm, tokens `qpf.1`-`qpf.7`, passing the checker on both grounds at truecolor and 256; below 0.25, a trace, nothing drawn. | D-100 | `TestRainTotalsAreWPCsScale`, `TestTheRainTotalsScalePasses` |
+| L-26.2 | The preset in mm alone, or refused. | D-100 | `TestRainTotalsAreChecked` |
+
 ## Metrics of success
 
 The brief's M1–M6 (D-6), with round 1's changes. **This table is the normative one.**
