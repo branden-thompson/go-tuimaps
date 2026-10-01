@@ -293,6 +293,12 @@ purpose, and the picture it does not ask to thin is the picture as it was.**
 |---|---|---|---|
 | L-27.1 | A loop handed in again draws its old pictures, at the moment shown, until its new ones are decoded - as a replaced shape draws its old form (L11.5) - and keeps none once they land or the loop is removed. | watchpost D-199 | `TestARefreshedLoopKeepsDrawing`, `TestARefreshedLoopDrawsTheOldFramesUntilTheNewLand` |
 
+## L-28 — The names stand still as a loop plays (watchpost UAT-2 U2-46, D-200)
+
+| # | Requirement | Source | Test |
+|---|---|---|---|
+| L-28.1 | An overlay outside the moment (L-15.1) is not drawn, but the basemap's names are placed as if it were: an alert's word and severity digits hold their room, after every drawn alert's, and a field or image - or a loop on a gap - leaves the name budget the one under it. A name never comes and goes as a loop plays past an alert's hours. Two alerts' words that collide may still trade places frame to frame; a name moves only where it sat in that room. | watchpost D-200 | `TestNamesHoldStillAsALoopPlays`, `TestAReservedAlertHoldsItsWordsRoom`, `TestAReservedOutlineHoldsItsDigits`, `TestTheNameBudgetHoldsAcrossALoop`, `TestReservingIsAChangeOfFrame` |
+
 ## Metrics of success
 
 The brief's M1–M6 (D-6), with round 1's changes. **This table is the normative one.**

@@ -396,7 +396,7 @@ func (m *Map) draw(in *render.Input) {
 		m.play.moved++ // another frame of a loop is drawn: the last frame cannot be reused
 		m.play.drawn = shown
 	}
-	m.shapes, m.fields, m.rasters, m.borrowed = m.shapes[:0], m.fields[:0], m.rasters[:0], m.borrowed[:0]
+	m.shapes, m.reserved, m.fields, m.rasters, m.borrowed = m.shapes[:0], m.reserved[:0], m.fields[:0], m.rasters[:0], m.borrowed[:0]
 	from, to := m.momentLocked(shown)
 	hidden := uint64(0)
 	for _, id := range m.store.IDs() {
@@ -404,6 +404,7 @@ func (m *Map) draw(in *render.Input) {
 		// prepared: the frame that meets it draws it at once, never a frame late.
 		if span, ok := m.store.During(id); ok && !span.Meets(from, to) {
 			hidden = hidden*1099511628211 ^ idHash(id)
+			m.reserve(in, id, bucket)
 			continue
 		}
 		if field, ok := m.store.Field(id); ok {
@@ -431,8 +432,29 @@ func (m *Map) draw(in *render.Input) {
 		m.play.moved++ // another set of overlays is drawn: the last frame cannot be reused
 		m.play.hidden = hidden
 	}
-	in.Shapes, in.Fields, in.Rasters, in.Borrowed = m.shapes, m.fields, m.rasters, m.borrowed
+	in.Shapes, in.Reserved, in.Fields, in.Rasters, in.Borrowed = m.shapes, m.reserved, m.fields, m.rasters, m.borrowed
 	in.OverlaysVersion = m.overlays + m.play.moved // the description's key reads only the first (L-1.10e)
+}
+
+// reserve keeps what an overlay outside the moment would take from the names
+// (L-28, watchpost D-200): its prepared shapes, whose alert words and digits
+// hold their room, and the cover a field or image puts on the name budget.
+// The names are placed as if every overlay in view were present, so they
+// stand still as a loop plays past each one's hours. Reading a prepared form
+// marks it used, which keeps it from eviction until its hour comes round. An
+// overlay read from the host's memory holds nothing: it is read only to draw.
+func (m *Map) reserve(in *render.Input, id string, bucket int) {
+	if _, ok := m.store.Field(id); ok {
+		in.Covered = true
+		return
+	}
+	if _, _, ok := m.store.Raster(id); ok {
+		in.Covered = true
+		return
+	}
+	if shapes, _, path := m.store.Drawn(id, bucket); path == overlay.Cached || path == overlay.StandIn {
+		m.reserved = append(m.reserved, shapes...)
+	}
 }
 
 // idHash is an overlay id's FNV-1a hash, for the set of those left out.

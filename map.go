@@ -200,6 +200,7 @@ type Map struct {
 
 	drawnPlaces []render.Marker
 	shapes      []scene.Shape
+	reserved    []scene.Shape // the shapes of overlays outside the moment, holding their words' room (L-28)
 	fields      []scene.Field
 	rasters     []scene.Raster
 	borrowed    []render.Borrowed

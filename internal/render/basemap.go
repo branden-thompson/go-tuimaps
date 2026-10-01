@@ -29,6 +29,7 @@ type Label struct {
 	Rank       int32
 	Ink        uint8
 	fromPoint  bool // placed from its point, not centred on it: a marker's label (P-60)
+	reserved   bool // an alert's outside the moment: it holds its room and is never written (L-28)
 	place      bool // a host's place: a label that cannot fit whole is a DropPlaceName
 	tight      bool // one of a grid's marks: on an even spacing already, so kept a cell from its neighbours, not a name's margin (L-17.2)
 	first, end int  // its vertices, among the painter's: each is tried in turn (P-32)
@@ -201,35 +202,76 @@ func (p *Painter) Shape(v project.View, s scene.Shape) error {
 		p.culled++
 		return nil
 	}
-	role := colour.Token(s.Role)
-	if s.Kind == scene.ShapeArea && role >= colour.AlertExtremeOutline && role <= colour.AlertUnknownOutline {
+	if s.Kind == scene.ShapeArea && alertRole(s.Role) {
 		p.areas.Fill(p.rings, s.Role+1) // an alert's tint is the token after its outline's
 	}
-	if mark, ok := digitText(s.Mark); ok && s.Kind == scene.ShapeArea && len(p.outlines) < maxLabels {
-		start := len(p.outlineCells)
-		p.outlineCells = cellsAlong(p.outlineCells, p.rings)
-		p.outlines = append(p.outlines, Outline{Mark: mark, Ink: s.Role, from: start, to: len(p.outlineCells)})
-	}
+	p.keepOutline(s, false)
 	p.lines.Forcing(true)
 	for _, ring := range p.rings {
 		p.mark(ring, s)
 	}
 	p.lines.Forcing(false)
-	if s.Label != "" && len(p.overlayLabels) < maxLabels {
-		ink := s.Role
-		if colour.ScaleClass(colour.Token(ink)) {
-			ink = uint8(colour.MarkerLabel) // a scale's colour marks the point; its words need a colour that reads (L-25)
-		}
-		l := Label{X: (box[0] + box[2]) / 2, Y: (box[1] + box[3]) / 2, Name: textsafe.Clean(s.Label), Ink: ink}
-		if s.Dots > 0 { // a ring's words begin beside it, not over it (L-19)
-			l.X, l.fromPoint = box[0]+s.Dots+2, true
-		}
-		if s.Word != "" {
-			l.Short, l.Overlay = textsafe.Clean(s.Word), s.Overlay
-		}
-		p.overlayLabels = append(p.overlayLabels, l)
-	}
+	p.keepLabel(s, box, false)
 	return nil
+}
+
+// Reserve takes one prepared shape of an overlay outside the moment (L-15.1)
+// and paints nothing of it: an alert's word and severity digits are kept, as
+// Shape keeps them, to hold their room from the basemap's names (L-28).
+// Placed as if every alert in view were present, the names stand still as a
+// loop plays past each alert's hours (watchpost D-200).
+func (p *Painter) Reserve(v project.View, s scene.Shape) error {
+	if p == nil {
+		return badTile()
+	}
+	if !alertRole(s.Role) {
+		return nil // only an alert's words come before the names
+	}
+	x, y, side, err := v.TilePlace(scene.TileID{})
+	if err != nil {
+		return err
+	}
+	box, visible := p.place(s.Rings, x, y, side)
+	if !visible {
+		return nil
+	}
+	p.keepOutline(s, true)
+	p.keepLabel(s, box, true)
+	return nil
+}
+
+// alertRole reports whether a shape's role is an alert's outline.
+func alertRole(role uint8) bool {
+	t := colour.Token(role)
+	return t >= colour.AlertExtremeOutline && t <= colour.AlertUnknownOutline
+}
+
+// keepOutline keeps an alert area's outline, just placed, for its digits.
+func (p *Painter) keepOutline(s scene.Shape, reserved bool) {
+	if mark, ok := digitText(s.Mark); ok && s.Kind == scene.ShapeArea && len(p.outlines) < maxLabels {
+		start := len(p.outlineCells)
+		p.outlineCells = cellsAlong(p.outlineCells, p.rings)
+		p.outlines = append(p.outlines, Outline{Mark: mark, Ink: s.Role, from: start, to: len(p.outlineCells), reserved: reserved})
+	}
+}
+
+// keepLabel keeps a shape's words, at its box, for the label pass.
+func (p *Painter) keepLabel(s scene.Shape, box [4]int, reserved bool) {
+	if s.Label == "" || len(p.overlayLabels) >= maxLabels {
+		return
+	}
+	ink := s.Role
+	if colour.ScaleClass(colour.Token(ink)) {
+		ink = uint8(colour.MarkerLabel) // a scale's colour marks the point; its words need a colour that reads (L-25)
+	}
+	l := Label{X: (box[0] + box[2]) / 2, Y: (box[1] + box[3]) / 2, Name: textsafe.Clean(s.Label), Ink: ink, reserved: reserved}
+	if s.Dots > 0 { // a ring's words begin beside it, not over it (L-19)
+		l.X, l.fromPoint = box[0]+s.Dots+2, true
+	}
+	if s.Word != "" {
+		l.Short, l.Overlay = textsafe.Clean(s.Word), s.Overlay
+	}
+	p.overlayLabels = append(p.overlayLabels, l)
 }
 
 // place takes a shape's rings to dots, a point on one dot kept once, and
@@ -296,7 +338,8 @@ func (p *Painter) BandLabels() []Label {
 type Outline struct {
 	Mark     textsafe.Text
 	Ink      uint8
-	from, to int // its cells, in the painter's outline cells
+	from, to int  // its cells, in the painter's outline cells
+	reserved bool // an alert's outside the moment: its digits' cells are held, not written (L-28)
 }
 
 // Outlines are the alert areas' outlines, in the order drawn.

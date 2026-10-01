@@ -260,6 +260,7 @@ the sentence says what v0.2.0 will do, not what v0.1.0 does.
 | L-26.1 | `QPFGrid` keys rain and snow totals in mm in WPC's seven classes from 0.25 to 101.6 mm, tokens `qpf.1`-`qpf.7`; below 0.25, a trace, nothing is drawn (D-100) | TestRainTotalsAreWPCsScale |
 | L-26.2 | The "qpf" preset is in the unit "mm" alone, or the overlay is refused (D-100) | TestRainTotalsAreChecked |
 | L-27.1 | A loop handed in again draws its old pictures at the moment shown until its new ones are decoded; none is kept once they land or it is removed (watchpost D-199) | TestARefreshedLoopKeepsDrawing |
+| L-28.1 | An alert outside the moment is not drawn, but its word and severity digits hold their room from the basemap's names, and a field or image outside it holds the name budget: the names stand still as a loop plays (watchpost D-200) | TestNamesHoldStillAsALoopPlays |
 | L-17.4 | The legend keys radar's classes, an image's or a grid's, in the colours the frame draws them: the class below the first floor not drawn, and a grid of rain never keyed faint (D-91) | TestTheRainLegendKeysTheColoursDrawn |
 
 ## 12 · Changelog: what v0.2.0 breaks (D-58)

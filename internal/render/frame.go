@@ -74,6 +74,13 @@ type Input struct {
 	// Shapes are the overlays' prepared shapes, in the order they are drawn;
 	// OverlaysVersion counts their changes, since they cannot be compared.
 	Shapes []scene.Shape
+	// Reserved are the prepared shapes of overlays outside the moment
+	// (L-15.1): never drawn, but an alert's word and digits hold their room,
+	// so the basemap's names stand still as a loop plays past them (L-28).
+	Reserved []scene.Shape
+	// Covered says a field or image is on the map though not drawn in this
+	// frame - outside the moment - and the name budget is the one under it.
+	Covered bool
 	// Borrowed are the overlays drawn straight from the host's memory,
 	// which are read through their run index and never copied (D-92).
 	Borrowed        []Borrowed
@@ -152,6 +159,7 @@ type cell struct {
 	area   uint8  // the ink of the area that owns the cell's background, or 0
 	under  uint8  // the ink of the field or image class that colours the cell, or 0
 	taken  bool   // text occupies the cell: a label, or the second half of a wide character
+	held   bool   // a reserved alert's digit would be here: no name is placed over it (L-28)
 	strict bool   // the cell holds text, held to the text contrast
 	shade  string // with no ramp, an image's shade: laid last, only where nothing else claimed the cell (L-8.3)
 	faint  bool   // under is a field's band drawn faintly, where an image shares the map and has no echo (L-15.3)
@@ -264,6 +272,9 @@ func (g *grid) anchor(l Label, at Point) bool {
 		across, down = 1, 0
 	}
 	mine := box{left: col - across, right: col + across + width, top: row - down, bottom: row + down}
+	if g.heldAny(col, row, width) {
+		return false
+	}
 	for _, b := range g.boxes {
 		if mine.left <= b.right && b.left <= mine.right && mine.top <= b.bottom && b.top <= mine.bottom {
 			return false
@@ -274,6 +285,43 @@ func (g *grid) anchor(l Label, at Point) bool {
 	}
 	g.boxes = append(g.boxes, mine)
 	return true
+}
+
+// hold keeps a reserved alert's word's room from every name placed after it
+// (L-28): the box its name would take at its point, margin and all, whether
+// or not a drawn word already lies there. Nothing is written.
+func (g *grid) hold(l Label) {
+	width := textsafe.Width(l.Name)
+	if width == 0 || l.X < 0 || l.Y < 0 {
+		return
+	}
+	col, row := l.X/2, l.Y/4
+	if !l.fromPoint {
+		col -= width / 2
+	}
+	g.boxes = append(g.boxes, box{left: col - labelMargin, right: col + labelMargin + width, top: row - labelMargin/2, bottom: row + labelMargin/2})
+}
+
+// holdCell keeps one free cell from names, a reserved alert's digit's (L-28).
+func (g *grid) holdCell(c Point) bool {
+	if c.X < 0 || c.Y < 0 || c.X >= g.cols || c.Y >= g.rows || g.cells[c.Y*g.cols+c.X].taken {
+		return false
+	}
+	g.cells[c.Y*g.cols+c.X].held = true
+	return true
+}
+
+// heldAny reports whether any cell of a run on one row is held (L-28).
+func (g *grid) heldAny(col, row, width int) bool {
+	if row < 0 || row >= g.rows {
+		return false
+	}
+	for x := max(col, 0); x < min(col+width, g.cols); x++ {
+		if g.cells[row*g.cols+x].held {
+			return true
+		}
+	}
+	return false
 }
 
 // Renderer draws frames of one size, keeping its buffers between them.
@@ -330,7 +378,7 @@ func (r *Renderer) sameOverlays(in Input) bool {
 			return false
 		}
 	}
-	return in.OverlaysVersion == l.OverlaysVersion && len(in.Shapes) == len(l.Shapes) && len(in.Borrowed) == len(l.Borrowed) && len(in.Fields) == len(l.Fields) && len(in.Rasters) == len(l.Rasters)
+	return in.OverlaysVersion == l.OverlaysVersion && len(in.Shapes) == len(l.Shapes) && len(in.Reserved) == len(l.Reserved) && in.Covered == l.Covered && len(in.Borrowed) == len(l.Borrowed) && len(in.Fields) == len(l.Fields) && len(in.Rasters) == len(l.Rasters)
 }
 
 // sameLook reports whether everything but the tiles and the overlays is as it
@@ -410,6 +458,7 @@ func (r *Renderer) Draw(in Input) (Frame, error) {
 	r.last, r.drawn = in, true
 	r.last.Tiles = nil
 	r.last.Shapes = in.Shapes[:len(in.Shapes):len(in.Shapes)]
+	r.last.Reserved = in.Reserved[:len(in.Reserved):len(in.Reserved)]
 	r.redraws++
 	return r.held, nil
 }
@@ -493,6 +542,11 @@ func (r *Renderer) overlays(in Input) error {
 				return err
 			}
 		}
+		for _, s := range in.Reserved {
+			if err := r.painter.Reserve(v, s); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
@@ -519,7 +573,7 @@ func (r *Renderer) marks(in Input) error {
 // load is what is drawn over the basemap this frame, which decides how much
 // of itself the basemap gives up (FR-19).
 func load(in Input) style.Load {
-	if len(in.Fields) > 0 || len(in.Rasters) > 0 {
+	if len(in.Fields) > 0 || len(in.Rasters) > 0 || in.ImageHeld || in.Covered { // a loop's gap, or a layer outside the moment, as under it (L-28)
 		return style.Covered
 	}
 	return style.Bare
@@ -569,11 +623,19 @@ func (r *Renderer) compose(in Input, status Status) {
 		// An alert's label that does not fit falls back to its severity word;
 		// either way the host is told (L-8.5). The outline's digit carries
 		// the severity whatever happens to the label (D-65).
-		if first(l) {
+		if first(l) && !l.reserved {
 			r.placeOrShorten(l)
 		}
 	}
 	r.digits(in) // after the alerts' words, before any name of the basemap's (D-65)
+	// AN ALERT OUTSIDE THE MOMENT HOLDS ITS ROOM (L-28, watchpost D-200): its
+	// word and digits are kept from the names as if drawn, after every drawn
+	// one, so the names stand still as a loop plays past its hours.
+	for _, l := range r.painter.OverlayLabels() {
+		if l.reserved {
+			g.hold(l)
+		}
+	}
 	if !in.Labels {
 		r.dataNames() // not the basemap's labels: they do not go when those are turned off
 		r.shades()
@@ -632,21 +694,32 @@ func (r *Renderer) digits(in Input) {
 	free := func(c Point) bool {
 		return c.X >= 0 && c.X < g.cols && c.Y >= top && c.Y <= bottom && !g.cells[c.Y*g.cols+c.X].taken
 	}
-	for _, o := range r.painter.Outlines() {
-		placed, first := false, Point{X: -1}
-		for _, c := range r.painter.Cells(o) {
-			if !free(c) {
+	for _, reserved := range [2]bool{false, true} { // the drawn outlines' digits first, then the held (L-28)
+		for _, o := range r.painter.Outlines() {
+			if o.reserved != reserved {
 				continue
 			}
-			if first.X < 0 {
-				first = c
+			put := func(c Point) bool {
+				if reserved {
+					return g.holdCell(c)
+				}
+				return g.write(c.X, c.Y, o.Mark, o.Ink)
 			}
-			if (c.X+2*c.Y)%digitStride == 0 && g.write(c.X, c.Y, o.Mark, o.Ink) {
-				placed = true
+			placed, first := false, Point{X: -1}
+			for _, c := range r.painter.Cells(o) {
+				if !free(c) {
+					continue
+				}
+				if first.X < 0 {
+					first = c
+				}
+				if (c.X+2*c.Y)%digitStride == 0 && put(c) {
+					placed = true
+				}
 			}
-		}
-		if !placed && first.X >= 0 {
-			g.write(first.X, first.Y, o.Mark, o.Ink)
+			if !placed && first.X >= 0 {
+				put(first)
+			}
 		}
 	}
 }
@@ -688,7 +761,7 @@ func first(l Label) bool {
 func (r *Renderer) dataNames() {
 	r.grid.world = box{}
 	for _, l := range r.painter.OverlayLabels() {
-		if !first(l) {
+		if !first(l) { // a reserved label is an alert's: never here
 			r.placeOrShorten(l)
 		}
 	}
