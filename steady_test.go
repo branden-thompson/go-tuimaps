@@ -1,9 +1,8 @@
 package tuimaps_test
 
-// steady_test.go — v0.2.0 L11.33 (L-28, watchpost D-200, UAT-2 U2-46): as a
-// loop played, an alert drawn by its time (L-15.1) took its word's room on
-// the frames it met and gave it back on the others, and the place names
-// around it came and went with it. The names are placed as if every alert
+// steady_test.go — v0.2.0 L11.33 (L-28, watchpost D-200, UAT-2 U2-46): an
+// alert drawn by its time (L-15.1) is on some frames of a loop and not
+// others; the place names around it stand still, placed as if every alert
 // in view were present.
 
 import (

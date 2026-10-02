@@ -435,10 +435,9 @@ func TestPurgeDropsOnlyPicturesKeptForReuse(t *testing.T) {
 }
 
 // A REFRESHED LOOP KEEPS DRAWING WHILE ITS NEW FRAMES ARE DECODED (L11.32,
-// watchpost U2-47's blink, its C-10): a loop handed in again drew nothing
-// from the hand-in until its job decoded the new version - the old pictures
-// dropped at once, where a replaced shape keeps drawing its old form (L11.5).
-// The old loop's frame at the moment stands in until the new frames land; a
+// watchpost U2-47's blink, its C-10): a loop handed in again is drawn from
+// its old pictures - the old loop's frame at the moment - until its job has
+// decoded the new frames, as a replaced shape draws its old form (L11.5); a
 // dropped overlay keeps none.
 func TestARefreshedLoopDrawsTheOldFramesUntilTheNewLand(t *testing.T) {
 	var frames []LoopFrame

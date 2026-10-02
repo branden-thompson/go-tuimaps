@@ -76,7 +76,7 @@ func TestTheImageBudgetIsTheHosts(t *testing.T) {
 // and D-199): a loop handed in again is drawn from its old frames until the
 // new ones are decoded - the frame drawn straight after the hand-in, before
 // any work, still shows the radar - as a replaced shape draws its old form
-// (L11.5). Live runs saw one frame with no radar on every refresh.
+// (L11.5): no frame is drawn without the radar on a refresh.
 func TestARefreshedLoopKeepsDrawing(t *testing.T) {
 	m := world(t, 80, 24)
 	m.ColourDepth(tuimaps.Truecolor)

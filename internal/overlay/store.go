@@ -685,8 +685,8 @@ type standLoop struct {
 }
 
 // standPicturesLocked keeps an image's decoded pictures as its stand-in when
-// it is handed in again (L11.32): a refreshed radar loop drew nothing until
-// its job decoded the new version - the picture form of what L11.5 does for
+// it is handed in again (L11.32), so a refreshed radar loop is drawn while its
+// job decodes the new version - the picture form of what L11.5 does for
 // shapes. A stand-in already held, its replacement not yet landed, is kept:
 // it is the newest drawn. The pictures are the spare set's own, so nothing
 // more is held.
