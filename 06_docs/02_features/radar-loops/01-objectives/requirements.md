@@ -299,6 +299,13 @@ purpose, and the picture it does not ask to thin is the picture as it was.**
 |---|---|---|---|
 | L-28.1 | An overlay outside the moment (L-15.1) is not drawn, but the basemap's names are placed as if it were: an alert's word and severity digits hold their room, after every drawn alert's, and a field or image - or a loop on a gap - leaves the name budget the one under it. A name never comes and goes as a loop plays past an alert's hours. Two alerts' words that collide may still trade places frame to frame; a name moves only where it sat in that room. | watchpost D-200 | `TestNamesHoldStillAsALoopPlays`, `TestAReservedAlertHoldsItsWordsRoom`, `TestAReservedOutlineHoldsItsDigits`, `TestTheNameBudgetHoldsAcrossALoop`, `TestReservingIsAChangeOfFrame` |
 
+## L-28 — A render keeps an overlay's preparation (watchpost UAT-2 U2-59)
+
+| # | Requirement | Source | Test |
+|---|---|---|---|
+| L-28.1 | A render withdraws only the work its view no longer wants: a tile it needs is kept, and so is the preparation, at the bucket in view, of an overlay the map holds - so a loop whose preparation outlasts the gap between two renders is prepared once and drawn. A removed overlay's preparation, or another bucket's, is withdrawn. | watchpost U2-59 | `TestARenderKeepsAHeldOverlaysPreparation` |
+| L-28.2 | A loop prepared while the host renders as fast as it can is prepared once: no unit of the work a render planned is cancelled and asked again. | watchpost U2-59 | `TestALoopIsPreparedOnceWhileTheHostRenders` |
+
 ## Metrics of success
 
 The brief's M1–M6 (D-6), with round 1's changes. **This table is the normative one.**

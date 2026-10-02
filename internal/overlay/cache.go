@@ -4,6 +4,7 @@ import (
 	"context"
 	"math"
 	"strconv"
+	"strings"
 
 	"github.com/branden-thompson/go-tuimaps/internal/fault"
 	"github.com/branden-thompson/go-tuimaps/internal/project"
@@ -304,12 +305,30 @@ func (s *Store) PrepareJob(id string, bucket int) scene.Job {
 // Kind says this is an overlay job.
 func (j *prepareJob) Kind() scene.JobKind { return scene.KindOverlayPrepare }
 
+// prepareKeyPrefix begins every preparation's key.
+const prepareKeyPrefix = "overlay/"
+
 // Key names the work: an overlay and a bucket.
 func (j *prepareJob) Key() string {
 	if j == nil {
 		return ""
 	}
-	return "overlay/" + j.id + "/" + strconv.Itoa(j.bucket)
+	return prepareKeyPrefix + j.id + "/" + strconv.Itoa(j.bucket)
+}
+
+// PreparesOf reads a preparation's key back: the overlay and the bucket it
+// prepares; ok is false for any other work's key. It allocates nothing.
+func PreparesOf(key string) (id string, bucket int, ok bool) {
+	rest, found := strings.CutPrefix(key, prepareKeyPrefix)
+	at := strings.LastIndexByte(rest, '/')
+	if !found || at < 0 {
+		return "", 0, false
+	}
+	bucket, err := strconv.Atoi(rest[at+1:])
+	if err != nil {
+		return "", 0, false
+	}
+	return rest[:at], bucket, true
 }
 
 // Run reads the host's geometry, which it holds for as long as it reads, and

@@ -38,3 +38,12 @@ func AreasMeasured(m *Map) int {
 	defer m.mu.Unlock()
 	return m.areas.measured
 }
+
+// KeptAtRender reports whether a render leaves the preparation of overlay id,
+// at the bucket in view (or that bucket plus off), running: the predicate a
+// render's plan keeps work by.
+func KeptAtRender(m *Map, id string, off int) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.stillWanted(m.store.PrepareJob(id, m.bucket()+off).Key())
+}

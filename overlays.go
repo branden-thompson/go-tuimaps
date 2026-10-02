@@ -387,6 +387,20 @@ func (m *Map) overlayWork() error {
 	return nil
 }
 
+// stillWanted reports whether a render's plan keeps the work under key: a
+// tile the view needs, or the preparation, at the bucket in view, of an
+// overlay the map holds (watchpost UAT-2 U2-59). A preparation withdrawn here
+// is cancelled where it runs, so a loop that takes longer to prepare than the
+// gap between two renders would never be drawn. It allocates nothing: a
+// render pays it for every job waiting or running.
+func (m *Map) stillWanted(key string) bool {
+	if m.pipe.StillWanted(key) {
+		return true
+	}
+	id, bucket, ok := overlay.PreparesOf(key)
+	return ok && bucket == m.bucket() && m.store.Holds(id)
+}
+
 // draw fills in what the overlays put on this frame: prepared shapes, fields
 // and images, and the ones read straight from the host's memory (D-92).
 func (m *Map) draw(in *render.Input) {

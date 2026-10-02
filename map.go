@@ -323,7 +323,7 @@ func (m *Map) note(now time.Time) error {
 		m.member.NewView()
 		m.noted = m.view
 	}
-	err = m.member.Keep(m.pipe.StillWanted)
+	err = m.member.Keep(m.stillWanted)
 	if err != nil {
 		return err
 	}

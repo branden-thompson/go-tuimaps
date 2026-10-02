@@ -784,6 +784,17 @@ func (s *Store) During(id string) (Span, bool) {
 	return h.overlay.During, true
 }
 
+// Holds reports whether the store holds overlay id.
+func (s *Store) Holds(id string) bool {
+	if s == nil {
+		return false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	_, ok := s.current[id]
+	return ok
+}
+
 // IDs lists the overlays set, in the order they were first set.
 func (s *Store) IDs() []string {
 	if s == nil {
