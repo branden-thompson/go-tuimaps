@@ -262,6 +262,7 @@ the sentence says what v0.2.0 will do, not what v0.1.0 does.
 | L-27.1 | A loop handed in again draws its old pictures at the moment shown until its new ones are decoded; none is kept once they land or it is removed (watchpost D-199) | TestARefreshedLoopKeepsDrawing |
 | L-28.1 | A render keeps the work already asked that the view still wants: a tile it needs, and the preparation, at the bucket in view, of an overlay the map holds; a removed overlay's, or another bucket's, is withdrawn (watchpost U2-59) | TestARenderKeepsAHeldOverlaysPreparation |
 | L-28.2 | A loop prepared while the host renders as fast as it can is prepared once: no unit of the work a render planned is cancelled and asked again (watchpost U2-59) | TestALoopIsPreparedOnceWhileTheHostRenders |
+| L-29.1 | A frame is redrawn for the blink phase only when a marker on it blinks: with every marker steady, the phase flipping is no change (watchpost W14 P-10) | TestAPhaseFlipRedrawsOnlyWhatBlinks |
 | L-28.1 | An alert outside the moment is not drawn, but its word and severity digits hold their room from the basemap's names, and a field or image outside it holds the name budget: the names stand still as a loop plays (watchpost D-200) | TestNamesHoldStillAsALoopPlays |
 | L-17.4 | The legend keys radar's classes, an image's or a grid's, in the colours the frame draws them: the class below the first floor not drawn, and a grid of rain never keyed faint (D-91) | TestTheRainLegendKeysTheColoursDrawn |
 

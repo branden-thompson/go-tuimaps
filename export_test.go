@@ -47,3 +47,11 @@ func KeptAtRender(m *Map, id string, off int) bool {
 	defer m.mu.Unlock()
 	return m.stillWanted(m.store.PrepareJob(id, m.bucket()+off).Key())
 }
+
+// Redraws is how many frames the map's renderer has redrawn rather than
+// reused.
+func Redraws(m *Map) int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.renderer.Redraws()
+}

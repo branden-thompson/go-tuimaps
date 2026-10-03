@@ -306,6 +306,12 @@ purpose, and the picture it does not ask to thin is the picture as it was.**
 | L-28.1 | A render withdraws only the work its view no longer wants: a tile it needs is kept, and so is the preparation, at the bucket in view, of an overlay the map holds - so a loop whose preparation outlasts the gap between two renders is prepared once and drawn. A removed overlay's preparation, or another bucket's, is withdrawn. | watchpost U2-59 | `TestARenderKeepsAHeldOverlaysPreparation` |
 | L-28.2 | A loop prepared while the host renders as fast as it can is prepared once: no unit of the work a render planned is cancelled and asked again. | watchpost U2-59 | `TestALoopIsPreparedOnceWhileTheHostRenders` |
 
+
+## L-29 — A blink phase redraws only what blinks (watchpost W14 P-10)
+
+| # | Requirement | Source | Test |
+|---|---|---|---|
+| L-29.1 | A frame is redrawn for the blink phase only when a marker on it blinks. With every marker steady the frame is the same in either half of the blink, so the phase flipping - twice a blink period, whatever is drawn - is no change and draws nothing. | watchpost W14 P-10 | `TestAPhaseFlipRedrawsOnlyWhatBlinks` |
 ## Metrics of success
 
 The brief's M1–M6 (D-6), with round 1's changes. **This table is the normative one.**

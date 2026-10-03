@@ -370,13 +370,18 @@ func (r *Renderer) sameOverlays(in Input) bool {
 	if in.FieldsOverWater != l.FieldsOverWater || in.ImagesMaskedByWater != l.ImagesMaskedByWater || in.ImageHeld != l.ImageHeld {
 		return false
 	}
-	if in.MarkerPhase != l.MarkerPhase || len(in.Markers) != len(l.Markers) {
+	if len(in.Markers) != len(l.Markers) {
 		return false
 	}
+	blinks := false
 	for i, m := range in.Markers {
 		if m != l.Markers[i] {
 			return false
 		}
+		blinks = blinks || m.Blink
+	}
+	if blinks && in.MarkerPhase != l.MarkerPhase { // the phase is seen only on a blinking marker (L-29)
+		return false
 	}
 	return in.OverlaysVersion == l.OverlaysVersion && len(in.Shapes) == len(l.Shapes) && len(in.Reserved) == len(l.Reserved) && in.Covered == l.Covered && len(in.Borrowed) == len(l.Borrowed) && len(in.Fields) == len(l.Fields) && len(in.Rasters) == len(l.Rasters)
 }
