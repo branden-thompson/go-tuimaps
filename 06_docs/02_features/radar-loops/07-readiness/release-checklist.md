@@ -22,7 +22,7 @@ L-5.5, D-18, D-69, D-102
 | 0.6 | L10.7 / OW-4: `FuzzAgree` run ten times under the limiter, each recorded | `gate-fuzz-deadline.md`, L10.7: ten green after D-106; the freeze explained | [x] |
 | 0.7 | L10.8 / M4: the hour soak run once and recorded | `scripts/gate --soak`, 2026-10-04: 597 KB for the loop; over 1h0m0s the heap held within ±5 % (1588 KB at the start, 1631 KB at most) | [x] |
 | 0.8 | L10.10 / M6: five consecutive clean full gate runs, counted from `06_docs/gate-runs.md` | — | [ ] |
-| 0.9 | L10.9 / M1: the HUM LEAD's scores for both arms recorded | The sitting: `m1-sitting.md` (five loops in `testdata/loops`, the demo plays them) | [ ] |
+| 0.9 | L10.9 / M1: the HUM LEAD's scores for both arms recorded | `m1-sitting.md`, sitting 1 (2026-10-04): visual 5/5 pass, non-visual 3/5 fail; remedied by D-122 and held by `TestTheMotionOfSittingOneIsWithinAPoint` (D-123, no second sitting) | [x] |
 | 0.10 | OW-12: the triggered MRMS capture taken, or MRMS shipped marked unverified with its release-note line | No severe day before SHIP: L-2.3's planned outcome - `Unverified` stays set, `table-fallback` warns, and `release-notes.md` names the range above about 48.5 dBZ. Re-checked at the tag | [x] |
 | 0.11 | The Owed table holds no open row due before SHIP | `requirements.md`, Owed (OW-6 is due at the quality pass) | [ ] |
 

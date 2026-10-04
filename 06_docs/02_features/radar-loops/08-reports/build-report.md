@@ -4,7 +4,7 @@ date: 2026-10-04
 phase: BUILD (exit)
 sev: SEV-0
 authority: HUM LEAD
-status: "PRESENTED — BUILD's work is in; the BUILD-exit red team's round 1 is remediated; the decisions below are the HUM LEAD's before BUILD exits."
+status: "RE-PRESENTED — the fourteen decisions are ruled (D-108..D-121) and built; M1 is recorded (D-122, D-123); the red team's round 2 is remediated (D-124..D-127). BUILD exit is the HUM LEAD's."
 ---
 
 # BUILD report — go-tuiMaps v0.2.0
@@ -26,7 +26,29 @@ status: "PRESENTED — BUILD's work is in; the BUILD-exit red team's round 1 is 
 - **The red team** (`red-team-build.md`): eight blind reviewers; one Critical found and fixed (a refreshed
   loop never decoded its new frames); every other finding fixed, recorded with its reason, or listed below.
 
-## Decisions for the HUM LEAD before BUILD exits
+## The decisions, as ruled and built
+
+| # | Ruling | Built |
+|---|---|---|
+| 1 | D-108 | a borrowed alert carries its word and digits; its label from its whole box; the outline walk clipped |
+| 2 | D-109 | L-1.10d, the contract, the example and the demo say "playing" from `Advancing` |
+| 3 | D-110 | L-1.12 and L-1.10g as built; OW-15, OW-16 |
+| 4 | D-111 | `MotionReport.Missing` |
+| 5 | D-112 | the contract's limits; OW-17 |
+| 6 | D-113 | no change |
+| 7 | D-114 | a blend no class shows is drawn over; the plan's blend table |
+| 8 | D-115 | L-12.6's exception |
+| 9 | D-116 | the contract's limits; OW-18 |
+| 10 | D-117 | OW-19 |
+| 11 | D-118 | `06_docs/p10-ledger.md` and its two tests |
+| 12 | D-119 | OW-20 |
+| 13 | D-120 | the plan's readiness note |
+| 14 | D-121 | M1 sitting 1 recorded: visual 5/5, non-visual 3/5; D-122 (motion over the whole loop, heading first), D-123 (no resit, a regression pin), D-127 (raw headings published) |
+
+**Found on the way:** the demo app's pump stopped at the first failed job, so `--offline` drew no radar;
+fixed, and contract section 2 states that a failed job does not end a pump.
+
+## Decisions for the HUM LEAD before BUILD exits (round 1, ruled above)
 
 
 1. A11y 4.1 — A large alert drawn straight from the host's memory (the borrowed-geometry path) loses every

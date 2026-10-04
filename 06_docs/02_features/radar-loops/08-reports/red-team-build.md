@@ -4,10 +4,10 @@ date: 2026-10-04
 phase: BUILD (exit)
 sev: SEV-0
 authority: HUM LEAD
-status: "ROUND 1 REMEDIATED — every finding fixed, recorded with its reason, or brought to the HUM LEAD (the decisions list below). The re-present round follows the HUM LEAD's rulings."
+status: "ROUND 2 REMEDIATED — round 1's decisions ruled (D-108..D-121) and built; M1 recorded (D-122, D-123); round 2 reviewed that change, its behaviour questions ruled (D-124..D-127), every other finding fixed or recorded with its reason."
 ---
 
-# BUILD-exit red team — round 1
+# BUILD-exit red team
 
 ## Dispatch
 
@@ -81,3 +81,39 @@ HUM - changes behaviour, rendering or API, brought to the HUM LEAD.
 | The architecture leg's test runs `--quick` (code 7); `tables_test` drops parse errors (code 7) | recorded: the leg is exercised by the hosted run itself |
 | A11y 3.1, 3.3, 3.4, 4.1, 4.2; business F7, F13; perf F6, F8; code 8; BUILD 5, 13; InfoSec 4's API | **HUM** - see the BUILD report's decisions list |
 | M1 unscored (a11y 5.3) | **HUM** - the sitting is ready (`07-readiness/m1-sitting.md`) |
+
+## Round 2 — the change since `v0.2.0-rc.35`
+
+**Why a second round.** Round 1's fourteen decisions were ruled and built, and M1's first sitting failed
+its non-visual arm, which brought a new way of measuring motion (D-122) and a fix to the demo app's pump
+(it stopped at the first failed job, so `--offline` drew no radar). Three blind reviewers, briefed from the
+same template, read the uncommitted change against `v0.2.0-rc.35` with no builds or tests (a gate was
+running): code quality, business quality, and the Staff Accessibility Advocate. Each said "do not ship as
+it stands"; none found a Critical defect in the code.
+
+| Finding | Disposition |
+|---|---|
+| A pair of frames that meets nothing at any shift counted as rain that held (code 10) | fixed: not measured (`TestAPairWithNothingToMeetIsNotMeasured`) |
+| The span claimed the whole loop when pairs were skipped (business F8) | fixed: `Span` and `From` are the time measured (`TestTheSpanIsTheTimeMeasured`); the M1 pin's 55 minutes now proves every pair measured |
+| "Barely moved" followed by "coming closer" (a11y F2) | fixed: `Trend` is `Held` when not `Moving` (`TestRainThatBarelyMovedHeld`) |
+| A place on an image wider than half the world measured off its west edge (code 10) | fixed (`TestAWideImageFindsTheNearestRain`) |
+| A view inside a very large alert: no label, nothing in `Dropped`; the label at the middle of the visible edge (a11y F1) | fixed: the label at the middle of the alert's whole box, from its index (`TestABorrowedAlertAroundTheViewKeepsItsLabel`) |
+| An outline walked dot by dot off the screen (code 8, P10-02) | fixed: clipped to the view and its pad (`TestAnOutlineIsWalkedOnlyWhereTheViewIs`); the worst-case alert 38 µs a frame against 26 µs as a line, reading no more of the host's memory (`TestTheWorstCaseAlertReadsNoMore`, `BenchmarkWorstCaseSyntheticAlert`) |
+| The render budget claimed re-measured with no Go behind it (code 9) | fixed: the test and benchmark above |
+| `Painter.keeping`, `max(5, …)`, `TrackedFrames` returning `any` (code 4) | fixed: deleted, deleted, typed |
+| `From` reads as seen; `Heading` from or towards; `Heading` at zero; the 5 km/h number duplicated in a doc; the fit unnormalised; the window fixed (code 1, 5, 6; a11y F10) | fixed in the doc comments and the contract |
+| AP-HIST in `blend_test.go` (code 6) | fixed |
+| "1 kilometres"; times with no zone; forecast and gap left out of the status (a11y F6, F4, F8) | fixed in the demo and the example (`TestTheMotionWordsSayTheHeadingFirst`, `TestTheLoopIsSaidPlayingOnlyWhileItMoves`) |
+| M1's row unamended; the test quoted as evidence; raw headings unpublished; the blizzard loop dropped unexplained; the visual arm quoted (business F1, F6, F7, F4, F11) | fixed: M1's row, the sheet's table of raw headings, the caveats, the blizzard's reason (D-127) |
+| No host voices motion; the cut unrecorded (business F2, F3) | fixed: the release notes say so; OW-21 |
+| "Held" right after Play (a11y F7) | **HUM, D-124: kept**; the contract says so |
+| `TooFewFrames` over a full loop (code 5, a11y F5) | **HUM, D-125: kept**; the contract names every case |
+| Speed always in km/h (a11y F3) | **HUM, D-126**: the contract tells hosts to convert |
+| A resit on fresh loops (business F5) | **HUM, D-127: no resit**; raw headings published |
+| No confidence on a heading; speed unchecked on real loops (business F9) | recorded: stated in the contract; speed is checked on synthetic loops only |
+| The no-place case alone checked on real loops (business F10) | fixed: the M1 pin asks the view's centre by name too |
+| Surviving mutants: the tie-break, `widestShift`, the pointer clause of `samePictures` (code 7) | recorded: the tie-break decides only between equal positive fits, which real frames do not give; `widestShift` is a bound; `Set` and `Remove` drop the kept frames, so the pointer clause is a defence no path reaches |
+| `Frame.steps` grows while a loop is unchanged; a frame that never decodes reads "being read"; the block side by latitude (code 10) | recorded: bounded by the heavier pixels; a decode failure is warned; a recount per latitude, measured within the report's cost |
+| `loopWords` copies the example's switch (code 2) | recorded: the demo is a host, and a host words it; each is tested |
+| "Off until turned on" names no control (a11y F9) | recorded: playback is the host's to offer; the demo turns it on with `--loop` |
+| The mirror test skips with no ledger (code 9) | recorded: it says NOT RUN; the gate runs where the ledger is |

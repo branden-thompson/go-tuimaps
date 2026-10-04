@@ -144,7 +144,10 @@ func (a *app) resized(cols, rows int) bool {
 
 // pump is the work the library never does for itself (D-73): two goroutines
 // calling Work, woken by the library's own hook, each unit done telling the
-// loop that there is more of the map to see.
+// loop that there is more of the map to see. A job's failure, such as a tile
+// --offline cannot have, is that job's: the library retries it and warns of
+// it, and the pump goes on to the next. Only a map closed or a context
+// ended stops it.
 func pump(ctx context.Context, m *tuimaps.Map, events chan<- event) (*sync.WaitGroup, error) {
 	wake := make(chan struct{}, 1)
 	nudge := func() {
@@ -163,7 +166,7 @@ func pump(ctx context.Context, m *tuimaps.Map, events chan<- event) (*sync.WaitG
 			defer running.Done()
 			for {
 				did, err := m.Work(ctx)
-				if err != nil {
+				if stopped(err) {
 					return
 				}
 				if did {
@@ -184,6 +187,13 @@ func pump(ctx context.Context, m *tuimaps.Map, events chan<- event) (*sync.WaitG
 	}
 	nudge() // whatever is already waiting
 	return &running, nil
+}
+
+// stopped reports whether Work's error ends the pump: the map closed, or the
+// pump's context ended.
+func stopped(err error) bool {
+	kind, ok := tuimaps.KindOf(err)
+	return ok && (kind == tuimaps.Closed || kind == tuimaps.Cancelled)
 }
 
 // clock is how the loop tells the time and how it waits. A test hands in

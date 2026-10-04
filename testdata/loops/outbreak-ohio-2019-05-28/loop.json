@@ -1,0 +1,60 @@
+{
+ "name": "outbreak-ohio-2019-05-28",
+ "west": -86.5,
+ "south": 39.0,
+ "east": -83.5,
+ "north": 41.0,
+ "projection": "plate-carree",
+ "provider": "IEM",
+ "source": "Iowa Environmental Mesonet, NEXRAD N0Q composite archive (WMS-T, nexrad-n0q-wmst)",
+ "frames": [
+  {
+   "valid": "2019-05-28T02:35:00Z",
+   "file": "20190528T0235Z.png"
+  },
+  {
+   "valid": "2019-05-28T02:40:00Z",
+   "file": "20190528T0240Z.png"
+  },
+  {
+   "valid": "2019-05-28T02:45:00Z",
+   "file": "20190528T0245Z.png"
+  },
+  {
+   "valid": "2019-05-28T02:50:00Z",
+   "file": "20190528T0250Z.png"
+  },
+  {
+   "valid": "2019-05-28T02:55:00Z",
+   "file": "20190528T0255Z.png"
+  },
+  {
+   "valid": "2019-05-28T03:00:00Z",
+   "file": "20190528T0300Z.png"
+  },
+  {
+   "valid": "2019-05-28T03:05:00Z",
+   "file": "20190528T0305Z.png"
+  },
+  {
+   "valid": "2019-05-28T03:10:00Z",
+   "file": "20190528T0310Z.png"
+  },
+  {
+   "valid": "2019-05-28T03:15:00Z",
+   "file": "20190528T0315Z.png"
+  },
+  {
+   "valid": "2019-05-28T03:20:00Z",
+   "file": "20190528T0320Z.png"
+  },
+  {
+   "valid": "2019-05-28T03:25:00Z",
+   "file": "20190528T0325Z.png"
+  },
+  {
+   "valid": "2019-05-28T03:30:00Z",
+   "file": "20190528T0330Z.png"
+  }
+ ]
+}

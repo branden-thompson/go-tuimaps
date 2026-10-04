@@ -47,14 +47,35 @@ func (h playbackHost) settings(on bool, step time.Duration) error {
 	return h.m.SetPlaybackStep(step)
 }
 
-// status is the line a host shows under the map, read from the map.
+// status is the line a host shows under the map, read from the map. It
+// says "playing" only while the frames move (Advancing, D-109): play can be
+// pressed with the picture held still - the animation clock frozen - and a
+// listener told "playing" over a frozen picture is misled; right after Play,
+// before the next frame, it says "held" (D-124). With playback off it says
+// why, and a forecast or gap frame says so.
 func (h playbackHost) status() string {
 	st := h.m.Loop()
 	state := "stopped"
-	if st.Playing {
+	switch {
+	case st.Off == tuimaps.OffReduceMotion:
+		state = "off: reduced motion"
+	case st.Off == tuimaps.OffByHost:
+		state = "off"
+	case st.Off == tuimaps.OffByDefault:
+		state = "off until turned on"
+	case st.Advancing:
 		state = "playing"
+	case st.Playing:
+		state = "held"
 	}
-	return fmt.Sprintf("%s  frame %d of %d  %s", st.At.Format("15:04"), st.Index+1, st.Count, state)
+	at := st.At.Format("15:04")
+	switch {
+	case st.Forecast:
+		at = "forecast " + at // a forecast frame is never told as observed
+	case st.Gap:
+		at = "gap " + at
+	}
+	return fmt.Sprintf("%s  frame %d of %d  %s", at, st.Index+1, st.Count, state)
 }
 
 // Example_playback is a host wiring playback with no state of its own. It
@@ -112,7 +133,7 @@ func Example_playback() {
 	// Output:
 	// 12:00  frame 4 of 4  stopped
 	// a key moved Changed: true
-	// 11:45  frame 1 of 4  playing
+	// 11:45  frame 1 of 4  held
 	// next call in 500ms
 	// 11:50  frame 2 of 4  playing
 	// 11:55  frame 3 of 4  stopped

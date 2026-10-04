@@ -10,6 +10,9 @@ import (
 // Work does one unit of the map's slow work - a tile fetched or decoded, an
 // overlay prepared - on the goroutine that calls it, and returns when that
 // unit is done or ctx ends. It reports whether there was anything to do.
+// A job that failed comes back as the error with did true: the failure is
+// that job's, retried and warned of by the map, and a pump goes on. Only the
+// Closed and Cancelled kinds end a pump.
 //
 // **The library starts no goroutine of its own** (D-73): a host that wants
 // work done in the background calls this from goroutines of its own, as many

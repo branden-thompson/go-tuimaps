@@ -1,5 +1,10 @@
 package tuimaps
 
+import (
+	"github.com/branden-thompson/go-tuimaps/internal/describe"
+	"github.com/branden-thompson/go-tuimaps/internal/overlay"
+)
+
 // PlantPanic makes the next call of a given name panic, so that the library's
 // own tests can show that no panic escapes a public call (contract, section
 // 6, rule 4). It is in a test file: no build of the library carries it.
@@ -54,4 +59,25 @@ func Redraws(m *Map) int {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return m.renderer.Redraws()
+}
+
+// TrackedFrames is how many frames of a loop the map keeps as motion last
+// measured them, and the first of them, to be compared, or nil.
+func TrackedFrames(m *Map, id string) (int, *describe.Frame) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	frames := m.tracked[id]
+	if len(frames) == 0 {
+		return 0, nil
+	}
+	return len(frames), &frames[0]
+}
+
+// DrawnFromMemory reports whether the frame draws an overlay straight from
+// the host's memory (D-92) at the view's bucket.
+func DrawnFromMemory(m *Map, id string) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	_, _, path := m.store.Drawn(id, m.bucket())
+	return path == overlay.FromMemory
 }

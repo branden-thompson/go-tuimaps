@@ -57,6 +57,7 @@ type Painter struct {
 	ring        []Point
 	edge        []bool // for each point of ring: the segment that ends there lies along the tile's border
 	rings       [][]Point
+	starts      []int // where each kept stretch of a borrowed alert's outline begins in ring (D-108)
 	profile     style.Profile
 	depth       colour.Depth
 	reads       Reads
@@ -250,7 +251,8 @@ func alertRole(role uint8) bool {
 func (p *Painter) keepOutline(s scene.Shape, reserved bool) {
 	if mark, ok := digitText(s.Mark); ok && s.Kind == scene.ShapeArea && len(p.outlines) < maxLabels {
 		start := len(p.outlineCells)
-		p.outlineCells = cellsAlong(p.outlineCells, p.rings)
+		w, h := p.lines.Dots()
+		p.outlineCells = cellsAlong(p.outlineCells, p.rings, w, h)
 		p.outlines = append(p.outlines, Outline{Mark: mark, Ink: s.Role, from: start, to: len(p.outlineCells), reserved: reserved})
 	}
 }
@@ -376,9 +378,10 @@ func digitText(mark string) (textsafe.Text, bool) {
 	return textsafe.Text{}, false
 }
 
-// cellsAlong appends the cells a shape's rings pass through, in order, each
-// once in a row: a braille cell is two dots wide and four high.
-func cellsAlong(out []Point, rings [][]Point) []Point {
+// cellsAlong appends the cells a shape's rings pass through within a w by h
+// dot view and its clip pad, in order, each once in a row: a braille cell is
+// two dots wide and four high.
+func cellsAlong(out []Point, rings [][]Point, w, h int) []Point {
 	start := len(out)
 	add := func(x, y int) {
 		c := Point{X: floorDiv(x, 2), Y: floorDiv(y, 4)}
@@ -388,7 +391,10 @@ func cellsAlong(out []Point, rings [][]Point) []Point {
 	}
 	for _, ring := range rings {
 		for i := 0; i+1 < len(ring); i++ {
-			a, b := ring[i], ring[i+1]
+			a, b, ok := clipped(ring[i], ring[i+1], w, h)
+			if !ok {
+				continue // nothing of this edge is in the view or its pad
+			}
 			steps := max(abs(b.X-a.X), abs(b.Y-a.Y), 1)
 			for k := 0; k <= steps; k++ {
 				add(a.X+(b.X-a.X)*k/steps, a.Y+(b.Y-a.Y)*k/steps)
@@ -396,6 +402,31 @@ func cellsAlong(out []Point, rings [][]Point) []Point {
 		}
 	}
 	return out
+}
+
+// clipped is the part of an edge, in dots, inside a w by h view grown by the
+// clip pad, and whether any of it is: so an edge running far off the screen
+// is walked only where it can carry a digit.
+func clipped(a, b Point, w, h int) (Point, Point, bool) {
+	lo, hiX, hiY := float64(-clipMargin), float64(w+clipMargin), float64(h+clipMargin)
+	x0, y0, dx, dy := float64(a.X), float64(a.Y), float64(b.X-a.X), float64(b.Y-a.Y)
+	t0, t1 := 0.0, 1.0
+	for _, edge := range [4][2]float64{{-dx, x0 - lo}, {dx, hiX - x0}, {-dy, y0 - lo}, {dy, hiY - y0}} {
+		p, q := edge[0], edge[1]
+		switch {
+		case p == 0 && q < 0:
+			return a, b, false
+		case p < 0:
+			t0 = math.Max(t0, q/p)
+		case p > 0:
+			t1 = math.Min(t1, q/p)
+		}
+	}
+	if t0 > t1 {
+		return a, b, false
+	}
+	at := func(t float64) Point { return Point{X: int(math.Round(x0 + t*dx)), Y: int(math.Round(y0 + t*dy))} }
+	return at(t0), at(t1), true
 }
 
 func floorDiv(a, b int) int {

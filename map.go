@@ -186,12 +186,13 @@ type Map struct {
 	areas         areaMemo // a place measured against each alert, kept while the overlays and units stand (W14)
 	reported      *Report  // the report last worked out, and what it was worked out from (FR-29)
 	reportedKey   describeKey
-	remote        *tiles.Remote // the source named, if any: nothing is reached until one is (D-65)
-	disk          *tiles.Disk   // the disk cache, if the host named a directory
-	cacheMaxAge   time.Duration // how long a tile is kept on disk from its fetch; zero: until the cap needs the room
-	fetchOpts     FetchOptions  // how the library fetches (D-55)
-	address       string        // the source named, as the host wrote it
-	animation     time.Time     // and this is the moment it has driven it to
+	tracked       map[string][]describe.Frame // each loop's frames as motion last measured them, kept while its pictures are the same (D-122)
+	remote        *tiles.Remote               // the source named, if any: nothing is reached until one is (D-65)
+	disk          *tiles.Disk                 // the disk cache, if the host named a directory
+	cacheMaxAge   time.Duration               // how long a tile is kept on disk from its fetch; zero: until the cap needs the room
+	fetchOpts     FetchOptions                // how the library fetches (D-55)
+	address       string                      // the source named, as the host wrote it
+	animation     time.Time                   // and this is the moment it has driven it to
 	places        []Place
 	drawn         []render.Drawn
 	store         *overlay.Store
@@ -502,7 +503,7 @@ func (m *Map) Close() int {
 		for _, id := range m.store.IDs() {
 			_, _ = m.store.Drop(id) // an id the store just gave back is always there
 		}
-		m.places, m.own = nil, nil
+		m.places, m.own, m.tracked = nil, nil, nil
 		m.view4.Withdraw()
 		m.pipe.Release()
 		m.member.Leave()

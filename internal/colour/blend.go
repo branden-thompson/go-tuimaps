@@ -102,7 +102,8 @@ func (b Blends) Fallbacks() (out [][2]int) {
 }
 
 // SearchBlends finds, for each image preset and alert tint, the strongest
-// strength that keeps every class separated (L-11.2), reading the palette's
+// strength that keeps every class separated (L-11.2) - none, where at that
+// strength no class shows the tint (D-114) - reading the palette's
 // colours at the ground and depth given, so that a host palette is searched
 // as the library's own is (L3.8). It runs whenever the palette, the ground or
 // the depth changes, never on a frame.
@@ -118,10 +119,17 @@ func SearchBlends(p Palette, ground GroundKind, groundColour RGB, depth Depth) B
 		for tint := range 5 {
 			colour := tintOf(p, tint, ground, depth)
 			for _, s := range blendStrengths {
-				if separates(ramp, plain[:len(ramp)], under, colour, s, depth) {
-					b.strength[preset-Temperature][tint] = s
-					break
+				if !separates(ramp, plain[:len(ramp)], under, colour, s, depth) {
+					continue
 				}
+				// A BLEND NO CLASS SHOWS IS DRAWN OVER (D-114): where every class
+				// stays within the visible floor of itself, the tint cannot be
+				// seen inside the area, and drawing over gives the same picture
+				// without the blend's work.
+				if shows(ramp, plain[:len(ramp)], colour, s, depth) {
+					b.strength[preset-Temperature][tint] = s
+				}
+				break
 			}
 		}
 	}
@@ -152,6 +160,17 @@ func separates(ramp []RGB, plain []seen, under seen, tint RGB, strength float64,
 		}
 	}
 	return true
+}
+
+// shows reports whether any class blended at a strength is at least the
+// visible floor from itself unblended: whether the tint can be seen at all.
+func shows(ramp []RGB, plain []seen, tint RGB, strength float64, depth Depth) bool {
+	for i := range min(len(ramp), len(plain)) {
+		if apart(seenAs(shownAt(Blend(ramp[i], tint, strength), depth)), plain[i]) >= visibleFloor {
+			return true
+		}
+	}
+	return false
 }
 
 // shownAt is a colour as the depth will show it.

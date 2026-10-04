@@ -76,6 +76,9 @@ func (a *app) statusRow(frame tuimaps.Frame) string {
 		return ">> " + place.Name
 	}
 	said := a.m.Footer()
+	if st := a.m.Loop(); st.Count > 0 {
+		said += "  " + loopWords(st)
+	}
 	if frame.Status == tuimaps.Complete {
 		return said
 	}
@@ -85,6 +88,34 @@ func (a *app) statusRow(frame tuimaps.Frame) string {
 		return offlineNotice
 	}
 	return said + "  " + frame.Status.String()
+}
+
+// loopWords is where a recorded loop is and whether it moves (D-109):
+// "playing" only while its frames advance, "held" while play is pressed and
+// the picture is still, and with playback off, why. A forecast or a gap
+// frame says so, and the time names its zone.
+func loopWords(st tuimaps.LoopState) string {
+	state := "stopped"
+	switch {
+	case st.Off == tuimaps.OffReduceMotion:
+		state = "off: reduced motion"
+	case st.Off == tuimaps.OffByHost:
+		state = "off"
+	case st.Off == tuimaps.OffByDefault:
+		state = "off until turned on"
+	case st.Advancing:
+		state = "playing"
+	case st.Playing:
+		state = "held"
+	}
+	at := st.At.Format("15:04 MST")
+	switch {
+	case st.Forecast:
+		at = "forecast " + at // never told as observed (D-42)
+	case st.Gap:
+		at = "gap " + at
+	}
+	return at + " frame " + strconv.Itoa(st.Index+1) + " of " + strconv.Itoa(st.Count) + " " + state
 }
 
 // offlineNotice is why the map is not all there. The tiles built into the

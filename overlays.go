@@ -280,6 +280,7 @@ func (m *Map) Set(o Overlay) (res SetResult, err error) {
 	}
 	m.overlays++
 	m.reported = nil
+	delete(m.tracked, o.ID)       // its old pictures are not held for motion
 	m.play.seen = m.shownLocked() // a refresh that moves the moment is an input, not an advance
 	m.changed++
 	return res, nil
@@ -305,6 +306,7 @@ func (m *Map) Remove(id string) (res RemoveResult, err error) {
 	}
 	m.overlays++
 	m.reported = nil
+	delete(m.tracked, id)
 	m.play.seen = m.shownLocked() // a refresh that moves the moment is an input, not an advance
 	m.changed++
 	return res, nil
@@ -495,7 +497,10 @@ func (m *Map) borrow(id string) {
 		for _, ring := range f.Rings {
 			runs += (len(ring) + render.RunLength - 1) / render.RunLength
 		}
-		lent := render.Borrowed{Kind: shapeKind(f.Kind), Rings: f.Rings, Role: uint8(f.Role), Label: f.Label}
+		lent := render.Borrowed{Kind: shapeKind(f.Kind), Rings: f.Rings, Role: uint8(f.Role), Label: overlay.LabelOf(f), Overlay: id}
+		if lent.Kind == scene.ShapeArea { // an alert's word and digit, as a cached shape carries them (D-108)
+			lent.Mark, lent.Word = overlay.SeverityOf(f).Digit(), overlay.SeverityOf(f).Word()
+		}
 		if at+runs <= len(index) {
 			lent.Index = index[at : at+runs]
 		}

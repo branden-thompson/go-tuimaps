@@ -49,18 +49,42 @@ const (
 	Away   = describe.Away
 )
 
-// MotionReport is observed motion (L-1.12, D-42): where the heavier rain was
-// at the oldest usable frame of a loop and where it is at the newest,
-// relative to a named place - or, with Place empty, to the view's centre -
-// and whether it came closer, moved away or held, over the span between.
-// It is data about what was seen: nothing in it can say what will happen.
+// MotionReport is observed motion (L-1.12, D-42, D-122) for one loop and
+// one named place - or, with Place empty, the view's centre: the way the
+// heavier rain near it moves (Heading, towards, not from) and how fast,
+// measured over the pairs of frames that could be measured; where the
+// nearest heavier rain is at the newest frame (To), and where it stood the
+// measured time before by that motion (From, inferred, not seen); whether it
+// came closer, moved away or held; and the span measured. When the rain
+// barely moved (the contract states the speed), Moving is false,
+// HeadingCompass empty, Heading means nothing and Trend is Held. It is data
+// about what was seen: nothing in it can say what will happen.
+//
+// A loop with no motion to tell still has its entry (D-111): Missing says
+// why, and every other field but Overlay, Place and Threshold is zero.
 type MotionReport struct {
 	Overlay, Place string
 	Threshold      int // the class taken as heavier rain, held for the whole loop
 	From, To       Sighting
 	Trend          Trend
 	Span           time.Duration
+	Heading        float64 // the compass bearing the rain moves towards, in degrees
+	HeadingCompass string
+	SpeedKmh       float64
+	Moving         bool
+	Missing        MotionMissing
 }
+
+// MotionMissing is why a loop has no motion to tell (D-111).
+type MotionMissing = describe.Missing
+
+// The reasons: no heavier rain at the newest frame, fewer than two frames
+// that could be measured, or frames still being read.
+const (
+	MotionNoHeavierRain = describe.NoHeavierRain
+	MotionTooFewFrames  = describe.TooFewFrames
+	MotionDecoding      = describe.Decoding
+)
 
 // Sighting is where the heavier rain was seen, and when: how far from the
 // place and which way, in the units Units set.
@@ -203,6 +227,8 @@ func (m *Map) observedMotion(asked []Place, out []MotionReport) []MotionReport {
 	if len(refs) == 0 {
 		refs = append(refs, Place{At: LonLat{Lon: m.view.Centre.Lon, Lat: m.view.Centre.Lat}})
 	}
+	tracked := make(map[string][]describe.Frame, len(m.tracked))
+	defer func() { m.tracked = tracked }() // a loop no longer held is let go
 	for _, id := range m.store.IDs() {
 		reader, ok := m.store.Read(id)
 		if !ok {
@@ -218,28 +244,81 @@ func (m *Map) observedMotion(asked []Place, out []MotionReport) []MotionReport {
 			continue
 		}
 		threshold := heavierClass(kind)
-		var frames []describe.Frame
-		for _, f := range m.store.ObservedFrames(id) {
-			r := f.Raster
-			frames = append(frames, describe.Frame{Valid: f.Valid, Image: describe.Image{West: r.West, South: r.South, East: r.East, North: r.North,
-				Width: r.Width, Height: r.Height, Classes: r.Classes, Mercator: r.Projection == uint8(WebMercator)}})
+		observed := m.store.ObservedFrames(id)
+		frames := m.tracked[id]
+		if !samePictures(frames, observed) {
+			frames = make([]describe.Frame, 0, len(observed))
+			for _, f := range observed {
+				r := f.Raster
+				frames = append(frames, describe.Frame{Valid: f.Valid, Image: describe.Image{West: r.West, South: r.South, East: r.East, North: r.North,
+					Width: r.Width, Height: r.Height, Classes: r.Classes, Mercator: r.Projection == uint8(WebMercator)}})
+			}
 		}
+		tracked[id] = frames
+		reading := len(observed) < observable(o.Image.Frames)
 		for _, ref := range refs {
-			from, to, ok := describe.Track(frames, threshold, ref.At)
-			if !ok {
-				continue
-			}
-			a, b := m.sighting(ref.At, from), m.sighting(ref.At, to)
-			fromKm, _, _, fromOK := describe.Measure(ref.At, from.At)
-			toKm, _, _, toOK := describe.Measure(ref.At, to.At)
-			if !fromOK || !toOK {
-				continue // a sighting that cannot be measured has no trend to tell
-			}
-			out = append(out, MotionReport{Overlay: clean(id), Place: clean(ref.Name), Threshold: threshold,
-				From: a, To: b, Trend: describe.TrendOf(fromKm, toKm), Span: to.Valid.Sub(from.Valid)})
+			out = append(out, m.motionOf(clean(id), ref, frames, threshold, reading))
 		}
 	}
 	return out
+}
+
+// motionOf is one loop's motion for one place: measured, or why not.
+func (m *Map) motionOf(id string, ref Place, frames []describe.Frame, threshold int, reading bool) MotionReport {
+	entry := MotionReport{Overlay: id, Place: clean(ref.Name), Threshold: threshold}
+	mo, missing := describe.Track(frames, threshold, ref.At)
+	if missing == 0 {
+		fromKm, _, _, fromOK := describe.Measure(ref.At, mo.From.At)
+		toKm, _, _, toOK := describe.Measure(ref.At, mo.To.At)
+		if !fromOK || !toOK {
+			missing = describe.TooFewFrames // a sighting that cannot be measured has no trend to tell
+		} else {
+			entry.From, entry.To = m.sighting(ref.At, mo.From), m.sighting(ref.At, mo.To)
+			entry.Trend, entry.Span = describe.Held, mo.To.Valid.Sub(mo.From.Valid)
+			entry.SpeedKmh, entry.Moving = mo.SpeedKmh, mo.Moving
+			if mo.Moving { // rain that barely moved held, whatever a few kilometres over the span say
+				entry.Trend = describe.TrendOf(fromKm, toKm)
+				entry.Heading = mo.Heading
+				if word, err := project.Compass(mo.Heading); err == nil {
+					entry.HeadingCompass = word.String()
+				}
+			}
+			return entry
+		}
+	}
+	if reading {
+		missing = describe.Decoding // what is missing may yet be read
+	}
+	entry.Missing = missing
+	return entry
+}
+
+// samePictures reports whether frames kept from an earlier report were made
+// from these observed frames: the same times and the same decoded classes,
+// so what was measured over them still holds.
+func samePictures(kept []describe.Frame, observed []overlay.ObservedFrame) bool {
+	if len(kept) != len(observed) {
+		return false
+	}
+	for i, f := range observed {
+		k := kept[i].Image.Classes
+		if !kept[i].Valid.Equal(f.Valid) || len(k) != len(f.Raster.Classes) || (len(k) > 0 && &k[0] != &f.Raster.Classes[0]) {
+			return false
+		}
+	}
+	return true
+}
+
+// observable is how many of a loop's frames can be observed: neither a gap
+// nor a forecast.
+func observable(frames []LoopFrame) int {
+	n := 0
+	for _, f := range frames {
+		if !f.Gap && !f.Forecast {
+			n++
+		}
+	}
+	return n
 }
 
 // sighting is a cell seen from a place, in the host's units.

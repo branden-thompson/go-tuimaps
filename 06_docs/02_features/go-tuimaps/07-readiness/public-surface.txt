@@ -64,6 +64,9 @@ const MilesPerHour
 const MinZoom
 const MinorRoadLayer
 const MissingTable
+const MotionDecoding
+const MotionNoHeavierRain
+const MotionTooFewFrames
 const NearDuplicateID
 const NearImageColours
 const Nearby
@@ -237,7 +240,8 @@ type LoopFrame = overlay.LoopFrame
 type LoopState struct{ At time.Time; Now time.Time; Oldest time.Time; Newest time.Time; Index int; Count int; Playing bool; Advancing bool; Gap bool; Forecast bool; CeilingLifted bool; Playback Playback; Step time.Duration; Off OffReason }
 type Map struct{  }
 type MarkerStyle = render.MarkerShape
-type MotionReport struct{ Overlay string; Place string; Threshold int; From Sighting; To Sighting; Trend Trend; Span time.Duration }
+type MotionMissing = describe.Missing
+type MotionReport struct{ Overlay string; Place string; Threshold int; From Sighting; To Sighting; Trend Trend; Span time.Duration; Heading float64; HeadingCompass string; SpeedKmh float64; Moving bool; Missing MotionMissing }
 type OffReason uint8
 type Option func(*config) error
 type Overlay = overlay.Overlay

@@ -53,20 +53,21 @@ func TestAPixelsCentreIsInItsPixel(t *testing.T) {
 	}
 }
 
-// TestTrackingKeepsEachFramesCells (BUILD-exit red team, perf F2): Track
-// keeps the cells it works out on the frames, so a second place tracked
-// over the same frames shares the flood fill.
-func TestTrackingKeepsEachFramesCells(t *testing.T) {
+// TestTrackingKeepsWhatItWorksOut (BUILD-exit red team, perf F2; D-122):
+// Track keeps each pair's measure of motion on the newer frame, so a place
+// whose nearest heavier rain is the same pixel shares the measure.
+func TestTrackingKeepsWhatItWorksOut(t *testing.T) {
 	cls := make([]int8, 100)
-	cls[55] = 5
+	for _, at := range []int{44, 45, 46, 54, 55, 56, 64, 65, 66} { // a held block of nine
+		cls[at] = 5
+	}
 	frames := []Frame{{Valid: time.Unix(0, 0), Image: Image{West: 0, South: 0, East: 1, North: 1, Width: 10, Height: 10, Classes: cls}},
 		{Valid: time.Unix(300, 0), Image: Image{West: 0, South: 0, East: 1, North: 1, Width: 10, Height: 10, Classes: cls}}}
-	if _, _, ok := Track(frames, 3, project.LonLat{Lon: 0.5, Lat: 0.5}); !ok {
-		t.Fatal("no motion tracked over a held cell")
+	mo, missing := Track(frames, 3, project.LonLat{Lon: 0.5, Lat: 0.5})
+	if missing != 0 || mo.Moving {
+		t.Fatalf("a held block: %+v, missing %v; want measured, not moving", mo, missing)
 	}
-	for i, f := range frames {
-		if !f.celled || f.threshold != 3 || len(f.cells) != 1 {
-			t.Errorf("frame %d kept no cells after tracking (celled %v, %d cells)", i, f.celled, len(f.cells))
-		}
+	if len(frames[1].steps) != 1 {
+		t.Errorf("the newer frame kept %d measures of motion; want the one window measured", len(frames[1].steps))
 	}
 }

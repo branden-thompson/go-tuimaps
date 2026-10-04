@@ -30,7 +30,7 @@ flowchart TB
       E["<b>Every answer</b><br/>valid time · stale or not · the form it is drawn in · 'no data here', said plainly"]
     end
 
-    MOT["<b>Motion</b>, for each loop (L-1.12, D-42)<br/>where the heavier rain was at the oldest decoded observed frame and where it is at the newest,<br/>from each place asked — or the view's centre — under one threshold held for the loop:<br/>closer, away or held, over the span · observation only, never a forecast"]
+    MOT["<b>Motion</b>, for each loop (L-1.12, D-42, D-122)<br/>the way the heavier rain near each place asked — or the view's centre — moves and how fast,<br/>measured over every observed frame under one threshold held for the loop;<br/>the nearest heavier rain now and where it was · closer, away or held, over the span ·<br/>a loop with none says why (D-111) · observation only, never a forecast"]
 
     SHOWN --> GEO
     PER --> GEO

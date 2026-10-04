@@ -11,9 +11,13 @@ with what a host does instead. It is the library's first reviewed release (L-5.4
 - **Radar loops** (L-1): an image overlay may carry frames, each with its valid time; the host plays,
   stops, steps and resets them through one playback API, and the map draws the frame for its moment.
   A refreshed loop keeps drawing while its new frames are prepared (L-27).
-- **Storm motion in words** (L-1.12): `Report` says where the heavier rain was at the oldest usable
-  frame and where it is at the newest - distance, direction, time - and whether it came closer, moved
-  away or held. Observation, never forecast.
+- **Storm motion in words** (L-1.12, D-122): `Report` says which way the heavier rain near a place
+  moves and how fast, measured over the whole loop; where the nearest of it is now and where it was;
+  and whether it came closer, moved away or held. A loop with no motion to tell says why (D-111).
+  Observation, never forecast. **No host voices it yet**: watchpost 0.18.0 does not read `Motion`
+  (OW-21), so this is the library's answer, ready for a host to word. On the five loops of M1's first
+  sitting its heading fell within one compass point of a human's reading (3 to 45 degrees off); those
+  are the loops it was built on (D-127).
 - **Provider colour tables** (L-2, L-2.5): IEM's published table and MRMS's observed one, through one
   seam a third provider joins the same way.
 - **A view bound the host sets** (L-3), **a fetcher the host may supply** (L-7), **tile-host
@@ -67,6 +71,16 @@ Where BUILD departed from what DISCOVER and PLAN set:
 
 - **Loops do not play until the host says so.** Playback is off by default: the map shows the newest
   observed frame. A host turns it on with `SetPlayback(PlaybackOn)` and starts it with `Play`.
+- **Say "playing" from `Advancing`, not `Playing`.** `Loop()`'s `Playing` is play pressed with playback
+  on; `Advancing` is the frames moving, false while the animation clock is held still (D-109).
+- **Every loop has a motion entry.** One with no motion to tell says why in `Missing`: no heavier rain,
+  too few frames, or frames still being read (D-111).
+- **A pump keeps going past a failed job.** `Work` returns a failed job's error with `did` true; only
+  `closed` and `cancelled` end a pump (contract section 2).
+- **Large alerts keep their cues.** An alert drawn straight from the host's memory carries its severity
+  word and digits like any other (D-108).
+- **A blend no class would show is not drawn.** Where every class would stay within 5 of itself, the
+  image is drawn over the alert's tint (D-114).
 - **A refreshed loop keeps drawing.** A loop handed in again draws from its old frames until its new
   ones are decoded, then from the new ones (L-27).
 - **MRMS's heavy end is unverified.** MRMS publishes no colour table; its table was built from the

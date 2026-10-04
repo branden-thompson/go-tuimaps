@@ -156,20 +156,34 @@ func inView(a tuimaps.AlertShown) string {
 	return what
 }
 
-// moved is a loop's observed motion in words (L-1.12): where the heavier
-// rain was at the oldest usable frame and where it is at the newest, from
-// the place it is measured against. Observation, never forecast.
+// moved is a loop's observed motion in words (L-1.12, D-122): the way the
+// heavier rain near the place moved and how fast, over the loop, then where
+// the nearest of it is now and whether it came closer. With no motion to
+// tell, it says why (D-111). Observation, never forecast.
 func moved(mo tuimaps.MotionReport) string {
-	from := mo.Place
-	if from == "" {
-		from = "the view's centre"
+	near := mo.Place
+	if near == "" {
+		near = "the view's centre"
 	}
-	at := func(s tuimaps.Sighting) string {
-		return strconv.FormatFloat(s.Distance, 'f', 0, 64) + " " + s.Unit + " " + s.Compass + " at " + s.Valid.Format("15:04")
+	if mo.Missing != 0 {
+		return mo.Overlay + ": no motion to tell near " + near + ": " + mo.Missing.String()
 	}
-	went := map[tuimaps.Trend]string{tuimaps.Closer: "came closer", tuimaps.Away: "moved away", tuimaps.Held: "held"}[mo.Trend]
-	return mo.Overlay + ": heavier rain from " + from + " was " + at(mo.From) + ", and is " + at(mo.To) +
-		"; it " + went + " over " + strconv.Itoa(int(mo.Span.Round(time.Minute).Minutes())) + " minutes"
+	over := "over the " + strconv.Itoa(int(mo.Span.Round(time.Minute).Minutes())) + " minutes to " + mo.To.Valid.Format("15:04 MST")
+	how := "has barely moved " + over
+	if mo.Moving {
+		how = "is moving " + mo.HeadingCompass + " at about " + strconv.Itoa(int(math.Round(mo.SpeedKmh/5))*5) + " kilometres an hour, " + over
+	}
+	said := mo.Overlay + ": heavier rain near " + near + " " + how + "; "
+	distance := strconv.FormatFloat(mo.To.Distance, 'f', 0, 64)
+	if distance == "0" {
+		return said + "it is over " + near + " now"
+	}
+	went := map[tuimaps.Trend]string{tuimaps.Closer: "coming closer", tuimaps.Away: "moving away", tuimaps.Held: "holding its distance"}[mo.Trend]
+	unit := mo.To.Unit
+	if distance == "1" {
+		unit = strings.TrimSuffix(unit, "s") // one kilometre, one mile
+	}
+	return said + "the nearest is " + distance + " " + unit + " " + mo.To.Compass + ", " + went
 }
 
 // warned is one alert against a place, in words: what it is, how severe,

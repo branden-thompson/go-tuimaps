@@ -1,0 +1,60 @@
+{
+ "name": "mayfield-kentucky-2021-12-11",
+ "west": -90.0,
+ "south": 35.9,
+ "east": -87.0,
+ "north": 38.0,
+ "projection": "plate-carree",
+ "provider": "IEM",
+ "source": "Iowa Environmental Mesonet, NEXRAD N0Q composite archive (WMS-T, nexrad-n0q-wmst)",
+ "frames": [
+  {
+   "valid": "2021-12-11T02:35:00Z",
+   "file": "20211211T0235Z.png"
+  },
+  {
+   "valid": "2021-12-11T02:40:00Z",
+   "file": "20211211T0240Z.png"
+  },
+  {
+   "valid": "2021-12-11T02:45:00Z",
+   "file": "20211211T0245Z.png"
+  },
+  {
+   "valid": "2021-12-11T02:50:00Z",
+   "file": "20211211T0250Z.png"
+  },
+  {
+   "valid": "2021-12-11T02:55:00Z",
+   "file": "20211211T0255Z.png"
+  },
+  {
+   "valid": "2021-12-11T03:00:00Z",
+   "file": "20211211T0300Z.png"
+  },
+  {
+   "valid": "2021-12-11T03:05:00Z",
+   "file": "20211211T0305Z.png"
+  },
+  {
+   "valid": "2021-12-11T03:10:00Z",
+   "file": "20211211T0310Z.png"
+  },
+  {
+   "valid": "2021-12-11T03:15:00Z",
+   "file": "20211211T0315Z.png"
+  },
+  {
+   "valid": "2021-12-11T03:20:00Z",
+   "file": "20211211T0320Z.png"
+  },
+  {
+   "valid": "2021-12-11T03:25:00Z",
+   "file": "20211211T0325Z.png"
+  },
+  {
+   "valid": "2021-12-11T03:30:00Z",
+   "file": "20211211T0330Z.png"
+  }
+ ]
+}

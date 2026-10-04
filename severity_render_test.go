@@ -241,3 +241,104 @@ func TestTheLegendCarriesTheDigitKeyAndTheBlend(t *testing.T) {
 		}
 	}
 }
+
+// TestABorrowedAlertCarriesItsWordAndDigits (D-108, L-8.1): an alert too
+// large for the shape cache is drawn straight from the host's memory
+// (D-92), and still carries its severity word in its label and its digit
+// along its outline at NoColour, as a cached alert does.
+func TestABorrowedAlertCarriesItsWordAndDigits(t *testing.T) {
+	big := bigAlert()
+
+	m, err := tuimaps.New(tuimaps.WithSize(149, 38))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer m.Close()
+	m.ColourDepth(tuimaps.NoColour)
+	must(t, m.Recentre(tuimaps.LonLat{Lon: -91, Lat: 35}))
+	must(t, m.Zoom(4.5))
+	mustSet(t, m, big)
+	settle(t, m)
+	f, err := m.Render(tuimaps.Size{Cols: 149, Rows: 38}, noon)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !tuimaps.DrawnFromMemory(m, "big") {
+		t.Fatal("the alert is not drawn from the host's memory; the test proves nothing about that path")
+	}
+	rows := make([]string, len(f.Lines))
+	for i, l := range f.Lines {
+		rows[i] = plainText(l)
+	}
+	frame := strings.Join(rows[1:len(rows)-1], "\n")
+	if !strings.Contains(frame, "Tornado Warning · EXTREME") {
+		t.Errorf("no label reads %q:\n%s", "Tornado Warning · EXTREME", frame)
+	}
+	if strings.Count(frame, "4") < 4 {
+		t.Errorf("the outline carries %d severity digits; want them along it:\n%s", strings.Count(frame, "4"), frame)
+	}
+}
+
+// bigAlert is a Tornado Warning six degrees a side around -91, 35 with
+// 40,000 vertices in a zigzag simplification cannot drop, so it never fits
+// the shape cache and is drawn straight from the host's memory (D-92).
+func bigAlert() tuimaps.Overlay {
+	const side = 10_000 // vertices a side: 40,000 in the ring, past what the cache takes (D-92)
+	ring := make([]tuimaps.LonLat, 0, 4*side+1)
+	wiggle := func(i int) float64 { return 0.15 * float64(1-2*(i%2)) } // a zigzag simplification cannot drop, so it never fits the cache
+	for i := range side {
+		f := float64(i) / side
+		ring = append(ring, tuimaps.LonLat{Lon: -94 + 6*f, Lat: 32 + wiggle(i)})
+	}
+	for i := range side {
+		f := float64(i) / side
+		ring = append(ring, tuimaps.LonLat{Lon: -88 + wiggle(i), Lat: 32 + 6*f})
+	}
+	for i := range side {
+		f := float64(i) / side
+		ring = append(ring, tuimaps.LonLat{Lon: -88 - 6*f, Lat: 38 + wiggle(i)})
+	}
+	for i := range side {
+		f := float64(i) / side
+		ring = append(ring, tuimaps.LonLat{Lon: -94 + wiggle(i), Lat: 38 - 6*f})
+	}
+	ring = append(ring, ring[0])
+	return tuimaps.Overlay{ID: "big", Valid: noon, Keeps: time.Hour, Features: []tuimaps.Feature{{Kind: tuimaps.Polygon,
+		Role: tuimaps.AlertExtreme, Label: "Tornado Warning", Rings: [][]tuimaps.LonLat{ring}}}}
+
+}
+
+// TestABorrowedAlertAroundTheViewKeepsItsLabel (D-108, round 2): a view
+// zoomed in wholly inside a very large alert meets none of its outline, and
+// its label is still placed - at the middle of the alert's whole box, as a
+// cached alert's is - or reported in Frame.Dropped.
+func TestABorrowedAlertAroundTheViewKeepsItsLabel(t *testing.T) {
+	m, err := tuimaps.New(tuimaps.WithSize(149, 38))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer m.Close()
+	m.ColourDepth(tuimaps.NoColour)
+	must(t, m.Recentre(tuimaps.LonLat{Lon: -91, Lat: 35}))
+	must(t, m.Zoom(9))
+	mustSet(t, m, bigAlert())
+	settle(t, m)
+	f, err := m.Render(tuimaps.Size{Cols: 149, Rows: 38}, noon)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !tuimaps.DrawnFromMemory(m, "big") {
+		t.Fatal("the alert is not drawn from the host's memory; the test proves nothing about that path")
+	}
+	frame := ""
+	for _, l := range f.Lines {
+		frame += plainText(l) + "\n"
+	}
+	dropped := false
+	for _, d := range f.Dropped {
+		dropped = dropped || d.Overlay == "big"
+	}
+	if !strings.Contains(frame, "Tornado Warning · EXTREME") && !dropped {
+		t.Errorf("a view inside the alert neither shows nor reports its label:\n%s", frame)
+	}
+}

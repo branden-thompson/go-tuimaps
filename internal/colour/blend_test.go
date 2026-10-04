@@ -77,8 +77,9 @@ func TestCheckBlendHoldsBothRules(t *testing.T) {
 
 // TestTheSearchPicksTheStrongestThatSeparates is L3.8 (L-11.3, L-11.4,
 // D-27): for each image ramp, ground, depth and tint, the strength chosen is
-// the strongest tried that keeps every class separated; where none does, the
-// tint does not blend and the image is drawn over it. The PLAN measurements
+// the strongest tried that keeps every class separated; where none does, or
+// no class shows the tint at it (D-114), the tint does not blend and the
+// image is drawn over it. The PLAN measurements
 // hold: radar blends under every tint on the dark ground, and on the light
 // ground no strength passes (S29-6).
 func TestTheSearchPicksTheStrongestThatSeparates(t *testing.T) {
@@ -100,8 +101,13 @@ func TestTheSearchPicksTheStrongestThatSeparates(t *testing.T) {
 						return true
 					}
 					if !blended {
-						if separates(blendStrengths[len(blendStrengths)-1]) {
-							t.Errorf("%v %v %v tint %d: not blended, yet the faintest strength separates", p, ground, depth, tint)
+						for _, at := range blendStrengths { // drawn over only where nothing separates, or the strongest that does shows nothing (D-114)
+							if separates(at) {
+								if !invisibleAt(ramp, colour, groundOf(ground, depth), at, depth) {
+									t.Errorf("%v %v %v tint %d: not blended, yet %.2f separates and shows the tint", p, ground, depth, tint, at)
+								}
+								break
+							}
 						}
 						continue
 					}
@@ -248,4 +254,43 @@ func TestTheOutlineAndLabelReadOverTheBlend(t *testing.T) {
 	if checked != 40 {
 		t.Errorf("checked %d combinations, want 40", checked)
 	}
+}
+
+// TestABlendNoClassShowsIsDrawnOver (D-114): where the strongest blend that
+// separates leaves every class within 5 of itself outside the area - the
+// tint invisible inside it, temperature on the dark ground at 256 colours
+// among them - the search blends nothing, and the field is drawn over the
+// tint: the same picture without the blend's work.
+func TestABlendNoClassShowsIsDrawnOver(t *testing.T) {
+	var none Palette
+	for _, ground := range []GroundKind{Dark, Light} {
+		for _, depth := range []Depth{Truecolor, Colours256} {
+			gc := groundOf(ground, depth)
+			b := SearchBlends(none, ground, gc, depth)
+			for _, p := range []Preset{Radar, Temperature} {
+				ramp := rampOf(none, p, ground, depth)
+				for tint := range 5 {
+					if s, blended := b.Strength(p, tint); blended && invisibleAt(ramp, tintOf(none, tint, ground, depth), gc, s, depth) {
+						t.Errorf("%v %v %v tint %d: blended at %.2f, and no class shows the tint", p, ground, depth, tint, s)
+					}
+				}
+			}
+		}
+	}
+	// Temperature on the dark ground at 256 colours, under the extreme tint, is drawn over.
+	if _, blended := SearchBlends(none, Dark, groundOf(Dark, Colours256), Colours256).Strength(Temperature, 0); blended {
+		t.Error("temperature on the dark ground at 256 colours still blends under the extreme tint")
+	}
+}
+
+// invisibleAt reports whether every class blended at a strength stays within
+// the visible floor of itself unblended.
+func invisibleAt(ramp []RGB, tint, ground RGB, s float64, depth Depth) bool {
+	hidden := 0
+	for _, f := range CheckBlend(ramp, tint, ground, s, depth) {
+		if f.Rule == BlendVisible {
+			hidden++
+		}
+	}
+	return hidden == len(ramp)
 }

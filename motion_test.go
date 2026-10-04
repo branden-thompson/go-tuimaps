@@ -1,9 +1,9 @@
 package tuimaps_test
 
-// motion_test.go — v0.2.0 L5.5 (L-1.12, D-42, D-72): where the heavier rain
-// was at the oldest usable frame and where it is at the newest, relative to a
-// named place or, with none, to the view's centre - observation, never
-// forecast.
+// motion_test.go — v0.2.0 L5.5 (L-1.12, D-42, D-72, D-122): the way the
+// heavier rain moved and how fast, where the nearest of it is at the newest
+// frame and where it was at the oldest, relative to a named place or, with
+// none, to the view's centre - observation, never forecast.
 
 import (
 	"bytes"
@@ -70,9 +70,13 @@ func motionMap(t *testing.T, o tuimaps.Overlay, places ...tuimaps.Place) tuimaps
 // kmEast is a longitude a distance east of another at 35 north.
 func kmEast(lon, km float64) float64 { return lon + km/(111.32*math.Cos(35*math.Pi/180)) }
 
+// edgeKm is how much nearer a blob's heavy square's near edge is than its
+// middle: the nearest heavier rain is its nearest pixel (D-122).
+const edgeKm = 4.0
+
 // TestMotionTowardAPlace is L5.5: a cell 12 km further east after ten
-// minutes, toward a place east of it: from about 32 km to about 20 km, came
-// closer, over ten minutes, at the heavy class.
+// minutes, toward a place east of it, its middle from about 32 km to about
+// 20 km: its near edge came closer, over ten minutes, at the heavy class.
 func TestMotionTowardAPlace(t *testing.T) {
 	start := tuimaps.LonLat{Lon: -91.5, Lat: 35}
 	then := tuimaps.LonLat{Lon: kmEast(start.Lon, 12), Lat: 35}
@@ -88,11 +92,14 @@ func TestMotionTowardAPlace(t *testing.T) {
 	if mo.Place != "Home" || mo.Overlay != "radar" || mo.Trend != tuimaps.Closer || mo.Span != 10*time.Minute {
 		t.Errorf("motion: %+v; want Home, radar, closer, ten minutes", mo)
 	}
-	if math.Abs(mo.From.Distance-32) > 2.5 || math.Abs(mo.To.Distance-20) > 2.5 || mo.To.Unit != "kilometres" || mo.To.Compass != "west" {
-		t.Errorf("from %.1f to %.1f %s, %s; want about 32 to about 20 kilometres, to the west", mo.From.Distance, mo.To.Distance, mo.To.Unit, mo.To.Compass)
+	if math.Abs(mo.From.Distance-(32-edgeKm)) > 2.5 || math.Abs(mo.To.Distance-(20-edgeKm)) > 2.5 || mo.To.Unit != "kilometres" || mo.To.Compass != "west" {
+		t.Errorf("from %.1f to %.1f %s, %s; want about %.0f to about %.0f kilometres, to the west", mo.From.Distance, mo.To.Distance, mo.To.Unit, mo.To.Compass, 32-edgeKm, 20-edgeKm)
 	}
 	if !mo.From.Valid.Equal(noon.Add(-10*time.Minute)) || !mo.To.Valid.Equal(noon) || mo.Threshold < 1 {
 		t.Errorf("sightings at %v and %v, threshold class %d", mo.From.Valid, mo.To.Valid, mo.Threshold)
+	}
+	if !mo.Moving || mo.HeadingCompass != "east" || math.Abs(mo.Heading-90) > 10 || math.Abs(mo.SpeedKmh-72) > 15 {
+		t.Errorf("heading %s (%.0f), %.0f km/h, moving %v; want east at about 72 km/h (D-122)", mo.HeadingCompass, mo.Heading, mo.SpeedKmh, mo.Moving)
 	}
 }
 
@@ -110,15 +117,15 @@ func TestEachPlaceGetsItsNearestCell(t *testing.T) {
 		t.Fatalf("motion: %+v; want one for each place", r.Motion)
 	}
 	for _, mo := range r.Motion {
-		if mo.To.Distance > 15 || mo.Trend != tuimaps.Held {
-			t.Errorf("%s: %+v; want its own cell, within 15 km, held", mo.Place, mo)
+		if mo.To.Distance > 15 || mo.Trend != tuimaps.Held || mo.Moving || mo.HeadingCompass != "" {
+			t.Errorf("%s: %+v; want its own cell, within 15 km, held, with no heading", mo.Place, mo)
 		}
 	}
 }
 
 // TestMotionAppearsWhenTheFramesAreRead: asked before any work, the frames
-// are not read and there is no motion; asked again after, there is - the
-// remembered report does not hide what the work landed.
+// are not read and the loop's entry says so (D-111); asked again after, it
+// has motion - the remembered report does not hide what the work landed.
 func TestMotionAppearsWhenTheFramesAreRead(t *testing.T) {
 	c := tuimaps.LonLat{Lon: -91, Lat: 35}
 	m := world(t, 80, 24)
@@ -128,11 +135,11 @@ func TestMotionAppearsWhenTheFramesAreRead(t *testing.T) {
 		tuimaps.LoopFrame{Valid: noon, PNG: blobs(t, c)},
 	))
 	home := []tuimaps.Place{{ID: "home", Name: "Home", At: tuimaps.LonLat{Lon: -90.5, Lat: 35}}}
-	if r, err := m.Report(home); err != nil || len(r.Motion) != 0 {
-		t.Fatalf("before any work: %+v, %v; want no motion yet", r.Motion, err)
+	if r, err := m.Report(home); err != nil || len(r.Motion) != 1 || r.Motion[0].Missing != tuimaps.MotionDecoding {
+		t.Fatalf("before any work: %+v, %v; want one entry, its frames still being read (D-111)", r.Motion, err)
 	}
 	settle(t, m)
-	if r, err := m.Report(home); err != nil || len(r.Motion) != 1 {
+	if r, err := m.Report(home); err != nil || len(r.Motion) != 1 || r.Motion[0].Missing != 0 || r.Motion[0].To.Valid.IsZero() {
 		t.Errorf("after the frames are read: %+v, %v; want motion", r.Motion, err)
 	}
 }
@@ -178,7 +185,7 @@ func TestMotionWithNoPlaceIsRelativeToTheView(t *testing.T) {
 	if len(r.Motion) != 1 || r.Motion[0].Place != "" || r.Motion[0].Trend != tuimaps.Closer {
 		t.Fatalf("motion with no place: %+v; want one, relative to the view's centre, closer", r.Motion)
 	}
-	if d := r.Motion[0].To.Distance; math.Abs(d-kmFromCentre(kmEast(start.Lon, 12))) > 2.5 {
+	if d := r.Motion[0].To.Distance; math.Abs(d-(kmFromCentre(kmEast(start.Lon, 12))-edgeKm)) > 2.5 {
 		t.Errorf("to %.1f km from the centre", d)
 	}
 }
@@ -200,5 +207,84 @@ func TestAHostTypesHeavierRainIsItsTopThird(t *testing.T) {
 	r := motionMap(t, o, tuimaps.Place{ID: "home", Name: "Home", At: tuimaps.LonLat{Lon: -90.5, Lat: 35}})
 	if len(r.Motion) != 1 || r.Motion[0].Threshold != 4 {
 		t.Errorf("a host type of six classes: %+v; want the heavier rain from class 4", r.Motion)
+	}
+}
+
+// TestALoopWithNoMotionSaysWhy (D-111): a loop whose newest frame has no
+// heavier rain, and a loop of one frame, each still have their entry, with
+// the reason; a listener can tell clear from not ready.
+func TestALoopWithNoMotionSaysWhy(t *testing.T) {
+	c := tuimaps.LonLat{Lon: -91, Lat: 35}
+	home := tuimaps.Place{ID: "home", Name: "Home", At: tuimaps.LonLat{Lon: -90.5, Lat: 35}}
+	clear := motionMap(t, motionLoop(
+		tuimaps.LoopFrame{Valid: noon.Add(-10 * time.Minute), PNG: blobs(t, c)},
+		tuimaps.LoopFrame{Valid: noon, PNG: blobs(t)},
+	), home)
+	if len(clear.Motion) != 1 || clear.Motion[0].Missing != tuimaps.MotionNoHeavierRain || clear.Motion[0].Place != "Home" {
+		t.Errorf("no heavier rain at the newest frame: %+v; want Home's entry saying so", clear.Motion)
+	}
+	one := motionMap(t, motionLoop(tuimaps.LoopFrame{Valid: noon, PNG: blobs(t, c)}), home)
+	if len(one.Motion) != 1 || one.Motion[0].Missing != tuimaps.MotionTooFewFrames {
+		t.Errorf("a loop of one frame: %+v; want its entry, too few frames", one.Motion)
+	}
+	if got := tuimaps.MotionDecoding.String(); got != "frames still being read" {
+		t.Errorf("the reason's words: %q", got)
+	}
+}
+
+// TestMotionKeepsItsFramesWhileTheyHold (D-122): a pan asks for motion
+// again over the same frames, which are kept and measured from, not built
+// again; a refresh lets the old ones go at once, so they hold no memory
+// until the next report.
+func TestMotionKeepsItsFramesWhileTheyHold(t *testing.T) {
+	c := tuimaps.LonLat{Lon: -91, Lat: 35}
+	loop := motionLoop(
+		tuimaps.LoopFrame{Valid: noon.Add(-10 * time.Minute), PNG: blobs(t, c)},
+		tuimaps.LoopFrame{Valid: noon, PNG: blobs(t, c)},
+	)
+	m := world(t, 80, 24)
+	must(t, m.Recentre(c))
+	must(t, m.Zoom(6))
+	mustSet(t, m, loop)
+	settle(t, m)
+	if _, err := m.Report(nil); err != nil {
+		t.Fatal(err)
+	}
+	n, first := tuimaps.TrackedFrames(m, "radar")
+	if n != 2 || first == nil {
+		t.Fatalf("after a report: %d frames kept; want both", n)
+	}
+	must(t, m.Recentre(tuimaps.LonLat{Lon: -90.9, Lat: 35}))
+	if _, err := m.Report(nil); err != nil {
+		t.Fatal(err)
+	}
+	if n, again := tuimaps.TrackedFrames(m, "radar"); n != 2 || again != first {
+		t.Errorf("after a pan: %d frames, the same ones %v; want the frames kept", n, again == first)
+	}
+	mustSet(t, m, loop)
+	if n, _ := tuimaps.TrackedFrames(m, "radar"); n != 0 {
+		t.Errorf("after a refresh: %d frames still kept; want none", n)
+	}
+}
+
+// TestRainThatBarelyMovedHeld: rain that moved slower than 5 km an hour has
+// no heading, and is said to have held, though over an hour it ends more than
+// 2 km nearer - "barely moved" and "came closer" do not go together.
+func TestRainThatBarelyMovedHeld(t *testing.T) {
+	start := tuimaps.LonLat{Lon: -91.5, Lat: 35}
+	home := tuimaps.Place{ID: "home", Name: "Home", At: tuimaps.LonLat{Lon: -90.8, Lat: 35}}
+	r := motionMap(t, motionLoop(
+		tuimaps.LoopFrame{Valid: noon.Add(-time.Hour), PNG: blobs(t, start)},
+		tuimaps.LoopFrame{Valid: noon, PNG: blobs(t, tuimaps.LonLat{Lon: kmEast(start.Lon, 4.5), Lat: 35})},
+	), home)
+	if len(r.Motion) != 1 {
+		t.Fatalf("motion: %+v; want one", r.Motion)
+	}
+	mo := r.Motion[0]
+	if mo.From.Distance-mo.To.Distance <= 2 {
+		t.Fatalf("from %.1f to %.1f km: within the 2 km that holds anyway, so the test proves nothing", mo.From.Distance, mo.To.Distance)
+	}
+	if mo.Moving || mo.Trend != tuimaps.Held {
+		t.Errorf("rain %.1f km nearer after an hour at %.1f km/h: %+v; want not moving, held", mo.From.Distance-mo.To.Distance, mo.SpeedKmh, mo)
 	}
 }
