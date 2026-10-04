@@ -414,7 +414,7 @@ func TestPurgeDropsOnlyPicturesKeptForReuse(t *testing.T) {
 	if held, _ := shared.Bytes(); held == 0 || first == 0 {
 		t.Fatal("nothing was decoded or shared, so this proves nothing")
 	}
-	s.Purge()
+	s.DropSpares()
 	if held, _ := shared.Bytes(); held != 0 {
 		t.Errorf("the shared set holds %d bytes after a purge", held)
 	}
@@ -427,7 +427,7 @@ func TestPurgeDropsOnlyPicturesKeptForReuse(t *testing.T) {
 	if _, err := s.HandIn(loopOf(frames[1:]...)); err != nil {
 		t.Fatal(err)
 	}
-	s.Purge()
+	s.DropSpares()
 	classesOf(t, s, "loop")
 	if got := s.decodes - first; got != first {
 		t.Errorf("the refresh after a purge decoded %d, want %d, as the first hand-in did", got, first)

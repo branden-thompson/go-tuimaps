@@ -160,9 +160,9 @@ func (d *Disk) Held() (held, limit int64) {
 	return d.held, d.limit
 }
 
-// TakeWarnings returns, once, what the cache has to tell the host: that
+// DrainWarnings returns, once, what the cache has to tell the host: that
 // others can read its root, and how many writes failed since it last said.
-func (d *Disk) TakeWarnings() []fault.Warning {
+func (d *Disk) DrainWarnings() []fault.Warning {
 	if d == nil {
 		return nil
 	}

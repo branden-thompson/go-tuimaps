@@ -199,9 +199,10 @@ func (p *Pipeline) SetLanguage(code string) error {
 	return nil
 }
 
-// Purge empties the memory cache of fetched tiles. The tiles the view
-// needs are fetched again, through the disk cache if it still holds them.
-func (p *Pipeline) Purge() {
+// ForgetFetched empties the memory cache of fetched tiles. The tiles the
+// view needs are fetched again, through the disk cache if it still holds
+// them.
+func (p *Pipeline) ForgetFetched() {
 	if p == nil {
 		return
 	}
@@ -532,7 +533,7 @@ func (p *Pipeline) TakeWarnings() []fault.Warning {
 	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	out := p.opts.Disk.TakeWarnings()
+	out := p.opts.Disk.DrainWarnings()
 	if w, ok := p.opts.Cache.TakeWarning(); ok {
 		out = append(out, w) // need alone over the cap: told once, by whichever map sharing the cache asks first
 	}

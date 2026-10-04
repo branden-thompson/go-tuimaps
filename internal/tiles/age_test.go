@@ -280,11 +280,11 @@ func TestARootOthersCanReadIsWarnedOf(t *testing.T) {
 			t.Fatal(err)
 		}
 		d := openDisk(t, root, DefaultDiskBytes)
-		got := d.TakeWarnings()
+		got := d.DrainWarnings()
 		if warned := len(got) == 1 && got[0].Kind == fault.CacheRootReadable; warned != c.warn {
 			t.Errorf("%v: warnings %+v, want a warning %v", c.mode, got, c.warn)
 		}
-		if again := d.TakeWarnings(); len(again) != 0 {
+		if again := d.DrainWarnings(); len(again) != 0 {
 			t.Errorf("%v: warned twice", c.mode)
 		}
 	}

@@ -68,7 +68,8 @@ type Options struct {
 	// library still shapes each request, confines redirects, sets the
 	// headers and reads the body through its limit. Nil is the library's
 	// own, with its private-address check; a host transport dials as it
-	// likes, and keeps that check only by dialling through CheckedDialer.
+	// likes, and keeps that check only by dialling through NewCheckedDialer's dialer
+	// (the host's tuimaps.CheckedDialer).
 	Transport http.RoundTripper
 }
 
@@ -153,6 +154,9 @@ func ForSource(source string, opts Options) (*Fetcher, error) {
 // listed reports whether an address's host is one the options name, as
 // host or host:port.
 func listed(u *url.URL, hosts []string) bool {
+	if u == nil {
+		return false
+	}
 	for _, h := range hosts {
 		if h == u.Host || h == u.Hostname() {
 			return true
@@ -190,7 +194,10 @@ func userAgent(token string) (string, error) {
 // reached at: not loopback, not link-local, not private, not unspecified,
 // not the shared address space of carrier-grade translation.
 func isPublic(ip net.IP) bool {
-	if ip == nil || ip.IsLoopback() || ip.IsPrivate() || ip.IsUnspecified() {
+	if len(ip) != net.IPv4len && len(ip) != net.IPv6len {
+		return false // nil, or malformed: it answers none of the questions below
+	}
+	if ip.IsLoopback() || ip.IsPrivate() || ip.IsUnspecified() {
 		return false
 	}
 	if ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsMulticast() {
@@ -241,6 +248,9 @@ func checkDial(address string, sourceIsPrivate bool) error {
 // the proxy it names remembered as the one address a connection may reach
 // unchecked.
 func (f *Fetcher) proxy(r *http.Request) (*url.URL, error) {
+	if f == nil {
+		return nil, errPolicy
+	}
 	if f.proxyOf == nil {
 		return nil, nil
 	}
@@ -260,6 +270,9 @@ func (f *Fetcher) proxy(r *http.Request) (*url.URL, error) {
 // proxyAddress is a proxy's host and port, the port its scheme's own when
 // none is written.
 func proxyAddress(u *url.URL) string {
+	if u == nil {
+		return ""
+	}
 	if u.Port() != "" {
 		return u.Host
 	}
@@ -273,6 +286,9 @@ func proxyAddress(u *url.URL) string {
 // connection, so a redirect to a host the proxy does not carry, dialled
 // directly, still meets the check (L-10.3).
 func (f *Fetcher) dial(ctx context.Context, network, address string) (net.Conn, error) {
+	if f == nil {
+		return nil, errPolicy
+	}
 	if network == "" || address == "" {
 		return nil, errPolicy
 	}
@@ -288,6 +304,9 @@ func (f *Fetcher) dial(ctx context.Context, network, address string) (net.Conn, 
 
 // allowed reports whether a request or a redirect may go to this address.
 func (f *Fetcher) allowed(u *url.URL) bool {
+	if f == nil || u == nil {
+		return false
+	}
 	return Confined(u, &url.URL{Scheme: f.scheme, Host: f.host})
 }
 
@@ -302,10 +321,10 @@ func Confined(u, source *url.URL) bool {
 // DialContext.
 type Dialer = func(ctx context.Context, network, address string) (net.Conn, error)
 
-// CheckedDialer is the library's own dialer, refusing a private or reserved
-// address at the moment of connection, for a host transport that wants to
-// keep that refusal (L-10.3, D-55).
-func CheckedDialer() Dialer {
+// NewCheckedDialer is the library's own dialer, refusing a private or
+// reserved address at the moment of connection, for a host transport that
+// wants to keep that refusal (L-10.3, D-55).
+func NewCheckedDialer() Dialer {
 	return (&Fetcher{}).dial
 }
 

@@ -247,6 +247,7 @@ L4 comes before L3 in the build order, because L3.1 and L3.2 need to advance the
 | L10.10 | **M6:** five consecutive full runs with no unattributable failure before SHIP | `06_docs/gate-runs.md` | Counted from the log | A test reads the log and reports the current run of green |
 | L10.11 | **v0.2.0's REVIEW covers everything v0.1.0 shipped** (L-5.4, D-72): the review's scope written as a list of v0.1.0's packages and requirements, and the red team briefed on it | `release-checklist.md`, `08-reports/` | A scope statement | The checklist row names the scope; the SHIP report shows each item reviewed |
 | L10.12 | The integration map and both plans kept in step (D-72): each plan records the map commit it was reconciled against, and a docs-lane test refuses a plan that names a work package the map does not | `scripts/gate`, `gate_test.go` | — | A plan citing a package missing from the map fails the docs lane |
+| L10.13 | **P10 clean at BUILD exit** (D-103): `a2dh validate` 100%, no live P10 finding | `tiles.go`, `internal/fetch`, `internal/tiles`, `internal/overlay`, `internal/describe` | Real fixes, no exemption: internal callees renamed off the public names, a bounded flood fill, twelve guards in `internal/fetch` | `edges_test.go`: the int64 edges, nil receivers, a malformed IP *As built: 0 live findings; every guard's mutant caught but the flood fill's `break` (equivalent: idle iterations, the same result)* |
 
 ## WP-L11 — Watchpost UAT-1's library needs (D-82, D-83)
 

@@ -715,10 +715,10 @@ func (s *Store) standRasterLocked(id string, pick func(*Image) int) (scene.Raste
 	return st.pictures[i].raster, st.pictures[i].report, true
 }
 
-// Purge drops the decoded pictures kept only to be used again: a replaced
-// loop's spare frames, and the shared set of readings (L-9.3). What an
-// overlay shows now is the host's, and stays.
-func (s *Store) Purge() {
+// DropSpares drops the decoded pictures kept only to be used again: a
+// replaced loop's spare frames, and the shared set of readings (L-9.3). What
+// an overlay shows now is the host's, and stays.
+func (s *Store) DropSpares() {
 	if s == nil {
 		return
 	}
@@ -729,7 +729,7 @@ func (s *Store) Purge() {
 	classified.Empty()
 }
 
-// Remove takes an overlay away. It never waits, and an id that is not set is
+// Drop takes an overlay away. It never waits, and an id that is not set is
 // not an error: the result says it was not found.
 func (s *Store) Drop(id string) (RemoveResult, error) {
 	if s == nil {

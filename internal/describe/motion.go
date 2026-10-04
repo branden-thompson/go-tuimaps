@@ -65,7 +65,10 @@ func (i Image) Cells(threshold int) []project.LonLat {
 		n := 0
 		seen[start] = true
 		stack = append(stack[:0], start)
-		for len(stack) > 0 {
+		for range len(i.Classes) { // a cell is pushed at most once, so no area outlasts the image (P10-02)
+			if len(stack) == 0 {
+				break
+			}
 			at := stack[len(stack)-1]
 			stack = stack[:len(stack)-1]
 			x, y := at%i.Width, at/i.Width

@@ -30,7 +30,7 @@ type Dialer = fetch.Dialer
 // through it keeps that refusal (L-10.3); one that dials some other way does
 // not, and nothing the library does can check where a proxy goes beyond it.
 func CheckedDialer() Dialer {
-	return fetch.CheckedDialer()
+	return fetch.NewCheckedDialer()
 }
 
 // CacheUse is what one cache holds and is allowed to hold (D-90).
@@ -242,8 +242,8 @@ func (m *Map) Purge() (report PurgeReport, err error) {
 	if m.shut {
 		return PurgeReport{}, closed()
 	}
-	m.pipe.Purge()
-	m.store.Purge()
+	m.pipe.ForgetFetched()
+	m.store.DropSpares()
 	if m.disk == nil {
 		return PurgeReport{}, noCache()
 	}

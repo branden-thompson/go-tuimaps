@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -25,6 +26,9 @@ func refusedSource() error {
 // source's scheme and host - all of an address an error may name - and keeps
 // nothing of the transport's error, which holds the whole address.
 func (f *Fetcher) problem(kind fault.Kind, why textsafe.Text) error {
+	if f == nil {
+		return refusedSource() // no source to name
+	}
 	about := textsafe.Join(textsafe.Const("a request to "), textsafe.Quote(f.scheme+"://"+f.host))
 	switch kind {
 	case fault.FetchRefused:
@@ -81,8 +85,14 @@ func (f *Fetcher) Fetch(ctx context.Context, r Request) ([]byte, error) {
 // send checks a request against the source's policy and makes it. The caller
 // closes the reply's body.
 func (f *Fetcher) send(ctx context.Context, r Request) (*http.Response, error) {
-	if r.MaxBytes <= 0 || r.RangeStart < 0 || r.RangeLen < 0 {
+	if f == nil || f.client == nil {
 		return nil, refusedSource()
+	}
+	if r.MaxBytes <= 0 || r.MaxBytes == math.MaxInt64 || r.RangeStart < 0 || r.RangeLen < 0 {
+		return nil, refusedSource() // the read's limit is one byte more than MaxBytes, which must not wrap
+	}
+	if r.RangeStart > math.MaxInt64-r.RangeLen {
+		return nil, refusedSource() // a range's last byte past the largest int64 is not the range meant
 	}
 	u, err := url.Parse(r.URL)
 	if err != nil {
@@ -109,6 +119,12 @@ func (f *Fetcher) send(ctx context.Context, r Request) (*http.Response, error) {
 // transportError turns the client's error into one of the library's own,
 // keeping nothing of it.
 func (f *Fetcher) transportError(ctx context.Context, err error) error {
+	if err == nil {
+		return nil // nothing went wrong, so there is nothing to translate
+	}
+	if ctx == nil {
+		return f.problem(fault.FetchFailed, textsafe.Const("the request had no context to judge its end by"))
+	}
 	if ctx.Err() != nil && context.Cause(ctx) != errTooLate {
 		return f.problem(fault.Cancelled, textsafe.Text{}) // the caller's work ended
 	}
@@ -124,6 +140,9 @@ func (f *Fetcher) transportError(ctx context.Context, err error) error {
 func (f *Fetcher) readReply(ctx context.Context, resp *http.Response, r Request) ([]byte, error) {
 	if resp == nil || resp.Body == nil {
 		return nil, f.problem(fault.FetchFailed, textsafe.Const("the source sent no reply to read"))
+	}
+	if r.MaxBytes <= 0 || r.MaxBytes == math.MaxInt64 {
+		return nil, refusedSource() // the limit read below is MaxBytes+1
 	}
 	want := http.StatusOK
 	if r.RangeLen > 0 {
