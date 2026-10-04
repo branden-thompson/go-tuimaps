@@ -13,8 +13,8 @@
 
 | Disposition | Meaning | Rows |
 |---|---|---|
-| **Match** | go-tuiMaps behaves as upstream does. | 48 |
-| **Fix** | Upstream's behaviour is a ledgered defect — or, for P-59b alone, a behaviour HUM LEAD ruled unsafe (D-56: flash faster than three a second) — and go-tuiMaps does the intended thing. | 13 |
+| **Match** | go-tuiMaps behaves as upstream does. | 47 |
+| **Fix** | Upstream's behaviour is a ledgered defect — or, for P-59b alone, a behaviour HUM LEAD ruled unsafe (D-56: flash faster than three a second) — and go-tuiMaps does the intended thing. | 14 |
 | **Replicate** | A ledgered convention kept deliberately. | 2 |
 | **Extended** | Upstream's behaviour is kept and added to by a ruling. | 12 |
 | **Superseded** | Replaced by design under a ruling; **outside the M3 denominator**. | 2 |
@@ -65,7 +65,7 @@
 | P-36 | Label language | tile.rs:249-259 | Lookup order: `name_<lang>`, `name:<lang>`, `name_en`, `name:en`, `name`, `house_num` | **Match** | v0.1.0 | Matched for one configured language, English by default; every other language is dropped while decoding, and the embedded tiles keep English only (D-82). The language is part of the tile cache key (FR-31). |
 | P-37 | Gzip sniff | tile.rs:58-67 | Detected by the magic bytes `1f 8b` | **Match** | v0.1.0 |  |
 | P-38 | MVT decode | tile.rs:372-438; proto.rs | MoveTo, LineTo, ClosePath (which re-pushes the first point) and zigzag. The default extent is 4096 | **Match** | v0.1.0 |  |
-| P-39 | Ring grouping | tile.rs:443-484 | Signed area ≥0 starts a new polygon. Negative area is a hole in the previous polygon. Each polygon becomes its own feature | **Match** | v0.1.0 |  |
+| P-39 | Ring grouping | tile.rs:443-484 | Signed area ≥0 starts a new polygon. Negative area is a hole in the previous polygon. Each polygon becomes its own feature | **Fix** | v0.1.0 | D-106 (v0.2.0): a ring of zero area - its points on one line - is a hole in the polygon before it, as the proven decoder keeps it, not a polygon of its own; FuzzAgree found the input |
 | P-40 | OMT remap | tile.rs:71-162 | transportation→road, with `_link` for ramps, minor→street and brunnel→structure. boundary→admin. place→country/place_label. water_name→marine/water_label. poi→poi_label. park→landuse_overlay. landcover→landuse. `name:xx`→`name_xx`. rank→scalerank or labelrank | **Superseded** | — | D-24: fresh styles are written against OpenMapTiles; the renaming shim is not ported. |
 | P-41 | Style match | styler.rs:229-237; tile.rs:207-213 | The first matching layer, in style order, for the source-layer. The remapped name is tried first, then the raw name. No match drops the feature. One style per feature | **Match** | v0.1.0 | **Restated for go-tuiMaps (D-49):** the first matching style layer, in style order, for the tile's real (OpenMapTiles) layer name; no match drops the feature; one style per feature. Colour resolution moves to draw time (D-26). |
 | P-42 | Filter ops | styler.rs:32-118 | Supported: all, any, none, ==, !=, in, !in, has, !has, >, >=, <, <=. An unknown op evaluates to true. `==` on a missing key is false. Equality is on JSON values, so integers and floats are distinct. `$type` is injected as a property (tile.rs:187) | **Match** | v0.1.0 |  |

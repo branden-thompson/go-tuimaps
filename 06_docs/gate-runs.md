@@ -145,3 +145,5 @@ A commit made from exactly that has the same tree less this file, so the two can
 | 2026-10-04T02:59:45Z | 039e786 | 69d1dae50175 | release | FAILED | 3 | - |
 | 2026-10-04T03:35:52Z | 039e786 | 17e363f55f31 | full | FAILED | 1989 | - |
 | 2026-10-04T04:09:05Z | 039e786 | 2b0ed316fb26 | full | green | 1844 | - |
+| 2026-10-04T05:23:40Z | 4916295 | 315a27d6934a | full | FAILED | 1824 | - |
+| 2026-10-04T05:58:28Z | 4916295 | d4ae193b6f33 | full | green | 1797 | - |

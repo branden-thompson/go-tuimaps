@@ -76,9 +76,9 @@ func TestParityP38_MVTDecode(t *testing.T) {
 	}
 }
 
-// TestParityP39_RingGrouping: a ring of area >= 0 starts a new polygon, a
+// TestParityP39_RingGrouping: a ring of area above 0 starts a new polygon, a
 // negative one is a hole in the polygon before it, and each polygon becomes
-// a feature of its own.
+// a feature of its own (a ring of no area: TestAZeroAreaRingIsAHole).
 func TestParityP39_RingGrouping(t *testing.T) {
 	outer := []uint32{moveTo(1), zz(0), zz(0), lineTo(3), zz(20), zz(0), zz(0), zz(20), zz(-20), zz(0), closePath()}
 	hole := []uint32{moveTo(1), zz(5), zz(5), lineTo(3), zz(0), zz(5), zz(5), zz(0), zz(0), zz(-5), closePath()}
@@ -103,6 +103,20 @@ func TestParityP39_RingGrouping(t *testing.T) {
 	orphan := decodeOne(t, testLayer("l", 4096, nil, nil, testFeature(3, nil, hole)))
 	if len(orphan.Layers[0].Features) != 1 {
 		t.Errorf("an orphan hole gave %d features", len(orphan.Layers[0].Features))
+	}
+}
+
+// TestAZeroAreaRingIsAHole (D-106; FuzzAgree's input 26e9df9a071f1ff0): a
+// ring with no area - its points on one line - is neither an outline nor a
+// hole by its winding, and stays with the polygon before it, as the proven
+// decoder keeps it. It does not become a feature of its own.
+func TestAZeroAreaRingIsAHole(t *testing.T) {
+	outer := []uint32{moveTo(1), zz(0), zz(0), lineTo(3), zz(20), zz(0), zz(0), zz(20), zz(-20), zz(0), closePath()}
+	flat := []uint32{moveTo(1), zz(10), zz(-15), lineTo(2), zz(0), zz(5), zz(0), zz(-2), closePath()}
+	tile := decodeOne(t, testLayer("l", 4096, nil, nil, testFeature(3, nil, append(append([]uint32{}, outer...), flat...))))
+	fs := tile.Layers[0].Features
+	if len(fs) != 1 || fs[0].EndPart-fs[0].FirstPart != 2 {
+		t.Errorf("an outline and a zero-area ring gave %d features (the first with %d rings); want one feature of two rings", len(fs), fs[0].EndPart-fs[0].FirstPart)
 	}
 }
 

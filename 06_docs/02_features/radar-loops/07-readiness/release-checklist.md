@@ -19,7 +19,7 @@ L-5.5, D-18, D-69, D-102
 | 0.3 | OW-10: a near colour is counted and warned of | L10.15, D-104 at 039e786 | [x] |
 | 0.4 | L10.12: the plans and the integration map are kept in step by a test | `plan_map_test.go`; the plan reconciled at `9e333bf` | [x] |
 | 0.5 | L10.5: hosted CI green on the release commit, both architectures | — | [ ] |
-| 0.6 | L10.7 / OW-4: `FuzzAgree` run ten times under the limiter, each recorded | — | [ ] |
+| 0.6 | L10.7 / OW-4: `FuzzAgree` run ten times under the limiter, each recorded | `gate-fuzz-deadline.md`, L10.7: ten green after D-106; the freeze explained | [x] |
 | 0.7 | L10.8 / M4: the hour soak run once and recorded | — | [ ] |
 | 0.8 | L10.10 / M6: five consecutive clean full gate runs, counted from `06_docs/gate-runs.md` | — | [ ] |
 | 0.9 | L10.9 / M1: the HUM LEAD's scores for both arms recorded | — | [ ] |

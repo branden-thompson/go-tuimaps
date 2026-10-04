@@ -3,7 +3,7 @@ title: "v0.2.0 — the gate's fuzz legs failing at their deadline (L-6.4, D-3, D
 date: 2026-09-22
 phase: intake → DISCOVER
 sev: SEV-0
-status: "FIXED BY AVOIDANCE (D-9, D-10) — cause never reproduced on demand; M6 watches it"
+status: "FIXED BY AVOIDANCE (D-9, D-10); THE FREEZE EXPLAINED (L10.7, 2026-10-03): the engine minimising a new input — OW-4 closed"
 ---
 
 # The gate's fuzz legs fail at their deadline
@@ -69,3 +69,44 @@ set from the leg's measured duration. A short sampling run is not a valid instru
 the baseline-coverage gathering every leg does over the whole cached corpus, which is why the first
 table ran 70% long and `FuzzTable` fifteen times short. Every leg now prints its duration, so drift
 is visible in every run, and an uncalibrated target is named and run at a default.
+
+## L10.7 — ten runs, and the freeze explained (OW-4, 2026-10-03)
+
+`FuzzAgree` as the gate's leg runs it - floor toolchain, the calibrated 5,700,000 executions, a
+600-second hard limit - ten times in a row on this machine.
+
+**The first ten found a defect.** Run 3 failed in 11 s with a saved input: the two decoders disagreed
+about a polygon ring of zero area (D-106, fixed: such a ring is a hole of the polygon before it).
+Runs 4 to 10 failed at once, replaying the saved input. That is the fuzzer working, not the freeze.
+
+**The ten after the fix:**
+
+| Run | Seconds | Result | Longest stretch with the execution count standing still |
+|---|---|---|---|
+| 1 | 129 | green | 51 s |
+| 2 | 142 | green | 42 s |
+| 3 | 129 | green | 36 s |
+| 4 | 78 | green | 24 s |
+| 5 | 129 | green | 51 s |
+| 6 | 127 | green | 30 s |
+| 7 | 85 | green | 39 s |
+| 8 | 51 | green | 21 s |
+| 9 | 83 | green | 12 s |
+| 10 | 86 | green | 27 s |
+
+Each stretch is measured from the engine's own three-second progress lines, so to within three
+seconds.
+
+**The freeze is seen in every run, and it is the engine minimising.** The execution count stands still
+for up to fifty-one seconds and then moves again, and each stretch ends as the count of new
+interesting inputs rises: the engine stops fuzzing to minimise each new input, for up to
+`-fuzzminimizetime`, sixty seconds by default. **Confirmed by the control:** the same leg with
+`-fuzzminimizetime 5s`, twice, stalled for 3 s at most (one reporting interval) and passed in 74 s and
+96 s. Gate 1's freeze at 18 s, failing at the 60-second deadline, is this: a duration budget ran out
+while a minimisation held the workers. The count budget (D-9) ends through the execution limit and
+cannot meet that; the freeze is bounded and harmless, and the 600-second limit is far above it.
+
+**Not changed:** the gate keeps the default minimisation time - the counts were calibrated with it,
+and a shorter one would only shorten legs. Recorded here so a stall at 0 executions a second is read
+as minimisation, not a hang.
+

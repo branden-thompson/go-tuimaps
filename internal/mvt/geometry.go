@@ -182,18 +182,20 @@ func (d *layerDecoder) endPart(c *cursor) {
 	c.partStart = -1
 }
 
-// groupRings splits a polygon feature as upstream does (P-39): a ring whose
-// signed area is zero or more starts a new polygon, a negative one is a
-// hole in the polygon before it, and each polygon becomes a feature of its
-// own. A hole with no outline before it is a polygon of its own.
+// groupRings splits a polygon feature (P-39, D-106): a ring whose signed area
+// is above zero starts a new polygon; a negative one is a hole in the polygon
+// before it, and so is a ring with no area at all - its points on one line -
+// as the proven decoder keeps it; each polygon becomes a feature of its own.
+// The first ring always starts one, so a hole with no outline before it is a
+// polygon of its own.
 func (d *layerDecoder) groupRings(feature scene.Feature, firstPart, endPart uint32) error {
 	if firstPart >= endPart || int(endPart) > len(d.layer.Parts) {
 		return malformed()
 	}
 	start := firstPart
 	for p := firstPart + 1; p <= endPart; p++ {
-		if p < endPart && d.signedArea(p) < 0 {
-			continue // a hole: it stays with the polygon before it
+		if p < endPart && d.signedArea(p) <= 0 {
+			continue // a hole, or a ring with no area: it stays with the polygon before it
 		}
 		d.features++
 		if d.features > d.lim.Features {

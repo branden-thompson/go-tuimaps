@@ -361,7 +361,7 @@ where it stands.
 | OW-1 | ~~The row in v0.1.0's record saying its close-out did not run~~ **Done (D-38)**: `go-tuimaps/07-readiness/release-checklist.md` | — | D-18 |
 | OW-2 | The D-17 specimen: severity word and five dashes, at 69×12 and 149×38, NoColour and Colours16, **drawn over specimen 29's radar**, with the frame time and the `stale` word on the same bottom row, so the crowding at 69×12 is seen | before PLAN commits to L-8.1 | D-17, D-40 (A F7, B) **Done: specimens 32 and 33; ruled D-64, D-65 (a digit on the outline).** |
 | OW-3 | ~~Diagnose S29-3~~ **Folded into L-8.9 (D-60)** | — | D-60 |
-| OW-4 | The 40-second `FuzzAgree` freeze | PLAN | L-6.4 |
+| OW-4 | ~~The 40-second `FuzzAgree` freeze~~ **Done (L10.7)**: the engine minimising a new input, for up to `-fuzzminimizetime`; confirmed by a control run (`gate-fuzz-deadline.md`) | PLAN | L-6.4 |
 | OW-5 | ~~Correct wave 2's "71–80 %" and D-19's copy of it~~ **Done 2026-09-23**: 80.0–80.6 %, and wave 2's finding 2 restated | — | round 1 verification |
 | OW-6 | F-2 (a pluggable architecture): its trigger fired; the narrow seam is L-2.5 (D-35); the broad restructure stays with the quality pass | quality pass | D-35 |
 | OW-9 | ~~Diagnose L-8.4~~ **Closed (D-50): no defect** — the round 1 count was wrong | — | D-50 |
