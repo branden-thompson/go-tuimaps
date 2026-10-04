@@ -91,15 +91,15 @@ For designers and PMs before engineers, the three visible decisions:
 |---|---|---|---|
 | L-5.1 | ~~The nineteen-item triage is written.~~ **Superseded by D-18:** the triage never existed and is recorded as not recoverable. | D-18 | — |
 | L-5.2 | One row in v0.1.0's record says its close-out did not run, with pointers to the evidence that does exist. | D-18 | Done: `release-checklist.md`'s status row (D-38) |
-| L-5.3 | A gate test refuses a release tag while its checklist is unfinished. | D-18 | NO INSTRUMENT YET |
+| L-5.3 | A gate test refuses a release tag while its checklist is unfinished. | D-18 | `scripts/gate --release`, held by `release_gate_test.go` (L10.3) |
 | L-5.4 | v0.2.0 is the library's first release: its REVIEW and close-out cover everything v0.1.0 shipped. The `v0.1.0` tag stays. | D-18 | — |
-| L-5.5 | The release checklist records a pinned `govulncheck` at the tag commit, and **requires no reachable finding, or a ruled exception for each**. | D-30 (F9), D-40 (S-9) | The release checklist |
+| L-5.5 | The release checklist records a pinned `govulncheck` at the tag commit, and **requires no reachable finding, or a ruled exception for each**. | D-30 (F9), D-40 (S-9) | The release checklist (row 2.6) and `scripts/gate --release`'s pinned scan (L10.4) |
 
 ## L-6 — Found while preparing the brief
 
 | # | Requirement | Source | Instrument |
 |---|---|---|---|
-| L-6.1 | Hosted CI reproduces the gate, including the second-architecture leg a Linux runner cannot emulate as this machine does. | L-6.1, W1-B | NO INSTRUMENT YET |
+| L-6.1 | Hosted CI reproduces the gate, including the second-architecture leg a Linux runner cannot emulate as this machine does. | L-6.1, W1-B | `.github/workflows/gate.yml` (L10.5, D-105): each architecture native, the workflow failing unless both ran green |
 | L-6.2 | (Became L-7.) | L-6.2 | — |
 | L-6.3 | The default memory tile cache is at least documented against one large view (909 KB needed, 500 KB default). | L-6.3 | NO INSTRUMENT YET |
 | L-6.4 | ~~The fuzz legs fail by accident; every commit is blocked.~~ **Fixed by construction** (D-9, D-10): run-count budgets. **Not reproduced** — the cause is probable, not proven. The 40-second freeze seen once in `FuzzAgree` stays open (OW-4). | D-9, D-10 | M6 |

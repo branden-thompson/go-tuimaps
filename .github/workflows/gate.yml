@@ -1,0 +1,61 @@
+# The gate, hosted (go-tuiMaps v0.2.0 L-6.1, plan task L10.5, D-105).
+#
+# Every push and pull request: the quick gate on linux/amd64 and linux/arm64.
+# Nightly and on dispatch - the release commit is dispatched (release
+# checklist row 0.5) - the full gate, fuzzing included, on both. A Linux
+# runner cannot run the other architecture's binaries as a Mac's Rosetta
+# does, so each job runs its own natively and hands the gate's second
+# architecture leg to the other (GATE_ARCH_LEG=sibling, written on the run's
+# log line). The last job fails the workflow unless both ran green.
+name: gate
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  schedule:
+    - cron: "0 9 * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: gate-${{ github.head_ref || github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+jobs:
+  gate:
+    strategy:
+      fail-fast: false # one architecture's red must not hide the other's result
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0 # the plan's map commit and the release tags are read from history
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: "1.27.1" # the gate itself runs every leg on its floor toolchain (go1.25.0)
+      - name: the pinned vulnerability scanner
+        run: go install golang.org/x/vuln/cmd/govulncheck@v1.8.0
+      - name: quick gate
+        if: github.event_name == 'push' || github.event_name == 'pull_request'
+        env:
+          GATE_ARCH_LEG: sibling
+        run: PATH="$(go env GOPATH)/bin:$PATH" scripts/gate --quick
+      - name: full gate
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        env:
+          GATE_ARCH_LEG: sibling
+        run: PATH="$(go env GOPATH)/bin:$PATH" scripts/gate
+
+  both-architectures:
+    needs: gate
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: both architectures ran green
+        run: |
+          if [ "${{ needs.gate.result }}" != "success" ]; then
+            echo "the gate did not run green on both linux/amd64 and linux/arm64: ${{ needs.gate.result }}"
+            exit 1
+          fi

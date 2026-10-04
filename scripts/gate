@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# The local gate. No remote exists until SHIP, so this script is what stands
-# before every merge; at SHIP it becomes the hosted workflow.
+# The gate. It stands before every merge, run here; the hosted workflow
+# (.github/workflows/gate.yml, L-6.1, D-105) runs it too, on linux/amd64 and
+# linux/arm64 - the quick gate on every push, the full gate nightly and on
+# dispatch.
 #
 #   scripts/gate            every leg
 #   scripts/gate --quick    skip the slow legs: fuzzing, the vulnerability
@@ -14,6 +16,13 @@
 #                           refused and sent to the full gate. Stage, run it,
 #                           commit: with nothing staged it fails
 #   scripts/gate --fuzz     the fuzz legs alone
+#   scripts/gate --release TAG
+#                           the release check (v0.2.0 L-5.3, L-5.5): a final
+#                           tag (vX.Y.Z) is refused while a row of the release
+#                           checklist is unticked; a release candidate
+#                           (vX.Y.Z-rc.N) is not. Either way govulncheck must be
+#                           the pinned version and find nothing reachable that
+#                           the checklist does not carry as a ruled exception
 #
 # One mode at most a run. EVERY RUN IS LOGGED to 06_docs/gate-runs.md when
 # that file exists - HEAD, the git tree that was tested, the mode, the result,
@@ -86,29 +95,54 @@ fuzz_execs() {
   esac
 }
 FUZZ_EXECS_DEFAULT="5000000x"
+# THE SCANNER THE RELEASE IS CHECKED WITH IS PINNED (L-5.5): a newer one may
+# find more, and the checklist records which version said "clean".
+GOVULNCHECK_PIN="v1.8.0"
 FUZZ_LIMIT="${GATE_FUZZ_LIMIT:-600}"
 case "$FUZZ_LIMIT" in
   ''|*[!0-9]*|0) echo "gate: GATE_FUZZ_LIMIT must be a whole number of seconds above zero, not '$FUZZ_LIMIT'" >&2; exit 2 ;;
+esac
+# THE SECOND ARCHITECTURE, ON A RUNNER THAT CANNOT EMULATE IT (L-6.1, D-105):
+# hosted CI runs the gate on linux/amd64 and linux/arm64 side by side, each
+# natively, and GATE_ARCH_LEG=sibling hands this leg to the other job. The
+# workflow fails unless both ran green. The setting is written on the run's
+# log line, and M6 does not count such a run.
+case "${GATE_ARCH_LEG:-}" in
+  ''|sibling) ;;
+  *) echo "gate: GATE_ARCH_LEG may only be 'sibling', not '$GATE_ARCH_LEG'" >&2; exit 2 ;;
 esac
 TARGETS="darwin/arm64 darwin/amd64 linux/amd64 linux/arm64 windows/amd64"
 
 quick=0
 docs=0
 fuzzonly=0
+release=0
+release_tag=""
+want_tag=0
 mode="full"
 modes=0
 for arg in "$@"; do
+  if [ "$want_tag" = 1 ]; then
+    release_tag="$arg"
+    want_tag=0
+    continue
+  fi
   case "$arg" in
     --quick) quick=1; mode="quick"; modes=$((modes + 1)) ;;
     --docs) docs=1; quick=1; mode="docs"; modes=$((modes + 1)) ;;
     --fuzz) fuzzonly=1; mode="fuzz"; modes=$((modes + 1)) ;;
+    --release) release=1; mode="release"; modes=$((modes + 1)); want_tag=1 ;;
     *) echo "gate: unknown argument: $arg" >&2; exit 2 ;;
   esac
 done
+if [ "$want_tag" = 1 ]; then
+  echo "gate: --release needs the tag it checks, vX.Y.Z or vX.Y.Z-rc.N" >&2
+  exit 2
+fi
 # TWO MODES TOGETHER SKIPPED EVERY LEG AND PRINTED GREEN (D-40): each mode
 # turns legs off, and nothing was left on. One mode a run.
 if [ "$modes" -gt 1 ]; then
-  echo "gate: give one mode at most (--quick, --docs or --fuzz), not $modes" >&2
+  echo "gate: give one mode at most (--quick, --docs, --fuzz or --release), not $modes" >&2
   exit 2
 fi
 
@@ -149,6 +183,7 @@ log_run() {
   tree="$(tested_tree || echo unknown)"
   [ -n "${GATE_FUZZ_LIMIT:-}" ] && overrides="GATE_FUZZ_LIMIT=$GATE_FUZZ_LIMIT"
   [ -n "${GATE_ROOT:-}" ] && overrides="${overrides:+$overrides }GATE_ROOT set"
+  [ -n "${GATE_ARCH_LEG:-}" ] && overrides="${overrides:+$overrides }GATE_ARCH_LEG=$GATE_ARCH_LEG"
   printf '| %s | %s | %s | %s | %s | %s | %s |\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$head" "$tree" "$mode" "$result" "$((SECONDS - started_at))" "${overrides:--}" >> "$root/06_docs/gate-runs.md"
 }
 fuzz_legs="$(mktemp)" || exit 2
@@ -202,6 +237,64 @@ if [ "$docs" = 1 ]; then
   if [ "$unstaged" -gt 0 ]; then
     echo "gate: docs lane - $unstaged file(s) not staged were left out of the judgement; the tests still run on the working tree"
   fi
+fi
+
+# --- the release check (L-5.3, L-5.5; plan tasks L10.3, L10.4) --------------
+# A FINAL TAG IS REFUSED WHILE ITS CHECKLIST IS UNFINISHED. A row is open while
+# its last cell is "[ ]" and done when it is "[x]"; a release candidate is
+# tagged as packages land (D-69) and is not held to the checklist. The scan
+# runs on this machine's own toolchain, as the full gate's leg does, with the
+# pinned scanner; a reachable finding passes only as a ruled exception: a row
+# whose first cell is its GO- id and that names the ruling (D-nn).
+if [ "$release" = 1 ]; then
+  if ! [[ "$release_tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]]; then
+    echo "gate: --release needs a version tag, vX.Y.Z or vX.Y.Z-rc.N, not '$release_tag'" >&2
+    exit 2
+  fi
+  checklist="${GATE_CHECKLIST:-$root/06_docs/02_features/radar-loops/07-readiness/release-checklist.md}"
+  refused=""
+  if [ ! -f "$checklist" ]; then
+    refused="${refused}  REFUSED the release checklist is missing: $checklist"$'\n'
+    open_rows=""
+  else
+    open_rows="$(grep -E '^\|.*\|[[:space:]]*\[ \][[:space:]]*\|[[:space:]]*$' "$checklist" || true)"
+  fi
+  if [[ "$release_tag" == *-rc.* ]]; then
+    echo "gate: release check for $release_tag, a release candidate: the checklist does not hold it ($(printf '%s' "$open_rows" | grep -c . || true) row(s) open)"
+  elif [ -n "$open_rows" ]; then
+    refused="${refused}  REFUSED $release_tag is a final tag and the checklist has unticked rows:"$'\n'"$(printf '%s\n' "$open_rows" | cut -c1-120 | sed 's/^/          /')"$'\n'
+  fi
+  if ! command -v govulncheck >/dev/null 2>&1; then
+    refused="${refused}  REFUSED govulncheck is not installed: go install golang.org/x/vuln/cmd/govulncheck@$GOVULNCHECK_PIN"$'\n'
+  elif ! govulncheck -version 2>/dev/null | grep -q "govulncheck@$GOVULNCHECK_PIN\$"; then
+    refused="${refused}  REFUSED govulncheck is not the pinned $GOVULNCHECK_PIN: go install golang.org/x/vuln/cmd/govulncheck@$GOVULNCHECK_PIN"$'\n'
+  else
+    scan="$(GOTOOLCHAIN=local govulncheck ./... 2>&1)"
+    scan_rc=$?
+    case "$scan_rc" in
+      0) echo "  ok      govulncheck $GOVULNCHECK_PIN: nothing reachable" ;;
+      3)
+        for id in $(printf '%s\n' "$scan" | grep -oE '^Vulnerability #[0-9]+: GO-[0-9]+-[0-9]+' | grep -oE 'GO-[0-9]+-[0-9]+'); do
+          if [ -f "$checklist" ] && grep -qE "^\|[[:space:]]*$id[[:space:]]*\|.*D-[0-9]+" "$checklist"; then
+            echo "  ok      $id is reachable and carried as a ruled exception"
+          else
+            refused="${refused}  REFUSED $id is reachable and has no ruled exception in the checklist"$'\n'
+          fi
+        done
+        if ! printf '%s\n' "$scan" | grep -qE '^Vulnerability #[0-9]+: GO-'; then
+          refused="${refused}  REFUSED govulncheck reported findings and named none this check can read"$'\n'
+        fi
+        ;;
+      *) refused="${refused}  REFUSED govulncheck could not scan (exit $scan_rc)"$'\n' ;;
+    esac
+  fi
+  if [ -n "$refused" ]; then
+    printf '%s' "$refused"
+    echo "gate: release check FAILED for $release_tag"
+    exit 1
+  fi
+  echo "gate: release check green for $release_tag"
+  exit 0
 fi
 
 export GOTOOLCHAIN="$FLOOR_TOOLCHAIN"
@@ -430,7 +523,11 @@ if [ "$quick" = 0 ] && [ "$fuzzonly" = 0 ]; then
   # leg FAILS - never skips - when the second architecture cannot be run.
   host_arch="$(go env GOARCH)"
   other_arch="amd64"; [ "$host_arch" = "amd64" ] && other_arch="arm64"
-  leg "tests on $other_arch (emulated here; real hardware is NOT RUN)" env GOARCH="$other_arch" go test ./...
+  if [ "${GATE_ARCH_LEG:-}" = "sibling" ]; then
+    echo "  note    tests on $other_arch: run natively by the sibling CI job (GATE_ARCH_LEG=sibling); the workflow fails unless it ran green"
+  else
+    leg "tests on $other_arch (emulated here; real hardware is NOT RUN)" env GOARCH="$other_arch" go test ./...
+  fi
 fi
 
 echo
