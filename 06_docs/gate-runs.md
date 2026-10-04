@@ -150,3 +150,5 @@ A commit made from exactly that has the same tree less this file, so the two can
 | 2026-10-04T06:20:02Z | 80e3bd3 | 5d54244749aa | release | FAILED | 4 | - |
 | 2026-10-04T07:04:21Z | 80e3bd3 | bb0c03f5dc91 | soak | green | 3603 | - |
 | 2026-10-04T07:41:12Z | 80e3bd3 | fae101c3a682 | full | green | 2188 | - |
+| 2026-10-04T07:42:56Z | 83ed367 | fae101c3a682 | release | green | 3 | - |
+| 2026-10-04T08:38:27Z | 83ed367 | 72d214adbe15 | docs | green | 171 | - |
