@@ -18,7 +18,7 @@ flowchart TB
     REF -- yes --> ERR["Error: a kind from the closed list<br/>what happened · why · what to do"]
     REF -- "yes, and it was a Set" --> ALSO["…and a 'set-refused' warning,<br/>so a discarded error is still visible"]
     REF -- "no, but something is off" --> WARN
-    W -- "a job failed or met something odd" --> WARN["Warning: one of 15 kinds (contract, section 7) · the overlay or tile it concerns · a count<br/>at most 64 kept · duplicates counted, not repeated<br/>e.g. tile-failed · cache-write-failed · cache-under-need · cache-root-readable ·<br/>unmatched-image-colours · table-fallback (an MRMS colour valued along its legend)"]
+    W -- "a job failed or met something odd" --> WARN["Warning: one of 16 kinds (contract, section 7) · the overlay or tile it concerns · a count<br/>at most 64 kept · duplicates counted, not repeated<br/>e.g. tile-failed · cache-write-failed · cache-under-need · cache-root-readable ·<br/>unmatched-image-colours · table-fallback (an MRMS colour valued along its legend)"]
     W -- "Work itself cannot proceed" --> ERR
     R -- "a panic, recovered at the call's edge" --> FAILF{"Does the call return an error?"}
     FAILF -- "yes: Render, Set, Work …" --> PANICE["An 'internal' error; Render's frame is empty<br/>the map stays usable"]
@@ -34,7 +34,7 @@ flowchart TB
 
 | Error kinds (closed) | Warning kinds (closed) |
 |---|---|
-| invalid-coordinates · size-mismatch · unsorted-breaks · malformed-ramp · missing-table · malformed-table · unknown-preset · malformed-style · invalid-id · over-vertex-cap · over-image-cap · image-refused · ring-too-short · bad-currency · unsupported-schema · unsupported-tile · over-limit · fetch-refused · fetch-failed · cache-refused · no-size · reentrant-call · cancelled · closed · internal | ramp-rule-broken · unmatched-image-colours · stale-overlay · future-valid-time · implausible-unit · near-duplicate-id · unknown-token · set-refused · no-work-called · tile-failed · cache-write-failed · render-failed · cache-under-need · table-fallback · cache-root-readable |
+| invalid-coordinates · size-mismatch · unsorted-breaks · malformed-ramp · missing-table · malformed-table · unknown-preset · malformed-style · invalid-id · over-vertex-cap · over-image-cap · image-refused · ring-too-short · bad-currency · unsupported-schema · unsupported-tile · over-limit · fetch-refused · fetch-failed · cache-refused · no-size · reentrant-call · cancelled · closed · internal | ramp-rule-broken · unmatched-image-colours · stale-overlay · future-valid-time · implausible-unit · near-duplicate-id · unknown-token · set-refused · no-work-called · tile-failed · cache-write-failed · render-failed · cache-under-need · table-fallback · cache-root-readable · near-image-colours |
 
 ## What can change this diagram
 

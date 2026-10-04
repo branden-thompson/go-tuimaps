@@ -247,16 +247,19 @@ func TestUnmatchedCountedAndSampled(t *testing.T) {
 	if report.Unmatched != 10 || len(report.Samples) != 10 {
 		t.Errorf("%d unmatched, %d samples; the transparent pixels are not counted", report.Unmatched, len(report.Samples))
 	}
-	w := s.TakeWarnings()
-	if len(w) != 1 || w[0].Kind != fault.UnmatchedImageColours || w[0].Count != 10 {
-		t.Errorf("warnings %+v", w)
+	if report.Near != 10 {
+		t.Errorf("%d near; the ten near-green pixels on the host's table are counted (L-2.2, D-104)", report.Near)
 	}
-	// With no tolerance the near colour is unmatched too.
+	w := s.TakeWarnings()
+	if len(w) != 2 || w[0].Kind != fault.UnmatchedImageColours || w[0].Count != 10 || w[1].Kind != fault.NearImageColours || w[1].Count != 10 {
+		t.Errorf("warnings %+v; want ten unmatched, then ten near", w)
+	}
+	// With no tolerance the near colour is unmatched too, and nothing is near.
 	o.Image.Exact = true
 	s.HandIn(o)
 	s.PrepareJob("radar", 6).Run(context.Background())
-	if _, exact, _ := s.Raster("radar"); exact.Unmatched != 20 || len(exact.Samples) != 11 {
-		t.Errorf("exact: %d unmatched, %d distinct samples", exact.Unmatched, len(exact.Samples))
+	if _, exact, _ := s.Raster("radar"); exact.Unmatched != 20 || len(exact.Samples) != 11 || exact.Near != 0 {
+		t.Errorf("exact: %d unmatched, %d distinct samples, %d near", exact.Unmatched, len(exact.Samples), exact.Near)
 	}
 	// At most sixteen samples, however many colours there are.
 	many := picturePNG(t, 64, 1, func(x, _ int) color.Color { return color.NRGBA{R: uint8(4 * x), B: 255, A: 255} })

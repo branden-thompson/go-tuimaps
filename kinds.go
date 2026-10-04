@@ -61,6 +61,7 @@ const (
 	CacheUnderNeed        = fault.CacheUnderNeed
 	TableFallback         = fault.TableFallback     // valued by the provider's legend gradient, off its table (v0.2.0)
 	CacheRootReadable     = fault.CacheRootReadable // other users can read the disk cache's root (v0.2.0 L-9.6)
+	NearImageColours      = fault.NearImageColours  // matched a published or host table only within the tolerance (v0.2.0 L-2.2)
 )
 
 // KindOf is the kind of an error the library raised, and false for an error
@@ -87,8 +88,8 @@ func Kinds() []Kind {
 
 // WarningKinds are every warning kind there is, in the contract's order.
 func WarningKinds() []WarningKind {
-	out := make([]WarningKind, 0, int(CacheRootReadable))
-	for k := RampRuleBroken; k <= CacheRootReadable; k++ {
+	out := make([]WarningKind, 0, int(NearImageColours))
+	for k := RampRuleBroken; k <= NearImageColours; k++ {
 		out = append(out, k)
 	}
 	return out

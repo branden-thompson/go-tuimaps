@@ -222,7 +222,7 @@ func (m *Map) observedMotion(asked []Place, out []MotionReport) []MotionReport {
 		for _, f := range m.store.ObservedFrames(id) {
 			r := f.Raster
 			frames = append(frames, describe.Frame{Valid: f.Valid, Image: describe.Image{West: r.West, South: r.South, East: r.East, North: r.North,
-				Width: r.Width, Height: r.Height, Classes: r.Classes}})
+				Width: r.Width, Height: r.Height, Classes: r.Classes, Mercator: r.Projection == uint8(WebMercator)}})
 		}
 		for _, ref := range refs {
 			from, to, ok := describe.Track(frames, threshold, ref.At)

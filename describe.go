@@ -195,7 +195,7 @@ func (m *Map) imageAnswer(place Place, id string) Answer {
 		return Answer{Place: nameOf(place), Overlay: id, Form: describe.ImageForm, NoData: true}
 	}
 	image := describe.Image{West: raster.West, South: raster.South, East: raster.East, North: raster.North,
-		Width: raster.Width, Height: raster.Height, Classes: raster.Classes}
+		Width: raster.Width, Height: raster.Height, Classes: raster.Classes, Mercator: raster.Projection == uint8(WebMercator)}
 	class, here := image.ClassAt(place.At)
 	return describe.OfImage(nameOf(place), id, class, here, image.NearestHeavier(place.At), m.units)
 }

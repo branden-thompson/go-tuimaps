@@ -92,6 +92,7 @@ type Report struct {
 	Unmatched int
 	Samples   []colour.RGB
 	Fallback  int // pixels valued along the provider's legend gradient, off its table (L-2.3)
+	Near      int // pixels matched within the tolerance of a table that is not approximate (L-2.2)
 }
 
 func imageRefused(why, todo textsafe.Text) error {
@@ -329,6 +330,7 @@ type matcher struct {
 	report    Report
 	sampled   map[colour.RGB]bool
 	gradient  gradient // the provider's heavy end, if the image is read with a provider's table
+	legend    bool     // the table was read off a legend (Approximate), so a near match is expected
 }
 
 // reading is what a colour was found to be, remembered so that a picture of
@@ -337,6 +339,7 @@ type matcher struct {
 type reading struct {
 	class int8
 	fell  bool
+	near  bool // matched within the tolerance, not exactly, on a table that is not approximate
 }
 
 const unmatched = int8(-2)
@@ -364,7 +367,7 @@ func (m *matcher) class(c colour.RGB) reading {
 			got = int8(Classify(m.table[best].Value, m.breaks))
 		}
 	}
-	out := reading{class: got}
+	out := reading{class: got, near: best >= 0 && m.table[best].Colour != c && !m.legend}
 	if got == unmatched && len(m.gradient.at) > 1 {
 		// Off the table: valued where it projects onto the legend's heavy
 		// end, if it is near enough to it to be rain at all (L6.5).
@@ -386,6 +389,9 @@ func (m *matcher) pixel(c color.NRGBA) int8 {
 	got := m.class(rgb)
 	if got.fell {
 		m.report.Fallback++
+	}
+	if got.near {
+		m.report.Near++
 	}
 	if got.class != unmatched {
 		return got.class
@@ -437,8 +443,11 @@ func newMatcher(img *Image, kind Kind) *matcher {
 		tolerance = 0
 	}
 	m := &matcher{table: img.Table, breaks: kind.Breaks, tolerance: tolerance, known: map[colour.RGB]reading{}, sampled: map[colour.RGB]bool{}}
-	if t, ok := TableOf(img.Provider); ok && len(t.Gradient) > 1 {
-		m.gradient = gradientOf(t.Gradient) // the provider's own table: its heavy end too
+	if t, ok := TableOf(img.Provider); ok {
+		m.legend = t.Approximate // a table read off a legend expects colours near its own
+		if len(t.Gradient) > 1 {
+			m.gradient = gradientOf(t.Gradient) // the provider's own table: its heavy end too
+		}
 	}
 	return m
 }
@@ -618,14 +627,17 @@ func (s *Store) keepPictures(r *Reader, pictures []picture) {
 	delete(s.standPics, r.id) // its own pictures landed: the stand-in gives way (L11.32)
 	s.landed++
 	delete(s.spare, r.id) // what the new version kept, it now holds
-	unmatched, fallback := 0, 0
+	unmatched, fallback, near := 0, 0, 0
 	for _, p := range pictures {
-		unmatched, fallback = unmatched+p.report.Unmatched, fallback+p.report.Fallback
+		unmatched, fallback, near = unmatched+p.report.Unmatched, fallback+p.report.Fallback, near+p.report.Near
 	}
 	if unmatched > 0 {
 		s.warnCountLocked(fault.UnmatchedImageColours, textsafe.Quote(r.id), unmatched)
 	}
 	if fallback > 0 {
 		s.warnCountLocked(fault.TableFallback, textsafe.Quote(r.id), fallback) // the heavy end is the library's best reading (L6.6)
+	}
+	if near > 0 {
+		s.warnCountLocked(fault.NearImageColours, textsafe.Quote(r.id), near) // a published or host palette has moved (L-2.2, OW-10)
 	}
 }
