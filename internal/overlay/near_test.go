@@ -119,3 +119,27 @@ func TestALegendTableExpectsNearColours(t *testing.T) {
 		t.Errorf("nudged pixels on MRMS's legend table: %d near, warned %d; want none", report.Near, warned)
 	}
 }
+
+// TestANearColourTakesItsNearestEntry: a colour near the table's second
+// entry, and far from its first, is read as the second entry's class - each
+// entry's distance is its own.
+func TestANearColourTakesItsNearestEntry(t *testing.T) {
+	green, red := colour.RGB{R: 40, G: 160, B: 40}, colour.RGB{R: 200, G: 30, B: 30}
+	table := []TableEntry{{Colour: green, Value: 20}, {Colour: red, Value: 55}}
+	s := store(t)
+	img := cornered(t, color.NRGBA{R: red.R, G: red.G, B: red.B, A: 255}, nudged(red), 3, 0, table)
+	if _, err := s.HandIn(Overlay{ID: "radar", Valid: noon, Keeps: time.Hour, Image: img}); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.PrepareJob("radar", 0).Run(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	raster, report, ok := s.Raster("radar")
+	if !ok {
+		t.Fatal("nothing read")
+	}
+	if report.Near != 9 || report.Unmatched != 0 || raster.Classes[0] != raster.Classes[19*20+19] {
+		t.Errorf("nine pixels near the red entry: %d near, %d unmatched, class %d against red's %d; want 9, 0 and red's class",
+			report.Near, report.Unmatched, raster.Classes[0], raster.Classes[19*20+19])
+	}
+}

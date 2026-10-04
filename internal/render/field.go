@@ -143,8 +143,8 @@ func (r *Renderer) underlays(in Input) {
 		return
 	}
 	g := r.grid
-	// WHERE AN IMAGE SHARES THE MAP, A FIELD IS ITS LINES (L-15.3, watchpost
-	// D-95): both ramps run blue to red, so a band under an echo would read as
+	// WHERE AN IMAGE SHARES THE MAP, A FIELD IS ITS LINES (L-15.3, D-88):
+	// both ramps run blue to red, so a band under an echo would read as
 	// rain. The field is its labelled contours, over its bands drawn faintly
 	// where the image has no echo; the image keeps its own colours.
 	shared := in.ImageHeld || len(in.Rasters) > 0 || slices.ContainsFunc(in.Fields, func(f scene.Field) bool { return isRain(&f) })

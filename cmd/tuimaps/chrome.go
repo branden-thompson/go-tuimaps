@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strconv"
 	"strings"
 
 	tuimaps "github.com/branden-thompson/go-tuimaps"
@@ -24,8 +25,8 @@ func mapRows(rows int) int {
 // (NFR-7), and a row of keys cut off in the middle of a word tells a person
 // less than a shorter row that fits.
 const (
-	keysLong   = "q quit  a/z zoom  arrows pan  n names  o water  w world  m markers  Tab focus  ? keys"
-	keysMiddle = "q quit  a/z zoom  arrows pan  n o w m  Tab focus  ? keys"
+	keysLong   = "q quit  a/z zoom  arrows pan  n names  o water  w world  m markers  Tab focus  d describe  ? keys"
+	keysMiddle = "q quit  a/z zoom  arrows pan  n o w m  Tab focus  d describe  ? keys"
 	keysShort  = "q quit  ? keys"
 )
 
@@ -47,7 +48,7 @@ func (a *app) screenful(frame tuimaps.Frame) []string {
 	rows := mapRows(a.rows)
 	body := frame.Lines
 	if panel := a.panelText(); panel != nil {
-		body = panel
+		body = fitted(panel, rows, a.cols)
 	}
 	shown := make([]string, 0, a.rows)
 	for i := range rows {
@@ -111,10 +112,10 @@ func (a *app) describedLines() []string {
 	if err != nil {
 		return []string{printable(err.Error(), wholeComplaint)}
 	}
-	if len(said.Places) == 0 {
-		return []string{"no place is named; the map has nothing to say about anywhere"}
+	if lines := reported(said); len(lines) > 0 {
+		return lines
 	}
-	return reported(said)
+	return []string{"no place is named, and no alert or rain motion is in view"}
 }
 
 // cut is a line of the app's own, cut to the width of the terminal. The
@@ -129,4 +130,20 @@ func cut(line string, cols int) string {
 		return line
 	}
 	return string(runes[:cols])
+}
+
+// fitted is a panel's lines on the rows a panel has: each cut to the
+// terminal's width, so that none wraps, and when there are more lines than
+// rows the last row says how many are not shown and where to read them all,
+// so that nothing is dropped without a word (A11y, BUILD-exit red team).
+func fitted(lines []string, rows, cols int) []string {
+	out := make([]string, 0, min(len(lines), rows))
+	for _, l := range lines {
+		out = append(out, cut(l, cols))
+	}
+	if rows < 1 || len(out) <= rows {
+		return out
+	}
+	hidden := len(out) - (rows - 1)
+	return append(out[:rows-1], cut(strconv.Itoa(hidden)+" more lines; tuimaps --describe prints them all", cols))
 }

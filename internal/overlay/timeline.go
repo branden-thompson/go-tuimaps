@@ -60,9 +60,10 @@ func (s *Store) RightNow() time.Time {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	// THE NEWEST OBSERVED FRAME OF EVERY LOOP (L11.16). A loop of forecast
-	// frames alone, beside an observed one, offered its newest forecast as its
-	// own "shown", and "right now" became the far end of the forecast. Only
-	// where no loop has an observed frame does the loops' own rule stand.
+	// frames alone, beside an observed one, does not offer its newest forecast
+	// as "right now", which would put "right now" at the far end of the
+	// forecast. Only where no loop has an observed frame does the loops' own
+	// rule stand.
 	var newest, observed time.Time
 	for _, h := range s.current {
 		img := h.overlay.Image
@@ -107,7 +108,7 @@ func frameShownAt(img *Image, at time.Time) int {
 }
 
 // RasterAt is the picture an overlay shows at a moment on the timeline: for
-// a loop, the frame frameAt names; for a single picture, that picture.
+// a loop, the frame frameShownAt names; for a single picture, that picture.
 func (s *Store) RasterAt(id string, at time.Time) (scene.Raster, Report, bool) {
 	if s == nil || id == "" {
 		return scene.Raster{}, Report{}, false

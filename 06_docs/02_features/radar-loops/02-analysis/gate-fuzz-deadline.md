@@ -108,5 +108,10 @@ cannot meet that; the freeze is bounded and harmless, and the 600-second limit i
 
 **Not changed:** the gate keeps the default minimisation time - the counts were calibrated with it,
 and a shorter one would only shorten legs. Recorded here so a stall at 0 executions a second is read
-as minimisation, not a hang.
+as minimisation, not a hang. **Nor is `FuzzAgree`'s count recalibrated** though its leg ran 51 to 142 s
+against the sixty the count was set for: the spread is the minimisation, which a count cannot steady
+(with a 5 s minimise time the same count took 74 and 96 s), and the 600-second limit stays far above it.
+
+**The raw output is filed**, not only this table: `programs/output/fuzzagree-L10.7/` holds each run's
+engine log, the two controls and the driver that ran them.
 

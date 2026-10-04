@@ -52,7 +52,7 @@ flowchart TB
     WPL3 --> WPL11 --> WPL10
   end
   subgraph WP2["watchpost P1-b — lands on the v0.2.0 tag"]
-    W8["W8 Radar loops, motion Setting, M3, M5, M6<br/>(FR-5, HR-1, HR-9)"]
+    W8["W8 Radar loops, motion Setting, watchpost M3, M5, M6<br/>(FR-5, HR-1, HR-9)"]
     W9["W9 Library bound, Report, fetch options,<br/>retention + purge, guard 4 full, labels, pattern<br/>(HR-3, HR-6, HR-7, HR-8, HR-10)"]
   end
   WP1 --> WP2
@@ -84,7 +84,7 @@ once. Its P1-b builds against release candidates, `v0.2.0-rc.N`, as the packages
 | FR-4.4 / D-42 partial areas | per-alert answers; place labels kept | L-13.6, L-8.9 | D-43, D-60 | WP-L5, WP-L3 |
 | FR-7.4 description | `Report`: alerts shown, per place, motion | L-1.12, L-13.5–L-13.10 | D-42, D-43, D-57 | WP-L5 |
 | Radar over alerts | the blend; furniture never erased | L-11, L-8.3 | D-14, D-27, D-45 | WP-L3 |
-| M5 time to picture | render ≤ 15 ms an advance | L-12.5 | D-61 | WP-L3 |
+| watchpost M5 time to picture | render ≤ 15 ms an advance | L-12.5 | D-61 | WP-L3 |
 | UAT-1 U1-10, U1-16: detail by purpose | `SetDetail(level)` on the built-in style's ranking; major and minor roads switched apart | L-14 (new, D-82) | D-82, D-83, watchpost D-65, D-67 | WP-L11 |
 | UAT-1 U1-1: the footer | the scale bar and the credit never touch | L-8 (furniture) | D-83 | WP-L11 |
 | Watchpost W10: temperature and the map's two modes (its D-93 to D-98) | every hour's and day's grid handed in with its span, the moment the loop's or the host's; a field over an image drawn as its lines | L-15 (new, D-88) | D-88 | WP-L11 (L11.10, L11.11) |

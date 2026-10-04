@@ -214,9 +214,10 @@ func TestKeysAreDecodedFromWhatATerminalSends(t *testing.T) {
 		{"an arrow", "\x1b[A", []string{keyUp}},
 		{"every arrow", "\x1b[A\x1b[B\x1b[C\x1b[D", []string{keyUp, keyDown, keyRight, keyLeft}},
 		{"an arrow among letters", "n\x1b[Cw", []string{keyNames, keyRight, keyWorld}},
-		{"escape on its own", "\x1b", []string{keyQuit}},
+		{"escape on its own", "\x1b", []string{keyEscape}},
 		{"a sequence the app has no use for", "\x1b[5~", nil},
-		{"letters it has no use for", "xvp", nil},
+		{"letters it has no use for", "xvu", nil},
+		{"a loop's keys", "p[]", []string{keyPlay, keyStepBack, keyStepOn}},
 		{"the interrupt character", "\x03", []string{keyQuit}},
 		{"tab", "\t", []string{keyFocus}},
 	} {

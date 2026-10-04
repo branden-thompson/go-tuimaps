@@ -214,8 +214,10 @@ func checkPictures(img *Image, imageCap int) error {
 
 // copied is the store's own copy of an image: its picture, its table, and
 // every frame's picture, so that the host's slices are never read after Set
-// returns (L-1.14). A loop over the frame limit, MaxFrames gaps included, is
-// refused before anything is copied (L-1.15).
+// returns (L-1.14). A loop over the frame limit, MaxFrames gaps included, and
+// a file over the 8 MiB a picture may be, are refused before anything is
+// copied (L-1.15): a length can be read without copying, and the copy of an
+// oversized loop would be the memory the limits exist to bound.
 func copied(img *Image) (*Image, error) {
 	if img == nil {
 		return nil, nil
@@ -224,6 +226,14 @@ func copied(img *Image) (*Image, error) {
 		return nil, refused(fault.OverImageCap,
 			textsafe.Join(textsafe.Const("it has "), textsafe.Clean(strconv.Itoa(len(img.Frames))), textsafe.Const(" frames, over the most a loop may have, 72, gaps included")),
 			textsafe.Const("hand in fewer frames"))
+	}
+	if len(img.PNG) > maxPNGBytes {
+		return nil, refused(fault.OverImageCap, textsafe.Const("its PNG is larger than 8 MiB"), textsafe.Const("hand in a smaller image"))
+	}
+	for _, f := range img.Frames { // bounded by MaxFrames, checked above (P10-02)
+		if len(f.PNG) > maxPNGBytes {
+			return nil, refused(fault.OverImageCap, textsafe.Const("a frame's PNG is larger than 8 MiB"), textsafe.Const("hand in smaller frames"))
+		}
 	}
 	own := *img
 	own.PNG = cloneBytes(img.PNG)
@@ -329,8 +339,9 @@ type matcher struct {
 	known     map[colour.RGB]reading
 	report    Report
 	sampled   map[colour.RGB]bool
-	gradient  gradient // the provider's heavy end, if the image is read with a provider's table
-	legend    bool     // the table was read off a legend (Approximate), so a near match is expected
+	gradient  gradient     // the provider's heavy end, if the image is read with a provider's table
+	legend    bool         // the table was read off a legend (Approximate), so a near match is expected
+	tableLab  []colour.Lab // each table entry's colour in Lab, worked out once for the tolerance's search
 }
 
 // reading is what a colour was found to be, remembered so that a picture of
@@ -344,18 +355,34 @@ type reading struct {
 
 const unmatched = int8(-2)
 
+// labAt is table entry i's colour in Lab, the whole table worked out once, on
+// the first search that needs it.
+func (m *matcher) labAt(i int) colour.Lab {
+	if len(m.tableLab) != len(m.table) {
+		m.tableLab = make([]colour.Lab, len(m.table))
+		for j, e := range m.table { // bounded by the table's 256 entries (P10-02)
+			m.tableLab[j] = colour.InLab(e.Colour, colour.Normal)
+		}
+	}
+	return m.tableLab[i]
+}
+
 func (m *matcher) class(c colour.RGB) reading {
 	if got, ok := m.known[c]; ok {
 		return got
 	}
 	best, bestGap := -1, math.Inf(1)
+	var here colour.Lab
+	if m.tolerance > 0 {
+		here = colour.InLab(c, colour.Normal) // once a colour: the table's own were worked out in newMatcher
+	}
 	for i, e := range m.table {
 		if e.Colour == c {
 			best = i
 			break
 		}
 		if m.tolerance > 0 {
-			if gap := colour.InLab(c, colour.Normal).Distance(colour.InLab(e.Colour, colour.Normal)); gap <= m.tolerance && gap < bestGap {
+			if gap := here.Distance(m.labAt(i)); gap <= m.tolerance && gap < bestGap {
 				best, bestGap = i, gap
 			}
 		}
@@ -452,14 +479,32 @@ func newMatcher(img *Image, kind Kind) *matcher {
 	return m
 }
 
+// OwnPicture reports whether an image overlay's own picture for the frame
+// it shows is decoded - never the stand-in a refresh keeps (L-27.1). A map
+// asks this, not Raster, when it decides what still needs preparing: Raster
+// answers from the stand-in, so it cannot tell a refreshed loop whose new
+// frames still need decoding from one that is done.
+func (s *Store) OwnPicture(id string) bool {
+	if s == nil || id == "" {
+		return false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	h, ok := s.current[id]
+	if !ok || h.overlay.Image == nil {
+		return false
+	}
+	pictures, at := s.pictures[id], shown(h.overlay.Image)
+	return at >= 0 && at < len(pictures) && pictures[at].ready
+}
+
 // readClasses reads every pixel of a decoded picture into out, row by row.
 //
 // THE TWO LAYOUTS A RADAR PNG DECODES TO ARE READ FROM THEIR PIXELS (watchpost
-// W14, P-12): through image.Image every pixel's colour was an allocation -
-// 165,049 for a 600x275 frame, 2.7 ms. A paletted picture's colours are
-// converted once, a palette entry each; an NRGBA picture's bytes are its
-// colours. Every other layout keeps the general reading, and each reads
-// exactly as it would.
+// W14, P-12): through image.Image every pixel's colour is an allocation. A
+// paletted picture's colours are converted once, a palette entry each; an
+// NRGBA picture's bytes are its colours. Every other layout keeps the general
+// reading, and each reads exactly as the general reading would.
 func readClasses(m *matcher, decoded image.Image, out []int8) {
 	bounds := decoded.Bounds()
 	w := bounds.Dx()
@@ -557,6 +602,9 @@ func shown(img *Image) int {
 // Raster is the picture an overlay shows and what matching its colours
 // found, once a job has decoded it.
 func (s *Store) Raster(id string) (scene.Raster, Report, bool) {
+	// Raster answers from a refreshed loop's stand-in until its own pictures
+	// land, so that drawing never blinks; whether the overlay still needs its
+	// work is OwnPicture's question, not this one's.
 	if s == nil || id == "" {
 		return scene.Raster{}, Report{}, false
 	}

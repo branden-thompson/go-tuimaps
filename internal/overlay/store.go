@@ -506,7 +506,7 @@ func (s *Store) retireLocked(id string, h *held) bool {
 	return false
 }
 
-// Set adds an overlay, or replaces the one of the same id. It never waits.
+// HandIn (behind Map.Set) adds an overlay, or replaces the one of the same id. It never waits.
 func (s *Store) HandIn(o Overlay) (SetResult, error) {
 	if s == nil {
 		return SetResult{}, refused(fault.Internal, textsafe.Const("there is no store to set it in"), textsafe.Const("this is a defect in the library; report it"))
@@ -759,7 +759,7 @@ func (s *Store) Drop(id string) (RemoveResult, error) {
 	return RemoveResult{Found: true, Released: s.retireLocked(id, old)}, nil
 }
 
-// InUse reports whether any call is still reading geometry of that id that
+// Reading (behind Map.InUse) reports whether any call is still reading geometry of that id that
 // has been replaced or removed.
 func (s *Store) Reading(id string) bool {
 	if s == nil || id == "" {

@@ -61,15 +61,15 @@ const (
 	Track         = High + 1
 	TrackLabel    = Track + 1
 	// Wind1 to Wind6 are the wind preset's classes, calmest first (FR-8,
-	// watchpost D-109): after the rest, so no token already named moves.
+	// L-16.3; from watchpost D-109): after the rest, so no token already named moves.
 	Wind1 = TrackLabel + 1
 	Wind6 = Wind1 + 5
-	// Fire and FireFaint are a fire's (watchpost D-121): its perimeter, its
+	// Fire and FireFaint are a fire's (L-18.1; from watchpost D-121): its perimeter, its
 	// incident and a strong hotspot; a weaker hotspot. Never an alert.
 	Fire      = Wind6 + 1
 	FireFaint = Fire + 1
 	// QuakeHour, QuakeDay and QuakeOlder are a quake's ring by its age, as
-	// USGS colours it (watchpost D-123): the past hour, the past day, older.
+	// USGS colours it (L-19.3; from watchpost D-123): the past hour, the past day, older.
 	QuakeHour  = FireFaint + 1
 	QuakeDay   = QuakeHour + 1
 	QuakeOlder = QuakeDay + 1

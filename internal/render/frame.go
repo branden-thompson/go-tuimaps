@@ -620,9 +620,9 @@ func (r *Renderer) compose(in Input, status Status) {
 	r.markerNames() // the host's places, before any other name (L-8.9, D-80)
 	// An alert's words are placed before any name of the basemap's, so that
 	// a place name never hides a warning's word. EVERY OTHER OVERLAY'S WORDS
-	// COME AFTER THE NAMES (L-23, watchpost D-135): placed first, a map's
-	// buoys, tides, quakes and fires took every cell and the place names
-	// were lost (watchpost UAT-2 U2-38).
+	// COME AFTER THE NAMES (L-23.1; from watchpost D-135): a map's buoys,
+	// tides, quakes and fires can fill every cell, and placed ahead of the
+	// names they would leave the map without the names that say where it is.
 	g.world = box{}
 	for _, l := range r.painter.OverlayLabels() {
 		// An alert's label that does not fit falls back to its severity word;
@@ -633,9 +633,9 @@ func (r *Renderer) compose(in Input, status Status) {
 		}
 	}
 	r.digits(in) // after the alerts' words, before any name of the basemap's (D-65)
-	// AN ALERT OUTSIDE THE MOMENT HOLDS ITS ROOM (L-28, watchpost D-200): its
-	// word and digits are kept from the names as if drawn, after every drawn
-	// one, so the names stand still as a loop plays past its hours.
+	// AN ALERT OUTSIDE THE MOMENT HOLDS ITS ROOM (L-28.1; from watchpost
+	// D-200): its word and digits are kept from the names as if drawn, after
+	// every drawn one, so the names stand still as a loop plays past its hours.
 	for _, l := range r.painter.OverlayLabels() {
 		if l.reserved {
 			g.hold(l)
@@ -655,12 +655,12 @@ func (r *Renderer) compose(in Input, status Status) {
 			g.world.left, g.world.right = toDot(x+float64(lo)*side), toDot(x+float64(hi+1)*side)
 		}
 	}
-	// **The basemap's names before the data's words (L-23, watchpost D-135,
-	// overturning D-124's field values first).** With every layer on, the
-	// stations' readings and the contours' values took every cell, and the
-	// map lost the names that say where it is. The host's own places were
-	// placed before all of them, and the alerts' words too (L-8.9, D-60,
-	// D-81), so nothing can cost the map its "you are here" or a warning.
+	// **The basemap's names before the data's words (L-23.1; from watchpost
+	// D-135).** With every layer on, the stations' readings and the contours'
+	// values can fill every cell, so they come after the names that say where
+	// the map is. The host's own places are placed before all of them, and
+	// the alerts' words too (L-8.9, D-60, D-81), so nothing can cost the map
+	// its "you are here" or a warning.
 	// Names, most important first; the order among equals is the order the
 	// tiles gave them, and the tiles were sorted (P-25).
 	r.labels = append(r.labels[:0], r.painter.Labels()...)
@@ -797,7 +797,7 @@ func (r *Renderer) markerNames() {
 
 // placeOrShorten places a label; one that does not fit whole tries its
 // shorter form, and either way the frame reports it (L-8.5, L-8.9). A label
-// with no shorter form that does not fit is simply not drawn, as before.
+// with no shorter form that does not fit is simply not drawn.
 func (r *Renderer) placeOrShorten(l Label) {
 	g := r.grid
 	if g.labelAt(l, []Point{{X: l.X, Y: l.Y}}) || textsafe.Width(l.Short) == 0 && !l.place {
@@ -821,15 +821,16 @@ func (r *Renderer) furniture(in Input, status Status) {
 	if status == NoTiles {
 		// **Two different things bring a frame here, and they need different
 		// answers.** With tiles to draw from, nothing has decoded them yet and
-		// the host has work to run; with none, there is nothing to run. The
-		// wording used to tell every host to name a source or pass the
-		// embedded tiles - which the first host had already done - and said
-		// nothing of the pump, the one thing that would have helped (14.19).
+		// the host has work to run; with none, there is nothing to run. So a
+		// host that supplied no tiles is told to name a source or pass the
+		// embedded tiles, and a host that did is shown only that the map is
+		// loading (task 14.19).
 		notice := textsafe.Const("no map tiles: name a source, or pass the assets package's tiles")
 		if in.Supplied {
-			// WORDS FOR A PERSON, NOT A PROGRAMMER (L-22.2, watchpost D-124):
-			// "call Settle, or run Work" was shown to listeners, whose map
-			// was only loading. The host's pump is the host's to know of.
+			// WORDS FOR A PERSON, NOT A PROGRAMMER (L-22.2; from watchpost
+			// D-124): the person reading the map sees only that it is loading
+			// and no call is named. The host's pump is the host's to know of,
+			// through the NoTiles status.
 			notice = textsafe.Const("Loading the map…")
 		}
 		fit := textsafe.Fit(notice, g.cols)
@@ -853,10 +854,9 @@ func (r *Renderer) furniture(in Input, status Status) {
 		g.write(g.cols-w, g.rows-1, credit, uint8(colour.Credit))
 	}
 	// **THE CREDIT KEEPS ITS WIDTH AND THE SCALE MARK TAKES WHAT IS LEFT, less
-	// one clear cell** (v0.2.0 D-83, watchpost UAT-1 U1-1). The credit gave up
-	// a cell when the cell before it was taken - but it was measured before
-	// the scale mark was written, so it never saw it, and at about 70 columns
-	// "50 km" and the credit read as one word. The attribution is the one that
+	// one clear cell** (L-14.3, v0.2.0 D-83). The credit is written first and
+	// the scale mark's room is worked out from the credit's width, so the two
+	// never touch and never read as one word. The attribution is the one that
 	// must be whole (FR-14); a scale mark with no room is not drawn.
 	if room := min(g.cols/3, g.cols-w-1); in.Scale && room > 0 {
 		g.write(0, g.rows-1, scaleMark(in.View, room), uint8(colour.Scale))

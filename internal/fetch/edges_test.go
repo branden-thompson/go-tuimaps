@@ -117,3 +117,21 @@ func TestEachEdgeIsHeldWhereItIsUsed(t *testing.T) {
 		t.Errorf("no error was translated into %v", err)
 	}
 }
+
+// TestTheLesserReservedRangesAreRefused (L-10.3; BUILD-exit red team, InfoSec
+// S-5): local-use NAT64, which can carry a private IPv4 address inside it,
+// deprecated site-local, Teredo, and the ranges set aside for documentation
+// and protocol use are no public source's address.
+func TestTheLesserReservedRangesAreRefused(t *testing.T) {
+	for _, address := range []string{"[64:ff9b:1::a00:1]:443", "[fec0::1]:443", "[2001::1]:443", "[2001:db8::1]:443",
+		"192.0.0.8:443", "192.0.2.1:443", "198.51.100.1:443", "203.0.113.1:443"} {
+		if err := checkDial(address, false); !errors.Is(err, errPolicy) {
+			t.Errorf("%s: %v; want it refused", address, err)
+		}
+	}
+	for _, address := range []string{"192.0.3.1:443", "[2001:4860::8888]:443", "203.0.114.1:443"} {
+		if err := checkDial(address, false); err != nil {
+			t.Errorf("%s, a public address: %v", address, err)
+		}
+	}
+}

@@ -19,7 +19,7 @@ type Layer uint8
 
 // The layers that can be switched. WaterLayer is the lakes and inland water:
 // the sea and its coast are never switched, since a map without them has no
-// shore at all (watchpost UAT-1 U1-39).
+// shore at all (L-14.5; from watchpost UAT-1 U1-39).
 const (
 	RoadLayer Layer = iota + 1
 	RailLayer

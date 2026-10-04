@@ -33,3 +33,14 @@ func TestTheArchitectureLegIsHandedOnOnlyByName(t *testing.T) {
 		t.Errorf("the run's line does not say the leg was handed on:\n%s", log)
 	}
 }
+
+// TestTheSoakIsAModeOfItsOwn: the hour is never folded into another mode.
+func TestTheSoakIsAModeOfItsOwn(t *testing.T) {
+	if testing.Short() {
+		t.Skip("runs the gate; skipped with -short")
+	}
+	root := plantTree(t, true)
+	if out, err := runGateWith(t, root, nil, "--soak", "--quick"); err == nil || !strings.Contains(out, "one mode at most") {
+		t.Errorf("--soak with --quick was accepted:\n%s", out)
+	}
+}

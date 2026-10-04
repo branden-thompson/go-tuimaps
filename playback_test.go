@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"image/color"
+	"math"
 	"strings"
 	"testing"
 	"time"
@@ -42,7 +43,7 @@ func mustSet(t *testing.T, m *tuimaps.Map, o tuimaps.Overlay) {
 
 // settle runs the map's work until nothing is pending, so what was set is
 // decoded and drawn.
-func settle(t *testing.T, m *tuimaps.Map) {
+func settle(t testing.TB, m *tuimaps.Map) {
 	t.Helper()
 	if _, err := m.Settle(context.Background()); err != nil {
 		t.Fatal(err)
@@ -677,5 +678,24 @@ func TestRightNowIsTheNewestObservedFrameAcrossLoops(t *testing.T) {
 	must(t, m.Reset())
 	if st := m.Loop(); !st.At.Equal(at(0)) {
 		t.Errorf("reset went to %v; want right now, %v", st.At, at(0))
+	}
+}
+
+// TestTheLongestStepLandsAtTheEnd (BUILD-exit red team): a step of the
+// largest int lands on the newest frame, and of the smallest on the oldest -
+// never wrapping round to the other end.
+func TestTheLongestStepLandsAtTheEnd(t *testing.T) {
+	m := world(t, 80, 24)
+	must(t, m.SetPlayback(tuimaps.PlaybackOn))
+	mustSet(t, m, radarLoop(t, "radar", 12, 40, 30))
+	settle(t, m)
+	must(t, m.Step(-1)) // off the newest, so the largest step starts from a frame that can overflow
+	must(t, m.Step(math.MaxInt))
+	if l := m.Loop(); l.Index != l.Count-1 {
+		t.Errorf("a step of the largest int shows frame %d of %d; want the newest", l.Index, l.Count)
+	}
+	must(t, m.Step(math.MinInt))
+	if l := m.Loop(); l.Index != 0 {
+		t.Errorf("a step of the smallest int shows frame %d; want the oldest, 0", l.Index)
 	}
 }

@@ -219,7 +219,7 @@ func (p *Painter) Shape(v project.View, s scene.Shape) error {
 // and paints nothing of it: an alert's word and severity digits are kept, as
 // Shape keeps them, to hold their room from the basemap's names (L-28).
 // Placed as if every alert in view were present, the names stand still as a
-// loop plays past each alert's hours (watchpost D-200).
+// loop plays past each alert's hours (L-28.1; from watchpost D-200).
 func (p *Painter) Reserve(v project.View, s scene.Shape) error {
 	if p == nil {
 		return badTile()

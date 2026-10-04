@@ -69,12 +69,18 @@ func frameKey(img *Image, file []byte, valid time.Time, kind Kind) [32]byte {
 	})
 }
 
-// keyOf hashes a picture's bytes, its bounds, its tolerance and its table,
-// and then whatever more the caller adds: the type, and a frame's time.
+// keyOf hashes a picture's bytes, its bounds, its tolerance, its provider
+// and its table, and then whatever more the caller adds: the type, and a
+// frame's time. The provider is part of it because the reading is: a
+// provider's table brings its legend's gradient and whether a near colour
+// is expected. Every run of variable length is preceded by its length, so
+// no two different inputs hash the same bytes.
 func keyOf(img *Image, file []byte, more func(hash.Hash)) [32]byte {
 	sum := sha256.New()
-	sum.Write(file)
 	var number [8]byte
+	binary.LittleEndian.PutUint64(number[:], uint64(len(file)))
+	sum.Write(number[:])
+	sum.Write(file)
 	bits := func(v float64) {
 		binary.LittleEndian.PutUint64(number[:], math.Float64bits(v))
 		sum.Write(number[:])
@@ -82,7 +88,9 @@ func keyOf(img *Image, file []byte, more func(hash.Hash)) [32]byte {
 	for _, v := range []float64{img.West, img.South, img.East, img.North, img.Tolerance} {
 		bits(v)
 	}
-	sum.Write([]byte{uint8(img.Projection), boolByte(img.Exact)})
+	sum.Write([]byte{uint8(img.Projection), boolByte(img.Exact), uint8(img.Provider)})
+	binary.LittleEndian.PutUint64(number[:], uint64(len(img.Table)))
+	sum.Write(number[:])
 	for _, e := range img.Table {
 		bits(e.Value)
 		sum.Write([]byte{e.Colour.R, e.Colour.G, e.Colour.B, boolByte(e.Missing)})
@@ -99,6 +107,8 @@ func keyOf(img *Image, file []byte, more func(hash.Hash)) [32]byte {
 func writeKind(sum hash.Hash, kind Kind) {
 	var number [8]byte
 	sum.Write([]byte{uint8(kind.Preset)})
+	binary.LittleEndian.PutUint64(number[:], uint64(len(kind.Breaks)))
+	sum.Write(number[:])
 	for _, b := range kind.Breaks {
 		binary.LittleEndian.PutUint64(number[:], math.Float64bits(b))
 		sum.Write(number[:])

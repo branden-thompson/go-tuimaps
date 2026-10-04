@@ -11,6 +11,7 @@ import (
 // file deals in words and never in bytes.
 const (
 	keyQuit           = "quit"
+	keyEscape         = "escape"
 	keyZoomIn         = "zoom-in"
 	keyZoomOut        = "zoom-out"
 	keyLeft           = "left"
@@ -27,6 +28,9 @@ const (
 	keyColour         = "colour"
 	keyDescribe       = "describe"
 	keyHelp           = "help"
+	keyPlay           = "play"
+	keyStepBack       = "step-back"
+	keyStepOn         = "step-on"
 	keyUnknown        = ""
 	escape       byte = 0x1b
 )
@@ -70,8 +74,14 @@ func pressed(c byte) string {
 		return keyDescribe
 	case '?':
 		return keyHelp
+	case 'p':
+		return keyPlay
+	case '[':
+		return keyStepBack
+	case ']':
+		return keyStepOn
 	case escape:
-		return keyQuit // Esc on its own quits, as upstream has it
+		return keyEscape // Esc closes an open panel, and otherwise quits, as upstream has it
 	}
 	return keyUnknown
 }
@@ -134,6 +144,12 @@ func (a *app) act(key string) (redraw, done bool) {
 	switch key {
 	case keyQuit:
 		return false, true
+	case keyEscape:
+		if a.describeUp || a.helpUp {
+			a.describeUp, a.helpUp = false, false
+			return true, false // a panel open: Esc closes it, and never quits from inside it
+		}
+		return false, true
 	case keyZoomIn:
 		return a.zoomed(1), false
 	case keyZoomOut:
@@ -146,8 +162,25 @@ func (a *app) act(key string) (redraw, done bool) {
 		return a.focusNext(), false
 	case keyDescribe, keyHelp:
 		return a.panel(key), false
+	case keyPlay, keyStepBack, keyStepOn:
+		return a.played(key), false
 	}
 	return a.switched(key), false
+}
+
+// played is the loop's keys: play and stop, and a step either way, which
+// stops it where it lands.
+func (a *app) played(key string) bool {
+	switch key {
+	case keyPlay:
+		if a.m.Loop().Playing {
+			return a.note(a.m.Stop())
+		}
+		return a.note(a.m.Play())
+	case keyStepBack:
+		return a.note(a.m.Step(-1))
+	}
+	return a.note(a.m.Step(1))
 }
 
 // switched is the keys that turn something on and off: the basemap layers

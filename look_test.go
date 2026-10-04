@@ -17,7 +17,7 @@ var colours = regexp.MustCompile("\x1b\\[[0-9;]*m")
 
 // world is a settled map of the world at a size, drawn from the embedded
 // tiles and reaching nothing.
-func world(t *testing.T, cols, rows int) *tuimaps.Map {
+func world(t testing.TB, cols, rows int) *tuimaps.Map {
 	t.Helper()
 	m, err := tuimaps.New(tuimaps.WithSize(cols, rows), tuimaps.Embed(assets.Tile, assets.MaxZoom))
 	if err != nil {

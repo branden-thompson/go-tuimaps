@@ -18,7 +18,7 @@ and every lesson that can be a failing test becomes one.**
 | | |
 |---|---|
 | Branch | `feature/radar-loops`, cut from `feature/go-tuimaps` (full history) → squash-merged `release/v0.2.0` at SHIP (D-1) |
-| Phase | **BUILD OPEN** since 2026-09-23 (D-73). PLAN closed: `08-reports/plan-report.md` (APPROVED); the plan is `04-development/implementation-plan.md`, test-first, starting with WP-L1; release candidates per landed package (D-69). Update this row at every phase transition |
+| Phase | **BUILD**, at BUILD exit. BUILD opened 2026-09-23 (D-73) on the approved PLAN (`08-reports/plan-report.md`); the plan is `04-development/implementation-plan.md`, test-first; release candidates per landed package (D-69). Update this row at every phase transition |
 | Brief | `01-objectives/project-brief.md` — APPROVED (D-7), AMENDED (D-11), CORRECTED (D-23); with `requirements.md`, the body of issue #2 |
 | Rulings | `02-analysis/rulings.md` — **every ruling lands here the moment it is made** |
 | Requirements | `01-objectives/requirements.md` — **NORMATIVE** (D-23); wins over the brief on any conflict |
@@ -27,7 +27,7 @@ and every lesson that can be a failing test becomes one.**
 
 ## Blocking right now
 
-Nothing blocks BUILD. The full gate takes about twenty minutes (run it as `export PATH="$HOME/go/bin:$PATH" && scripts/gate`); every run's time is in
+Nothing blocks BUILD. The full gate takes about thirty minutes on an 18-core Apple M-series Mac (run it as `export PATH="$HOME/go/bin:$PATH" && scripts/gate`); every run's time is in
 `06_docs/gate-runs.md`.
 
 ## Machine notes
@@ -44,7 +44,8 @@ Nothing blocks BUILD. The full gate takes about twenty minutes (run it as `expor
 
 1. **Rulings one at a time**, with evidence, options, a recommendation and the strongest
    counter-argument, recorded verbatim. Silence is not consent.
-2. **Additive only** to the v0.1.0 contract; a breaking change is a HUM LEAD ruling (C-7).
+2. **Additive by default** to the v0.1.0 contract. A break is a HUM LEAD ruling (D-58, C-7), and
+   every break is listed in the contract's changelog, section 12 of `contract.md`.
 3. **No code in PLAN** — signatures and API shape only (watchpost D-13).
 4. **Never call a table exact that was derived** (L-2.2).
 5. **A gate is obeyed or ruled on**, never re-run until it passes.

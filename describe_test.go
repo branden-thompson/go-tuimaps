@@ -2,6 +2,7 @@ package tuimaps_test
 
 import (
 	"context"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -442,6 +443,33 @@ func TestStalenessIsJudgedByTheFramesOwnRule(t *testing.T) {
 			if a.Stale {
 				t.Errorf("%s in %s is stale a minute after its data was valid", one.Place, a.Overlay)
 			}
+		}
+	}
+}
+
+// BenchmarkAReportOverALongLoopWithManyPlaces is the cost a host pays to
+// ask on every frame with a full loop and many places (BUILD-exit red team,
+// BUILD lens #1): 72 frames and 60 places, the view moved between asks so
+// the remembered answer cannot be used.
+func BenchmarkAReportOverALongLoopWithManyPlaces(b *testing.B) {
+	m := world(b, 149, 38)
+	if _, err := m.Set(radarLoop(b, "radar", 72, 298, 152)); err != nil {
+		b.Fatal(err)
+	}
+	settle(b, m)
+	var places []tuimaps.Place
+	for i := range 60 {
+		places = append(places, tuimaps.Place{Name: "P" + strconv.Itoa(i), At: tuimaps.LonLat{Lon: -89.9 + float64(i%10), Lat: 30.1 + float64(i/10)}})
+	}
+	b.ReportAllocs()
+	lon := -85.0
+	for b.Loop() {
+		lon = -169 - lon // -85 and -84 in turn: two views, so every ask is a new view
+		if err := m.Recentre(tuimaps.LonLat{Lon: lon, Lat: 35}); err != nil {
+			b.Fatal(err)
+		}
+		if _, err := m.Report(places); err != nil {
+			b.Fatal(err)
 		}
 	}
 }

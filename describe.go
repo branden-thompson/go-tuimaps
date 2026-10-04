@@ -71,7 +71,7 @@ func (m *Map) describeKey(asked []Place) describeKey {
 // **A host may ask about places the map does not store** - that is what the
 // argument to Report is for, and a station watching several locations uses
 // it for exactly that. `placesVersion` counts changes to the map's OWN places
-// and says nothing about these, so keying on the count alone answered a
+// and says nothing about these, so keying on the count alone would answer a
 // question about one place with the answer about another (FR-29 requires the
 // key to change whenever the answer would).
 //

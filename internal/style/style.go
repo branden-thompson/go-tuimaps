@@ -58,7 +58,7 @@ type Rule struct {
 	priority int
 	detail   Detail // the least level the built-in rule is drawn at; zero for a host's own (D-82)
 	// always is a built-in rule no switch takes: the sea and its coast,
-	// without which the land has no edge (watchpost UAT-1 U1-39).
+	// without which the land has no edge (L-14.5; from watchpost UAT-1 U1-39).
 	always  bool
 	filter  []step
 	colours []colourStop

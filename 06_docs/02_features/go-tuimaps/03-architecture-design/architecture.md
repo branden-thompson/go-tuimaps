@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Phase | PLAN |
+| Phase | BUILD (v0.2.0), kept in step with the code |
 | Date | 2026-09-19 |
 | Status | **Approved with the Plan of Record (D-95).** Revised after each of the PLAN red-team's three rounds. Built on rulings D-11 to D-94. HUM LEAD's first read, 2026-09-19: "These look good so far" — a basic understanding, not yet a deep one; the set was approved with the Plan of Record (D-95). |
 | How to use this | These diagrams are **living references** (D-71). Point at one when asking a question; when a decision changes, the diagram changes in the same commit. Every diagram file names the rulings and requirements it carries on its first lines, so a change to one of those says which file to open; for the three diagrams in this file, the ids are in the text beside each. |
@@ -245,9 +245,9 @@ flowchart TB
 
 ## Level 1 — The public contract at a glance
 
-*AS BUILT v0.2.0 (rc.8): `Report` replaces `Describe`; playback, fetch options, cache age, bound.*
+*AS BUILT v0.2.0: `Report` replaces `Describe`; playback, fetch options, cache age, bound, the moment, the new grids.*
 
-Everything a host can call or hand in, grouped by what it is for. The names are the code's, as of v0.2.0-rc.8; PLAN's were illustrative (D-71). **The full statement — what each call promises, which calls are safe together, the pump, the end of a borrow — is [the contract](contract.md).**
+The main calls a host makes or hands in, grouped by what it is for, by the code's names. **Every exported name is in [the public surface](../07-readiness/public-surface.txt)**, which a test holds to the package; the full statement — what each call promises, which calls are safe together, the pump, the end of a borrow — is [the contract](contract.md).
 
 ```mermaid
 flowchart LR
@@ -256,18 +256,18 @@ flowchart LR
       A1["<b>Life</b><br/>New(options: WithSize · Embed · SharedCaches) · Close() — closes at once and reports calls still inside"]
       A2["<b>Size and view</b><br/>WithSize(cols, rows) — state, set BEFORE Settle or Render; Render's size updates it<br/>intents: PanCells · Zoom · ZoomBy · Recentre · FitWorld · FitTo(places, overlays, margin) (FR-24, D-76)<br/>SetBound(Bound): a least zoom and a box, held on every move (L-3.1) · Centre() · DeepestZoom()"]
       A2b["<b>Places and markers</b><br/>SetPlaces(places) · AddPlace(place) · RemovePlace(id) · Places() — ids as upstream (P-61)<br/>what Report answers for, what FitTo can fit, what markers draw (FR-26)"]
-      A3["<b>Overlays</b> (D-74, D-86)<br/>Set(overlay) → SetResult: created or replaced · old geometry released yes/no<br/>Remove(id) → RemoveResult: found · released yes/no · InUse(id) · Overlays()<br/>structs: Features · Grid · Image — one PNG, or Frames: a loop of up to MaxFrames 72, gaps and forecasts stated (D-54)<br/>an image's table, or a Provider's: IEM · MRMS · SetImageBudget(bytes), 6 MiB by default (L-12)<br/>presets: Temperature · Radar · Alerts (· Wind, VectorGrid, TileImages later) (D-69)"]
-      A4["<b>Look</b><br/>SetPalette(tokens) (D-63) · SafeRamps(on) · Ground(colour) · PaintGround() (D-64)<br/>ColourDepth(depth) · ReduceMotion(on) (NFR-21) · Layers(layer, on) (FR-36; major and minor roads apart, v0.2.0 D-82) · LabelLanguage(code) (D-82)<br/>SetDetail(level) (v0.2.0 L-14) · SetStyle(body) · ShowFooter(on)"]
+      A3["<b>Overlays</b> (D-74, D-86)<br/>Set(overlay) → SetResult: created or replaced · old geometry released yes/no<br/>Remove(id) → RemoveResult: found · released yes/no · InUse(id) · Overlays()<br/>structs: Features · Grid · Image — one PNG, or Frames: a loop of up to MaxFrames 72, gaps and forecasts stated (D-54)<br/>an image's table, or a Provider's: IEM · MRMS · SetImageBudget(bytes), 6 MiB by default (L-12)<br/>presets: RadarImage · TemperatureGrid · WindGrid · WaveGrid · UVGrid · AirQualityGrid · QPFGrid · roles for features: alerts, fire, quakes, buoys and tides (D-69)<br/>not built: a tile-image provider"]
+      A4["<b>Look</b><br/>SetPalette(tokens) (D-63) · SafeRamps(on) · Ground(colour) · PaintGround() (D-64)<br/>ColourDepth(depth) · ReduceMotion(on) (NFR-21) · Layers(layer, on) (FR-36; major and minor roads apart, v0.2.0 D-82) · LabelLanguage(code) (D-82)<br/>SetDetail(level) (v0.2.0 L-14) · SetStyle(body) · ShowFooter(on) · ShowStamp(on) (D-87)"]
       A5["<b>Tiles</b><br/>Source(address) (D-65) · CacheRoot(dir, capBytes) · SetCacheMaxAge(age) (D-56)<br/>SetFetchOptions(FetchOptions: Transport · UserAgent · Timeout · AllowHTTP) · CheckedDialer() (D-55)<br/>NewShared · SharedCaches (FR-27, D-85) · CacheUse() (D-90) · Purge() → PurgeReport · Verify() (FR-22a) · SourceCredit()"]
       A6["<b>Running the work</b> (D-73, D-84)<br/>Pending() · Work(ctx) → did · Settle(ctx) → SettleResult: ran · failed · in flight · why · OnPending(hook) · InFlight()<br/>Set and Remove say at once whether a borrow is over; InUse(id) answers after (D-86)"]
-      A7["<b>Playback</b> — one for the map (D-54, D-67, D-76)<br/>SetPlayback(on or off) · SetPlaybackStep(200–1000 ms, 500 by default)<br/>Play · Stop · Reset · Step(by) · Animate(at) · FollowClock()"]
+      A7["<b>Playback</b> — one for the map (D-54, D-67, D-76)<br/>SetPlayback(on or off; off by default) · SetPlaybackStep(200–1000 ms, 500 by default)<br/>Play · Stop · Reset · Step(by) · ShowMoment(from, to) while no loop is held · Animate(at) · FollowClock()"]
     end
     subgraph OUTB["Map → Host"]
       direction TB
       B1["<b>The picture</b><br/>Render(size, now) → Frame: exactly-sized rows (NFR-8), valid until the next Render,<br/>the counters it was drawn at, and what it dropped (a label, a place's name)<br/>status: complete · still sharpening · no tiles; a recovered panic returns an empty frame and an internal error"]
       B2["<b>When to call again</b><br/>Changed(): inputs, and work landed · FrameTicks(): loop frame advances (D-66)<br/>NextCall(wallClock): the earliest of a marker phase, a retry time, an overlay going stale, the next loop advance (FR-25, FR-32)"]
       B3["<b>The same facts as data</b><br/>Legend() · Credits() · Scale() (FR-13, FR-14, FR-33)<br/>Footer(): centre and zoom in upstream's wording (P-57)<br/>Report(places) → alerts shown · each place's alerts and answers · observed motion (D-57) · Units · SetNearby<br/>Loop() → LoopState: the moment shown, the span, playing, advancing, why off"]
-      B4["<b>What went wrong</b><br/>errors of a closed list of 25 kinds · KindOf · Warnings() ≤ 64, of 15 kinds (NFR-20)<br/>CheckRamp(ramp, how) for a host's own tests (D-53, D-88)"]
+      B4["<b>What went wrong</b><br/>errors of a closed list of 25 kinds · KindOf · Warnings() ≤ 64, of 16 kinds (NFR-20)<br/>CheckRamp(ramp, how) for a host's own tests (D-53, D-88)"]
     end
     IN --> M((Map)) --> OUTB
 ```

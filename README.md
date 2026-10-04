@@ -59,16 +59,19 @@ changed.
 | **Colour is yours to set** | `SetPalette` takes your own colours, `SafeRamps(true)` keeps the library's where a scale must stay readable, `ColourDepth` hints at the terminal. With no hint, a non-empty `NO_COLOR` means no colour at all |
 | **Nothing is hidden by colour alone** | With no colour, alert areas are hatched and labelled, overlay lines are dashed, and a scalar field becomes contour lines carrying their values |
 | **A style is bytes, never a path** | `SetStyle(body)` draws the basemap by a style of your own, in the same JSON format as the library's. The library never opens a style file: you read it, and pass what you read |
+| **Loops do not play until you say so** | An image overlay can carry a loop of frames, and its playback is off by default: the map shows the newest observed frame and holds it. Turn playback on with `SetPlayback(PlaybackOn)`, then call `Play` |
+| **A fast step lifts the flash ceiling** | The project keeps everything on the map to at most 2.5 changes a second. `SetPlaybackStep` takes 200 ms to 1000 ms, 500 ms by default; a step below 400 ms lifts that ceiling, and `Loop` says so. Say so beside the setting where you offer it (D-76) |
 
 ## What it sends and stores
 
 Nothing, until you name a source. With one named:
 
 - tiles are fetched from that source and from nowhere else, over HTTPS;
-- what is sent is the tile address and a user-agent naming this library and a
-  fixed development version string (the real version arrives with v0.2.0) -
-  nothing about your machine. `SetFetchOptions` adds a name of your own to
-  it, and takes a transport of your own for your proxy or trust roots;
+- what is sent is the tile address and a user-agent naming this library and
+  its version, `go-tuimaps/0.2.0` - nothing about your machine. The version
+  is the release's: `scripts/gate --release` refuses a tag it does not
+  match. `SetFetchOptions` adds a name of your own to it, and takes a
+  transport of your own for your proxy or trust roots;
 - tiles are held in memory, and on disk only if you name a directory with
   `CacheRoot`. A cached file's time is when its tile was fetched: reading a
   tile writes nothing. `SetCacheMaxAge` sets how long a tile is kept.
@@ -88,24 +91,42 @@ The public surface is the contract in `06_docs`. The error kinds and warning
 kinds are closed lists: a later version adds to them only in a minor release,
 and says so. A frame is valid until the next `Render` on the same map.
 
+v0.2.0 breaks some of v0.1.0's shape, by ruling D-58: names removed or
+redefined, and the warning kinds renumbered. Each break, and what a host does
+instead, is listed in section 12 of
+`06_docs/02_features/go-tuimaps/03-architecture-design/contract.md`, which is
+the migration note from v0.1.0. Compare kinds by name, never by number.
+
 ## Not built yet
 
-Flash and pulse markers, camera tours, the block renderer, a wind overlay,
-timed image sequences, 16-colour ramps. Each is designed and none is
-promised for a date.
+Flash and pulse markers (blinking markers are built), camera tours, the block
+renderer, a tile-image provider, a PMTiles source, pointer operations (a cell
+to a coordinate, or to what lies under it), and styles written with
+expressions (a style's filters are read in the legacy format). Each is
+designed and none is promised for a date.
 
 ## Working on the library
 
 Every change is checked by `scripts/gate`, which is what stands before a merge:
 
-- `scripts/gate` runs every leg, about eighteen minutes on the machine it was calibrated on. It needs
-  the go1.25.0 toolchain (downloaded on first use), `govulncheck` on `PATH`
-  (`go install golang.org/x/vuln/cmd/govulncheck@latest`), and a machine that can run the other
-  architecture's tests (an Apple silicon Mac runs amd64 under emulation).
-- `scripts/gate --quick` skips fuzzing, the vulnerability scan, licences and the cross-compiles.
+- `scripts/gate` runs every leg, about thirty minutes on an 18-core Apple M-series Mac; every run's
+  seconds are in `06_docs/gate-runs.md`. It needs the go1.25.0 toolchain (downloaded on first use),
+  the pinned `govulncheck` on `PATH` (`go install golang.org/x/vuln/cmd/govulncheck@v1.8.0`), and a
+  machine that can run the other architecture's tests (an Apple silicon Mac runs amd64 under
+  emulation).
+- `scripts/gate --quick` skips fuzzing, the vulnerability scan, the cross-compiles, the five-minute
+  loop-memory leg and the second architecture. Formatting, vet, the tests and the licence check
+  still run.
 - `scripts/gate --docs` is for a staged change of Markdown and nothing else: stage, run it, commit.
   It refuses any other staged file.
 - `scripts/gate --fuzz` runs the fuzz legs alone.
+- `scripts/gate --soak` runs the loop-memory check for an hour: a 12-frame loop played while the heap
+  is watched. It is run once before a release and recorded; the full gate runs the same test for
+  five minutes.
+- `scripts/gate --release TAG` is the release check. A final tag (`vX.Y.Z`) is refused while a row of
+  the release checklist is unticked; a release candidate (`vX.Y.Z-rc.N`) is not. Either way the
+  library's version must be the tag's, and the pinned `govulncheck` must find nothing reachable that
+  the checklist does not carry as a ruled exception.
 
 Give one mode at most. Every run leaves a line in `06_docs/gate-runs.md`. The gate also needs `perl`
 (present on macOS and most Linux systems) for the fuzz legs' time limit, and it writes a throw-away

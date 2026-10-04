@@ -7,7 +7,7 @@ type Preset uint8
 const (
 	Temperature Preset = iota + 1
 	Radar
-	Wind       // FR-8: a vector grid's speed (watchpost D-109)
+	Wind       // FR-8, L-16.3: a vector grid's speed (watchpost D-109)
 	Waves      // L-20: wave height, drawn over the sea alone (watchpost D-126)
 	UV         // L-25: the UV index (watchpost D-137)
 	AirQuality // L-25: the US AQI (watchpost D-139)
@@ -15,17 +15,18 @@ const (
 )
 
 // UVBreaks are the UV index's categories' floors: Low under 3, Moderate 3
-// to 6, High 6 to 8, Very High 8 to 11, Extreme 11 and over (watchpost
-// D-137).
+// to 6, High 6 to 8, Very High 8 to 11, Extreme 11 and over (L-25.1;
+// from watchpost D-137).
 func UVBreaks() []float64 { return []float64{3, 6, 8, 11} }
 
 // AirQualityBreaks are the US AQI's categories' floors: Good to 50,
 // Moderate 51-100, Unhealthy for Sensitive Groups 101-150, Unhealthy
-// 151-200, Very Unhealthy 201-300, Hazardous 301 and over (watchpost D-139).
+// 151-200, Very Unhealthy 201-300, Hazardous 301 and over (L-25.1; from
+// watchpost D-139).
 func AirQualityBreaks() []float64 { return []float64{51, 101, 151, 201, 301} }
 
 // QPFFloors are the rain totals' class floors, in mm: the NWS WPC's breaks
-// at 0.01, 0.1, 0.25, 0.5, 1, 2 and 4 inches (watchpost D-184). Below the
+// at 0.01, 0.1, 0.25, 0.5, 1, 2 and 4 inches (L-26.1; from watchpost D-184). Below the
 // first is a trace, and nothing is drawn.
 func QPFFloors() []float64 { return []float64{0.25, 2.5, 6.35, 12.7, 25.4, 50.8, 101.6} }
 
@@ -37,7 +38,7 @@ func FloorsFirst(p Preset) bool { return p == Radar || p == QPF }
 // qpfRamp is WPC's hues in their order - lime, greens, blues, purple and
 // plum - their lightness searched to run pale to dark and pass the checker,
 // colour-vision safe, on both grounds at truecolor and 256 colours
-// (watchpost D-184). Searched for, not converted.
+// (L-26.1; from watchpost D-184). Searched for, not converted.
 func qpfRamp() []RGB {
 	return []RGB{{133, 248, 24}, {74, 234, 97}, {51, 192, 129}, {42, 147, 178}, {46, 73, 156}, {85, 47, 123}, {80, 9, 72}}
 }
@@ -46,7 +47,8 @@ func qpfRamp() []RGB {
 // green, yellow, orange, red, and UV's violet or the AQI's purple and
 // maroon - their lightness set so each runs pale to dark and passes the
 // checker, colour-vision safe, on both grounds at truecolor and 256 colours
-// (watchpost D-140: "close", and to our rules). Searched for, not converted.
+// (L-25.1; from watchpost D-140: "close", and to our rules). Searched for,
+// not converted.
 func uvRamp() []RGB {
 	return []RGB{{156, 255, 122}, {250, 229, 0}, {240, 100, 0}, {229, 0, 19}, {91, 0, 219}}
 }
@@ -66,7 +68,7 @@ const (
 
 // WaveBreaks are the wave preset's five breaks in a unit: calm, slight,
 // moderate, rough, very rough and high - round numbers in each unit, as the
-// wind's are (watchpost D-126).
+// wind's are (L-20.2; from watchpost D-126).
 func WaveBreaks(u WaveUnit) []float64 {
 	if u == Metres {
 		return []float64{0.5, 1, 2, 3, 4}

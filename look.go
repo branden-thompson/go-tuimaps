@@ -96,9 +96,8 @@ func badLanguage() error {
 
 // TokenNames are the names SetPalette accepts, in the order the constants
 // document lists them. **A host theming the map to its own design system needs
-// to know what there is to theme**, and without this the only way to find out
-// was to guess a name and read it back from SetPalette's list of refusals
-// (task 14.19, the first host).
+// to know what there is to theme**, and this list tells it without a guess
+// read back from SetPalette's refusals (task 14.19).
 func TokenNames() []string {
 	all := colour.Tokens()
 	out := make([]string, 0, len(all))

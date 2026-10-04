@@ -50,10 +50,11 @@ func describing(s settings, out, errs io.Writer) int {
 	if err != nil {
 		return complain(errs, err, exitFailed)
 	}
-	if len(said.Places) == 0 {
+	lines := reported(said)
+	if len(lines) == 0 {
 		return complain(errs, errNothingToDescribe(), exitMistake)
 	}
-	for _, line := range reported(said) {
+	for _, line := range lines {
 		fmt.Fprintln(out, line)
 	}
 	for _, warning := range m.Warnings() {
@@ -128,7 +129,47 @@ func reported(r tuimaps.Report) []string {
 			lines = append(lines, "  nothing is set over this place")
 		}
 	}
+	if len(r.Alerts) > 0 {
+		lines = append(lines, "in view")
+		for _, a := range r.Alerts {
+			lines = append(lines, "  "+inView(a))
+		}
+	}
+	for _, mo := range r.Motion {
+		lines = append(lines, moved(mo))
+	}
 	return lines
+}
+
+// inView is one alert in view, named with no place needed (L-13.5).
+func inView(a tuimaps.AlertShown) string {
+	what := a.Label
+	if what == "" {
+		what = "an alert"
+	}
+	if w := a.Severity.Word(); w != "" {
+		what += ", " + w
+	}
+	if a.Stale {
+		what += " (out of date)"
+	}
+	return what
+}
+
+// moved is a loop's observed motion in words (L-1.12): where the heavier
+// rain was at the oldest usable frame and where it is at the newest, from
+// the place it is measured against. Observation, never forecast.
+func moved(mo tuimaps.MotionReport) string {
+	from := mo.Place
+	if from == "" {
+		from = "the view's centre"
+	}
+	at := func(s tuimaps.Sighting) string {
+		return strconv.FormatFloat(s.Distance, 'f', 0, 64) + " " + s.Unit + " " + s.Compass + " at " + s.Valid.Format("15:04")
+	}
+	went := map[tuimaps.Trend]string{tuimaps.Closer: "came closer", tuimaps.Away: "moved away", tuimaps.Held: "held"}[mo.Trend]
+	return mo.Overlay + ": heavier rain from " + from + " was " + at(mo.From) + ", and is " + at(mo.To) +
+		"; it " + went + " over " + strconv.Itoa(int(mo.Span.Round(time.Minute).Minutes())) + " minutes"
 }
 
 // warned is one alert against a place, in words: what it is, how severe,

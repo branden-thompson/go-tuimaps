@@ -124,7 +124,7 @@ func (v View) FromDot(x, y float64) (LonLat, error) {
 
 // Placement is a tile the view draws and where: the tile itself, and how
 // many worlds east (or, negative, west) of its own place it is drawn - the
-// world repeats across the antimeridian (v0.2.0 D-86, watchpost D-90).
+// world repeats across the antimeridian (L-14.6, v0.2.0 D-86; from watchpost D-90).
 type Placement struct {
 	ID    scene.TileID
 	Shift int

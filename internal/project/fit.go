@@ -40,7 +40,7 @@ func badFit() error {
 		textsafe.Const("check the margin against the view's size, and the boxes"))
 }
 
-// FitTo returns the view, of the same size as current, that frames every
+// Frame (behind Map.FitTo) returns the view, of the same size as current, that frames every
 // point and box with margin cells to spare on each side, at the largest
 // zoom that does - solved directly, not stepped. A single point is centred
 // at the zoom the view already has; nothing named changes nothing. The
@@ -147,7 +147,7 @@ func shortestCover(arcs []arc) (west, width float64) {
 	return after, 360 - gap
 }
 
-// FitWorld is upstream's view of the whole world (P-56): latitude 84 to -56,
+// WholeWorld (behind Map.FitWorld) is upstream's view of the whole world (P-56): latitude 84 to -56,
 // longitude 0, centred on the Mercator midpoint of the two, at the smaller of
 // the zoom that fits that span's height and the zoom that fits the world's
 // width.

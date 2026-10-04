@@ -6,8 +6,9 @@
 #
 #   scripts/gate            every leg
 #   scripts/gate --quick    skip the slow legs: fuzzing, the vulnerability
-#                           scan, licences, the cross-compile, the second
-#                           architecture
+#                           scan, the cross-compiles, the five-minute M4 leg
+#                           and the second architecture (the licence check
+#                           still runs)
 #   scripts/gate --docs     the docs lane (v0.2.0 D-15, D-41, D-53): for a
 #                           STAGED change of Markdown (and the generated atlas
 #                           page, which the atlas's test holds), every
@@ -16,6 +17,10 @@
 #                           refused and sent to the full gate. Stage, run it,
 #                           commit: with nothing staged it fails
 #   scripts/gate --fuzz     the fuzz legs alone
+#   scripts/gate --soak     M4's hour (v0.2.0 D-61, plan task L10.8): a 12-frame
+#                           loop played for an hour while the heap is watched;
+#                           run once before SHIP and recorded. The full gate
+#                           runs the same test for five minutes
 #   scripts/gate --release TAG
 #                           the release check (v0.2.0 L-5.3, L-5.5): a final
 #                           tag (vX.Y.Z) is refused while a row of the release
@@ -117,6 +122,7 @@ quick=0
 docs=0
 fuzzonly=0
 release=0
+soak=0
 release_tag=""
 want_tag=0
 mode="full"
@@ -132,6 +138,7 @@ for arg in "$@"; do
     --docs) docs=1; quick=1; mode="docs"; modes=$((modes + 1)) ;;
     --fuzz) fuzzonly=1; mode="fuzz"; modes=$((modes + 1)) ;;
     --release) release=1; mode="release"; modes=$((modes + 1)); want_tag=1 ;;
+    --soak) soak=1; mode="soak"; modes=$((modes + 1)) ;;
     *) echo "gate: unknown argument: $arg" >&2; exit 2 ;;
   esac
 done
@@ -139,10 +146,10 @@ if [ "$want_tag" = 1 ]; then
   echo "gate: --release needs the tag it checks, vX.Y.Z or vX.Y.Z-rc.N" >&2
   exit 2
 fi
-# TWO MODES TOGETHER SKIPPED EVERY LEG AND PRINTED GREEN (D-40): each mode
-# turns legs off, and nothing was left on. One mode a run.
+# ONE MODE A RUN (D-40): each mode turns legs off, so two together would
+# leave no leg on and print green with nothing checked.
 if [ "$modes" -gt 1 ]; then
-  echo "gate: give one mode at most (--quick, --docs, --fuzz or --release), not $modes" >&2
+  echo "gate: give one mode at most (--quick, --docs, --fuzz, --soak or --release), not $modes" >&2
   exit 2
 fi
 
@@ -184,14 +191,17 @@ log_run() {
   [ -n "${GATE_FUZZ_LIMIT:-}" ] && overrides="GATE_FUZZ_LIMIT=$GATE_FUZZ_LIMIT"
   [ -n "${GATE_ROOT:-}" ] && overrides="${overrides:+$overrides }GATE_ROOT set"
   [ -n "${GATE_ARCH_LEG:-}" ] && overrides="${overrides:+$overrides }GATE_ARCH_LEG=$GATE_ARCH_LEG"
+  # THE DOCS LANE LOGS THE STAGED TREE AND TESTS THE WORKING ONE (D-41): when
+  # files were left out as not staged, the line says the tests saw them.
+  [ "$docs" = 1 ] && [ "${unstaged:-0}" -gt 0 ] && overrides="${overrides:+$overrides }tests saw $unstaged unstaged file(s)"
   printf '| %s | %s | %s | %s | %s | %s | %s |\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$head" "$tree" "$mode" "$result" "$((SECONDS - started_at))" "${overrides:--}" >> "$root/06_docs/gate-runs.md"
 }
 fuzz_legs="$(mktemp)" || exit 2
 cleanup() { [ "$made_work" = 1 ] && rm -f "$root/go.work" "$root/go.work.sum"; rm -f "$fuzz_legs"; return 0; }
 trap 'rc=$?; cleanup; log_run "$rc"; exit "$rc"' EXIT
 # A RUN STOPPED BY A SIGNAL IS INTERRUPTED, NEVER GREEN. Stopped with TERM, the
-# shell reached the EXIT trap with a status of 0 and the run was logged green
-# after five seconds - a line M6 would have counted as clean (L11.21).
+# shell can reach the EXIT trap with a status of 0, which would log the run
+# green - a line M6 would count as clean (L11.21).
 interrupted=0
 trap 'interrupted=1; exit 130' INT
 trap 'interrupted=1; exit 143' TERM
@@ -251,13 +261,29 @@ if [ "$release" = 1 ]; then
     echo "gate: --release needs a version tag, vX.Y.Z or vX.Y.Z-rc.N, not '$release_tag'" >&2
     exit 2
   fi
-  checklist="${GATE_CHECKLIST:-$root/06_docs/02_features/radar-loops/07-readiness/release-checklist.md}"
+  checklist="$root/06_docs/02_features/radar-loops/07-readiness/release-checklist.md"
   refused=""
+  # THE LIBRARY SAYS WHICH RELEASE IT IS (L-13.1): the User-Agent's version
+  # must be the tag's, a release candidate's being the release it leads to.
+  version_file="$root/internal/fetch/fetch.go"
+  tag_version="${release_tag#v}"; tag_version="${tag_version%%-rc.*}"
+  said_version="$(sed -n 's/^[[:space:]]*Version = "\(.*\)"$/\1/p' "$version_file" 2>/dev/null | head -1)"
+  if [ -z "$said_version" ]; then
+    refused="${refused}  REFUSED the library's version could not be read from internal/fetch/fetch.go"$'\n'
+  elif [ "$said_version" != "$tag_version" ]; then
+    refused="${refused}  REFUSED the library says it is $said_version (internal/fetch/fetch.go) and the tag is $release_tag; set Version to $tag_version"$'\n'
+  fi
   if [ ! -f "$checklist" ]; then
     refused="${refused}  REFUSED the release checklist is missing: $checklist"$'\n'
     open_rows=""
   else
-    open_rows="$(grep -E '^\|.*\|[[:space:]]*\[ \][[:space:]]*\|[[:space:]]*$' "$checklist" || true)"
+    # FAIL CLOSED: every data row of a table with a Done column must end in
+    # "[x]"; an empty cell, "[ ]", "[~]" or any other word is open.
+    open_rows="$(awk -F'|' '
+      /^\|/ && $0 ~ /\| *Done *\| *$/ { intable=1; next }
+      intable && /^\|[-| ]+\|$/ { next }
+      intable && /^\|/ { cell=$(NF-1); gsub(/^[ \t]+|[ \t]+$/, "", cell); if (cell != "[x]") print; next }
+      { intable=0 }' "$checklist")"
   fi
   if [[ "$release_tag" == *-rc.* ]]; then
     echo "gate: release check for $release_tag, a release candidate: the checklist does not hold it ($(printf '%s' "$open_rows" | grep -c . || true) row(s) open)"
@@ -405,13 +431,29 @@ if [ -z "$modules" ]; then
   exit 2
 fi
 
+# --- M4's hour (D-61; plan task L10.8) ---------------------------------------
+# The library alone: the loop's cost over an empty map, then an hour of play
+# with the heap held within ±5 %. Its own mode, because an hour is not a leg.
+if [ "$soak" = 1 ]; then
+  echo "gate: soak - M4, a 12-frame loop played for an hour"
+  soak_out="$(env TUIMAPS_M4_SOAK=1h go test -run '^TestALoopsHeapCostAndHold$' -count=1 -v -timeout 90m . 2>&1)"
+  soak_rc=$?
+  printf '%s\n' "$soak_out" | grep -E 'M4|FAIL|panic' | sed 's/^ *//; s/^/  /'
+  if [ "$soak_rc" != 0 ] || ! printf '%s\n' "$soak_out" | grep -q 'held within'; then
+    echo "gate: soak FAILED (the hour did not run to its end, or the heap moved)"
+    exit 1
+  fi
+  echo "gate: soak green"
+  exit 0
+fi
+
 # --- the throw-away workspace file ------------------------------------------
 if [ -z "${tracked:-}" ]; then
   rm -f go.work go.work.sum
   if GOFLAGS= go work init $modules >/dev/null 2>&1; then
     made_work=1
     # A workspace alone does not resolve a version that was never published:
-    # once the library imports third-party code, a separate module that
+    # because the library imports third-party code, a separate module that
     # requires the library at v0.0.0 sends the toolchain looking for that
     # version. A replace for exactly that version, in this throw-away file,
     # points it at the tree. Tracked module files still carry no replace.
@@ -449,16 +491,16 @@ for dir in $modules; do
       exit
     fi
     if [ "$fuzzonly" = 0 ]; then
-      # FORMATTING IS CHECKED (D-46): a test file once sat unformatted through
-      # several green runs because no leg asked.
+      # FORMATTING IS CHECKED (D-46): every file, test files included, or an
+      # unformatted one passes green runs with no leg asking.
       leg "gofmt" gofmt_clean
       leg "vet" go vet ./...
       leg "tests, race detector on" go test -race ./...
       leg "tests, race detector off (allocation counts live here)" go test ./...
       # A licence file for every module in this module's graph. A module of
       # this repository is covered by the repository's own licence file. A
-      # GRAPH THAT CANNOT BE LISTED FAILS (D-40): it used to be a loop over
-      # nothing, which passed, in every module that requires the library.
+      # GRAPH THAT CANNOT BE LISTED FAILS (D-40): otherwise the check is a loop
+      # over nothing, which passes, in every module that requires the library.
       if ! graph="$(go list -m -f '{{.Dir}}' all 2>&1)"; then
         fail "the licence check cannot list this module's graph"
         printf '%s\n' "$graph" | sed 's/^/          /'
@@ -500,7 +542,7 @@ for dir in $modules; do
         # fixed since. The scan runs on this machine's own toolchain, named here.
         leg "vulnerability scan, module and standard library at $(GOTOOLCHAIN=local go env GOVERSION)" env GOTOOLCHAIN=local govulncheck ./...
       else
-        fail "govulncheck is not installed: go install golang.org/x/vuln/cmd/govulncheck@latest"
+        fail "govulncheck is not installed: go install golang.org/x/vuln/cmd/govulncheck@$GOVULNCHECK_PIN"
       fi
     fi
     [ -z "$failures" ]
@@ -519,6 +561,9 @@ if [ "$quick" = 0 ] && [ "$fuzzonly" = 0 ]; then
   for target in $TARGETS; do
     leg "cross-compile $target, C toolchain off" env CGO_ENABLED=0 GOOS="${target%/*}" GOARCH="${target#*/}" go build ./...
   done
+  # M4 (D-61): the loop's heap held while it plays, five minutes of the
+  # soak's hour (scripts/gate --soak).
+  leg "M4, a loop's heap held over five minutes" env TUIMAPS_M4_SOAK=5m go test -run '^TestALoopsHeapCostAndHold$' -count=1 -timeout 20m .
   # Reference frames must be byte-identical on a second architecture. This
   # leg FAILS - never skips - when the second architecture cannot be run.
   host_arch="$(go env GOARCH)"
@@ -548,7 +593,13 @@ echo "gate: green"
 # instead (D-40).
 last_tag="$(git -C "$root" tag --list 'v*' --sort=-v:refname 2>/dev/null | head -1)"
 case "$mode" in
-  quick) echo "NOT RUN in this mode (--quick): fuzzing, the vulnerability scan, the cross-compiles and the second architecture." ;;
+  quick) echo "NOT RUN in this mode (--quick): fuzzing, the vulnerability scan, the cross-compiles, the five-minute M4 leg and the second architecture." ;;
   fuzz) echo "NOT RUN in this mode (--fuzz): vet, the tests, licences, the vulnerability scan, the cross-compiles and the second architecture." ;;
 esac
-echo "NOT RUN on this machine, and not assumed: Linux and Windows test runs; real amd64 hardware; the nightly one-hour soak; the contract check against the last tag (${last_tag:-none exists yet}${last_tag:+: not built yet, v0.2.0 L-4})."
+here_os="$(go env GOOS 2>/dev/null)"
+case "$here_os" in
+  linux) others="macOS and Windows test runs" ;;
+  windows) others="macOS and Linux test runs" ;;
+  *) others="Linux and Windows test runs" ;;
+esac
+echo "NOT RUN on this machine, and not assumed: $others; real amd64 hardware; the one-hour soak (scripts/gate --soak); the test over a real archive, which needs TUIMAPS_REAL_ARCHIVE; the contract check against the last tag (${last_tag:-none exists yet}${last_tag:+: not built yet, v0.2.0 L-4})."

@@ -37,7 +37,7 @@ const (
 	FromMemory             // straight from the host's memory, culled by the run index: its simplified form is larger than the whole shape cap
 	// StandIn is the prepared form of the geometry a Set replaced, drawn until
 	// the replacement is prepared, which a job is still to do (v0.2.0 L11.5,
-	// watchpost UAT-1 U1-28: an alert handed in again blinked out of the frame).
+	// L-14.4): an overlay handed in again never drops out of the frame.
 	StandIn
 )
 

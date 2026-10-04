@@ -186,6 +186,7 @@ func (m *Map) Step(by int) (err error) {
 		if len(timeline) == 0 {
 			return
 		}
+		by = min(max(by, -len(timeline)), len(timeline)) // no step is longer than the loop, so the sum below cannot overflow
 		i := min(max(indexOf(timeline, m.shownLocked())+by, 0), len(timeline)-1)
 		m.play.playing, m.play.at = false, timeline[i].Valid
 	})

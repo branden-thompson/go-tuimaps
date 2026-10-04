@@ -56,7 +56,7 @@ type RampCheck struct {
 	Lines bool
 }
 
-// CheckRamp holds a ramp to the four rules and returns every breach. The
+// Check (behind the public CheckRamp) holds a ramp to the four rules and returns every breach. The
 // library's own presets must pass with none; a host's colours are reported
 // on and never refused (D-53). A host can run it in its own tests.
 func Check(ramp []RGB, c RampCheck) []Finding {

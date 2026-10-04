@@ -35,6 +35,7 @@ Options:
   --describe            say in words where each place is, and draw no map
   --place NAME@LON,LAT  a place to mark and to describe; may be written again
   --scenario N          load M1 scenario N (1, 2, 3, 4, 6 or 7)
+  --loop DIR            play a recorded radar loop, as testdata/loops keeps one
   --size COLSxROWS      the size to draw, instead of the terminal's
   --style PATH          draw the basemap by a style of your own
   --lang CODE           the language of the map's labels (default en)
@@ -73,6 +74,7 @@ Keys, while the map is up:
   arrow keys  pan                      m     markers on and off
   h j k l     pan                      Tab   focus the next place
   ?           these keys               s r C d   the switches above
+  p           play and stop a loop     [ ]   a loop's frame back, on
 
 Zooming with a place focused zooms about that place, which is what a
 pointer would do towards what it points at.

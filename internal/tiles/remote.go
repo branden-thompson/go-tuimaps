@@ -116,7 +116,7 @@ func checkAddress(raw string, source *url.URL) error {
 	}
 	if !strings.HasPrefix(u.EscapedPath(), "/") {
 		// "https://host?/{z}{x}{y}" parses with the tile numbers in its query
-		// and no path at all: found by FuzzTileJSON.
+		// and no path at all (FuzzTileJSON covers it).
 		return refusedAddress(textsafe.Const("its tile address has no path after its host"))
 	}
 	if strings.Contains(raw, "#") {

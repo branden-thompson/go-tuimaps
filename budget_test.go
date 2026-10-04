@@ -30,7 +30,7 @@ func solidPNG(t testing.TB, w, h int, c color.Color) []byte {
 }
 
 // radarLoop is a loop of n frames five minutes apart, ending at noon.
-func radarLoop(t *testing.T, id string, n, w, h int) tuimaps.Overlay {
+func radarLoop(t testing.TB, id string, n, w, h int) tuimaps.Overlay {
 	t.Helper()
 	var frames []tuimaps.LoopFrame
 	for i := n - 1; i >= 0; i-- {

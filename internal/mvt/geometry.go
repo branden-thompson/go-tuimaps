@@ -70,17 +70,17 @@ func (d *layerDecoder) runCommands(geometry []byte, kind scene.GeomKind) error {
 		switch {
 		case id == cmdMoveTo && kind == scene.GeomPoint && c.partStart >= 0:
 			// **A point is one MoveTo** (MVT 2.1, 4.3.5), its count the points.
-			// A second MoveTo command grew more points the proven decoder never
-			// reads - the third disagreement the oracle's fuzzer found
-			// (L11.12). A damaged stream is refused (D-75).
+			// A second MoveTo command would grow more points the proven
+			// decoder never reads, and the two would disagree (L11.12). A
+			// damaged stream is refused (D-75).
 			err = malformed()
 		case id == cmdMoveTo:
 			rest, err = d.moveTo(&c, rest, int(count), kind)
 		case kind == scene.GeomPoint:
-			// **A point has no line and no ring.** Reading these anyway grew
-			// a single point into a run of positions, which the proven
-			// decoder does not do - the second disagreement the oracle's
-			// fuzzer found (D-126). A damaged stream is refused (D-75).
+			// **A point has no line and no ring.** Reading these anyway would
+			// grow a single point into a run of positions, which the proven
+			// decoder does not do, and the two would disagree (D-126). A
+			// damaged stream is refused (D-75).
 			err = malformed()
 		case id == cmdLineTo:
 			rest, err = d.lineTo(&c, rest, int(count))

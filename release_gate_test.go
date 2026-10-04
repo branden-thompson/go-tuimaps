@@ -20,6 +20,7 @@ func releaseTree(t *testing.T, rows, version, out, rc string) (root string, env 
 	root = plantTree(t, true)
 	writeFile(t, root, "06_docs/02_features/radar-loops/07-readiness/release-checklist.md",
 		"# Release checklist\n\n| # | Check | Done |\n|---|---|---|\n"+rows)
+	writeFile(t, root, "internal/fetch/fetch.go", "package fetch\n\nconst (\n\tVersion = \"0.2.0\"\n)\n")
 	bin := t.TempDir()
 	writeFile(t, bin, "govulncheck", "#!/bin/sh\nif [ \"$1\" = \"-version\" ]; then echo 'Go: go1.27.1'; echo 'Scanner: govulncheck@"+version+"'; exit 0; fi\n"+
 		"printf '%s\\n' '"+out+"'\nexit "+rc+"\n")
@@ -96,6 +97,39 @@ func TestTheReleaseCheckNeedsAVersionTag(t *testing.T) {
 	for _, args := range [][]string{{"--release"}, {"--release", "latest"}, {"--release", "v0.2.0x"}} {
 		if out, err := runGateWith(t, root, env, args...); err == nil {
 			t.Errorf("%v passed:\n%s", args, out)
+		}
+	}
+}
+
+// TestTheTagIsTheReleaseTheLibrarySays (L-13.1): the library's User-Agent
+// version must be the tag's; a release candidate leads to the same release.
+func TestTheTagIsTheReleaseTheLibrarySays(t *testing.T) {
+	if testing.Short() {
+		t.Skip("runs the gate; skipped with -short")
+	}
+	root, env := releaseTree(t, doneRow, "v1.8.0", "No vulnerabilities found.", "0")
+	if out, err := runGateWith(t, root, env, "--release", "v0.3.0"); err == nil || !strings.Contains(out, "the library says it is 0.2.0") {
+		t.Errorf("a tag the library does not say was accepted:\n%s", out)
+	}
+	if out, err := runGateWith(t, root, env, "--release", "v0.2.0-rc.40"); err != nil {
+		t.Errorf("a release candidate of the release the library says was refused: %v\n%s", err, out)
+	}
+	writeFile(t, root, "internal/fetch/fetch.go", "package fetch\n\nconst (\n\tVersion = \"0.2.0-dev\"\n)\n")
+	if out, err := runGateWith(t, root, env, "--release", "v0.2.0"); err == nil {
+		t.Errorf("a library calling itself 0.2.0-dev was released as v0.2.0:\n%s", out)
+	}
+}
+
+// TestARowIsDoneOnlyWhenItSaysSo: the release check fails closed - a row
+// whose last cell is anything but "[x]" is open, a final tag waits for it.
+func TestARowIsDoneOnlyWhenItSaysSo(t *testing.T) {
+	if testing.Short() {
+		t.Skip("runs the gate; skipped with -short")
+	}
+	for _, cell := range []string{"[~]", "", "[ ] owed", "[]", "done"} {
+		root, env := releaseTree(t, doneRow+"| 3 | half done | "+cell+" |\n", "v1.8.0", "No vulnerabilities found.", "0")
+		if out, err := runGateWith(t, root, env, "--release", "v0.2.0"); err == nil {
+			t.Errorf("a row ending %q passed the final tag:\n%s", cell, out)
 		}
 	}
 }

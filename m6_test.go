@@ -8,9 +8,16 @@ package tuimaps_test
 
 import (
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 )
+
+// m6Floor is the fewest seconds a full run can take and have run every leg:
+// the fuzz legs alone take about sixteen minutes. A shorter "full" run was
+// stopped short whatever its result says (a run stopped by a signal was once
+// logged green after seconds), and is not counted.
+const m6Floor = 900
 
 // m6Streak is the number of consecutive green full runs at the end of the
 // log, and the full runs it read.
@@ -18,6 +25,10 @@ func m6Streak(log string) (streak, full int) {
 	for _, line := range strings.Split(log, "\n") {
 		cells := strings.Split(line, "|")
 		if len(cells) < 8 || strings.TrimSpace(cells[4]) != "full" || strings.TrimSpace(cells[7]) != "-" {
+			continue
+		}
+		seconds, err := strconv.Atoi(strings.TrimSpace(cells[6]))
+		if err != nil || seconds < m6Floor {
 			continue
 		}
 		full++
@@ -34,15 +45,16 @@ func m6Streak(log string) (streak, full int) {
 // planted log.
 func TestM6CountsOnlyFullRunsAndResetsOnAFailure(t *testing.T) {
 	log := strings.Join([]string{
-		"| t | a | x | full | green | 1 | - |",
-		"| t | a | x | full | FAILED | 1 | - |",
-		"| t | b | x | full | green | 1 | - |",
-		"| t | b | x | docs | FAILED | 1 | - |",
-		"| t | b | x | release | FAILED | 1 | - |",
-		"| t | c | x | full | green | 1 | - |",
-		"| t | c | x | full | INTERRUPTED | 1 | - |",
-		"| t | d | x | full | green | 1 | - |",
-		"| t | e | x | full | FAILED | 1 | GATE_ARCH_LEG=sibling |",
+		"| t | a | x | full | green | 1800 | - |",
+		"| t | a | x | full | FAILED | 1800 | - |",
+		"| t | b | x | full | green | 1800 | - |",
+		"| t | b | x | docs | FAILED | 40 | - |",
+		"| t | b | x | release | FAILED | 5 | - |",
+		"| t | c | x | full | green | 1800 | - |",
+		"| t | c | x | full | INTERRUPTED | 1800 | - |",
+		"| t | d | x | full | green | 1800 | - |",
+		"| t | e | x | full | FAILED | 1800 | GATE_ARCH_LEG=sibling |",
+		"| t | f | x | full | green | 25 | - |",
 	}, "\n")
 	if streak, full := m6Streak(log); streak != 1 || full != 6 {
 		t.Errorf("streak %d over %d full runs; want 1 over 6 (an interrupted run is not clean)", streak, full)

@@ -17,7 +17,7 @@ func errNoCacheToMaintain() error {
 }
 
 func errNothingToDescribe() error {
-	return errors.New("there is nothing to describe; name a place with --place Home@-84.51,33.82, or load one with --scenario")
+	return errors.New("there is nothing to describe; name a place with --place Home@-84.51,33.82, load one with --scenario, or play a loop with --loop")
 }
 
 // sourceFor is where tiles come from for these settings: the app's default,
@@ -89,6 +89,11 @@ func put(m *tuimaps.Map, s settings) error {
 			return err
 		}
 		places = append(append([]tuimaps.Place(nil), loaded.places...), places...)
+	}
+	if s.loopDir != "" {
+		if err := playLoop(m, s.loopDir); err != nil {
+			return err
+		}
 	}
 	if len(places) == 0 {
 		return nil

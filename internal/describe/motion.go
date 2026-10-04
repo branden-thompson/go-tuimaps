@@ -49,6 +49,11 @@ func (t Trend) String() string {
 type Frame struct {
 	Valid time.Time
 	Image Image
+	// cells is the frame's cells at threshold, worked out once a frame and
+	// kept, so that every place a report tracks shares one flood fill.
+	cells     []project.LonLat
+	threshold int
+	celled    bool
 }
 
 // Cells are a frame's areas of heavier rain: each 4-connected area of pixels
@@ -96,16 +101,27 @@ type Sighting struct {
 	At    project.LonLat
 }
 
+// cellsOf is the frame's cells at a threshold, kept on the frame after the
+// first time they are asked for.
+func (f *Frame) cellsOf(threshold int) []project.LonLat {
+	if !f.celled || f.threshold != threshold {
+		f.cells, f.threshold, f.celled = f.Image.Cells(threshold), threshold, true
+	}
+	return f.cells
+}
+
 // Track follows, through the frames given oldest first, the cell nearest a
-// place in the newest frame back to the oldest frame it can be held in. It
+// place in the newest frame back to the oldest frame it can be held in. The
+// frames keep the cells it works out, so tracking another place over the
+// same frames costs no second flood fill. It
 // is false when the newest frame has no cell, or there are fewer than two
 // frames.
 func Track(frames []Frame, threshold int, near project.LonLat) (from, to Sighting, ok bool) {
 	if len(frames) < 2 {
 		return Sighting{}, Sighting{}, false
 	}
-	newest := frames[len(frames)-1]
-	at, found := nearestCell(newest.Image.Cells(threshold), near, math.Inf(1))
+	newest := &frames[len(frames)-1]
+	at, found := nearestCell(newest.cellsOf(threshold), near, math.Inf(1))
 	if !found {
 		return Sighting{}, Sighting{}, false
 	}
@@ -113,7 +129,7 @@ func Track(frames []Frame, threshold int, near project.LonLat) (from, to Sightin
 	from = to
 	for k := len(frames) - 2; k >= 0; k-- {
 		step := math.Max(leastStepKm, cellSpeedKmh*from.Valid.Sub(frames[k].Valid).Hours())
-		prev, held := nearestCell(frames[k].Image.Cells(threshold), from.At, step)
+		prev, held := nearestCell(frames[k].cellsOf(threshold), from.At, step)
 		if !held {
 			break
 		}

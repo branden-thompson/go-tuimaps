@@ -1,0 +1,31 @@
+# M1's five loops (v0.2.0 L10.9): IEM's archived N0Q composite, twelve frames five minutes apart,
+# cropped server-side by IEM's time-enabled WMS. Keyless; one request a second.
+import json, os, time, urllib.request, datetime
+ROOT=os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../../../../testdata/loops')  # run from programs/ as m1-capture.py
+UA='go-tuimaps M1 capture'
+loops=[
+ ('outbreak-alabama-2011-04-27', (-89.0,32.4,-86.2,34.8), '2011-04-27T21:00:00Z'),
+ ('moore-oklahoma-2013-05-20',   (-98.6,34.6,-96.8,36.0), '2013-05-20T20:20:00Z'),
+ ('derecho-indiana-2012-06-29',  (-87.5,39.0,-84.0,41.5), '2012-06-29T19:00:00Z'),
+ ('blizzard-mid-atlantic-2016-01-23', (-78.5,37.8,-75.5,40.2), '2016-01-23T12:00:00Z'),
+ ('harvey-houston-2017-08-26',   (-96.5,28.5,-94.5,30.5), '2017-08-26T12:00:00Z'),
+]
+for name,(w,s,e,n),end in loops:
+    d=os.path.join(ROOT,name); os.makedirs(d,exist_ok=True)
+    t_end=datetime.datetime.strptime(end,'%Y-%m-%dT%H:%M:%SZ')
+    frames=[]
+    for i in range(11,-1,-1):
+        t=t_end-datetime.timedelta(minutes=5*i)
+        stamp=t.strftime('%Y-%m-%dT%H:%M:%SZ'); fn=t.strftime('%Y%m%dT%H%MZ.png')
+        url=("https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q-t.cgi?SERVICE=WMS&REQUEST=GetMap&VERSION=1.1.1"
+             f"&LAYERS=nexrad-n0q-wmst&SRS=EPSG:4326&BBOX={w},{s},{e},{n}&WIDTH=500&HEIGHT=430&FORMAT=image/png&TRANSPARENT=true&TIME={stamp}")
+        req=urllib.request.Request(url,headers={'User-Agent':UA})
+        data=urllib.request.urlopen(req,timeout=60).read()
+        assert data[:8]==b'\x89PNG\r\n\x1a\n',(name,stamp)
+        open(os.path.join(d,fn),'wb').write(data)
+        frames.append({'valid':stamp,'file':fn})
+        time.sleep(1)
+    json.dump({'name':name,'west':w,'south':s,'east':e,'north':n,'projection':'plate-carree','provider':'IEM',
+               'source':'Iowa Environmental Mesonet, NEXRAD N0Q composite archive (WMS-T, nexrad-n0q-wmst)','frames':frames},
+              open(os.path.join(d,'loop.json'),'w'),indent=1)
+    print(name, len(frames), sum(os.path.getsize(os.path.join(d,f['file'])) for f in frames)//1024,'KB',flush=True)

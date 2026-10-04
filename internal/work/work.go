@@ -151,7 +151,7 @@ func (m *Member) pendingLocked() int {
 	return n
 }
 
-// Pending is how many of this map's jobs wait to be picked up. It may be
+// Backlog (behind Map.Pending) is how many of this map's jobs wait to be picked up. It may be
 // called from any goroutine.
 func (m *Member) Backlog() int {
 	if m == nil || m.q == nil {
@@ -162,7 +162,7 @@ func (m *Member) Backlog() int {
 	return m.pendingLocked()
 }
 
-// InFlight is how many of this map's jobs are inside a Work call.
+// Flying is how many of this map's jobs are inside a Work call.
 func (m *Member) Flying() int {
 	if m == nil || m.q == nil {
 		return 0
@@ -189,7 +189,7 @@ func (m *Member) Changed() uint64 {
 	return m.changed
 }
 
-// OnPending sets the hook called when this map's pending work goes from
+// WhenPending (behind Map.OnPending) sets the hook called when this map's pending work goes from
 // none to some. It is called with no lock held and must not call the map.
 func (m *Member) WhenPending(hook func()) error {
 	err := m.owner()

@@ -230,8 +230,11 @@ func (m *Map) observedMotion(asked []Place, out []MotionReport) []MotionReport {
 				continue
 			}
 			a, b := m.sighting(ref.At, from), m.sighting(ref.At, to)
-			fromKm, _, _, _ := describe.Measure(ref.At, from.At)
-			toKm, _, _, _ := describe.Measure(ref.At, to.At)
+			fromKm, _, _, fromOK := describe.Measure(ref.At, from.At)
+			toKm, _, _, toOK := describe.Measure(ref.At, to.At)
+			if !fromOK || !toOK {
+				continue // a sighting that cannot be measured has no trend to tell
+			}
 			out = append(out, MotionReport{Overlay: clean(id), Place: clean(ref.Name), Threshold: threshold,
 				From: a, To: b, Trend: describe.TrendOf(fromKm, toKm), Span: to.Valid.Sub(from.Valid)})
 		}
@@ -344,11 +347,7 @@ func (m *Map) placeAlert(place Place, id string, n int, alert []Feature, nearbyK
 	out := PlaceAlert{Overlay: clean(id), Feature: clean(f.ID), Label: clean(f.Label), Severity: overlay.SeverityOf(f),
 		Where: a.Relation, Distance: a.Distance, Unit: a.Unit, Bearing: a.Bearing, Compass: a.Compass, Valid: f.Valid,
 		UnderOneCell: m.underOneCell(a)}
-	km := a.Distance
-	if a.Unit == "miles" {
-		km *= 1.609344
-	}
-	if out.Where == Outside && !a.NoData && km <= nearbyKm {
+	if out.Where == Outside && !a.NoData && a.Km <= nearbyKm {
 		out.Where = Nearby
 	}
 	return out
@@ -385,8 +384,7 @@ type areaKey struct {
 // of every area, the description's costliest sum - while nothing it depends
 // on changes: the overlays (any Set or Remove) and the units. The view, the
 // clock and the work landing do not touch it, and a report is worked out
-// again on each of those (W14: 28 ms a report, paid by each of twenty-four
-// jobs landing after a feed).
+// again on each of those - after a feed, once for every job that lands (W14).
 type areaMemo struct {
 	overlays uint64
 	units    describe.Units

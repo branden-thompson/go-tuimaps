@@ -480,6 +480,17 @@ func TestDocsLaneJudgesOnlyWhatIsStaged(t *testing.T) {
 	if !strings.Contains(out, "not staged") {
 		t.Errorf("the lane must say how many files it left out as not staged:\n%s", out)
 	}
+	writeFile(t, root, "06_docs/gate-runs.md", "# Gate runs\n\n| When (UTC) | Commit | Uncommitted | Mode | Result | Seconds | Overrides |\n|---|---|---|---|---|---|---|\n")
+	if out, err := runDocsLane(t, root); err != nil {
+		t.Fatalf("the lane failed on its second run: %v\n%s", err, out)
+	}
+	log, err := os.ReadFile(filepath.Join(root, "06_docs", "gate-runs.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(log), "unstaged file(s)") {
+		t.Errorf("the run's line does not say its tests saw files that were not staged (BUILD-exit red team):\n%s", log)
+	}
 }
 
 // TestDocsLaneFailsWhenGitCannotRead: a change the lane cannot read is not a

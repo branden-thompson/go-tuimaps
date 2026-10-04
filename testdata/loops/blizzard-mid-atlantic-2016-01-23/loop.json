@@ -1,0 +1,60 @@
+{
+ "name": "blizzard-mid-atlantic-2016-01-23",
+ "west": -78.5,
+ "south": 37.8,
+ "east": -75.5,
+ "north": 40.2,
+ "projection": "plate-carree",
+ "provider": "IEM",
+ "source": "Iowa Environmental Mesonet, NEXRAD N0Q composite archive (WMS-T, nexrad-n0q-wmst)",
+ "frames": [
+  {
+   "valid": "2016-01-23T11:05:00Z",
+   "file": "20160123T1105Z.png"
+  },
+  {
+   "valid": "2016-01-23T11:10:00Z",
+   "file": "20160123T1110Z.png"
+  },
+  {
+   "valid": "2016-01-23T11:15:00Z",
+   "file": "20160123T1115Z.png"
+  },
+  {
+   "valid": "2016-01-23T11:20:00Z",
+   "file": "20160123T1120Z.png"
+  },
+  {
+   "valid": "2016-01-23T11:25:00Z",
+   "file": "20160123T1125Z.png"
+  },
+  {
+   "valid": "2016-01-23T11:30:00Z",
+   "file": "20160123T1130Z.png"
+  },
+  {
+   "valid": "2016-01-23T11:35:00Z",
+   "file": "20160123T1135Z.png"
+  },
+  {
+   "valid": "2016-01-23T11:40:00Z",
+   "file": "20160123T1140Z.png"
+  },
+  {
+   "valid": "2016-01-23T11:45:00Z",
+   "file": "20160123T1145Z.png"
+  },
+  {
+   "valid": "2016-01-23T11:50:00Z",
+   "file": "20160123T1150Z.png"
+  },
+  {
+   "valid": "2016-01-23T11:55:00Z",
+   "file": "20160123T1155Z.png"
+  },
+  {
+   "valid": "2016-01-23T12:00:00Z",
+   "file": "20160123T1200Z.png"
+  }
+ ]
+}

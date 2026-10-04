@@ -376,8 +376,8 @@ func (m *Map) overlayWork() error {
 		if _, ok := m.store.Field(id); ok {
 			continue
 		}
-		if _, _, ok := m.store.Raster(id); ok {
-			continue
+		if m.store.OwnPicture(id) {
+			continue // its own pictures are decoded; a stand-in is not (L-27.1)
 		}
 		err := m.member.Add(m.store.PrepareJob(id, bucket))
 		if err != nil {
@@ -389,7 +389,7 @@ func (m *Map) overlayWork() error {
 
 // stillWanted reports whether a render's plan keeps the work under key: a
 // tile the view needs, or the preparation, at the bucket in view, of an
-// overlay the map holds (watchpost UAT-2 U2-59). A preparation withdrawn here
+// overlay the map holds (L-30.1; from watchpost UAT-2 U2-59). A preparation withdrawn here
 // is cancelled where it runs, so a loop that takes longer to prepare than the
 // gap between two renders would never be drawn. It allocates nothing: a
 // render pays it for every job waiting or running.

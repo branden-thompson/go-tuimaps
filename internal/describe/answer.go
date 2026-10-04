@@ -59,6 +59,7 @@ type Answer struct {
 	// edge. For points and lines, the nearest one, with its label.
 	Relation Where
 	Distance float64
+	Km       float64 // the distance in kilometres, whatever unit Distance is in
 	Unit     string
 	Bearing  float64
 	Compass  string
@@ -108,6 +109,7 @@ func OfArea(place, overlay string, at project.LonLat, areas [][][]project.LonLat
 		return out
 	}
 	out.Distance, out.Unit = u.Distance(edge.Km)
+	out.Km = edge.Km
 	out.Bearing, out.Compass = edge.Bearing, compassOf(edge.Bearing)
 	return out
 }
@@ -120,6 +122,7 @@ func OfNear(place, overlay string, form Form, near Near, ok bool, u Units) Answe
 		return out
 	}
 	out.Distance, out.Unit = u.Distance(near.Km)
+	out.Km = near.Km
 	out.Bearing, out.Compass = near.Bearing, compassOf(near.Bearing)
 	out.Label = textsafe.Clean(near.Label).String()
 	return out

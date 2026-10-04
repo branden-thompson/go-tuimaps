@@ -132,7 +132,7 @@ func readHeader(body []byte) (header, error) {
 			// is not a layer of this format, and reading past it is
 			// guessing at what was meant. The proven decoder drops such a
 			// layer; this one refuses it, which is the same answer said
-			// plainly (found by the differential fuzz target).
+			// plainly (the differential fuzz target holds the two to it).
 			return header{}, malformed()
 		}
 	}

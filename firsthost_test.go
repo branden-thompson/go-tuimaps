@@ -66,7 +66,7 @@ func TestTheNoTilesNoticeNamesTheRealCause(t *testing.T) {
 		t.Fatal(err)
 	}
 	if frame.Status != NoTiles {
-		t.Skipf("the frame is %v, so there is no notice to read", frame.Status)
+		t.Fatalf("the frame drawn before any work is %v, not no-tiles: the notice this test reads is not there to read, so the proof cannot be made", frame.Status) // fails, never skips: a skip would read as a pass
 	}
 	text := strings.Join(frame.Lines, "\n")
 	// THE HOST LEARNS IT FROM THE STATUS, THE LISTENER FROM THE WORDS (L-22.2,

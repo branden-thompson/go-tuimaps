@@ -3,6 +3,7 @@ package describe
 import (
 	"math"
 	"testing"
+	"time"
 
 	"github.com/branden-thompson/go-tuimaps/internal/project"
 )
@@ -48,6 +49,24 @@ func TestAPixelsCentreIsInItsPixel(t *testing.T) {
 					t.Errorf("mercator %v: the centre of (%d,%d) reads as (%d,%d) %v", merc, x, y, px, py, ok)
 				}
 			}
+		}
+	}
+}
+
+// TestTrackingKeepsEachFramesCells (BUILD-exit red team, perf F2): Track
+// keeps the cells it works out on the frames, so a second place tracked
+// over the same frames shares the flood fill.
+func TestTrackingKeepsEachFramesCells(t *testing.T) {
+	cls := make([]int8, 100)
+	cls[55] = 5
+	frames := []Frame{{Valid: time.Unix(0, 0), Image: Image{West: 0, South: 0, East: 1, North: 1, Width: 10, Height: 10, Classes: cls}},
+		{Valid: time.Unix(300, 0), Image: Image{West: 0, South: 0, East: 1, North: 1, Width: 10, Height: 10, Classes: cls}}}
+	if _, _, ok := Track(frames, 3, project.LonLat{Lon: 0.5, Lat: 0.5}); !ok {
+		t.Fatal("no motion tracked over a held cell")
+	}
+	for i, f := range frames {
+		if !f.celled || f.threshold != 3 || len(f.cells) != 1 {
+			t.Errorf("frame %d kept no cells after tracking (celled %v, %d cells)", i, f.celled, len(f.cells))
 		}
 	}
 }

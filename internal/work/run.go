@@ -17,7 +17,7 @@ type SettleResult struct {
 	Why      error // the first failure, so a result with nothing fetched says why
 }
 
-// Work runs at most one job, on the caller's goroutine, and says whether it
+// RunOne (behind Map.Work) runs at most one job, on the caller's goroutine, and says whether it
 // ran one. It may be called from any goroutine, any number at once: no Work
 // waits on another. It must not be called from the interface goroutine - a
 // fetch can take seconds.
@@ -156,7 +156,7 @@ func own(failure error) error {
 	return internal()
 }
 
-// Settle is the pump's loop run on the caller's goroutine: Work until
+// Drain (behind Map.Settle) is the pump's loop run on the caller's goroutine: Work until
 // nothing is pending or the context ends. Work that failed and waits for
 // its retry time is not pending, so Settle always ends; and it never waits
 // on a Work running elsewhere - it returns and says how many there are.
@@ -252,7 +252,7 @@ func (m *Member) SetDeadline(name string, at time.Time) {
 	m.deadlines[name] = at
 }
 
-// NextCall is the earliest moment anything is due: a named deadline, or a
+// DueAt (behind Map.NextCall) is the earliest moment anything is due: a named deadline, or a
 // deferred job's retry time. Waiting work is not a deadline, so an offline
 // map with nothing set reports nothing due.
 func (m *Member) DueAt(now time.Time) (time.Time, bool) {

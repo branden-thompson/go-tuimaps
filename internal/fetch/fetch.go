@@ -21,8 +21,9 @@ import (
 )
 
 const (
-	// Version names the library in the User-Agent.
-	Version = "0.1.0-dev"
+	// Version names the library in the User-Agent: the release this tree is
+	// (L-13.1). The release check refuses a tag it does not equal.
+	Version = "0.2.0"
 	// DefaultTimeout bounds a whole request (constants, section 5).
 	DefaultTimeout = 20 * time.Second
 	// firstByteTimeout bounds the wait for a connection and for the first
@@ -217,7 +218,8 @@ func isPublic(ip net.IP) bool {
 // the benchmarking range and the reserved block above 240.
 var reserved = func() []*net.IPNet {
 	var out []*net.IPNet
-	for _, cidr := range []string{"100.64.0.0/10", "0.0.0.0/8", "64:ff9b::/96", "2002::/16", "198.18.0.0/15", "240.0.0.0/4"} {
+	for _, cidr := range []string{"100.64.0.0/10", "0.0.0.0/8", "64:ff9b::/96", "2002::/16", "198.18.0.0/15", "240.0.0.0/4",
+		"64:ff9b:1::/48", "fec0::/10", "2001::/32", "2001:db8::/32", "192.0.0.0/24", "192.0.2.0/24", "198.51.100.0/24", "203.0.113.0/24"} {
 		_, r, err := net.ParseCIDR(cidr)
 		if err != nil {
 			panic("fetch: a reserved range that is not a range: " + cidr)
