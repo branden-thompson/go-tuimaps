@@ -1,0 +1,60 @@
+{
+ "name": "outbreak-alabama-2011-04-27",
+ "west": -89.0,
+ "south": 32.4,
+ "east": -86.2,
+ "north": 34.8,
+ "projection": "plate-carree",
+ "provider": "IEM",
+ "source": "Iowa Environmental Mesonet, NEXRAD N0Q composite archive (WMS-T, nexrad-n0q-wmst)",
+ "frames": [
+  {
+   "valid": "2011-04-27T20:05:00Z",
+   "file": "20110427T2005Z.png"
+  },
+  {
+   "valid": "2011-04-27T20:10:00Z",
+   "file": "20110427T2010Z.png"
+  },
+  {
+   "valid": "2011-04-27T20:15:00Z",
+   "file": "20110427T2015Z.png"
+  },
+  {
+   "valid": "2011-04-27T20:20:00Z",
+   "file": "20110427T2020Z.png"
+  },
+  {
+   "valid": "2011-04-27T20:25:00Z",
+   "file": "20110427T2025Z.png"
+  },
+  {
+   "valid": "2011-04-27T20:30:00Z",
+   "file": "20110427T2030Z.png"
+  },
+  {
+   "valid": "2011-04-27T20:35:00Z",
+   "file": "20110427T2035Z.png"
+  },
+  {
+   "valid": "2011-04-27T20:40:00Z",
+   "file": "20110427T2040Z.png"
+  },
+  {
+   "valid": "2011-04-27T20:45:00Z",
+   "file": "20110427T2045Z.png"
+  },
+  {
+   "valid": "2011-04-27T20:50:00Z",
+   "file": "20110427T2050Z.png"
+  },
+  {
+   "valid": "2011-04-27T20:55:00Z",
+   "file": "20110427T2055Z.png"
+  },
+  {
+   "valid": "2011-04-27T21:00:00Z",
+   "file": "20110427T2100Z.png"
+  }
+ ]
+}

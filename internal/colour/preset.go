@@ -7,7 +7,112 @@ type Preset uint8
 const (
 	Temperature Preset = iota + 1
 	Radar
+	Wind       // FR-8, L-16.3: a vector grid's speed (watchpost D-109)
+	Waves      // L-20: wave height, drawn over the sea alone (watchpost D-126)
+	UV         // L-25: the UV index (watchpost D-137)
+	AirQuality // L-25: the US AQI (watchpost D-139)
+	QPF        // L-26: a period's rain and snow totals, liquid-equivalent (watchpost D-184)
 )
+
+// UVBreaks are the UV index's categories' floors: Low under 3, Moderate 3
+// to 6, High 6 to 8, Very High 8 to 11, Extreme 11 and over (L-25.1;
+// from watchpost D-137).
+func UVBreaks() []float64 { return []float64{3, 6, 8, 11} }
+
+// AirQualityBreaks are the US AQI's categories' floors: Good to 50,
+// Moderate 51-100, Unhealthy for Sensitive Groups 101-150, Unhealthy
+// 151-200, Very Unhealthy 201-300, Hazardous 301 and over (L-25.1; from
+// watchpost D-139).
+func AirQualityBreaks() []float64 { return []float64{51, 101, 151, 201, 301} }
+
+// QPFFloors are the rain totals' class floors, in mm: the NWS WPC's breaks
+// at 0.01, 0.1, 0.25, 0.5, 1, 2 and 4 inches (L-26.1; from watchpost D-184). Below the
+// first is a trace, and nothing is drawn.
+func QPFFloors() []float64 { return []float64{0.25, 2.5, 6.35, 12.7, 25.4, 50.8, 101.6} }
+
+// FloorsFirst reports whether a preset's first break is a floor: below it
+// there is nothing to draw - no rain on radar, a trace of a total (L-17.1,
+// L-26).
+func FloorsFirst(p Preset) bool { return p == Radar || p == QPF }
+
+// qpfRamp is WPC's hues in their order - lime, greens, blues, purple and
+// plum - their lightness searched to run pale to dark and pass the checker,
+// colour-vision safe, on both grounds at truecolor and 256 colours
+// (L-26.1; from watchpost D-184). Searched for, not converted.
+func qpfRamp() []RGB {
+	return []RGB{{133, 248, 24}, {74, 234, 97}, {51, 192, 129}, {42, 147, 178}, {46, 73, 156}, {85, 47, 123}, {80, 9, 72}}
+}
+
+// uvRamp and airQualityRamp are the official scales' hues in their order -
+// green, yellow, orange, red, and UV's violet or the AQI's purple and
+// maroon - their lightness set so each runs pale to dark and passes the
+// checker, colour-vision safe, on both grounds at truecolor and 256 colours
+// (L-25.1; from watchpost D-140: "close", and to our rules). Searched for,
+// not converted.
+func uvRamp() []RGB {
+	return []RGB{{156, 255, 122}, {250, 229, 0}, {240, 100, 0}, {229, 0, 19}, {91, 0, 219}}
+}
+
+func airQualityRamp() []RGB {
+	return []RGB{{112, 255, 112}, {235, 227, 0}, {224, 112, 0}, {214, 0, 0}, {170, 0, 204}, {194, 0, 65}}
+}
+
+// WaveUnit is a unit of wave height (L-20).
+type WaveUnit uint8
+
+// The units of wave height.
+const (
+	Feet WaveUnit = iota + 1
+	Metres
+)
+
+// WaveBreaks are the wave preset's five breaks in a unit: calm, slight,
+// moderate, rough, very rough and high - round numbers in each unit, as the
+// wind's are (L-20.2; from watchpost D-126).
+func WaveBreaks(u WaveUnit) []float64 {
+	if u == Metres {
+		return []float64{0.5, 1, 2, 3, 4}
+	}
+	return []float64{2, 4, 6, 9, 13}
+}
+
+// waveRamp is the wave preset's six classes, calmest first, for bands over
+// the sea (L-20): higher lighter on the dark ground, the "ice" scale
+// reversed; higher darker on the light ground, part of "mako". Both were
+// searched for against the checker as areas on each ground's water, at
+// truecolor and in the 256-colour palette, and pass it at both.
+func waveRamp(ground GroundKind) []RGB {
+	if ground == Light {
+		return []RGB{{78, 199, 173}, {53, 160, 169}, {53, 120, 160}, {60, 79, 139}, {54, 43, 86}, {25, 14, 26}}
+	}
+	return []RGB{{92, 42, 128}, {95, 76, 183}, {77, 119, 204}, {79, 169, 214}, {126, 212, 230}, {189, 247, 244}}
+}
+
+// SpeedUnit is a unit of wind speed.
+type SpeedUnit uint8
+
+// The units of wind speed.
+const (
+	MilesPerHour SpeedUnit = iota + 1
+	KilometresPerHour
+	MetresPerSecond
+	Knots
+)
+
+// WindBreaks are the wind preset's five breaks in a unit: calm, light,
+// breezy, windy, strong and gale, round numbers in each unit rather than one
+// set converted (a break at 12.4 mph reads as a mistake).
+func WindBreaks(u SpeedUnit) []float64 {
+	switch u {
+	case KilometresPerHour:
+		return []float64{10, 20, 30, 50, 65}
+	case MetresPerSecond:
+		return []float64{3, 6, 9, 14, 18}
+	case Knots:
+		return []float64{5, 10, 17, 25, 35}
+	}
+	return []float64{5, 10, 20, 30, 40}
+}
 
 // Unit is a unit of temperature.
 type Unit uint8
@@ -66,8 +171,30 @@ func Ramp(p Preset, ground GroundKind, depth Depth) ([]RGB, bool) {
 		return temperatureRamp(ground, depth), true
 	case Radar:
 		return radarRamp(ground, depth), true
+	case Wind:
+		return windRamp(ground), true
+	case Waves:
+		return waveRamp(ground), true
+	case UV:
+		return uvRamp(), true
+	case AirQuality:
+		return airQualityRamp(), true
+	case QPF:
+		return qpfRamp(), true
 	}
 	return nil, false
+}
+
+// windRamp is the wind preset's six classes, calmest first, for arrows drawn
+// on the ground (FR-8): on a dark ground plasma's upper half, violet to
+// yellow, stronger lighter; on a light ground stronger darker. Both were
+// searched for against the checker as line work, at truecolor and in the
+// 256-colour palette, and pass it at both.
+func windRamp(ground GroundKind) []RGB {
+	if ground == Light {
+		return []RGB{{36, 147, 119}, {128, 106, 156}, {114, 78, 231}, {167, 29, 64}, {123, 22, 148}, {119, 24, 0}}
+	}
+	return []RGB{{188, 57, 130}, {215, 90, 107}, {234, 124, 82}, {247, 161, 60}, {244, 205, 47}, {240, 249, 33}}
 }
 
 // temperatureRamp is specimen 21's scale: seventeen classes, coldest first.
@@ -143,6 +270,21 @@ func rampDefault(t Token, ground GroundKind, depth Depth) (RGB, bool) {
 	case t >= Temperature1 && t <= Temperature17:
 		ramp, ok := Ramp(Temperature, ground, depth)
 		return pick(ramp, int(t-Temperature1), ok)
+	case t >= Wind1 && t <= Wind6:
+		ramp, ok := Ramp(Wind, ground, depth)
+		return pick(ramp, int(t-Wind1), ok)
+	case t >= Wave1 && t <= Wave6:
+		ramp, ok := Ramp(Waves, ground, depth)
+		return pick(ramp, int(t-Wave1), ok)
+	case t >= UV1 && t <= UV5:
+		ramp, ok := Ramp(UV, ground, depth)
+		return pick(ramp, int(t-UV1), ok)
+	case t >= AQI1 && t <= AQI6:
+		ramp, ok := Ramp(AirQuality, ground, depth)
+		return pick(ramp, int(t-AQI1), ok)
+	case t >= QPF1 && t <= QPF7:
+		ramp, ok := Ramp(QPF, ground, depth)
+		return pick(ramp, int(t-QPF1), ok)
 	}
 	return RGB{}, false
 }

@@ -134,11 +134,13 @@ func band(value float64, breaks []float64) int {
 }
 
 // Image is a classified image as the renderer draws it: one class a pixel,
-// rows from the north, with the box it covers.
+// rows from the north in the projection the host stated, with the box it
+// covers.
 type Image struct {
 	West, South, East, North float64
 	Width, Height            int
 	Classes                  []int8 // -1 is no data
+	Mercator                 bool   // rows in equal steps of the web map's height, not of latitude
 }
 
 // Heavier is the nearest pixel of a heavier class than the one at a place:
@@ -172,7 +174,21 @@ func (i Image) pixel(at project.LonLat) (int, int, bool) {
 	if !ok || y*i.Width+x >= len(i.Classes) {
 		return 0, 0, false
 	}
+	if i.Mercator {
+		down := (webHeight(i.North) - webHeight(at.Lat)) / (webHeight(i.North) - webHeight(i.South))
+		y = min(max(int(down*float64(i.Height)), 0), i.Height-1)
+	}
 	return x, y, true
+}
+
+// webHeight is a latitude's height in the web map projection.
+func webHeight(lat float64) float64 {
+	return math.Atanh(math.Sin(lat * math.Pi / 180))
+}
+
+// webLatitude is the latitude at a height in the web map projection.
+func webLatitude(h float64) float64 {
+	return math.Asin(math.Tanh(h)) * 180 / math.Pi
 }
 
 // NearestHeavier is the nearest pixel of a heavier class than the one here,
@@ -212,5 +228,8 @@ func (i Image) centre(x, y int) project.LonLat {
 	}
 	lon := i.West + span*(float64(x)+0.5)/float64(i.Width)
 	lat := i.North - (i.North-i.South)*(float64(y)+0.5)/float64(i.Height)
+	if i.Mercator {
+		lat = webLatitude(webHeight(i.North) - (webHeight(i.North)-webHeight(i.South))*(float64(y)+0.5)/float64(i.Height))
+	}
 	return project.LonLat{Lon: wrapped(lon), Lat: lat}
 }

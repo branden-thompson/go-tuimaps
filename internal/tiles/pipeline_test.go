@@ -273,8 +273,8 @@ func TestTileStates(t *testing.T) {
 	}
 	// The view moves away: nothing needs the tile, and the cache is over its cap.
 	p.Plan(t0, []scene.TileID{id(1, 1, 1)})
-	if got := p.State(id(1, 0, 0)); got != Evicted {
-		t.Errorf("on hand, unneeded and over the cap: %v, want evicted (D-90)", got)
+	if got := p.State(id(1, 0, 0)); got == OnHand {
+		t.Errorf("on hand, unneeded and over the cap: %v; want it let go of the cache (D-90)", got)
 	}
 	if got := p.State(id(0, 0, 0)); got != Queued {
 		t.Errorf("the stand-in for the new view, evicted and wanted again: %v, want queued", got)
@@ -410,5 +410,24 @@ func TestPipelineRefusals(t *testing.T) {
 	p := pipeline(t, Options{})
 	if plan := p.Plan(t0, []scene.TileID{{Z: 40}}); len(plan.Jobs) != 0 {
 		t.Error("a tile deeper than any zoom was planned")
+	}
+}
+
+// TestTilesTheViewLeftAreLetGo (REVIEW, perf F6): a session that pans
+// across many tiles keeps records only of the tiles its view needs and of
+// failures waiting out their time - not of every tile it has ever drawn,
+// which every plan would walk.
+func TestTilesTheViewLeftAreLetGo(t *testing.T) {
+	n := &network{}
+	p := pipeline(t, Options{Network: n.source(), Cache: mustCache(t, 64<<20)})
+	for x := range uint32(40) {
+		runAll(t, p.Plan(t0, []scene.TileID{id(8, x, 90), id(8, x+1, 90)}))
+	}
+	p.Plan(t0, []scene.TileID{id(8, 50, 90)})
+	p.mu.Lock()
+	held := len(p.tracks)
+	p.mu.Unlock()
+	if held > 4 {
+		t.Errorf("after panning across 41 tiles, %d tile records are kept; want those of the view alone", held)
 	}
 }

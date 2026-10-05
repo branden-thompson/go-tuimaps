@@ -24,39 +24,11 @@ func Example_pump() {
 
 	ctx, quit := context.WithCancel(context.Background())
 	defer quit()
-	wake := make(chan struct{}, 1)   // the library has work
 	redraw := make(chan struct{}, 1) // the pump has done some
-	nudge := func(c chan struct{}) {
-		select {
-		case c <- struct{}{}:
-		default: // already awake
-		}
-	}
-	if err := m.OnPending(func() { nudge(wake) }); err != nil {
+	pump, err := startPump(ctx, m, redraw)
+	if err != nil {
 		fmt.Println(err)
 		return
-	}
-	var pump sync.WaitGroup
-	for range 2 {
-		pump.Add(1)
-		go func() {
-			defer pump.Done()
-			for {
-				did, err := m.Work(ctx)
-				if err != nil {
-					return
-				}
-				if did {
-					nudge(redraw)
-					continue // there may be more
-				}
-				select {
-				case <-ctx.Done():
-					return
-				case <-wake:
-				}
-			}
-		}()
 	}
 
 	// The host draws, and draws again whenever the pump has done something,
@@ -81,4 +53,57 @@ func Example_pump() {
 	// Output:
 	// first frame: no tiles
 	// once the pump has caught up: complete
+}
+
+// pumpWidth is how many goroutines the pump runs: two is what the
+// contract's memory line assumes (D-84).
+const pumpWidth = 2
+
+// startPump runs the pump: pumpWidth goroutines calling Work, woken by the
+// library's hook, each unit done nudging redraw. **A job that failed comes
+// back as Work's error with did true, and the pump goes on** - a failed tile
+// is the library's to retry and warn of. Only a map closed or a context
+// ended stops it (contract, section 2).
+func startPump(ctx context.Context, m *tuimaps.Map, redraw chan struct{}) (*sync.WaitGroup, error) {
+	// One slot for each pump goroutine, every free slot filled at a wake, so
+	// no goroutine sleeps on work another wake brought (contract, section 2).
+	wake := make(chan struct{}, pumpWidth)
+	nudge := func() {
+		for range pumpWidth {
+			select {
+			case wake <- struct{}{}:
+			default:
+				return // every slot is full
+			}
+		}
+	}
+	if err := m.OnPending(nudge); err != nil {
+		return nil, err
+	}
+	var pump sync.WaitGroup
+	for range pumpWidth {
+		pump.Add(1)
+		go func() {
+			defer pump.Done()
+			for {
+				did, err := m.Work(ctx)
+				if kind, ok := tuimaps.KindOf(err); ok && (kind == tuimaps.Closed || kind == tuimaps.Cancelled) {
+					return
+				}
+				if did {
+					select {
+					case redraw <- struct{}{}:
+					default: // a redraw is already due
+					}
+					continue // there may be more
+				}
+				select {
+				case <-ctx.Done():
+					return
+				case <-wake:
+				}
+			}
+		}()
+	}
+	return &pump, nil
 }

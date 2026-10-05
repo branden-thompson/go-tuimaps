@@ -2,13 +2,13 @@ package tuimaps
 
 import (
 	"context"
+	"github.com/branden-thompson/go-tuimaps/internal/fetch"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/branden-thompson/go-tuimaps/internal/describe"
 	"github.com/branden-thompson/go-tuimaps/internal/fault"
-	"github.com/branden-thompson/go-tuimaps/internal/fetch"
 	"github.com/branden-thompson/go-tuimaps/internal/overlay"
 	"github.com/branden-thompson/go-tuimaps/internal/project"
 	"github.com/branden-thompson/go-tuimaps/internal/render"
@@ -55,9 +55,34 @@ func (s Status) String() string {
 
 // Frame is a drawn map: one string a row, each exactly the map's width in
 // cells. It is valid until the next Render.
+//
+// Changed and FrameTicks are the map's counters as this frame was drawn at
+// them (L-1.16), so a host can tell which frame is which without calling
+// again. Dropped is what the frame could not show and left out, each named:
+// nil when nothing was dropped.
 type Frame struct {
-	Lines  []string
-	Status Status
+	Lines               []string
+	Status              Status
+	Changed, FrameTicks uint64
+	Dropped             []Drop
+}
+
+// DropKind is what a frame left out.
+type DropKind uint8
+
+// The things a frame may leave out (v0.2.0 L3.11, L3.13).
+const (
+	DropAlertLabel DropKind = iota + 1 // an alert's label did not fit; Shown is its severity word if that fitted, else empty
+	DropPlaceName                      // a place's name did not fit; Shown is what stood in for it, if anything
+)
+
+// Drop is one thing a frame left out: what kind, the overlay or place it
+// belongs to, the text that was dropped, and what was shown instead.
+type Drop struct {
+	Kind    DropKind
+	Overlay string
+	Label   string
+	Shown   string
 }
 
 // SettleResult is what one Settle did.
@@ -138,6 +163,7 @@ type Map struct {
 	// kept and only the rectangle around it changes (task 14.19).
 	placed        bool
 	view          project.View
+	bound         *Bound       // where the host keeps the map, if anywhere (L-3.1)
 	noted         project.View // the view whose tiles were last asked for
 	pipe          *tiles.Pipeline
 	member        *work.Member
@@ -145,21 +171,30 @@ type Map struct {
 	style         *style.Style
 	look          look
 	motion        render.Motion
+	play          playback // the loops' playback, one for the map (D-67)
 	changed       uint64
 	driven        bool            // the host drives the animation clock itself (D-114)
 	footer        bool            // the footer is drawn inside the map (P-57)
+	stampOff      bool            // the host shows the loop's moment and staleness itself (D-87)
 	own           []fault.Warning // what the map itself noticed, for the next Warnings call
 	planted       func(string)    // set only by the library's own tests, to plant a panic
 	units         describe.Units  // the units descriptions come back in
+	nearby        float64         // how close to an alert's edge is nearby, in km; zero is the default (L-13.6)
 	placesVersion uint64          // raised whenever the places change
 	wallClock     time.Time       // the clock of the last frame, which staleness is judged by
 	staleNow      bool
-	described     []Description
-	describedKey  describeKey
-	remote        *tiles.Remote // the source named, if any: nothing is reached until one is (D-65)
-	disk          *tiles.Disk   // the disk cache, if the host named a directory
-	fetcher       fetch.Func    // a replacement for the library's own way of reaching a source
-	animation     time.Time     // and this is the moment it has driven it to
+	staleWhich    uint64   // which overlays are stale: a description's key (W14, P-11)
+	areas         areaMemo // a place measured against each alert, kept while the overlays and units stand (W14)
+	reported      *Report  // the report last worked out, and what it was worked out from (FR-29)
+	reportedKey   describeKey
+	tracked       map[string][]describe.Frame // each loop's frames as motion last measured them, kept while its pictures are the same (D-122)
+	remote        *tiles.Remote               // the source named, if any: nothing is reached until one is (D-65)
+	fetcher       *fetch.Fetcher              // the remote's own, whose idle connections are closed when it is replaced and at Close
+	disk          *tiles.Disk                 // the disk cache, if the host named a directory
+	cacheMaxAge   time.Duration               // how long a tile is kept on disk from its fetch; zero: until the cap needs the room
+	fetchOpts     FetchOptions                // how the library fetches (D-55)
+	address       string                      // the source named, as the host wrote it
+	animation     time.Time                   // and this is the moment it has driven it to
 	places        []Place
 	drawn         []render.Drawn
 	store         *overlay.Store
@@ -168,6 +203,7 @@ type Map struct {
 
 	drawnPlaces []render.Marker
 	shapes      []scene.Shape
+	reserved    []scene.Shape // the shapes of overlays outside the moment, holding their words' room (L-28)
 	fields      []scene.Field
 	rasters     []scene.Raster
 	borrowed    []render.Borrowed
@@ -256,13 +292,21 @@ func (m *Map) resize(s Size) error {
 // different zoom from the whole world at another, so that one is refitted
 // (NFR-19).
 func (m *Map) viewAt(s Size) (project.View, error) {
+	whole := func() (project.View, error) { // the whole world - or, with a bound, the part of it the host keeps to
+		v, err := project.WholeWorld(s.Cols, s.Rows)
+		if err != nil {
+			return v, err
+		}
+		return m.boundedLocked(v), nil
+	}
 	if !m.sized || !m.placed {
-		return project.WholeWorld(s.Cols, s.Rows)
+		return whole()
 	}
 	kept := m.view
 	kept.Cols, kept.Rows = s.Cols, s.Rows
+	kept = m.boundedLocked(kept)
 	if err := kept.Validate(); err != nil {
-		return project.WholeWorld(s.Cols, s.Rows) // a size the chosen view cannot be drawn at
+		return whole() // a size the chosen view cannot be drawn at
 	}
 	return kept, nil
 }
@@ -282,7 +326,7 @@ func (m *Map) note(now time.Time) error {
 		m.member.NewView()
 		m.noted = m.view
 	}
-	err = m.member.Keep(m.pipe.StillWanted)
+	err = m.member.Keep(m.stillWanted)
 	if err != nil {
 		return err
 	}
@@ -329,22 +373,28 @@ func (m *Map) Settle(ctx context.Context) (res SettleResult, err error) {
 	}
 	m.inside.Add(1)
 	defer m.inside.Add(-1)
-	m.mu.Lock()
-	if m.shut {
-		m.mu.Unlock()
-		return SettleResult{}, closed()
-	}
-	if !m.sized {
-		m.mu.Unlock()
-		return SettleResult{}, noSize()
-	}
-	err = m.note(time.Time{})
-	m.mu.Unlock()
-	if err != nil {
+	if err = m.settleNote(); err != nil {
 		return SettleResult{}, err
 	}
+	before := m.landed()
 	done, err := m.member.Drain(ctx)
+	m.noteLanded(before)
 	return SettleResult{Ran: done.Ran, Failed: done.Failed, InFlight: done.InFlight, Why: done.Why}, err
+}
+
+// settleNote notes what the view needs, under the map's lock, released
+// however the noting ends (contract, section 6, rule 4).
+func (m *Map) settleNote() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.shut {
+		return closed()
+	}
+	if !m.sized {
+		return noSize()
+	}
+	m.plant("Settle.locked")
+	return m.note(time.Time{})
 }
 
 // Render draws the map at a size, which becomes the map's size. now is the
@@ -375,54 +425,68 @@ func (m *Map) Render(size Size, now time.Time) (frame Frame, err error) {
 	if err != nil {
 		return Frame{}, err
 	}
+	if m.member.NoteRender() && len(m.own) < 64 { // renders keep finding work no Work call has run (D-131)
+		m.own = append(m.own, fault.Warning{Kind: fault.NoWorkCalled, Count: 1, Subject: textsafe.Const("work is pending and no Work call has run; call Work from a goroutine of the host's own")})
+	}
 	in := render.Input{View: m.view, Style: m.style, Labels: true, Scale: true,
 		Credit: textsafe.Const(basemapCredit), Supplied: m.pipe != nil && m.pipe.Deepest() > 0}
 	if m.footer {
 		in.Footer = textsafe.Clean(footerOf(m.view.Centre.Lat, m.view.Centre.Lon, m.view.Zoom))
 	}
 	m.paint(&in)
+	m.giveLocked(m.animationAt(now))
+	m.alignBlinkLocked()
 	in.MarkerPhase = m.motion.Phase(m.animationAt(now))
 	m.noteWallClock(now)
-	in.Stale = m.staleNow
+	if !m.stampOff { // D-87: a host that says the moment itself takes the stamp over
+		in.Stale = m.staleNow
+		in.FrameTime = m.frameTimeLocked()
+	}
 	in.Markers = m.markers()
 	m.draw(&in)
 	in.Tiles, in.Missing = m.onHand()
-	was := m.renderer.Redraws()
 	drawn, err := m.renderer.Draw(in)
 	if err != nil {
 		return Frame{}, err
 	}
-	if m.renderer.Redraws() != was {
-		m.changed++ // the frame differs from the one before it
+	frame = Frame{Lines: drawn.Lines, Status: Status(drawn.Status), Changed: m.changed, FrameTicks: m.play.ticks}
+	for _, d := range drawn.Dropped {
+		kind := DropAlertLabel
+		if d.Place {
+			kind = DropPlaceName
+		}
+		frame.Dropped = append(frame.Dropped, Drop{Kind: kind, Overlay: d.Overlay, Label: d.Label, Shown: d.Shown})
 	}
-	return Frame{Lines: drawn.Lines, Status: Status(drawn.Status)}, nil
+	return frame, nil
 }
 
 // onHand is what can be drawn for the view now: each wanted tile, or what
 // stands in for it, once each; and how many have nothing at all.
 func (m *Map) onHand() ([]render.Drawn, int) {
-	wanted, err := m.view.Tiles()
+	placed, err := m.view.Placements()
 	if err != nil {
 		return nil, 0
 	}
 	m.drawn = m.drawn[:0]
 	missing := 0
-	for _, id := range wanted {
-		tile, at, exact, ok := m.pipe.Draw(id)
+	for _, p := range placed {
+		tile, at, exact, ok := m.pipe.Draw(p.ID)
 		if !ok {
 			missing++
 			continue
 		}
-		if !seen(m.drawn, at) {
-			m.drawn = append(m.drawn, render.Drawn{Tile: tile, At: at, Exact: exact})
+		if !seen(m.drawn, at, p.Shift) {
+			m.drawn = append(m.drawn, render.Drawn{Tile: tile, At: at, Exact: exact, Shift: p.Shift})
 		}
 	}
 	return m.drawn, missing
 }
 
-func seen(drawn []render.Drawn, at scene.TileID) bool {
+// seen reports whether a tile is already drawn at that copy of the world
+// (D-86: one tile is drawn once in each copy the view reaches).
+func seen(drawn []render.Drawn, at scene.TileID, shift int) bool {
 	for _, d := range drawn {
-		if d.At == at {
+		if d.At == at && d.Shift == shift {
 			return true
 		}
 	}
@@ -448,10 +512,35 @@ func (m *Map) Close() int {
 		for _, id := range m.store.IDs() {
 			_, _ = m.store.Drop(id) // an id the store just gave back is always there
 		}
-		m.places, m.own = nil, nil
+		m.places, m.own, m.tracked = nil, nil, nil
+		m.fetcher.CloseIdle() // no socket outlives the map
 		m.view4.Withdraw()
 		m.pipe.Release()
 		m.member.Leave()
+		m.disk.Release() // nothing a job still inside writes lands (L-9.3)
+		m.disk = nil
 	}
 	return int(m.inside.Load())
+}
+
+// SetImageBudget sets what the map's images and grids may hold in all: each
+// picture's file and its pixels at a byte each, each grid's field, and the
+// shared classified set (L-12.1). Zero or less is the library's own, 6 MiB.
+// A Set that would go over it is refused, saying by how much; lowering it
+// below what is held drops nothing. A host that raises it owns the memory it
+// asks for.
+func (m *Map) SetImageBudget(bytes int64) (err error) {
+	defer guard("SetImageBudget", &err)
+	m.plant("SetImageBudget")
+
+	if m == nil {
+		return closed()
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.shut {
+		return closed()
+	}
+	m.store.SetBudget(bytes)
+	return nil
 }

@@ -3,7 +3,10 @@ package overlay
 import (
 	"crypto/sha256"
 	"encoding/binary"
+	"hash"
+	"math"
 	"sync"
+	"time"
 
 	"github.com/branden-thompson/go-tuimaps/internal/scene"
 )
@@ -46,31 +49,70 @@ func NewClassified(bytes int64) *Classified {
 }
 
 // ImageKey is what a reading depends on: the picture's bytes, the table it
-// is matched against, how closely, and how it is laid on the world.
+// is matched against, how closely, and how it is laid on the world. Every
+// number goes in as its exact bits, so two tables never share a key (L-12.6).
 func ImageKey(img *Image, kind Kind) ([32]byte, bool) {
 	if img == nil || len(img.PNG) == 0 {
 		return [32]byte{}, false
 	}
+	return keyOf(img, img.PNG, func(sum hash.Hash) { writeKind(sum, kind) }), true
+}
+
+// frameKey is one frame's key: what its reading depends on, and its valid
+// time, so that a refresh keeps the reading of every frame it keeps (L-1.7).
+func frameKey(img *Image, file []byte, valid time.Time, kind Kind) [32]byte {
+	return keyOf(img, file, func(sum hash.Hash) {
+		var number [8]byte
+		binary.LittleEndian.PutUint64(number[:], uint64(valid.UnixNano()))
+		sum.Write(number[:])
+		writeKind(sum, kind)
+	})
+}
+
+// keyOf hashes a picture's bytes, its bounds, its tolerance, its provider
+// and its table, and then whatever more the caller adds: the type, and a
+// frame's time. The provider is part of it because the reading is: a
+// provider's table brings its legend's gradient and whether a near colour
+// is expected. Every run of variable length is preceded by its length, so
+// no two different inputs hash the same bytes.
+func keyOf(img *Image, file []byte, more func(hash.Hash)) [32]byte {
 	sum := sha256.New()
-	sum.Write(img.PNG)
 	var number [8]byte
+	binary.LittleEndian.PutUint64(number[:], uint64(len(file)))
+	sum.Write(number[:])
+	sum.Write(file)
+	bits := func(v float64) {
+		binary.LittleEndian.PutUint64(number[:], math.Float64bits(v))
+		sum.Write(number[:])
+	}
 	for _, v := range []float64{img.West, img.South, img.East, img.North, img.Tolerance} {
-		binary.LittleEndian.PutUint64(number[:], uint64(int64(v*1e6)))
-		sum.Write(number[:])
+		bits(v)
 	}
-	sum.Write([]byte{uint8(img.Projection), boolByte(img.Exact), uint8(kind.Preset)})
-	for _, b := range kind.Breaks {
-		binary.LittleEndian.PutUint64(number[:], uint64(int64(b*1e6)))
-		sum.Write(number[:])
-	}
+	sum.Write([]byte{uint8(img.Projection), boolByte(img.Exact), uint8(img.Provider)})
+	binary.LittleEndian.PutUint64(number[:], uint64(len(img.Table)))
+	sum.Write(number[:])
 	for _, e := range img.Table {
-		binary.LittleEndian.PutUint64(number[:], uint64(int64(e.Value*1e6)))
-		sum.Write(number[:])
+		bits(e.Value)
 		sum.Write([]byte{e.Colour.R, e.Colour.G, e.Colour.B, boolByte(e.Missing)})
+	}
+	if more != nil {
+		more(sum)
 	}
 	var key [32]byte
 	copy(key[:], sum.Sum(nil))
-	return key, true
+	return key
+}
+
+// writeKind hashes a type: its preset and its breaks, each as exact bits.
+func writeKind(sum hash.Hash, kind Kind) {
+	var number [8]byte
+	sum.Write([]byte{uint8(kind.Preset)})
+	binary.LittleEndian.PutUint64(number[:], uint64(len(kind.Breaks)))
+	sum.Write(number[:])
+	for _, b := range kind.Breaks {
+		binary.LittleEndian.PutUint64(number[:], math.Float64bits(b))
+		sum.Write(number[:])
+	}
 }
 
 func boolByte(on bool) byte {
@@ -120,6 +162,16 @@ func (c *Classified) Keep(key [32]byte, raster scene.Raster, report Report) {
 	}
 	c.seen[key], c.held = classifiedEntry{raster: raster, report: report}, c.held+size
 	c.order = append(c.order, key)
+}
+
+// Empty drops every reading the set holds (L-9.3).
+func (c *Classified) Empty() {
+	if c == nil {
+		return
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.seen, c.order, c.held = map[[32]byte]classifiedEntry{}, nil, 0
 }
 
 // Bytes is what the set holds and may hold.

@@ -142,29 +142,30 @@ func TestCoastalZone14001(t *testing.T) {
 
 	// The library's answer, against a rule written out here from the
 	// definition - a winding number, where the library counts crossings.
-	said, err := m.Describe(nil)
+	report, err := m.Report(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+	said := report.Places
 	if len(said) != len(places) {
 		t.Fatalf("%d places described, %d set", len(said), len(places))
 	}
 	first := map[string]bool{}
 	disagreed := 0
 	for i, one := range said {
-		if len(one.Answers) != 1 {
-			t.Fatalf("%s has %d answers", one.Place, len(one.Answers))
+		if len(one.Alerts) != 1 {
+			t.Fatalf("%s has %d alert answers", one.Place, len(one.Alerts))
 		}
-		mine := one.Answers[0].Relation.String() == "inside"
+		mine := one.Alerts[0].Where == tuimaps.Inside
 		first[one.Place] = mine
 		theirs := wound(shape, places[i].At)
-		if mine != theirs && one.Answers[0].Distance > 0.2 {
+		if mine != theirs && one.Alerts[0].Distance > 0.2 {
 			// Within 200 m of the boundary the two rules may differ on
 			// which side a point falls, and neither is wrong: that is the
 			// knife edge D-67 names. Further out they must agree.
 			disagreed++
 			t.Errorf("%s at %+v: the library says %v, the winding number says %v, %.2f km from the edge",
-				one.Place, places[i].At, mine, theirs, one.Answers[0].Distance)
+				one.Place, places[i].At, mine, theirs, one.Alerts[0].Distance)
 		}
 	}
 	if disagreed > 0 {
@@ -200,12 +201,12 @@ func TestCoastalZone14001(t *testing.T) {
 			if _, err := m.Render(tuimaps.Size{Cols: 149, Rows: 38}, noon); err != nil {
 				t.Fatal(err)
 			}
-			again, err := m.Describe(nil)
+			again, err := m.Report(nil)
 			if err != nil {
 				t.Fatal(err)
 			}
-			for _, one := range again {
-				if now := one.Answers[0].Relation.String() == "inside"; now != first[one.Place] {
+			for _, one := range again.Places {
+				if now := one.Alerts[0].Where == tuimaps.Inside; now != first[one.Place] {
 					t.Fatalf("%s changed from %v to %v at zoom %v centred on %+v; the answer is the data's, not the view's",
 						one.Place, first[one.Place], now, zoom, at)
 				}

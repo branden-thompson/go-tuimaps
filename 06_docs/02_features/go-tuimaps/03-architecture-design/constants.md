@@ -39,13 +39,14 @@ Measured on real tiles across the whole range the map uses. **Zoom 0 to 4:** all
 | Shape cache, shared | 0.25 MB — 250,000 bytes | Ruled (D-85); host-settable |
 | Images, per map | 0.25 MB — 250,000 bytes. A 600×400 image at one byte a pixel is 240,000 | Ruled (D-85); host-settable |
 | An image being replaced | The old one draws until the new one is prepared, so for that moment a map holds both. **That is peak, not live**: the cap bounds what is kept | Set here; task 14.6 measures it |
-| Pending queue | 256 jobs a map; past that the oldest job for a view no map is showing is dropped first, then the oldest | Set here. A 149×38 view wants at most 9 tiles and their ancestors; 256 is an order above any honest need |
+| Pending queue | 256 jobs a map; past that the oldest job for a view no map is showing is dropped first, then the oldest that is no tile, and only then the oldest tile; the newest view's jobs are run first, its tiles before the rest (L-22) | Set here. A 149×38 view wants at most 9 tiles and their ancestors; 256 is an order above any honest need - which a host handing in hundreds of overlays passed, and the basemap's tiles were dropped (watchpost U2-34) |
 | Embedded tiles, compressed, inside the binary | **1,023,118 bytes** (85 tiles); a test holds the set under 2.5 MB | Measured in BUILD (task 04.11) on planet `20260913_164504_pt`; regenerated once, when the decoder came to keep borders' levels and places' ranks (8 KB more). Decoded, the 85 tiles keep 3,535,546 bytes in all; the largest keeps 209,131 |
 | What a live view is drawing — *live view* and *need* are defined in the contract, section 8 | **Never evicted (D-90).** Spare tiles and shapes are kept only in the room left under the cap; when need alone exceeds a cap, the cache holds exactly the need, a `cache-under-need` warning is raised once, and `CacheUse()` reports need and cap for each cache | Ruled (D-90). *An earlier line here — "larger than a quarter of its cache is drawn, not cached" — was the coordinator's, ratified only with the requirements as a whole, and is withdrawn* |
 | A simplified shape larger than the **whole** shape cap | Not cached: drawn from the host's memory by FR-11's fallback | Ruled (D-90) |
 | What one 149×38 view draws, in kept form | 0.33 MB on the Gulf coast at zoom 6; 0.80 MB in the Midwest at zoom 5 | Measured in PLAN |
 | Vertices an overlay · a map | 2,000,000 · 4,000,000 | Set in DISCOVER round 3 |
 | Pixels an image | 1,048,576, read from the header before decoding | Set in DISCOVER round 2 |
+| A grid's mark | 8 cells wide at most, cleaned on hand-in | Set in BUILD (L-17.3): a number and its unit - "0.75in", "12cm" - fits, and a mark is a value, not a sentence |
 | Pump width the peak line is measured at | 2 `Work` calls | Ruled (D-84) |
 | Warnings kept | 64, de-duplicated | Set in DISCOVER round 3 |
 | The longest id of an overlay or a place | 256 bytes | Set in BUILD (task 02.8). Ids are validated and never cleaned (FR-34) |
@@ -107,6 +108,14 @@ Stable names; adding one is a minor version. A host sets any subset; the rest ke
 | Temperature | `temperature.1` to `temperature.17` — numbered by position, coldest first |
 | A host's own type | `low` · `middle` · `high` — interpolated across its classes |
 | Line features | `track` · `track.label` |
+| Wind (FR-8, v0.2.0) | `wind.1` to `wind.6` |
+| Fire (v0.2.0, L-18) | `fire` · `fire.faint` — a fire's perimeter, its incident and a strong hotspot; a weaker hotspot. Never an alert |
+| Quakes (v0.2.0, L-19) | `quake.hour` · `quake.day` · `quake.older` — a quake's ring by its age, as USGS colours it |
+| Waves (v0.2.0, L-20) | `wave.1` to `wave.6` — calmest first; the classes of a wave grid, drawn over the sea alone |
+| The sea's stations (v0.2.0, L-21) | `buoy` · `tide` — a buoy's marker and words; a tide station's. Never an alert |
+| UV (v0.2.0, L-25) | `uv.1` to `uv.5` — Low to Extreme, broken at 3, 6, 8 and 11; the official scale's hues, lightness set to pass the checker (watchpost D-140) |
+| Air quality (v0.2.0, L-25) | `aqi.1` to `aqi.6` — the US AQI's Good to Hazardous, broken at 51, 101, 151, 201 and 301; the EPA's hues, lightness set to pass the checker; a monitor's marker in its category (`AirQualityRole`) |
+| Rain totals (v0.2.0, L-26) | `qpf.1` to `qpf.7` — a period's rain and snow, liquid-equivalent, in the NWS WPC's breaks at 0.01, 0.1, 0.25, 0.5, 1, 2 and 4 inches (0.25 to 101.6 mm); below a trace nothing is drawn; WPC's hues, lightness searched to pass the checker (watchpost D-184) |
 
 The sixteen-colour depth has its own small set of values for the basemap tokens, chosen from the sixteen by hand (specimen 23, D-79).
 

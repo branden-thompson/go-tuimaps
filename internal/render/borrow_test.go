@@ -230,3 +230,78 @@ func benchIndex(b *testing.B, rings [][]project.LonLat) []scene.Run {
 	inner := &testing.T{}
 	return indexOf(inner, rings)
 }
+
+// TestAnOutlineIsWalkedOnlyWhereTheViewIs (round 2, P10-02): an outline's
+// cells are walked within the view and its clip pad, so a segment that runs
+// ten million dots off the screen costs the cells it crosses in view, not a
+// step for every dot of it.
+func TestAnOutlineIsWalkedOnlyWhereTheViewIs(t *testing.T) {
+	far := [][]Point{{{X: -10_000_000, Y: 40}, {X: 50, Y: 40}, {X: 50, Y: 10_000_000}}}
+	cells := cellsAlong(nil, far, 100, 80)
+	if len(cells) == 0 || len(cells) > 200 {
+		t.Fatalf("%d cells walked for an outline crossing a 100 by 80 dot view; want the few in view", len(cells))
+	}
+	for _, c := range cells {
+		if c.X < -clipMargin || c.X > (100+clipMargin)/2+1 || c.Y < -clipMargin || c.Y > (80+clipMargin)/4+1 {
+			t.Errorf("cell %v is outside the view and its pad", c)
+		}
+	}
+}
+
+// worstAlert is the worst-case synthetic shape as an extreme alert's area,
+// which keeps its outline for its word and digits (D-108).
+func worstAlert(rings [][]project.LonLat, index []scene.Run) Borrowed {
+	return Borrowed{Kind: scene.ShapeArea, Rings: rings, Index: index, Role: uint8(colour.AlertExtremeOutline), Label: "Tornado Warning · EXTREME", Mark: "4", Word: "EXTREME", Overlay: "big"}
+}
+
+// TestTheWorstCaseAlertReadsNoMore (D-108): keeping an alert's outline for
+// its word and digits reads the host's memory no more than drawing the
+// same shape as a line: one box test a run, and the vertices of the runs
+// the view meets.
+func TestTheWorstCaseAlertReadsNoMore(t *testing.T) {
+	ring := coastline(worstCase)
+	rings := [][]project.LonLat{ring}
+	index := indexOf(t, rings)
+	v, err := project.WholeWorld(149, 38)
+	if err != nil {
+		t.Fatal(err)
+	}
+	v.Zoom, v.Centre = 12, project.LonLat{Lon: -84, Lat: 26}
+	line, alert := painter(t, v), painter(t, v)
+	if err := line.Borrow(v, Borrowed{Kind: scene.ShapeLine, Rings: rings, Index: index, Role: uint8(colour.Track)}); err != nil {
+		t.Fatal(err)
+	}
+	if err := alert.Borrow(v, worstAlert(rings, index)); err != nil {
+		t.Fatal(err)
+	}
+	if line.Reads() != alert.Reads() {
+		t.Errorf("the alert read %+v, the line %+v; keeping the outline must read nothing more", alert.Reads(), line.Reads())
+	}
+	if len(alert.Outlines()) != 1 {
+		t.Errorf("%d outlines kept for the alert in view; want its one", len(alert.Outlines()))
+	}
+}
+
+// BenchmarkWorstCaseSyntheticAlert is BenchmarkWorstCaseSynthetic's shape
+// as an alert, with its outline kept for the digits (D-108).
+func BenchmarkWorstCaseSyntheticAlert(b *testing.B) {
+	ring := coastline(worstCase)
+	rings := [][]project.LonLat{ring}
+	index := benchIndex(b, rings)
+	v, err := project.WholeWorld(149, 38)
+	if err != nil {
+		b.Fatal(err)
+	}
+	v.Zoom, v.Centre = 12, project.LonLat{Lon: -84, Lat: 26}
+	alert := worstAlert(rings, index)
+	b.ResetTimer()
+	for b.Loop() {
+		p, err := NewPainter(v.Cols, v.Rows)
+		if err != nil {
+			b.Fatal(err)
+		}
+		if err := p.Borrow(v, alert); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

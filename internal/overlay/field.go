@@ -1,6 +1,7 @@
 package overlay
 
 import (
+	"math"
 	"strconv"
 
 	"github.com/branden-thompson/go-tuimaps/internal/fault"
@@ -20,7 +21,28 @@ type Grid struct {
 	Cols, Rows               int
 	Values                   []float64
 	Type                     Type
+	// Lines draws the field as its labelled contours over its bands made
+	// faint, whatever shares the map - the look it takes anyway with an image
+	// on the map (L-15.3, L-15.4).
+	Lines bool
+	// From makes the grid a vector grid (FR-8): the direction each value's
+	// wind blows FROM, meteorological degrees clockwise from north, one a
+	// value; NaN where there is none. The values are the speeds. It is drawn
+	// as arrows (L-16), never as bands.
+	From []float64
+	// Gusts are a vector grid's gusts (L-24, watchpost D-136), one a value in
+	// the speeds' unit; NaN where none is to be said. An arrow's label reads
+	// "15G30" where one is given. The host chooses which are worth saying.
+	Gusts []float64
+	// Marks are the host's text, one a value, "" where there is none: each
+	// written on the map at the arrows' spacing, on the points an arrow leaves
+	// unlabelled (L-17.2) - a day's total over its heaviest rain. At most
+	// eight cells wide each.
+	Marks []string
 }
+
+// MaxMarkWidth is the widest a grid's mark may be, in cells (L-17.2).
+const MaxMarkWidth = 8
 
 // checkGrid validates a grid on hand-in and resolves its type.
 func checkGrid(g *Grid) (Kind, error) {
@@ -34,6 +56,36 @@ func checkGrid(g *Grid) (Kind, error) {
 	if g.Cols > maxGridCells || g.Rows > maxGridCells || g.Cols*g.Rows > maxGridCells {
 		return Kind{}, refused(fault.OverImageCap, textsafe.Const("its grid has more than 1,048,576 cells"),
 			textsafe.Const("hand in a coarser grid: a terminal map shows a few thousand cells at most"))
+	}
+	if g.From != nil && len(g.From) != len(g.Values) {
+		return Kind{}, refused(fault.SizeMismatch, textsafe.Const("its directions are not one a value"),
+			textsafe.Const("give From exactly as many directions as the grid has values, NaN where there is none"))
+	}
+	if g.Gusts != nil && (g.From == nil || len(g.Gusts) != len(g.Values)) {
+		return Kind{}, refused(fault.SizeMismatch, textsafe.Const("its gusts are not one a value of a wind grid"),
+			textsafe.Const("give Gusts only with From, exactly as many as the grid has values, NaN where there is none"))
+	}
+	for _, v := range g.Gusts {
+		if !math.IsNaN(v) && !(v >= 0) {
+			return Kind{}, refused(fault.SizeMismatch, textsafe.Const("one of its gusts is below zero"),
+				textsafe.Const("give each gust in the speeds' unit, or NaN where there is none"))
+		}
+	}
+	if g.Marks != nil && len(g.Marks) != len(g.Values) {
+		return Kind{}, refused(fault.SizeMismatch, textsafe.Const("its marks are not one a value"),
+			textsafe.Const("give Marks exactly as many texts as the grid has values, \"\" where there is none"))
+	}
+	for _, s := range g.Marks {
+		if textsafe.Width(textsafe.Clean(s)) > MaxMarkWidth {
+			return Kind{}, refused(fault.SizeMismatch, textsafe.Const("one of its marks is wider than eight cells"),
+				textsafe.Const("give each mark in at most eight cells: a number and its unit"))
+		}
+	}
+	for _, f := range g.From {
+		if !math.IsNaN(f) && !(f >= 0 && f <= 360) {
+			return Kind{}, refused(fault.InvalidCoordinates, textsafe.Const("one of its directions is not from 0 to 360 degrees"),
+				textsafe.Const("give each direction in degrees clockwise from north, where the wind blows from"))
+		}
 	}
 	if len(g.Values) != g.Cols*g.Rows {
 		return Kind{}, refused(fault.SizeMismatch,
@@ -79,7 +131,17 @@ func implausible(g *Grid) bool {
 func classify(g *Grid, kind Kind) scene.Field {
 	field := scene.Field{West: g.West, South: g.South, East: g.East, North: g.North, Cols: g.Cols, Rows: g.Rows,
 		Classes: make([]int8, len(g.Values)), Preset: uint8(kind.Preset), ClassCount: len(kind.Breaks) + 1,
-		Labels: bandLabels(kind.Breaks)}
+		Labels: bandLabels(kind.Breaks), Lines: g.Lines}
+	if g.From != nil { // a vector grid keeps its speeds and directions: its arrows are drawn from them (L-16)
+		field.From, field.Speeds = append([]float64(nil), g.From...), append([]float64(nil), g.Values...)
+		field.Gusts = append([]float64(nil), g.Gusts...) // L-24: said beside the speed
+	}
+	if g.Marks != nil { // cleaned once, here: the host's text is never drawn as it came (L-17.2)
+		field.Marks = make([]string, len(g.Marks))
+		for i, s := range g.Marks {
+			field.Marks[i] = textsafe.Clean(s).String()
+		}
+	}
 	for i, v := range g.Values {
 		field.Classes[i] = int8(Classify(v, kind.Breaks))
 	}

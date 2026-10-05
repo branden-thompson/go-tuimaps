@@ -82,16 +82,26 @@ func TestProfileThinsUnderOverlay(t *testing.T) {
 	}
 }
 
-// TestLayerToggleInFrame is plan task 09.9 in the frame (FR-36).
+// TestLayerToggleInFrame is plan task 09.9 in the frame (FR-36), with v0.2.0
+// D-82: RoadLayer is the major roads and MinorRoadLayer the minor, each
+// switched apart; both off, no road is drawn.
 func TestLayerToggleInFrame(t *testing.T) {
 	v := worldView()
 	on := painted(t, v, roads(), style.NewProfile(style.Bare, v.Cols, v.Rows, 0))
-	off := painted(t, v, roads(), style.NewProfile(style.Bare, v.Cols, v.Rows, style.Off(style.RoadLayer)))
 	if inked(on, v, colour.RoadMajor) == 0 || inked(on, v, colour.RoadMinor) == 0 {
 		t.Fatal("the roads were not drawn with their layer on")
 	}
-	if inked(off, v, colour.RoadMajor) != 0 || inked(off, v, colour.RoadMinor) != 0 {
-		t.Error("a road was drawn with the road layer switched off")
+	major := painted(t, v, roads(), style.NewProfile(style.Bare, v.Cols, v.Rows, style.Off(style.RoadLayer)))
+	if inked(major, v, colour.RoadMajor) != 0 || inked(major, v, colour.RoadMinor) == 0 {
+		t.Error("the major roads switched off did not leave the minor ones alone")
+	}
+	minor := painted(t, v, roads(), style.NewProfile(style.Bare, v.Cols, v.Rows, style.Off(style.MinorRoadLayer)))
+	if inked(minor, v, colour.RoadMinor) != 0 || inked(minor, v, colour.RoadMajor) == 0 {
+		t.Error("the minor roads switched off did not leave the major ones alone")
+	}
+	both := painted(t, v, roads(), style.NewProfile(style.Bare, v.Cols, v.Rows, style.Off(style.RoadLayer, style.MinorRoadLayer)))
+	if inked(both, v, colour.RoadMajor) != 0 || inked(both, v, colour.RoadMinor) != 0 {
+		t.Error("a road was drawn with both road layers switched off")
 	}
 }
 

@@ -1,0 +1,47 @@
+a2dh p10 check, run 2026-09-23T19:25Z at aabfcea under four build configurations (v0.2.0 D-21, D-38).
+Only BUILD-COVERAGE and live findings are kept; every run's exemption lines are omitted.
+
+== GOOS=darwin (default)
+ [—] cmd/tuimaps/raw_linux.go:1 [P10-00-BUILD-COVERAGE] EXEMPTED
+ [—] cmd/tuimaps/raw_other.go:1 [P10-00-BUILD-COVERAGE] EXEMPTED
+ [—] cmd/tuimaps/raw_windows.go:1 [P10-00-BUILD-COVERAGE] EXEMPTED
+ [—] cmd/tuimaps/resize_other.go:1 [P10-00-BUILD-COVERAGE] EXEMPTED
+ [—] cmd/tuimaps/size_other.go:1 [P10-00-BUILD-COVERAGE] EXEMPTED
+ [—] cmd/tuimaps/size_windows.go:1 [P10-00-BUILD-COVERAGE] EXEMPTED
+ [—] 20 EXEMPTED finding(s) — visible above with recorded reasons
+
+== GOOS=linux
+ [x] cmd/tuimaps/raw_darwin.go:1 [P10-00-BUILD-COVERAGE]
+ [—] cmd/tuimaps/raw_other.go:1 [P10-00-BUILD-COVERAGE] EXEMPTED
+ [—] cmd/tuimaps/raw_windows.go:1 [P10-00-BUILD-COVERAGE] EXEMPTED
+ [—] cmd/tuimaps/resize_other.go:1 [P10-00-BUILD-COVERAGE] EXEMPTED
+ [—] cmd/tuimaps/size_other.go:1 [P10-00-BUILD-COVERAGE] EXEMPTED
+ [—] cmd/tuimaps/size_windows.go:1 [P10-00-BUILD-COVERAGE] EXEMPTED
+ [—] 19 EXEMPTED finding(s) — visible above with recorded reasons
+ [x] 1 P10 finding(s) in changed code
+
+== GOOS=windows
+ [x] cmd/tuimaps/raw_darwin.go:1 [P10-00-BUILD-COVERAGE]
+ [—] cmd/tuimaps/raw_linux.go:1 [P10-00-BUILD-COVERAGE] EXEMPTED
+ [—] cmd/tuimaps/raw_other.go:1 [P10-00-BUILD-COVERAGE] EXEMPTED
+ [x] cmd/tuimaps/raw_unix.go:1 [P10-00-BUILD-COVERAGE]
+ [x] cmd/tuimaps/resize_unix.go:1 [P10-00-BUILD-COVERAGE]
+ [—] cmd/tuimaps/size_other.go:1 [P10-00-BUILD-COVERAGE] EXEMPTED
+ [x] cmd/tuimaps/size_unix.go:1 [P10-00-BUILD-COVERAGE]
+ [—] 17 EXEMPTED finding(s) — visible above with recorded reasons
+ [x] 4 P10 finding(s) in changed code
+
+== GOOS=freebsd
+ [x] cmd/tuimaps/raw_darwin.go:1 [P10-00-BUILD-COVERAGE]
+ [—] cmd/tuimaps/raw_linux.go:1 [P10-00-BUILD-COVERAGE] EXEMPTED
+ [x] cmd/tuimaps/raw_unix.go:1 [P10-00-BUILD-COVERAGE]
+ [—] cmd/tuimaps/raw_windows.go:1 [P10-00-BUILD-COVERAGE] EXEMPTED
+ [x] cmd/tuimaps/resize_unix.go:1 [P10-00-BUILD-COVERAGE]
+ [x] cmd/tuimaps/size_unix.go:1 [P10-00-BUILD-COVERAGE]
+ [—] cmd/tuimaps/size_windows.go:1 [P10-00-BUILD-COVERAGE] EXEMPTED
+ [—] 17 EXEMPTED finding(s) — visible above with recorded reasons
+ [x] 4 P10 finding(s) in changed code
+
+Reading: in every configuration, the only live findings are P10-00-BUILD-COVERAGE on files built for
+another OS. No platform file has any other finding under the OS it is built for, which is the
+evidence the six darwin-run exemptions rest on (D-21).

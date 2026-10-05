@@ -1,0 +1,75 @@
+# The gate, hosted (go-tuiMaps v0.2.0 L-6.1, plan task L10.5, D-105).
+#
+# Every push and pull request: the quick gate on linux/amd64 and linux/arm64.
+# On dispatch - the release commit is dispatched (release checklist row 0.5) -
+# and nightly, the full gate, fuzzing included, on both. A Linux runner cannot
+# run the other architecture's binaries as a Mac's Rosetta does, so each full
+# job runs its own natively and hands the gate's second architecture leg to
+# the other (GATE_ARCH_LEG=sibling, written on the run's log line). The last
+# job fails the workflow unless both ran green.
+#
+# The nightly schedule fires only from the repository's default branch: while
+# this workflow lives on another branch alone, it never runs on a schedule,
+# and the full gate is run by dispatch.
+name: gate
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  schedule:
+    - cron: "0 9 * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: gate-${{ github.head_ref || github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+jobs:
+  gate:
+    strategy:
+      fail-fast: false # one architecture's red must not hide the other's result
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    # The full gate's budget: sixteen fuzz legs, each stopped at 600 s at the
+    # worst, are 160 minutes; every other leg, both scans' toolchain downloads
+    # included, about 25 more. 300 minutes holds even a run in which every fuzz
+    # leg reaches its limit.
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0 # the plan's map commit and the release tags are read from history
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: "1.27.1" # the gate runs every leg on the floor toolchain it reads from go.mod
+      - name: the pinned vulnerability scanner, on PATH for the steps that follow
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@v1.8.0
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+      - name: quick gate
+        if: github.event_name == 'push' || github.event_name == 'pull_request'
+        run: scripts/gate --quick
+      - name: full gate
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        env:
+          GATE_ARCH_LEG: sibling
+          # The fuzz counts are calibrated on an 18-core Mac to about 60 s a
+          # leg. Run 37181469202 measured these 4-core runners at 6 to 33 times
+          # slower a leg, seven legs reaching the 600 s limit; divided by 8,
+          # the slowest leg takes about 250 s. Written on the run's line, so M6
+          # does not count the run.
+          GATE_FUZZ_SCALE: "8"
+        run: scripts/gate
+
+  both-architectures:
+    needs: gate
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: both architectures ran green
+        run: |
+          if [ "${{ needs.gate.result }}" != "success" ]; then
+            echo "the gate did not run green on both linux/amd64 and linux/arm64: ${{ needs.gate.result }}"
+            exit 1
+          fi

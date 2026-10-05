@@ -1,0 +1,111 @@
+// Command loopmem: what twelve radar frames cost the library today, held as
+// twelve image overlays (there is no loop yet). Throwaway.
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+	"runtime"
+	"strconv"
+	"time"
+
+	tuimaps "github.com/branden-thompson/go-tuimaps"
+	"github.com/branden-thompson/go-tuimaps/assets"
+)
+
+func heap() uint64 {
+	runtime.GC()
+	runtime.GC()
+	var s runtime.MemStats
+	runtime.ReadMemStats(&s)
+	return s.HeapAlloc
+}
+
+func main() {
+	var raw [][]string
+	b, _ := os.ReadFile("../spec29/n0q-table-raw.json")
+	if err := json.Unmarshal(b, &raw); err != nil {
+		panic(err)
+	}
+	var table []tuimaps.TableEntry
+	for _, r := range raw {
+		v, _ := strconv.ParseFloat(r[1], 64)
+		R, _ := strconv.Atoi(r[2])
+		G, _ := strconv.Atoi(r[3])
+		B, _ := strconv.Atoi(r[4])
+		table = append(table, tuimaps.TableEntry{Colour: tuimaps.RGB{R: uint8(R), G: uint8(G), B: uint8(B)}, Value: v})
+	}
+	mins := []string{"0", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"}
+	now := time.Now()
+	{
+		base := heap()
+		var held []*tuimaps.Map
+		for i := 0; i < 3; i++ {
+			m, _ := tuimaps.New(tuimaps.WithSize(149, 38), tuimaps.Embed(assets.Tile, assets.MaxZoom))
+			_ = m.Recentre(tuimaps.LonLat{Lon: -95, Lat: 37})
+			_ = m.Zoom(3)
+			_, _ = m.Settle(context.Background())
+			_, _ = m.Render(tuimaps.Size{Cols: 149, Rows: 38}, now)
+			held = append(held, m)
+		}
+		fmt.Printf("baseline, no overlays, 3 maps: heap +%.2f MB (%.2f MB a map)\n", float64(heap()-base)/(1<<20), float64(heap()-base)/(1<<20)/3)
+		runtime.KeepAlive(held)
+	}
+	for _, w := range []int{298, 596} {
+		var pngs [][]byte
+		var pngBytes int
+		for _, m := range mins {
+			p, err := os.ReadFile(fmt.Sprintf("frames/f-%d-%s.png", w, m))
+			if err != nil {
+				panic(err)
+			}
+			pngs = append(pngs, p)
+			pngBytes += len(p)
+		}
+		for _, maps := range []int{1, 3} {
+			base := heap()
+			var held []*tuimaps.Map
+			var renderTotal time.Duration
+			for i := 0; i < maps; i++ {
+				m, err := tuimaps.New(tuimaps.WithSize(149, 38), tuimaps.Embed(assets.Tile, assets.MaxZoom))
+				if err != nil {
+					panic(err)
+				}
+				for k, p := range pngs {
+					img := tuimaps.Image{West: -125, South: 24, East: -66, North: 50, Projection: tuimaps.PlateCarree, PNG: p,
+						Type: tuimaps.Type{Preset: "radar", Unit: "dBZ"}, Table: table}
+					if _, err := m.Set(tuimaps.RadarImage("frame-"+strconv.Itoa(k), img, now)); err != nil {
+						panic(err)
+					}
+				}
+				if err := m.Recentre(tuimaps.LonLat{Lon: -95, Lat: 37}); err != nil {
+					panic(err)
+				}
+				if err := m.Zoom(3); err != nil {
+					panic(err)
+				}
+				if _, err := m.Settle(context.Background()); err != nil {
+					panic(err)
+				}
+				t0 := time.Now()
+				if _, err := m.Render(tuimaps.Size{Cols: 149, Rows: 38}, now); err != nil {
+					panic(err)
+				}
+				renderTotal += time.Since(t0)
+				for _, wv := range m.Warnings() {
+					fmt.Println("  warning:", wv)
+				}
+				held = append(held, m)
+			}
+			after := heap()
+			fmt.Printf("%dx%d frames, 12 frames (PNG %d KB), %d map(s): heap +%.2f MB (%.2f MB a map); first render with all 12 %v a map\n",
+				w, w*304/596, pngBytes/1024, maps, float64(after-base)/(1<<20), float64(after-base)/(1<<20)/float64(maps), renderTotal/time.Duration(maps))
+			for _, m := range held {
+				m.Close()
+			}
+			runtime.KeepAlive(held)
+		}
+	}
+}

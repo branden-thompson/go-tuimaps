@@ -37,8 +37,24 @@ const (
 	ParkLayer   = style.ParkLayer
 	BorderLayer = style.BorderLayer
 	RiverLayer  = style.RiverLayer
-	WaterLayer  = style.WaterLayer
+	WaterLayer  = style.WaterLayer // lakes and inland water: the sea and its coast are never switched
 	LabelLayer  = style.LabelLayer
+	// MinorRoadLayer is the minor roads, switched apart from RoadLayer's
+	// motorways, trunks and primaries (v0.2.0 D-82).
+	MinorRoadLayer = style.MinorRoadLayer
+)
+
+// Detail is how much of the basemap is drawn, by purpose (v0.2.0 D-82,
+// L-14): each level draws what the one below does and more. Only the
+// library's own style is ranked; a host's own style (SetStyle) draws whole.
+type Detail = style.Detail
+
+// The levels. DetailFull is the picture a host that never asks gets.
+const (
+	DetailEssential = style.DetailEssential // coast, water, borders
+	DetailWeather   = style.DetailWeather   // and rivers, place names, the major roads
+	DetailStandard  = style.DetailStandard  // and rail, parks
+	DetailFull      = style.DetailFull      // and the minor roads, runways
 )
 
 // look is everything a host has said about how the map should be drawn. It
@@ -53,7 +69,19 @@ type look struct {
 	safeRamps   bool
 	reduce      bool
 	off         style.Switches
+	detail      style.Detail // the host's level; zero reads as Full (D-82)
 	language    string
+	blends      colour.Blends // how each alert tint blends over each image ramp (L-11.3)
+	blendsFor   blendKey      // the look the search was run for
+}
+
+// blendKey is everything the blend search reads: it runs again only when one
+// of them changes, never on a frame (L3.8).
+type blendKey struct {
+	searched bool
+	palette  uint64
+	ground   colour.GroundChoice
+	depth    Depth
 }
 
 // languageMax is the longest language code the library takes: enough for a
@@ -68,9 +96,8 @@ func badLanguage() error {
 
 // TokenNames are the names SetPalette accepts, in the order the constants
 // document lists them. **A host theming the map to its own design system needs
-// to know what there is to theme**, and without this the only way to find out
-// was to guess a name and read it back from SetPalette's list of refusals
-// (task 14.19, the first host).
+// to know what there is to theme**, and this list tells it without a guess
+// read back from SetPalette's refusals (task 14.19).
 func TokenNames() []string {
 	all := colour.Tokens()
 	out := make([]string, 0, len(all))
@@ -201,8 +228,10 @@ func (m *Map) depthInEffect() Depth {
 	return colour.ChooseDepth(m.look.depth, m.look.depthHinted, os.Getenv)
 }
 
-// ReduceMotion stops the library animating: markers are drawn steadily and
-// nothing is ever due on the clock (NFR-21).
+// ReduceMotion stops the library animating (NFR-21): markers are drawn
+// steadily, and a loop playing stops where it is and cannot be played until
+// it is turned off again. The clock still has work that is not motion: a
+// stale overlay's moment and a failed tile's retry stay due.
 func (m *Map) ReduceMotion(on bool) {
 	defer m.guardQuiet("ReduceMotion")
 	m.plant("ReduceMotion")
@@ -214,6 +243,9 @@ func (m *Map) ReduceMotion(on bool) {
 	defer m.mu.Unlock()
 	if m.shut || m.look.reduce == on {
 		return
+	}
+	if on {
+		m.holdLocked() // a loop playing stops where it is (L-1.10c)
 	}
 	m.look.reduce = on
 	m.motion.Reduce(on)
@@ -229,7 +261,7 @@ func (m *Map) Layers(layer Layer, on bool) {
 	if m == nil {
 		return
 	}
-	if layer < RoadLayer || layer > LabelLayer {
+	if layer < RoadLayer || layer > MinorRoadLayer {
 		return // a layer the library does not draw is nothing to switch
 	}
 	m.mu.Lock()
@@ -284,6 +316,9 @@ func (m *Map) LabelLanguage(code string) (err error) {
 // Changed counts the times a redraw would have differed. A host that watches
 // it knows when to call Render again without comparing frames itself.
 func (m *Map) Changed() uint64 {
+	defer m.guardQuiet("Changed")
+	m.plant("Changed")
+
 	if m == nil {
 		return 0
 	}
@@ -302,4 +337,62 @@ func (m *Map) paint(in *render.Input) {
 	in.Ground = m.look.ground
 	in.Depth = m.depthInEffect()
 	in.Layers = m.look.off
+	in.Detail = m.look.detail
+	m.searchBlendsLocked(in.Depth)
+	in.Blends = m.look.blends
+}
+
+// searchBlendsLocked runs the blend search when the palette, the ground or
+// the depth has changed since it last ran (L3.8). A tint that a host's
+// palette leaves unable to blend is reported: the image is drawn over it,
+// and the warning is carried by the outline, label and severity digit.
+func (m *Map) searchBlendsLocked(depth Depth) {
+	key := blendKey{searched: true, palette: m.look.version, ground: m.look.ground, depth: depth}
+	if m.look.blendsFor == key {
+		return
+	}
+	colourOf, _ := m.look.ground.InEffect(m.look.palette)
+	m.look.blends = colour.SearchBlends(m.look.palette, m.look.ground.Kind(m.look.palette), colourOf, depth)
+	m.look.blendsFor = key
+	if !m.look.palette.Own() || (depth != colour.Truecolor && depth != colour.Colours256) {
+		return // the library's own colours: where they fall back is documented, not a warning
+	}
+	for _, f := range m.look.blends.Fallbacks() {
+		if len(m.own) < 64 {
+			m.own = append(m.own, fault.Warning{Kind: fault.RampRuleBroken, Count: 1,
+				Subject: textsafe.Clean(presetNames[colour.Preset(f[0])] + " under the " + alertNames[f[1]] + " tint: drawn over it, not blended")})
+		}
+	}
+}
+
+// presetNames are the image presets by name.
+var presetNames = map[colour.Preset]string{colour.Temperature: "temperature", colour.Radar: "radar", colour.Wind: "wind", colour.Waves: "waves", colour.UV: "uv", colour.AirQuality: "aqi", colour.QPF: "qpf"}
+
+// alertNames are the alert severities, extreme first, as the tints are ordered.
+var alertNames = [5]string{"extreme", "severe", "moderate", "minor", "unknown"}
+
+// SetDetail sets how much of the basemap is drawn (v0.2.0 D-82, L-14): a
+// level and a switched-off layer both apply. A value outside the four levels
+// is refused and the map keeps the level it had.
+func (m *Map) SetDetail(d Detail) (err error) {
+	defer guard("SetDetail", &err)
+	m.plant("SetDetail")
+
+	if m == nil {
+		return closed()
+	}
+	if !d.Valid() {
+		return badView(textsafe.Const("that is not a detail the map has"),
+			textsafe.Const("pass DetailEssential, DetailWeather, DetailStandard or DetailFull"))
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.shut {
+		return closed()
+	}
+	if m.look.detail != d {
+		m.look.detail = d
+		m.changed++
+	}
+	return nil
 }

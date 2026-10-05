@@ -2,6 +2,7 @@ package tuimaps_test
 
 import (
 	"context"
+	"github.com/branden-thompson/go-tuimaps/internal/testkit"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -179,5 +180,88 @@ func TestCloseWhileWorking(t *testing.T) {
 	}
 	if again := m.Close(); again < 0 {
 		t.Errorf("closing twice: %d", again)
+	}
+}
+
+// TestAFailedJobIsTheJobsNotThePumps (contract section 2): a tile the
+// embedded tiles do not hold, with no source named, fails as one job - Work
+// says it did that job and returns its failure - and the next Work goes on
+// to the next job. A pump stops only at closed or cancelled.
+func TestAFailedJobIsTheJobsNotThePumps(t *testing.T) {
+	m, err := tuimaps.New(tuimaps.WithSize(80, 24), tuimaps.Embed(assets.Tile, assets.MaxZoom))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer m.Close()
+	if err := m.Zoom(8); err != nil { // deeper than the embedded tiles
+		t.Fatal(err)
+	}
+	if _, err := m.Render(tuimaps.Size{Cols: 80, Rows: 24}, noon); err != nil {
+		t.Fatal(err)
+	}
+	failed := 0
+	for range 100 {
+		did, err := m.Work(context.Background())
+		if !did {
+			break
+		}
+		if err == nil {
+			continue
+		}
+		kind, _ := tuimaps.KindOf(err)
+		if kind == tuimaps.Closed || kind == tuimaps.Cancelled {
+			t.Fatalf("a failed tile came back as %s, a kind that ends a pump", kind)
+		}
+		failed++
+	}
+	if failed == 0 {
+		t.Fatal("no tile failed at zoom 8 with no source; the test proves nothing")
+	}
+	if m.Pending() != 0 {
+		t.Errorf("%d jobs left pending after Work said there was nothing to do", m.Pending())
+	}
+}
+
+// TestAHostThatNeverWorksIsWarned (D-131): renders that keep finding work
+// pending, with no Work called, bring the no-work-called warning, once.
+func TestAHostThatNeverWorksIsWarned(t *testing.T) {
+	m, err := tuimaps.New(tuimaps.WithSize(80, 24), tuimaps.Embed(assets.Tile, assets.MaxZoom))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer m.Close()
+	for range 30 {
+		if _, err := m.Render(tuimaps.Size{Cols: 80, Rows: 24}, noon); err != nil {
+			t.Fatal(err)
+		}
+	}
+	warned := 0
+	for _, w := range m.Warnings() {
+		if w.Kind == tuimaps.NoWorkCalled {
+			warned++
+		}
+	}
+	if warned != 1 {
+		t.Errorf("30 renders with work pending and no Work: warned %d times; want once", warned)
+	}
+}
+
+// TestNothingOfTheMapRunsAfterClose (REVIEW, code quality 7): the library
+// starts no goroutine of its own, so once a map that drew, settled and held
+// a loop is closed, no goroutine is left running its code.
+func TestNothingOfTheMapRunsAfterClose(t *testing.T) {
+	m, err := tuimaps.New(tuimaps.WithSize(80, 24), tuimaps.Embed(assets.Tile, assets.MaxZoom))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Render(tuimaps.Size{Cols: 80, Rows: 24}, noon); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Settle(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	m.Close()
+	if err := testkit.LeakCheck(testkit.ModulePath); err != nil {
+		t.Error(err)
 	}
 }

@@ -136,3 +136,15 @@ func TestRoundedAndUnderOneCell(t *testing.T) {
 	}
 	_ = time.Now
 }
+
+// TestEveryTextOfAnAnswerIsCleaned (REVIEW, code quality 6): Cleaned cleans
+// every piece of text an answer says, its value's unit among them.
+func TestEveryTextOfAnAnswerIsCleaned(t *testing.T) {
+	hostile := "\x1b[31m"
+	a := Answer{Place: hostile, Overlay: hostile, Label: hostile, ValueUnit: hostile, Unit: hostile, Compass: hostile, Rises: hostile, Heavier: hostile}.Cleaned()
+	for _, said := range a.Said() {
+		if strings.ContainsRune(said, 0x1b) {
+			t.Errorf("an answer leaves the library saying %q", said)
+		}
+	}
+}

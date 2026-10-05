@@ -5,6 +5,8 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -67,14 +69,23 @@ func TestPlainHTTPRefused(t *testing.T) {
 	if _, err := ForSource("http://localhost:8080/planet", Options{}); !isKind(err, fault.FetchRefused) {
 		t.Errorf("localhost is a name, and a name can resolve anywhere: %v", err)
 	}
-	if _, err := ForSource("ftp://tiles.example/planet", Options{AllowPlainHTTP: true}); !isKind(err, fault.FetchRefused) {
+	if _, err := ForSource("ftp://tiles.example/planet", Options{AllowHTTP: []string{"tiles.example"}}); !isKind(err, fault.FetchRefused) {
 		t.Errorf("a scheme that is neither: %v", err)
 	}
 	if _, err := ForSource("https://user:secret@tiles.example/planet", Options{}); !isKind(err, fault.FetchRefused) {
 		t.Errorf("a source with a user-info part: %v", err)
 	}
-	if _, err := ForSource("http://tiles.example/planet", Options{AllowPlainHTTP: true}); err != nil {
-		t.Errorf("plain by explicit option was refused: %v", err)
+	if _, err := ForSource("http://tiles.example/planet", Options{AllowHTTP: []string{"tiles.example"}}); err != nil {
+		t.Errorf("plain to a host the options name was refused: %v", err)
+	}
+	if _, err := ForSource("http://tiles.example:8080/planet", Options{AllowHTTP: []string{"tiles.example:8080"}}); err != nil {
+		t.Errorf("plain to a host and port the options name was refused: %v", err)
+	}
+	if _, err := ForSource("http://tiles.example:8080/planet", Options{AllowHTTP: []string{"tiles.example:9090"}}); !isKind(err, fault.FetchRefused) {
+		t.Errorf("plain to a port the options do not name: %v", err)
+	}
+	if _, err := ForSource("http://other.example/planet", Options{AllowHTTP: []string{"tiles.example"}}); !isKind(err, fault.FetchRefused) {
+		t.Errorf("plain to a host the options do not name: %v", err)
 	}
 	plain := httptest.NewServer(body("over loopback"))
 	defer plain.Close()
@@ -124,7 +135,6 @@ func TestNoSecureToPlain(t *testing.T) {
 	srv, opts := secure(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, plain.URL+"/x", http.StatusFound)
 	}))
-	opts.AllowHosts = []string{mustHost(t, plain.URL)}
 	f, err := ForSource(srv.URL, opts)
 	if err != nil {
 		t.Fatal(err)
@@ -143,27 +153,20 @@ func mustHost(t *testing.T, raw string) string {
 	return u.Host
 }
 
-func TestCrossHostRefusedUnlessAllowed(t *testing.T) {
-	other, otherOpts := secure(t, body("from the other host"))
+// TestCrossHostRefused (L-10.1): a redirect to another host is refused, and
+// no option allows it - a source's tiles come only from that source's host.
+func TestCrossHostRefused(t *testing.T) {
+	other, _ := secure(t, body("from the other host"))
 	srv, opts := secure(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, other.URL+"/x", http.StatusFound)
 	}))
 	opts.RootCAs.AddCert(other.Certificate())
-	_ = otherOpts
 	f, err := ForSource(srv.URL, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if _, err := get(t, f, srv.URL+"/x"); !isKind(err, fault.FetchRefused) {
 		t.Errorf("a redirect to another host: %v", err)
-	}
-	opts.AllowHosts = []string{mustHost(t, other.URL)}
-	f, err = ForSource(srv.URL, opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got, err := get(t, f, srv.URL+"/x"); err != nil || string(got) != "from the other host" {
-		t.Errorf("a redirect to an allowed host: %q, %v", got, err)
 	}
 }
 
@@ -396,29 +399,180 @@ func TestProxyFromEnvironment(t *testing.T) {
 	_ = u // the standard library reads the environment once a process; that it is wired is what is tested
 }
 
-// TestReplacementFetcherContract is plan task 05.9.
-func TestReplacementFetcherContract(t *testing.T) {
-	var seen Request
-	honest := func(ctx context.Context, r Request) ([]byte, error) { seen = r; return make([]byte, r.RangeLen), nil }
-	req := Request{URL: "https://tiles.example/archive", RangeStart: 100, RangeLen: 16, MaxBytes: 16}
-	got, err := Checked(honest)(context.Background(), req)
-	if err != nil || len(got) != 16 || seen != req {
-		t.Errorf("the range and the maximum length must reach the replacement: %+v, %d, %v", seen, len(got), err)
+// transport is a host's own transport in a function.
+type transport func(*http.Request) (*http.Response, error)
+
+func (t transport) RoundTrip(r *http.Request) (*http.Response, error) { return t(r) }
+
+func reply(r *http.Request, status int, body io.Reader) *http.Response {
+	return &http.Response{StatusCode: status, Body: io.NopCloser(body), Header: http.Header{}, Request: r}
+}
+
+// endless is a body that never ends, counting what is read of it.
+type endless struct{ read int64 }
+
+func (e *endless) Read(p []byte) (int, error) {
+	e.read += int64(len(p))
+	return len(p), nil
+}
+
+// TestAHostTransport is v0.2.0 L8.1 and L8.3 (L-7.1, L-7.3, D-55): a host's
+// transport under the library's client. The library still shapes the
+// request; bytes are bounded whatever the transport sends; an answer the
+// transport brings back after the request's end is never used, though a
+// transport that ignores its context holds its own call until it returns;
+// and the transport's error, which may hold the address, is never passed on.
+func TestAHostTransport(t *testing.T) {
+	var seen *http.Request
+	honest := transport(func(r *http.Request) (*http.Response, error) {
+		seen = r
+		resp := reply(r, http.StatusPartialContent, strings.NewReader(strings.Repeat("x", 16)))
+		resp.Header.Set("Content-Range", "bytes 100-115/1000")
+		return resp, nil
+	})
+	f, err := ForSource("https://tiles.example/", Options{Transport: honest, Token: "host"})
+	if err != nil {
+		t.Fatal(err)
 	}
-	tooMuch := func(ctx context.Context, r Request) ([]byte, error) { return make([]byte, r.MaxBytes+1), nil }
-	if _, err := Checked(tooMuch)(context.Background(), req); !isKind(err, fault.OverLimit) {
-		t.Errorf("a replacement that returns more than the maximum: %v", err)
+	got, err := f.Fetch(context.Background(), Request{URL: "https://tiles.example/archive", RangeStart: 100, RangeLen: 16, MaxBytes: 16})
+	if err != nil || len(got) != 16 {
+		t.Fatalf("an honest transport: %d bytes, %v", len(got), err)
 	}
-	short := func(ctx context.Context, r Request) ([]byte, error) { return make([]byte, 5), nil }
-	if _, err := Checked(short)(context.Background(), req); !isKind(err, fault.FetchFailed) {
-		t.Errorf("a replacement that returns a different length than the range: %v", err)
+	if seen.Header.Get("Range") != "bytes=100-115" || !strings.Contains(seen.Header.Get("User-Agent"), "(host)") {
+		t.Errorf("the library did not shape the request: %v", seen.Header)
 	}
-	leaky := func(ctx context.Context, r Request) ([]byte, error) { return nil, fmt.Errorf("GET %s failed", r.URL) }
-	_, err = Checked(leaky)(context.Background(), Request{URL: "https://tiles.example/x?key=SECRET", MaxBytes: 10})
+
+	body := &endless{}
+	flood := transport(func(r *http.Request) (*http.Response, error) { return reply(r, http.StatusOK, body), nil })
+	f, _ = ForSource("https://tiles.example/", Options{Transport: flood})
+	if _, err := f.Fetch(context.Background(), Request{URL: "https://tiles.example/x", MaxBytes: 1 << 16}); !isKind(err, fault.OverLimit) {
+		t.Errorf("an endless body: %v; want it cut at the limit", err)
+	}
+	if body.read > 1<<20 {
+		t.Errorf("an endless body was read to %d bytes; the limit is 64 KiB", body.read)
+	}
+
+	stubborn := transport(func(r *http.Request) (*http.Response, error) {
+		time.Sleep(150 * time.Millisecond) // ignores its context
+		return reply(r, http.StatusOK, strings.NewReader("too late")), nil
+	})
+	f, _ = ForSource("https://tiles.example/", Options{Transport: stubborn})
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancel()
+	start := time.Now()
+	data, err := f.Fetch(ctx, Request{URL: "https://tiles.example/x", MaxBytes: 1 << 10})
+	if err == nil || data != nil {
+		t.Errorf("a late answer was used: %q, %v", data, err)
+	}
+	if took := time.Since(start); took < 100*time.Millisecond {
+		t.Errorf("the call returned after %v, before the transport did: that cannot be, and the contract says it holds its own call", took)
+	}
+
+	leaky := transport(func(r *http.Request) (*http.Response, error) { return nil, fmt.Errorf("GET %s failed", r.URL) })
+	f, _ = ForSource("https://tiles.example/", Options{Transport: leaky})
+	_, err = f.Fetch(context.Background(), Request{URL: "https://tiles.example/x?key=SECRET", MaxBytes: 10})
 	if !isKind(err, fault.FetchFailed) || strings.Contains(err.Error(), "SECRET") || errors.Unwrap(err) != nil {
-		t.Errorf("a replacement's error must not be passed on: %v", err)
+		t.Errorf("a transport's error must not be passed on: %v", err)
 	}
-	if Checked(nil) != nil {
-		t.Error("no replacement gives no fetcher")
+}
+
+// TestReservedRangesRefused is v0.2.0 L8.6's second half (L-10.3): each of the
+// ranges added in v0.2.0 is refused at the moment of connection.
+func TestReservedRangesRefused(t *testing.T) {
+	for _, address := range []string{"0.0.0.1:443", "[64:ff9b::a00:1]:443", "[2002:a00:1::1]:443", "198.18.0.1:443", "198.19.255.254:443", "240.0.0.1:443", "255.255.255.254:443"} {
+		if err := checkDial(address, false); !errors.Is(err, errPolicy) {
+			t.Errorf("%s: %v; want it refused", address, err)
+		}
+	}
+	for _, address := range []string{"8.8.8.8:443", "[2606:4700::1111]:443", "198.20.0.1:443"} {
+		if err := checkDial(address, false); err != nil {
+			t.Errorf("%s, a public address: %v", address, err)
+		}
+	}
+}
+
+// TestTheProxyDecisionIsPerConnection is L8.6 (L-10.3): the address check is
+// skipped only for a connection to the proxy itself. A redirect to a host the
+// proxy does not carry is dialled directly, and meets the check.
+func TestTheProxyDecisionIsPerConnection(t *testing.T) {
+	server := httptest.NewServer(body("the proxy"))
+	defer server.Close()
+	proxyAddress := strings.TrimPrefix(server.URL, "http://")
+	f, err := ForSource("https://tiles.example/", Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.proxyOf = func(r *http.Request) (*url.URL, error) {
+		if r.URL.Hostname() == "tiles.example" {
+			return url.Parse("http://" + proxyAddress)
+		}
+		return nil, nil // a host the proxy settings except
+	}
+	// Before any request has gone through the proxy, a loopback address is
+	// refused like any private one.
+	if conn, err := f.dial(context.Background(), "tcp", proxyAddress); err == nil {
+		conn.Close()
+		t.Fatal("a loopback address was dialled with no proxy in use")
+	}
+	if u, _ := f.proxy(httptest.NewRequest(http.MethodGet, "https://tiles.example/x", nil)); u == nil {
+		t.Fatal("the source's request was not proxied")
+	}
+	conn, err := f.dial(context.Background(), "tcp", proxyAddress)
+	if err != nil {
+		t.Errorf("the connection to the proxy itself was refused: %v", err)
+	} else {
+		conn.Close()
+	}
+	if u, _ := f.proxy(httptest.NewRequest(http.MethodGet, "https://internal.example/x", nil)); u != nil {
+		t.Fatal("a host the settings except was proxied")
+	}
+	if conn, err := f.dial(context.Background(), "tcp", "10.0.0.1:443"); err == nil {
+		conn.Close()
+		t.Error("a redirect's direct connection to a private address skipped the check")
+	}
+}
+
+// TestAFetcherLetsGoOfItsConnections (REVIEW, code quality): a fetcher the
+// map is done with closes the connections it keeps open between requests,
+// so no socket or net/http goroutine outlives the map that used it.
+func TestAFetcherLetsGoOfItsConnections(t *testing.T) {
+	closed := make(chan struct{}, 1)
+	server := httptest.NewUnstartedServer(body("kept alive"))
+	server.Config.ConnState = func(_ net.Conn, s http.ConnState) {
+		if s == http.StateClosed {
+			select {
+			case closed <- struct{}{}:
+			default:
+			}
+		}
+	}
+	server.Start()
+	defer server.Close()
+	f, err := ForSource(server.URL, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := get(t, f, server.URL+"/x"); err != nil {
+		t.Fatal(err)
+	}
+	f.CloseIdle()
+	select {
+	case <-closed:
+	case <-time.After(2 * time.Second):
+		t.Fatal("the connection the fetcher kept open was not closed")
+	}
+}
+
+// TestAnUnreadableAddressSaysSo (REVIEW, QA 13): a tile address that cannot
+// be read as a URL is refused for that reason, not as a request that would
+// have left the source, which would send a host to the wrong fix.
+func TestAnUnreadableAddressSaysSo(t *testing.T) {
+	f, err := ForSource("https://tiles.example", Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = get(t, f, "https://tiles.example/%zz")
+	if !isKind(err, fault.FetchRefused) || !strings.Contains(err.Error(), "could not be read as an address") {
+		t.Errorf("an unreadable address: %v; want it refused as unreadable", err)
 	}
 }

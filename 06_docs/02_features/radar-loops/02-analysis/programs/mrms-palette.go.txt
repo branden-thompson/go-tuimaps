@@ -1,0 +1,114 @@
+package main
+
+import (
+	"fmt"
+	"image/color"
+	"image/png"
+	"math"
+	"os"
+	"path/filepath"
+	"sort"
+)
+
+func lin(c uint8) float64 {
+	x := float64(c) / 255
+	if x <= 0.04045 {
+		return x / 12.92
+	}
+	return math.Pow((x+0.055)/1.055, 2.4)
+}
+func lab(c color.NRGBA) [3]float64 {
+	r, g, b := lin(c.R), lin(c.G), lin(c.B)
+	x := (0.4124*r + 0.3576*g + 0.1805*b) / 0.95047
+	y := 0.2126*r + 0.7152*g + 0.0722*b
+	z := (0.0193*r + 0.1192*g + 0.9505*b) / 1.08883
+	f := func(t float64) float64 {
+		if t > 0.008856 {
+			return math.Cbrt(t)
+		}
+		return 7.787*t + 16.0/116
+	}
+	return [3]float64{116*f(y) - 16, 500 * (f(x) - f(y)), 200 * (f(y) - f(z))}
+}
+func d(a, b [3]float64) float64 {
+	return math.Sqrt((a[0]-b[0])*(a[0]-b[0]) + (a[1]-b[1])*(a[1]-b[1]) + (a[2]-b[2])*(a[2]-b[2]))
+}
+
+func main() {
+	lf, _ := os.Open("../legend.png")
+	leg, _ := png.Decode(lf)
+	type le struct {
+		l   [3]float64
+		dbz float64
+	}
+	var legend []le
+	for y := 0; y < 10; y++ {
+		for x := 0; x < 500; x++ {
+			c := color.NRGBAModel.Convert(leg.At(x, y)).(color.NRGBA)
+			legend = append(legend, le{lab(c), -20 + (float64(x)+0.5)*0.18})
+		}
+	}
+	files, _ := filepath.Glob("../nat/*.png")
+	files = append(files, "../national.png", "../region.png", "../state.png")
+	count := map[color.NRGBA]int{}
+	perFrame := []int{}
+	cum := []int{}
+	for _, f := range files {
+		fh, _ := os.Open(f)
+		im, err := png.Decode(fh)
+		fh.Close()
+		if err != nil {
+			fmt.Println(f, err)
+			continue
+		}
+		here := map[color.NRGBA]bool{}
+		b := im.Bounds()
+		for y := b.Min.Y; y < b.Max.Y; y++ {
+			for x := b.Min.X; x < b.Max.X; x++ {
+				c := color.NRGBAModel.Convert(im.At(x, y)).(color.NRGBA)
+				if c.A == 0 {
+					continue
+				}
+				count[c]++
+				here[c] = true
+			}
+		}
+		perFrame = append(perFrame, len(here))
+		cum = append(cum, len(count))
+	}
+	fmt.Println("frames", len(files), "distinct per frame", perFrame)
+	fmt.Println("cumulative distinct", cum)
+	type pc struct {
+		c        color.NRGBA
+		n        int
+		dbz, gap float64
+	}
+	var ps []pc
+	for c, n := range count {
+		l := lab(c)
+		best, bd := math.Inf(1), 0.0
+		for _, e := range legend {
+			if g := d(l, e.l); g < best {
+				best, bd = g, e.dbz
+			}
+		}
+		ps = append(ps, pc{c, n, bd, best})
+	}
+	sort.Slice(ps, func(i, j int) bool { return ps[i].dbz < ps[j].dbz })
+	alphas := map[uint8]int{}
+	for _, p := range ps {
+		alphas[p.c.A]++
+	}
+	fmt.Println("alpha values among palette colours", alphas)
+	var steps []float64
+	for i := 1; i < len(ps); i++ {
+		steps = append(steps, ps[i].dbz-ps[i-1].dbz)
+	}
+	sort.Float64s(steps)
+	fmt.Printf("palette %d colours, dBZ %.2f..%.2f, step median %.2f min %.2f max %.2f\n", len(ps), ps[0].dbz, ps[len(ps)-1].dbz, steps[len(steps)/2], steps[0], steps[len(steps)-1])
+	for _, p := range ps {
+		if p.gap > 3 {
+			fmt.Printf("  far from legend: %02x%02x%02x/%02x n=%d nearest %.1f dBZ gap %.1f\n", p.c.R, p.c.G, p.c.B, p.c.A, p.n, p.dbz, p.gap)
+		}
+	}
+}

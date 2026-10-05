@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"io"
+	"os"
 	"sync"
 	"time"
 
@@ -27,11 +28,13 @@ type app struct {
 	safeRamps    bool
 	reduceMotion bool
 	noColour     bool
+	colour       tuimaps.Depth // the depth the app started with, which the colour switch returns to
 
 	offline    bool
 	helpUp     bool
 	describeUp bool
-	said       string // what went wrong, for the status row
+	said       string // what a key did or what went wrong, for the status row
+	failed     string // the newest tile failure, in words, until the map is whole
 }
 
 // event is something the app has to answer: a key, a change of size, or the
@@ -46,11 +49,13 @@ type event struct {
 // newApp is the app with the settings it was started with already in it, so
 // that what a flag turned on and what a key turns on are one state.
 func newApp(m *tuimaps.Map, s settings, out io.Writer, cols, rows int) *app {
+	colour := startingDepth(os.Getenv)
 	return &app{
 		m: m, out: out, cols: cols, rows: rows,
 		places: s.places, focus: -1, offline: s.offline,
 		labels: true, water: true, markers: true,
-		safeRamps: s.safeRamps, reduceMotion: s.reduceMotion, noColour: s.noColour,
+		safeRamps: s.safeRamps, reduceMotion: s.reduceMotion,
+		noColour: s.noColour || colour == tuimaps.NoColour, colour: colour,
 	}
 }
 
@@ -80,17 +85,16 @@ func (a *app) focused() (tuimaps.LonLat, bool) {
 	return place.At, ok
 }
 
-// focusNext moves the focus to the next place, and past the last one back
-// to none - so that a person can always get back to no focus at all.
-func (a *app) focusNext() bool {
+// focusBy moves the focus to the next place (by 1) or the one before (by
+// -1), with no focus between the last place and the first - so that a
+// person can always get back to no focus at all.
+func (a *app) focusBy(by int) bool {
 	if len(a.places) == 0 {
 		a.said = "no place is named; --place names one, and --scenario loads some"
 		return true
 	}
-	a.focus++
-	if a.focus >= len(a.places) {
-		a.focus = -1
-	}
+	stops := len(a.places) + 1 // every place, and no focus, at -1
+	a.focus = (a.focus+1+by+stops)%stops - 1
 	a.said = ""
 	return true
 }
@@ -113,7 +117,23 @@ func (a *app) drawn(now time.Time) error {
 	if err != nil {
 		return err
 	}
+	a.heard(a.m.Warnings())
 	return a.put(a.screenful(frame))
+}
+
+// tileFailedWords is a tile failure as the status row says it, with what a
+// person can do about it.
+const tileFailedWords = "map tiles could not be fetched - check the network connection, or run with --offline for the built-in map"
+
+// heard takes the library's warnings. A tile that failed is kept to be said
+// in the status row until the map is whole; the others are not the
+// interactive map's to say.
+func (a *app) heard(warnings []tuimaps.Warning) {
+	for _, w := range warnings {
+		if w.Kind == tuimaps.TileFailed {
+			a.failed = tileFailedWords
+		}
+	}
 }
 
 // put writes a screenful: home the cursor, then every row, each row ending
@@ -144,7 +164,10 @@ func (a *app) resized(cols, rows int) bool {
 
 // pump is the work the library never does for itself (D-73): two goroutines
 // calling Work, woken by the library's own hook, each unit done telling the
-// loop that there is more of the map to see.
+// loop that there is more of the map to see. A job's failure, such as a tile
+// --offline cannot have, is that job's: the library retries it and warns of
+// it, and the pump goes on to the next. Only a map closed or a context
+// ended stops it.
 func pump(ctx context.Context, m *tuimaps.Map, events chan<- event) (*sync.WaitGroup, error) {
 	wake := make(chan struct{}, 1)
 	nudge := func() {
@@ -163,7 +186,7 @@ func pump(ctx context.Context, m *tuimaps.Map, events chan<- event) (*sync.WaitG
 			defer running.Done()
 			for {
 				did, err := m.Work(ctx)
-				if err != nil {
+				if stopped(err) {
 					return
 				}
 				if did {
@@ -184,6 +207,13 @@ func pump(ctx context.Context, m *tuimaps.Map, events chan<- event) (*sync.WaitG
 	}
 	nudge() // whatever is already waiting
 	return &running, nil
+}
+
+// stopped reports whether Work's error ends the pump: the map closed, or the
+// pump's context ended.
+func stopped(err error) bool {
+	kind, ok := tuimaps.KindOf(err)
+	return ok && (kind == tuimaps.Closed || kind == tuimaps.Cancelled)
 }
 
 // clock is how the loop tells the time and how it waits. A test hands in

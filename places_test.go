@@ -155,3 +155,17 @@ func TestBlinkingPlaceFollowsTheClock(t *testing.T) {
 		t.Error("a place still blinks with reduce-motion on")
 	}
 }
+
+// TestAPlaceIDIsHeldToTheIDRule (REVIEW, InfoSec F7): a place's id is held
+// to the rule an overlay's is - plain text, at most 256 bytes.
+func TestAPlaceIDIsHeldToTheIDRule(t *testing.T) {
+	m := world(t, 40, 12)
+	long := tuimaps.Place{ID: strings.Repeat("x", 257), Name: "Long", At: tuimaps.LonLat{Lon: -84, Lat: 33}}
+	if _, err := m.AddPlace(long); !isKind(err, fault.InvalidID) {
+		t.Errorf("a 257-byte place id: %v; want the invalid-id kind", err)
+	}
+	long.ID = strings.Repeat("x", 256)
+	if _, err := m.AddPlace(long); err != nil {
+		t.Errorf("a 256-byte place id was refused: %v", err)
+	}
+}

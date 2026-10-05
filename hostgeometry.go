@@ -55,8 +55,8 @@ func Ring[R ~[]P, P Positioned](run R) []LonLat {
 // **The ring type is a parameter of its own** (`R ~[]P`, not `[]P`). A host
 // that names its ring - `type Ring []Point`, which any host keeping geometry
 // will - hands over a `[]Ring`, and inference cannot match that against
-// `[][]P`. Written the obvious way this refused the first host outright, and
-// the tests did not notice because they passed an unnamed `[][]hostPoint`.
+// `[][]P`. Written as `[][]P`, this would refuse such a host outright, and a
+// test that passes an unnamed `[][]hostPoint` would not notice.
 func Rings[R ~[]P, P Positioned](area []R) [][]LonLat {
 	if len(area) == 0 {
 		return nil

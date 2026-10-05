@@ -64,6 +64,7 @@ type Drawn struct {
 	Tile  *scene.Tile
 	At    scene.TileID
 	Exact bool
+	Shift int // worlds east (or west) of its own place it is drawn: the world repeats (D-86)
 }
 
 // Input is everything a frame is a function of (NFR-6).
@@ -73,6 +74,13 @@ type Input struct {
 	// Shapes are the overlays' prepared shapes, in the order they are drawn;
 	// OverlaysVersion counts their changes, since they cannot be compared.
 	Shapes []scene.Shape
+	// Reserved are the prepared shapes of overlays outside the moment
+	// (L-15.1): never drawn, but an alert's word and digits hold their room,
+	// so the basemap's names stand still as a loop plays past them (L-28).
+	Reserved []scene.Shape
+	// Covered says a field or image is on the map though not drawn in this
+	// frame - outside the moment - and the name budget is the one under it.
+	Covered bool
 	// Borrowed are the overlays drawn straight from the host's memory,
 	// which are read through their run index and never copied (D-92).
 	Borrowed        []Borrowed
@@ -81,7 +89,10 @@ type Input struct {
 	OverlaysVersion uint64
 	// FieldsOverWater and ImagesMaskedByWater flip the two defaults: a field
 	// stops at the shore (D-32), and an image never does (D-87).
-	FieldsOverWater     bool
+	FieldsOverWater bool
+	// ImageHeld is an image on the map, drawn in this frame or on a gap of
+	// its loop: a field sharing the map with one is drawn as its lines (L-15.3).
+	ImageHeld           bool
 	ImagesMaskedByWater bool
 	// Markers are the host's places, drawn over everything beneath them
 	// (FR-26); MarkerPhase is which half of the blink this frame draws, and
@@ -94,6 +105,7 @@ type Input struct {
 	// that has not run the work from one that gave the map nothing to draw.
 	Supplied bool
 	Layers   style.Switches // the basemap layers the host has switched off (FR-36)
+	Detail   style.Detail   // how much of the basemap the host asks for (v0.2.0 D-82)
 	Style    *style.Style
 	Palette  colour.Palette
 	// Look counts changes to the palette, which cannot be compared: whoever
@@ -110,16 +122,33 @@ type Input struct {
 	// Stale says that the data of an overlay on the frame is no longer
 	// current, which the frame marks in a word (FR-32); Footer is the
 	// host's own line of text, drawn only when it is given (P-57).
-	Stale  bool
-	Footer textsafe.Text
-	Credit textsafe.Text
+	Stale bool
+	// Blends is how strongly each alert tint blends over each image ramp, as
+	// the map's last search found it (L-11.3); a tint that does not blend has
+	// the image drawn over it (D-27).
+	Blends colour.Blends
+	// FrameTime is the moment a loop shows, as text beside the stale word:
+	// its time, "gap" and its time, or "forecast" and its time (L-1.10a).
+	// It changes only with the moment or the overlays, and each of those
+	// already makes a frame be drawn again, so reuse need not compare it.
+	FrameTime textsafe.Text
+	Footer    textsafe.Text
+	Credit    textsafe.Text
 }
 
 // Frame is a drawn map: one string a row, each exactly the view's width in
 // cells, holding colour sequences and cleaned text and nothing else.
 type Frame struct {
-	Lines  []string
-	Status Status
+	Lines   []string
+	Status  Status
+	Dropped []Drop // alert labels the frame shortened to their word or left out (L-8.5)
+}
+
+// Drop is one alert label the frame could not show whole: the overlay it
+// belongs to, the label, and the word that stood in for it, or empty.
+type Drop struct {
+	Place                 bool // a host's place's name; otherwise an alert's label
+	Overlay, Label, Shown string
 }
 
 // cell is one cell of the frame being composed.
@@ -127,10 +156,13 @@ type cell struct {
 	text   string // a cluster of text, which wins over dots (P-10); empty for a dot cell
 	glyph  rune
 	ink    uint8
-	area   uint8 // the ink of the area that owns the cell's background, or 0
-	under  uint8 // the ink of the field or image class that colours the cell, or 0
-	taken  bool  // text occupies the cell: a label, or the second half of a wide character
-	strict bool  // the cell holds text, held to the text contrast
+	area   uint8  // the ink of the area that owns the cell's background, or 0
+	under  uint8  // the ink of the field or image class that colours the cell, or 0
+	taken  bool   // text occupies the cell: a label, or the second half of a wide character
+	held   bool   // a reserved alert's digit would be here: no name is placed over it (L-28)
+	strict bool   // the cell holds text, held to the text contrast
+	shade  string // with no ramp, an image's shade: laid last, only where nothing else claimed the cell (L-8.3)
+	faint  bool   // under is a field's band drawn faintly, where an image shares the map and has no echo (L-15.3)
 }
 
 type box struct{ left, right, top, bottom int }
@@ -183,9 +215,12 @@ func (g *grid) write(col, row int, text textsafe.Text, ink uint8) bool {
 		if w == 0 {
 			return true
 		}
-		g.cells[at] = cell{text: cluster, ink: ink, taken: true, strict: true, area: g.cells[at].area}
+		// Text keeps what colours the cell under it - an alert's area and an
+		// image's class - so that a name inside an alert over radar sits on
+		// the blend, as it sits on the radar outside (L-11.1).
+		g.cells[at] = cell{text: cluster, ink: ink, taken: true, strict: true, area: g.cells[at].area, under: g.cells[at].under, faint: g.cells[at].faint}
 		if w == 2 {
-			g.cells[at+1] = cell{ink: ink, taken: true, strict: true, area: g.cells[at+1].area}
+			g.cells[at+1] = cell{ink: ink, taken: true, strict: true, area: g.cells[at+1].area, under: g.cells[at+1].under, faint: g.cells[at+1].faint}
 		}
 		at += w
 		return true
@@ -232,7 +267,14 @@ func (g *grid) anchor(l Label, at Point) bool {
 	if !l.fromPoint {
 		col -= width / 2 // a name is centred on its place; a marker's label begins at its point
 	}
-	mine := box{left: col - labelMargin, right: col + labelMargin + width, top: row - labelMargin/2, bottom: row + labelMargin/2}
+	across, down := labelMargin, labelMargin/2
+	if l.tight {
+		across, down = 1, 0
+	}
+	mine := box{left: col - across, right: col + across + width, top: row - down, bottom: row + down}
+	if g.heldAny(col, row, width) {
+		return false
+	}
 	for _, b := range g.boxes {
 		if mine.left <= b.right && b.left <= mine.right && mine.top <= b.bottom && b.top <= mine.bottom {
 			return false
@@ -245,12 +287,50 @@ func (g *grid) anchor(l Label, at Point) bool {
 	return true
 }
 
+// hold keeps a reserved alert's word's room from every name placed after it
+// (L-28): the box its name would take at its point, margin and all, whether
+// or not a drawn word already lies there. Nothing is written.
+func (g *grid) hold(l Label) {
+	width := textsafe.Width(l.Name)
+	if width == 0 || l.X < 0 || l.Y < 0 {
+		return
+	}
+	col, row := l.X/2, l.Y/4
+	if !l.fromPoint {
+		col -= width / 2
+	}
+	g.boxes = append(g.boxes, box{left: col - labelMargin, right: col + labelMargin + width, top: row - labelMargin/2, bottom: row + labelMargin/2})
+}
+
+// holdCell keeps one free cell from names, a reserved alert's digit's (L-28).
+func (g *grid) holdCell(c Point) bool {
+	if c.X < 0 || c.Y < 0 || c.X >= g.cols || c.Y >= g.rows || g.cells[c.Y*g.cols+c.X].taken {
+		return false
+	}
+	g.cells[c.Y*g.cols+c.X].held = true
+	return true
+}
+
+// heldAny reports whether any cell of a run on one row is held (L-28).
+func (g *grid) heldAny(col, row, width int) bool {
+	if row < 0 || row >= g.rows {
+		return false
+	}
+	for x := max(col, 0); x < min(col+width, g.cols); x++ {
+		if g.cells[row*g.cols+x].held {
+			return true
+		}
+	}
+	return false
+}
+
 // Renderer draws frames of one size, keeping its buffers between them.
 type Renderer struct {
 	painter *Painter
 	grid    *grid
 	order   []Drawn
 	labels  []Label
+	drops   []Drop    // this frame's dropped alert labels, the backing kept from frame to frame
 	lons    []float64 // the longitude of each dot column's centre, for this frame
 	lats    []float64 // the latitude of each dot row's
 	line    strings.Builder
@@ -287,18 +367,23 @@ func (r *Renderer) sameOverlays(in Input) bool {
 		return false
 	}
 	l := r.last
-	if in.FieldsOverWater != l.FieldsOverWater || in.ImagesMaskedByWater != l.ImagesMaskedByWater {
+	if in.FieldsOverWater != l.FieldsOverWater || in.ImagesMaskedByWater != l.ImagesMaskedByWater || in.ImageHeld != l.ImageHeld {
 		return false
 	}
-	if in.MarkerPhase != l.MarkerPhase || len(in.Markers) != len(l.Markers) {
+	if len(in.Markers) != len(l.Markers) {
 		return false
 	}
+	blinks := false
 	for i, m := range in.Markers {
 		if m != l.Markers[i] {
 			return false
 		}
+		blinks = blinks || m.Blink
 	}
-	return in.OverlaysVersion == l.OverlaysVersion && len(in.Shapes) == len(l.Shapes) && len(in.Borrowed) == len(l.Borrowed) && len(in.Fields) == len(l.Fields) && len(in.Rasters) == len(l.Rasters)
+	if blinks && in.MarkerPhase != l.MarkerPhase { // the phase is seen only on a blinking marker (L-29)
+		return false
+	}
+	return in.OverlaysVersion == l.OverlaysVersion && len(in.Shapes) == len(l.Shapes) && len(in.Reserved) == len(l.Reserved) && in.Covered == l.Covered && len(in.Borrowed) == len(l.Borrowed) && len(in.Fields) == len(l.Fields) && len(in.Rasters) == len(l.Rasters)
 }
 
 // sameLook reports whether everything but the tiles and the overlays is as it
@@ -311,7 +396,10 @@ func (r *Renderer) sameLook(in Input) bool {
 	if in.Stale != l.Stale || in.Footer != l.Footer || in.Simplify != l.Simplify {
 		return false
 	}
-	return in.Labels == l.Labels && in.Scale == l.Scale && in.Credit == l.Credit && in.Missing == l.Missing && in.Supplied == l.Supplied && in.Layers == l.Layers
+	if (in.FrameTime.String() == "") != (l.FrameTime.String() == "") {
+		return false // the stamp taken over or given back (D-87): its row is redrawn; an advance's new time is not a new look
+	}
+	return in.Labels == l.Labels && in.Scale == l.Scale && in.Credit == l.Credit && in.Missing == l.Missing && in.Supplied == l.Supplied && in.Layers == l.Layers && in.Detail == l.Detail
 }
 
 // unchanged reports whether nothing a frame is a function of has changed
@@ -370,11 +458,12 @@ func (r *Renderer) Draw(in Input) (Frame, error) {
 		return Frame{}, err
 	}
 	r.compose(in, status)
-	r.held = Frame{Lines: r.emit(in), Status: status}
+	r.held = Frame{Lines: r.emit(in), Status: status, Dropped: r.drops} // valid, as the lines are, until the next frame is composed
 	r.lastTiles = append(r.lastTiles[:0], in.Tiles...)
 	r.last, r.drawn = in, true
 	r.last.Tiles = nil
 	r.last.Shapes = in.Shapes[:len(in.Shapes):len(in.Shapes)]
+	r.last.Reserved = in.Reserved[:len(in.Reserved):len(in.Reserved)]
 	r.redraws++
 	return r.held, nil
 }
@@ -391,9 +480,12 @@ func (r *Renderer) paint(in Input) (Status, error) {
 		if a.X != b.X {
 			return a.X < b.X
 		}
-		return a.Y < b.Y
+		if a.Y != b.Y {
+			return a.Y < b.Y
+		}
+		return r.order[i].Shift < r.order[j].Shift // one tile in two copies of the world: west first (D-86)
 	})
-	r.painter.SetProfile(style.NewProfile(load(in), in.View.Cols, in.View.Rows, in.Layers))
+	r.painter.SetProfile(style.NewProfile(load(in), in.View.Cols, in.View.Rows, in.Layers).WithDetail(in.Detail))
 	r.painter.SetDepth(in.Depth)
 	r.painter.SetSimplify(in.Simplify)
 	status := Complete
@@ -416,7 +508,7 @@ func (r *Renderer) paint(in Input) (Status, error) {
 		if !d.Exact {
 			status = Sharpening
 		}
-		err := r.painter.Tile(in.View, d.Tile, d.At, in.Style)
+		err := r.painter.TileShifted(in.View, d.Tile, d.At, d.Shift, in.Style)
 		if err != nil {
 			return status, err
 		}
@@ -433,28 +525,51 @@ func (r *Renderer) paint(in Input) (Status, error) {
 
 // overlays draws the prepared shapes, then the ones read straight from
 // the host's memory through their run index (D-92).
+//
+// ONCE FOR EACH COPY OF THE WORLD THE VIEW REACHES (D-86), each through a view
+// of its copy: a shape is moved whole, so a line near the antimeridian is
+// never torn between two copies.
 func (r *Renderer) overlays(in Input) error {
-	for _, s := range in.Shapes {
-		err := r.painter.Shape(in.View, s)
-		if err != nil {
-			return err
-		}
+	lo, hi, err := in.View.Shifts()
+	if err != nil {
+		return err
 	}
-	for _, b := range in.Borrowed {
-		err := r.painter.Borrow(in.View, b)
-		if err != nil {
-			return err
+	for shift := lo; shift <= hi; shift++ {
+		v := in.View
+		v.Shift = shift
+		for _, s := range in.Shapes {
+			if err := r.painter.Shape(v, s); err != nil {
+				return err
+			}
+		}
+		for _, b := range in.Borrowed {
+			if err := r.painter.Borrow(v, b); err != nil {
+				return err
+			}
+		}
+		for _, s := range in.Reserved {
+			if err := r.painter.Reserve(v, s); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
-// marks draws the host's places over everything already drawn.
+// marks draws the host's places over everything already drawn, in each copy
+// of the world the view reaches (D-86).
 func (r *Renderer) marks(in Input) error {
-	for _, m := range in.Markers {
-		err := r.painter.Mark(in.View, m, in.MarkerPhase)
-		if err != nil {
-			return err
+	lo, hi, err := in.View.Shifts()
+	if err != nil {
+		return err
+	}
+	for shift := lo; shift <= hi; shift++ {
+		v := in.View
+		v.Shift = shift
+		for _, m := range in.Markers {
+			if err := r.painter.Mark(v, m, in.MarkerPhase); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -463,7 +578,7 @@ func (r *Renderer) marks(in Input) error {
 // load is what is drawn over the basemap this frame, which decides how much
 // of itself the basemap gives up (FR-19).
 func load(in Input) style.Load {
-	if len(in.Fields) > 0 || len(in.Rasters) > 0 {
+	if len(in.Fields) > 0 || len(in.Rasters) > 0 || in.ImageHeld || in.Covered { // a loop's gap, or a layer outside the moment, as under it (L-28)
 		return style.Covered
 	}
 	return style.Bare
@@ -495,48 +610,59 @@ func (r *Renderer) compose(in Input, status Status) {
 	// The text of a cell is a contest, not a painting: the first to claim a
 	// cell keeps it, so the order below is the order of precedence. The
 	// frame's own furniture is never overdrawn; a marker keeps its cell
-	// against any name (FR-18a); a marker's own label is checked last (P-60).
+	// against any name (FR-18a); a marker's own label comes before every
+	// other name (L-8.9, D-80).
 	r.furniture(in, status)
 	for _, g := range r.painter.Glyphs() {
 		_ = r.grid.anchor(g, Point{X: g.X, Y: g.Y}) // a marker outside the rectangle is simply not drawn
 	}
-	// An overlay's labels are placed before any name of the basemap's, so that
-	// a place name never hides a warning's word; they are not the basemap's
-	// labels and do not go when those are turned off.
+	r.drops = r.drops[:0]
+	r.markerNames() // the host's places, before any other name (L-8.9, D-80)
+	// An alert's words are placed before any name of the basemap's, so that
+	// a place name never hides a warning's word. EVERY OTHER OVERLAY'S WORDS
+	// COME AFTER THE NAMES (L-23.1; from watchpost D-135): a map's buoys,
+	// tides, quakes and fires can fill every cell, and placed ahead of the
+	// names they would leave the map without the names that say where it is.
 	g.world = box{}
 	for _, l := range r.painter.OverlayLabels() {
-		g.label(l)
+		// An alert's label that does not fit falls back to its severity word;
+		// either way the host is told (L-8.5). The outline's digit carries
+		// the severity whatever happens to the label (D-65).
+		if first(l) && !l.reserved {
+			r.placeOrShorten(l)
+		}
+	}
+	r.digits(in) // after the alerts' words, before any name of the basemap's (D-65)
+	// AN ALERT OUTSIDE THE MOMENT HOLDS ITS ROOM (L-28.1; from watchpost
+	// D-200): its word and digits are kept from the names as if drawn, after
+	// every drawn one, so the names stand still as a loop plays past its hours.
+	for _, l := range r.painter.OverlayLabels() {
+		if l.reserved {
+			g.hold(l)
+		}
 	}
 	if !in.Labels {
-		r.markerNames() // the host's own places are not the basemap's names
-		r.bandNames()
-		if colourless(in.Depth) {
-			r.hatch()
+		r.dataNames() // not the basemap's labels: they do not go when those are turned off
+		r.shades()
+		if rampless(in.Depth) {
+			r.hatch() // at sixteen colours as at none (L-8.7)
 		}
 		return
 	}
 	if x, y, side, err := in.View.TilePlace(scene.TileID{}); err == nil {
 		g.world = box{left: toDot(x), top: toDot(y), right: toDot(x + side), bottom: toDot(y + side)}
+		if lo, hi, err := in.View.Shifts(); err == nil { // D-86: every copy of the world the view reaches
+			g.world.left, g.world.right = toDot(x+float64(lo)*side), toDot(x+float64(hi+1)*side)
+		}
 	}
-	// **A field's values are placed before the basemap's names, and only
-	// then.** A field drawn without colour is contour lines, and a contour
-	// with no value says where a band changes but not to what - so on such a
-	// frame the values are the data the host asked for and a place name is
-	// the decoration (D-124). The host's own markers are placed first of the
-	// three, so that a value can never cost the map its "you are here".
-	//
-	// **This is where P-60 would otherwise put the marker labels**, which
-	// upstream collision-checks after the map's names. Upstream has no scalar
-	// fields at all, so it has no contour values to order against names, and
-	// this reordering therefore changes no frame upstream could draw: the
-	// parity row holds for every input it supports, and the branch below is
-	// taken only when a field is being labelled.
-	if bands := r.painter.BandLabels(); len(bands) > 0 {
-		r.markerNames()
-		r.bandNames()
-	}
-	// Names last, most important first; the order among equals is the order
-	// the tiles gave them, and the tiles were sorted (P-25).
+	// **The basemap's names before the data's words (L-23.1; from watchpost
+	// D-135).** With every layer on, the stations' readings and the contours'
+	// values can fill every cell, so they come after the names that say where
+	// the map is. The host's own places are placed before all of them, and
+	// the alerts' words too (L-8.9, D-60, D-81), so nothing can cost the map
+	// its "you are here" or a warning.
+	// Names, most important first; the order among equals is the order the
+	// tiles gave them, and the tiles were sorted (P-25).
 	r.labels = append(r.labels[:0], r.painter.Labels()...)
 	sort.SliceStable(r.labels, func(i, j int) bool { return r.labels[i].Rank < r.labels[j].Rank })
 	budget := style.NewProfile(load(in), g.cols, g.rows, in.Layers).Labels()
@@ -549,12 +675,102 @@ func (r *Renderer) compose(in Input, status Status) {
 			placed++
 		}
 	}
-	if len(r.painter.BandLabels()) == 0 {
-		r.markerNames() // P-60's own place, on every frame with no field on it
+	r.dataNames()
+	r.shades()
+	if rampless(in.Depth) {
+		r.hatch() // last of all, at sixteen colours as at none (FR-18a, L-8.7): it fills what nothing else has taken
 	}
-	if colourless(in.Depth) {
-		r.hatch() // last of all: it fills what nothing else has taken (FR-18a)
+}
+
+// digitStride is how many outline cells lie between one severity digit and
+// the next, staggered by row so that a vertical edge carries them too.
+const digitStride = 5
+
+// digits writes each alert's severity digit along its outline every few
+// cells (D-65), never on the rows the frame's furniture uses, and where the
+// stride gave an area none - a small one - on the first free cell of its
+// outline, so every area in view carries one.
+func (r *Renderer) digits(in Input) {
+	g := r.grid
+	top, bottom := 1, g.rows-2 // the top row has the stale word and the frame time; the bottom the scale and credit
+	if textsafe.Width(in.Footer) > 0 {
+		bottom--
 	}
+	free := func(c Point) bool {
+		return c.X >= 0 && c.X < g.cols && c.Y >= top && c.Y <= bottom && !g.cells[c.Y*g.cols+c.X].taken
+	}
+	for _, reserved := range [2]bool{false, true} { // the drawn outlines' digits first, then the held (L-28)
+		for _, o := range r.painter.Outlines() {
+			if o.reserved != reserved {
+				continue
+			}
+			put := func(c Point) bool {
+				if reserved {
+					return g.holdCell(c)
+				}
+				return g.write(c.X, c.Y, o.Mark, o.Ink)
+			}
+			placed, first := false, Point{X: -1}
+			for _, c := range r.painter.Cells(o) {
+				if !free(c) {
+					continue
+				}
+				if first.X < 0 {
+					first = c
+				}
+				if (c.X+2*c.Y)%digitStride == 0 && put(c) {
+					placed = true
+				}
+			}
+			if !placed && first.X >= 0 {
+				put(first)
+			}
+		}
+	}
+}
+
+// shades lays an image's shade, with no ramp to colour it by, in every cell
+// nothing else has claimed: the outline, the hatch's alert label, a marker,
+// a name and the frame's own furniture all come first, so an image never
+// erases them (L-8.3). Inside rain the shade fills the cell and the hatch
+// cannot draw there; the outline carries the severity (D-65).
+func (r *Renderer) shades() {
+	g := r.grid
+	for i := range g.cells {
+		c := &g.cells[i]
+		// Text written into a cell replaces it whole, pending shade and all,
+		// so a cell with a shade still pending holds no text; a line's dots
+		// are the one claim left to yield to.
+		if c.shade == "" || c.glyph != blank {
+			continue
+		}
+		area, owned := r.painter.Area(i%g.cols, i/g.cols)
+		if !owned {
+			area = 0
+		}
+		*c = cell{text: c.shade, ink: uint8(colour.LabelRegion), taken: true, area: area}
+	}
+}
+
+// first reports whether an overlay's label is placed before the basemap's
+// names: an alert's - a warning's word is never hidden - and a marker's, the
+// host's own place (L-8.5, L-8.9, L-23).
+func first(l Label) bool {
+	t := colour.Token(l.Ink)
+	return t == colour.Marker || (t >= colour.AlertExtremeOutline && t <= colour.AlertUnknownTint)
+}
+
+// dataNames places the words of what the host drew that is no alert - a
+// station's reading, a quake's magnitude, a fire's name - and then the
+// contours' values: after the basemap's names, in the room they left (L-23).
+func (r *Renderer) dataNames() {
+	r.grid.world = box{}
+	for _, l := range r.painter.OverlayLabels() {
+		if !first(l) { // a reserved label is an alert's: never here
+			r.placeOrShorten(l)
+		}
+	}
+	r.bandNames()
 }
 
 // bandNames places the values a field's contours carry, after every other
@@ -569,13 +785,33 @@ func (r *Renderer) bandNames() {
 	}
 }
 
-// markerNames places the markers' labels, which are checked against the
-// map's own names and so are placed after them (P-60).
+// markerNames places the markers' labels. They are placed before any other
+// name - an overlay's, the basemap's - so the host's own places are never
+// pushed off by the map's names (L-8.9, D-80).
 func (r *Renderer) markerNames() {
 	r.grid.world = box{}
 	for _, l := range r.painter.MarkerLabels() {
-		r.grid.label(l)
+		r.placeOrShorten(l)
 	}
+}
+
+// placeOrShorten places a label; one that does not fit whole tries its
+// shorter form, and either way the frame reports it (L-8.5, L-8.9). A label
+// with no shorter form that does not fit is simply not drawn.
+func (r *Renderer) placeOrShorten(l Label) {
+	g := r.grid
+	if g.labelAt(l, []Point{{X: l.X, Y: l.Y}}) || textsafe.Width(l.Short) == 0 && !l.place {
+		return
+	}
+	shown := ""
+	if textsafe.Width(l.Short) > 0 {
+		short := l
+		short.Name = l.Short
+		if g.labelAt(short, []Point{{X: l.X, Y: l.Y}}) {
+			shown = l.Short.String()
+		}
+	}
+	r.drops = append(r.drops, Drop{Place: l.place, Overlay: l.Overlay, Label: l.Name.String(), Shown: shown})
 }
 
 // furniture is what is drawn over the map's edge: the notice when there are
@@ -585,34 +821,45 @@ func (r *Renderer) furniture(in Input, status Status) {
 	if status == NoTiles {
 		// **Two different things bring a frame here, and they need different
 		// answers.** With tiles to draw from, nothing has decoded them yet and
-		// the host has work to run; with none, there is nothing to run. The
-		// wording used to tell every host to name a source or pass the
-		// embedded tiles - which the first host had already done - and said
-		// nothing of the pump, the one thing that would have helped (14.19).
+		// the host has work to run; with none, there is nothing to run. So a
+		// host that supplied no tiles is told to name a source or pass the
+		// embedded tiles, and a host that did is shown only that the map is
+		// loading (task 14.19).
 		notice := textsafe.Const("no map tiles: name a source, or pass the assets package's tiles")
 		if in.Supplied {
-			notice = textsafe.Const("no map tiles yet: call Settle, or run Work until it has none left")
+			// WORDS FOR A PERSON, NOT A PROGRAMMER (L-22.2; from watchpost
+			// D-124): the person reading the map sees only that it is loading
+			// and no call is named. The host's pump is the host's to know of,
+			// through the NoTiles status.
+			notice = textsafe.Const("Loading the map…")
 		}
 		fit := textsafe.Fit(notice, g.cols)
 		g.write((g.cols-textsafe.Width(fit))/2, g.rows/2, fit, uint8(colour.Notice))
 	}
+	right := g.cols // the top row fills from the right: the stale word, then the frame time
 	if in.Stale {
 		mark := textsafe.Fit(textsafe.Const(staleMark), g.cols)
-		g.write(g.cols-textsafe.Width(mark), 0, mark, uint8(colour.Stale))
+		right -= textsafe.Width(mark)
+		g.write(right, 0, mark, uint8(colour.Stale))
+		right-- // a space between them
+	}
+	if right > 0 {
+		if when := textsafe.Fit(in.FrameTime, right); textsafe.Width(when) > 0 {
+			g.write(right-textsafe.Width(when), 0, when, uint8(colour.Stale))
+		}
 	}
 	credit := textsafe.Fit(in.Credit, g.cols)
-	if w := textsafe.Width(credit); w > 0 {
-		// **A narrow map put the scale mark and the credit against each other**
-		// with nothing between them, so that "50 km" and the credit read as one
-		// word. The credit gives up its first cell rather than touch it.
-		if left := g.cols - w; left > 0 && g.cells[(g.rows-1)*g.cols+left-1].taken {
-			credit = textsafe.Fit(credit, g.cols-1)
-			w = textsafe.Width(credit)
-		}
+	w := textsafe.Width(credit)
+	if w > 0 {
 		g.write(g.cols-w, g.rows-1, credit, uint8(colour.Credit))
 	}
-	if in.Scale {
-		g.write(0, g.rows-1, scaleMark(in.View, g.cols/3), uint8(colour.Scale))
+	// **THE CREDIT KEEPS ITS WIDTH AND THE SCALE MARK TAKES WHAT IS LEFT, less
+	// one clear cell** (L-14.3, v0.2.0 D-83). The credit is written first and
+	// the scale mark's room is worked out from the credit's width, so the two
+	// never touch and never read as one word. The attribution is the one that
+	// must be whole (FR-14); a scale mark with no room is not drawn.
+	if room := min(g.cols/3, g.cols-w-1); in.Scale && room > 0 {
+		g.write(0, g.rows-1, scaleMark(in.View, room), uint8(colour.Scale))
 	}
 	if footer := textsafe.Fit(in.Footer, g.cols); textsafe.Width(footer) > 0 && g.rows > 1 {
 		g.write(0, g.rows-2, footer, uint8(colour.Credit))
@@ -652,14 +899,24 @@ func scaleMark(v project.View, room int) textsafe.Text {
 // (FR-16, D-77).
 func (r *Renderer) colours(c cell, in Input, groundColour colour.RGB, kind colour.GroundKind) (fg, bg colour.RGB) {
 	// The background, bottom to top: the ground; water; a field or an image;
-	// an alert's tint (L2 Render, steps 1 to 4).
+	// an alert's tint (L2 Render, steps 1 to 4). Where an alert's tint and an
+	// image meet, the image is shifted toward the tint as strongly as the
+	// search found safe (L-11.1), or where no strength is, drawn over it
+	// (L-11.4, D-27).
 	bg = groundColour
 	tinted := colour.Token(c.area) >= colour.AlertExtremeOutline && colour.Token(c.area) <= colour.AlertUnknownTint
 	if area, ok := r.painter.Colour(c.area, in.Palette, kind, in.Depth); ok {
 		bg = area
 	}
-	if under, ok := r.painter.Colour(c.under, in.Palette, kind, in.Depth); ok && !tinted {
-		bg = under
+	if under, ok := r.painter.Colour(c.under, in.Palette, kind, in.Depth); ok {
+		switch s, blended := in.Blends.Strength(presetOf(c.under), int(colour.Token(c.area)-colour.AlertExtremeOutline)/2); {
+		case c.faint:
+			bg = colour.Blend(bg, under, colour.FaintField) // the band a hint on the ground, or on the alert's tint (L-15.3)
+		case tinted && blended:
+			bg = colour.Blend(under, bg, s)
+		default:
+			bg = under
+		}
 	}
 	own, ok := r.painter.Colour(c.ink, in.Palette, kind, in.Depth)
 	if !ok {
@@ -766,6 +1023,9 @@ func (g *grid) rowSum(row int, sum uint64) uint64 {
 		}
 		if c.strict {
 			flags |= 2
+		}
+		if c.faint {
+			flags |= 4
 		}
 		sum = mix(sum, uint64(c.glyph)<<32|uint64(c.under)<<24|uint64(c.ink)<<16|uint64(c.area)<<8|flags)
 		for i := range len(c.text) {

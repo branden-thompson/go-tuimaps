@@ -37,15 +37,22 @@ func TestParityP19_VisibleTiles(t *testing.T) {
 
 // TestParityP22_OceanOutsideWorld: beyond the world's edge is ocean, in the
 // style's water colour - upstream lit dots in a colour written into the code.
+// AS D-86 AMENDS IT: beyond the world is only above and below the poles; east
+// and west of it is more world (the next copy), never painted ocean.
 func TestParityP22_OceanOutsideWorld(t *testing.T) {
 	v := project.View{Centre: project.LonLat{}, Zoom: 0, Cols: 200, Rows: 80} // 400 by 320 dots round a world of 256
 	p := painter(t, v)
 	if err := p.World(v); err != nil {
 		t.Fatal(err)
 	}
-	for _, cell := range [][2]int{{2, 40}, {197, 40}, {100, 1}, {100, 78}, {3, 3}} {
+	for _, cell := range [][2]int{{100, 1}, {100, 78}, {3, 3}} {
 		if !p.Water(cell[0], cell[1]) {
-			t.Errorf("cell %v is outside the world and is not ocean", cell)
+			t.Errorf("cell %v is above or below the world and is not ocean", cell)
+		}
+	}
+	for _, cell := range [][2]int{{2, 40}, {197, 40}} {
+		if p.Water(cell[0], cell[1]) {
+			t.Errorf("cell %v is the next copy of the world (D-86) and was made ocean", cell)
 		}
 	}
 	for _, cell := range [][2]int{{100, 40}, {40, 12}, {160, 70}} {

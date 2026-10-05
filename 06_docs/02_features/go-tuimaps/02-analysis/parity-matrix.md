@@ -13,8 +13,8 @@
 
 | Disposition | Meaning | Rows |
 |---|---|---|
-| **Match** | go-tuiMaps behaves as upstream does. | 48 |
-| **Fix** | Upstream's behaviour is a ledgered defect — or, for P-59b alone, a behaviour HUM LEAD ruled unsafe (D-56: flash faster than three a second) — and go-tuiMaps does the intended thing. | 13 |
+| **Match** | go-tuiMaps behaves as upstream does. | 47 |
+| **Fix** | Upstream's behaviour is a ledgered defect — or, for P-59b alone, a behaviour HUM LEAD ruled unsafe (D-56: flash faster than three a second) — and go-tuiMaps does the intended thing. | 14 |
 | **Replicate** | A ledgered convention kept deliberately. | 2 |
 | **Extended** | Upstream's behaviour is kept and added to by a ruling. | 12 |
 | **Superseded** | Replaced by design under a ruling; **outside the M3 denominator**. | 2 |
@@ -65,7 +65,7 @@
 | P-36 | Label language | tile.rs:249-259 | Lookup order: `name_<lang>`, `name:<lang>`, `name_en`, `name:en`, `name`, `house_num` | **Match** | v0.1.0 | Matched for one configured language, English by default; every other language is dropped while decoding, and the embedded tiles keep English only (D-82). The language is part of the tile cache key (FR-31). |
 | P-37 | Gzip sniff | tile.rs:58-67 | Detected by the magic bytes `1f 8b` | **Match** | v0.1.0 |  |
 | P-38 | MVT decode | tile.rs:372-438; proto.rs | MoveTo, LineTo, ClosePath (which re-pushes the first point) and zigzag. The default extent is 4096 | **Match** | v0.1.0 |  |
-| P-39 | Ring grouping | tile.rs:443-484 | Signed area ≥0 starts a new polygon. Negative area is a hole in the previous polygon. Each polygon becomes its own feature | **Match** | v0.1.0 |  |
+| P-39 | Ring grouping | tile.rs:443-484 | Signed area ≥0 starts a new polygon. Negative area is a hole in the previous polygon. Each polygon becomes its own feature | **Fix** | v0.1.0 | D-106 (v0.2.0): a ring of zero area - its points on one line - is a hole in the polygon before it, as the proven decoder keeps it, not a polygon of its own; FuzzAgree found the input |
 | P-40 | OMT remap | tile.rs:71-162 | transportation→road, with `_link` for ramps, minor→street and brunnel→structure. boundary→admin. place→country/place_label. water_name→marine/water_label. poi→poi_label. park→landuse_overlay. landcover→landuse. `name:xx`→`name_xx`. rank→scalerank or labelrank | **Superseded** | — | D-24: fresh styles are written against OpenMapTiles; the renaming shim is not ported. |
 | P-41 | Style match | styler.rs:229-237; tile.rs:207-213 | The first matching layer, in style order, for the source-layer. The remapped name is tried first, then the raw name. No match drops the feature. One style per feature | **Match** | v0.1.0 | **Restated for go-tuiMaps (D-49):** the first matching style layer, in style order, for the tile's real (OpenMapTiles) layer name; no match drops the feature; one style per feature. Colour resolution moves to draw time (D-26). |
 | P-42 | Filter ops | styler.rs:32-118 | Supported: all, any, none, ==, !=, in, !in, has, !has, >, >=, <, <=. An unknown op evaluates to true. `==` on a missing key is false. Equality is on JSON values, so integers and floats are distinct. `$type` is injected as a property (tile.rs:187) | **Match** | v0.1.0 |  |
@@ -87,7 +87,7 @@
 | P-58 [LIB] | Marker shapes | renderer.rs:395-440 | Dot is 3×3. Cross is ±3. Diamond has radius 3. Ring(r) uses a midpoint circle. FilledCircle(r). Char | **Match** | v0.1.0 |  |
 | P-59a [LIB] | Marker animation | marker.rs:97-118 | Blink: `(tick/8)%2==0` | **Match** | v0.1.0 | Blink keeps upstream's rate. Durations matched, converted from ticks at upstream's 50 ms loop; time is supplied by the host's clock (L-15). Reduce-motion and "never hidden by a frozen clock" apply (NFR-21). Split by D-61; *Match* was this row's disposition before D-56. |
 | P-59b [LIB] | Marker animation | marker.rs:97-118 | Flash: `(tick/3)%2==0`. Pulse: radius 1,2,3,4,3,2 advancing every 4 ticks, for Ring only (renderer.rs:419) | **Fix** | later | **Flash: Fix (D-56)** — no more than 2.5 per second; upstream's 3.33 per second is above the three-per-second accessibility threshold. Pulse keeps upstream's rate. Durations as P-59a. Reduce-motion applies (NFR-21). Split by D-61. |
-| P-60 [LIB] | Marker cull and label | renderer.rs:389,443-450 | ±20 px cull. The label sits at `px+4` and is collision-checked after the map labels. It takes the marker colour | **Match** | v0.1.0 |  |
+| P-60 [LIB] | Marker cull and label | renderer.rs:389,443-450 | ±20 px cull. The label sits at `px+4` and is collision-checked after the map labels. It takes the marker colour | **Match** | v0.1.0 | **v0.2.0 departs (L3.13, D-60, D-81):** the host's places are named before every other label but the frame's furniture, so a marker label now wins a collision with the map's names; the cull is unchanged. **L-23 (D-97):** every overlay label that is neither an alert's nor a marker's - a station's, a quake's - is placed after the map's names, as upstream places its marker labels. |
 | P-61 [LIB] | Marker id | marker.rs:62 | The default is `"{lat:.6},{lon:.6}"`. `remove_marker` removes every marker with that id | **Match** | v0.1.0 |  |
 | P-62 [LIB] | Camera easing | camera.rs:296-302 | Cubic ease-in-out. Defaults are 60 travel ticks and 40 hold ticks (camera.rs:31-32) | **Match** | later | As P-59a. |
 | P-63 [LIB] | Camera zoom arc | camera.rs:252-259 | The midpoint is `max(min(from,to)-0.8, 0)`, with each half eased | **Match** | later |  |
@@ -100,7 +100,7 @@
 | P-69 [APP] | Pan step | main.rs:87-99 | Longitude ±8/2^zoom, latitude ±6/2^zoom degrees | **Match** | v0.1.0 |  |
 | P-70 [APP] | Mouse | main.rs:147-159 | Scroll only, ±zoom_step, centred on the map centre. There is no drag | **Extended** | later | D-17: drag to pan and zoom toward the pointer (rows E-05, E-06). |
 | P-71 [APP] | Loop | main.rs:71,174-183 | 50 ms poll. tick and camera advance on every loop iteration. Animation redraws are throttled to 50 ms or more. Resize triggers a redraw | **Fix** | v0.1.0 | L-15: clock-driven animation. |
-| P-72a [APP] | Chrome | main.rs:206-226 | Help row at `rows-2`. Status row at `rows-1`, with `>> label` | **Match** | v0.1.0 | Split by D-61. |
+| P-72a [APP] | Chrome | main.rs:206-226 | Help row at `rows-2`. Status row at `rows-1`, with `>> label` | **Match** | v0.1.0 | Split by D-61. **v0.2.0 departs (D-135):** the status row names the focused place as `focused: <name>`, not `>> label`, and adds it to what a key did, the loop's state and why the map is not whole, before upstream's centre and zoom; the two rows and their places are unchanged. |
 | P-72b [APP] | Chrome | main.rs:206-226 | `[TOUR…]` in the status row | **Match** | later | Arrives with camera tours (D-44). Split by D-61. |
 
 ## Extensions beyond upstream (E-rows) — outside the M3 denominator

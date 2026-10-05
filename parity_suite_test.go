@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -224,8 +225,16 @@ func workspaceFor(t *testing.T) string {
 	if err != nil {
 		t.Fatal(err)
 	}
+	mod, err := os.ReadFile("go.mod")
+	if err != nil {
+		t.Fatal(err)
+	}
+	floor := regexp.MustCompile(`(?m)^go (\S+)$`).FindSubmatch(mod)
+	if floor == nil {
+		t.Fatal("go.mod states no go version")
+	}
 	path := filepath.Join(t.TempDir(), "go.work")
-	body := "go 1.25.0\n\nuse (\n\t" + root + "\n\t" + filepath.Join(root, "cmd", "tuimaps") + "\n)\n\n" +
+	body := "go " + string(floor[1]) + "\n\nuse (\n\t" + root + "\n\t" + filepath.Join(root, "cmd", "tuimaps") + "\n)\n\n" +
 		"replace github.com/branden-thompson/go-tuimaps v0.0.0 => " + root + "\n"
 	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
 		t.Fatal(err)

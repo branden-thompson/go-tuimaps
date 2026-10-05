@@ -1,6 +1,8 @@
 package tuimaps
 
 import (
+	"time"
+
 	"github.com/branden-thompson/go-tuimaps/internal/fault"
 	"github.com/branden-thompson/go-tuimaps/internal/fetch"
 	"github.com/branden-thompson/go-tuimaps/internal/mvt"
@@ -8,9 +10,28 @@ import (
 	"github.com/branden-thompson/go-tuimaps/internal/tiles"
 )
 
-// Fetcher is a replacement for the library's own way of reaching a source: a
-// host that has a client of its own, or a proxy, passes one (FR-22b).
-type Fetcher = fetch.Func
+// FetchOptions is how a host shapes the library's own fetching (L-7.1, D-55):
+// its Transport, its UserAgent, its Timeout, and the hosts it lets be
+// fetched over plain http (AllowHTTP). The library keeps its client: it
+// builds each request, confines it and every redirect to the source's own
+// scheme, host and port, sets the headers, and reads the body through its
+// limit, throwing away an answer that comes back after its request's end. A
+// host Transport dials as it likes, and keeps the refusal of private
+// addresses only if it dials through CheckedDialer; its time is bounded only
+// while it honours its request's context (L-7.3).
+type FetchOptions = fetch.HostOptions
+
+// Dialer is how a transport connects: the shape of an http.Transport's
+// DialContext.
+type Dialer = fetch.Dialer
+
+// CheckedDialer is the library's own dialer, which refuses a private or
+// reserved address at the moment of connection. A host transport that dials
+// through it keeps that refusal (L-10.3); one that dials some other way does
+// not, and nothing the library does can check where a proxy goes beyond it.
+func CheckedDialer() Dialer {
+	return fetch.NewCheckedDialer()
+}
 
 // CacheUse is what one cache holds and is allowed to hold (D-90).
 type CacheUse struct {
@@ -44,47 +65,74 @@ func (m *Map) Source(address string) (err error) {
 		return closed()
 	}
 	if address == "" {
-		m.remote = nil
+		m.fetcher.CloseIdle()
+		m.remote, m.address, m.fetcher = nil, "", nil
 		return m.pipe.SetNetwork(nil)
 	}
-	get := m.fetcher
-	if get == nil {
-		own, err := fetch.ForSource(address, fetch.Options{})
-		if err != nil {
-			return err
-		}
-		get = own.Fetch
-	}
-	remote, err := tiles.NewRemote(address, get, nil)
+	return m.useSourceLocked(address)
+}
+
+// useSourceLocked names a source with the fetch options in effect.
+func (m *Map) useSourceLocked(address string) error {
+	own, err := fetch.ForSource(address, fetch.Options{Transport: m.fetchOpts.Transport, Token: m.fetchOpts.UserAgent,
+		Timeout: m.fetchOpts.Timeout, AllowHTTP: m.fetchOpts.AllowHTTP})
 	if err != nil {
 		return err
 	}
-	m.remote = remote
+	remote, err := tiles.NewRemote(address, own.Fetch)
+	if err != nil {
+		return err
+	}
+	m.fetcher.CloseIdle() // the fetcher it replaces is done with
+	m.remote, m.address, m.fetcher = remote, address, own
 	m.changed++
 	return m.pipe.SetNetwork(remote.Network())
 }
 
-// Fetcher replaces the way the library reaches a source. It takes effect at
-// the next Source call, and a host that passes nil puts the library's own
-// back (FR-22b).
-func (m *Map) Fetcher(get Fetcher) {
-	defer m.guardQuiet("Fetcher")
-	m.plant("Fetcher")
+// SetFetchOptions sets how the library fetches, and takes effect at once
+// (L-7.4): with a source named, the next tile is fetched the new way. The
+// zero FetchOptions is the library's own.
+func (m *Map) SetFetchOptions(o FetchOptions) (err error) {
+	defer guard("SetFetchOptions", &err)
+	m.plant("SetFetchOptions")
 
 	if m == nil {
-		return
+		return closed()
+	}
+	if err := fetch.CheckToken(o.UserAgent); err != nil {
+		return err
+	}
+	if o.Timeout < 0 {
+		return fault.Make(fault.FetchRefused, textsafe.Const("the fetch options were refused"),
+			textsafe.Const("the timeout is negative"), textsafe.Const("give a timeout of zero or more; zero is the library's own"))
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.shut {
-		return
+		return closed()
 	}
-	m.fetcher = get
+	was := m.fetchOpts
+	m.fetchOpts = o
+	if m.remote == nil {
+		return nil
+	}
+	if err := m.useSourceLocked(m.address); err != nil {
+		m.fetchOpts = was
+		return err
+	}
+	return nil
 }
 
 // CacheRoot names a directory to keep tiles in between runs, or takes the
 // disk cache away again with an empty path (FR-21b). The cap is in bytes; a
-// cap of zero is the default.
+// cap of zero is the default. The root it replaces, or turns off, is let go:
+// nothing is written to it after, a fetch already in flight included, and
+// Purge does not reach it (L-9.3). The maximum age is kept at once, by the
+// clock of the last frame (L-9.4).
+//
+// Over its cap the cache drops the tiles fetched longest ago, never one the
+// view needs. A file's time is when its tile was fetched; reading it changes
+// nothing on disk.
 func (m *Map) CacheRoot(dir string, capBytes int64) (err error) {
 	defer guard("CacheRoot", &err)
 	m.plant("CacheRoot")
@@ -98,6 +146,7 @@ func (m *Map) CacheRoot(dir string, capBytes int64) (err error) {
 		return closed()
 	}
 	if dir == "" {
+		m.disk.Release()
 		m.disk = nil
 		return m.pipe.SetDisk(nil)
 	}
@@ -108,8 +157,39 @@ func (m *Map) CacheRoot(dir string, capBytes int64) (err error) {
 	if err != nil {
 		return err
 	}
+	m.disk.Release()
 	m.disk = disk
+	disk.SetMaxAge(m.cacheMaxAge)
+	disk.Expire(m.wallClock)
 	return m.pipe.SetDisk(disk)
+}
+
+// SetCacheMaxAge sets how long a tile is kept on disk from when it was
+// fetched (L-9.1, D-70). A tile at its age is not served but fetched again,
+// and its file is removed; a file dated after the host's clock counts as
+// aged. It is kept at once, by the clock of the last frame, and in every job
+// after. Zero, the default, keeps tiles until the cap needs their room; a
+// negative age is refused.
+func (m *Map) SetCacheMaxAge(age time.Duration) (err error) {
+	defer guard("SetCacheMaxAge", &err)
+	m.plant("SetCacheMaxAge")
+
+	if m == nil {
+		return closed()
+	}
+	if age < 0 {
+		return fault.Make(fault.CacheRefused, textsafe.Const("the cache's maximum age was refused"),
+			textsafe.Const("it is negative"), textsafe.Const("give an age above zero, or zero to keep tiles until the cap needs the room"))
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.shut {
+		return closed()
+	}
+	m.cacheMaxAge = age
+	m.disk.SetMaxAge(age)
+	m.disk.Expire(m.wallClock)
+	return nil
 }
 
 // CacheUse is what each of the map's caches holds and may hold (D-90). A
@@ -139,29 +219,38 @@ func (m *Map) CacheUse() Caches {
 	return out
 }
 
-// Purge empties the disk cache of the source in use, or of everything when
-// no source is named (FR-22a). It is one of the cache's two maintenance
-// calls, and it is the host's to make: the library never purges by itself.
-func (m *Map) Purge() (err error) {
+// PurgeReport is what Purge removed from disk, and what it could not.
+// Removed counts only the files that went.
+type PurgeReport struct{ Removed, Failed int }
+
+// Purge empties everything the map holds of tiles: every source's tiles on
+// disk, the fetched tiles in memory, and the decoded pictures kept only to be
+// used again - a replaced loop's spare frames and a shared set's readings
+// (L-9.3, FR-22a). A fetch already in flight writes nothing to disk after
+// it. The tiles the view needs are fetched again. It is one of the cache's
+// two maintenance calls, and it is the host's to make: the library never
+// purges by itself. With no disk cache, memory is emptied and the error
+// says there was no disk to purge. Purging deletes files; it is not secure
+// erasure (L-9.6).
+func (m *Map) Purge() (report PurgeReport, err error) {
 	defer guard("Purge", &err)
 	m.plant("Purge")
 
 	if m == nil {
-		return closed()
+		return PurgeReport{}, closed()
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.shut {
-		return closed()
+		return PurgeReport{}, closed()
 	}
+	m.pipe.ForgetFetched()
+	m.store.DropSpares()
 	if m.disk == nil {
-		return noCache()
+		return PurgeReport{}, noCache()
 	}
-	identity := ""
-	if m.remote != nil {
-		identity = m.remote.Network().Identity
-	}
-	return m.disk.Empty(identity)
+	emptied, err := m.disk.Empty()
+	return PurgeReport(emptied), err
 }
 
 // Verify reads every tile the disk cache holds and removes the ones that no

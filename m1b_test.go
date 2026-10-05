@@ -149,10 +149,11 @@ func againstKey(t *testing.T, name string) {
 			t.Fatalf("%s: %v", f.ID, err)
 		}
 	}
-	got, err := m.Describe(nil)
+	report, err := m.Report(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+	got := report.Places
 	// The fields: the value, the band and which way it rises.
 	byPlace := map[string][]tuimaps.Answer{}
 	for _, one := range got {
@@ -207,10 +208,20 @@ func againstKey(t *testing.T, name string) {
 	}
 
 	// Every answer of the key has one of the library's, and they agree.
-	answers := map[[2]string]tuimaps.Answer{}
+	// An area of the key is an alert, answered on its own (v0.2.0 L5.4); a
+	// point or a line is an answer as before. Either gives the same facts.
+	type fact struct {
+		inside            bool
+		Distance, Bearing float64
+		Compass           string
+	}
+	answers := map[[2]string]fact{}
 	for _, one := range got {
 		for _, a := range one.Answers {
-			answers[[2]string{one.Place, a.Overlay}] = a
+			answers[[2]string{one.Place, a.Overlay}] = fact{a.Relation == tuimaps.Inside, a.Distance, a.Bearing, a.Compass}
+		}
+		for _, a := range one.Alerts {
+			answers[[2]string{one.Place, a.Overlay}] = fact{a.Where == tuimaps.Inside, a.Distance, a.Bearing, a.Compass}
 		}
 	}
 	for _, want := range key {
@@ -220,7 +231,7 @@ func againstKey(t *testing.T, name string) {
 			continue
 		}
 		if want.Inside != nil {
-			inside := mine.Relation.String() == "inside"
+			inside := mine.inside
 			if inside != *want.Inside {
 				t.Errorf("%s in %s: the library says %v, the key says %v", want.Place, want.Shape, inside, *want.Inside)
 			}

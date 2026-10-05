@@ -1,6 +1,8 @@
 package render
 
 import (
+	"strings"
+
 	"github.com/branden-thompson/go-tuimaps/internal/project"
 	"github.com/branden-thompson/go-tuimaps/internal/textsafe"
 )
@@ -36,6 +38,7 @@ type Marker struct {
 	Label  string
 	Ink    uint8
 	Blink  bool
+	ID     string // the host's place, named in Frame.Dropped when its label cannot fit whole
 }
 
 // radius is the marker's radius in dots.
@@ -73,7 +76,11 @@ func (p *Painter) Mark(v project.View, m Marker, on bool) error {
 		p.strokeMarker(at, m)
 	}
 	if m.Label != "" && len(p.markerLabels) < maxLabels {
-		p.markerLabels = append(p.markerLabels, Label{X: at.X + labelGap, Y: at.Y, Name: textsafe.Clean(m.Label), Ink: m.Ink, fromPoint: true})
+		l := Label{X: at.X + labelGap, Y: at.Y, Name: textsafe.Clean(m.Label), Ink: m.Ink, fromPoint: true, Overlay: m.ID, place: true}
+		if first, _, cut := strings.Cut(m.Label, " "); cut && first != "" {
+			l.Short = textsafe.Clean(first) // a shorter form: the name's first word (L-8.9)
+		}
+		p.markerLabels = append(p.markerLabels, l)
 	}
 	return nil
 }
@@ -184,7 +191,10 @@ func (p *Painter) Glyphs() []Label {
 }
 
 // MarkerLabels are the markers' labels, in the order given. They are placed
-// after the map's own names (P-60).
+// before every other name on the frame but the furniture: the host's places
+// outrank alert labels and the basemap's names (L-8.9, D-60, D-80). Upstream
+// places them after the map's names (P-60); the named place is the one thing
+// the listener must never lose, so this departs from it.
 func (p *Painter) MarkerLabels() []Label {
 	if p == nil {
 		return nil

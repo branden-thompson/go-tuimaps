@@ -7,12 +7,12 @@ package textsafe
 // comes from outside - names, labels, credits - is not held to this list;
 // it is cleaned and measured instead.
 //
-// For v0.1.0 the list is: the space and printable ASCII, for the library's
-// own words and numbers; braille, the map itself; six marker glyphs; eight
-// box-drawing characters for the scale mark and frames; three hatch
-// strokes and three block shades for the forms drawn with no colour; and
-// U+FFFD, which cleaning emits. Arrows and block quadrants are on the test
-// card and join the list with wind and the block renderer.
+// The list is: the space and printable ASCII, for the library's own words
+// and numbers; braille, the map itself, wind's arrows among it; six marker
+// glyphs; eight box-drawing characters for the scale mark and frames; three
+// hatch strokes and three block shades for the forms drawn with no colour;
+// and U+FFFD, which cleaning emits. Block quadrants are on the test card and
+// would join it with a block renderer.
 func InGlyphList(r rune) bool {
 	if r >= 0x20 && r <= 0x7E { // the space and printable ASCII
 		return true

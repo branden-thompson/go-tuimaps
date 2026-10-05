@@ -148,7 +148,7 @@ func importance(f *geojson.Feature) (rank int32, level uint8, maritime bool) {
 
 // compare holds our kept layers equal to the proven decoder's, feature by
 // feature: geometry part by part, class and label by value.
-func compare(theirs orbmvt.Layers, ours *scene.Tile) (compared int, err error) {
+func compare(theirs orbmvt.Layers, ours *scene.Tile, damaged bool) (compared int, err error) {
 	kept := map[string]*scene.Layer{}
 	for i := range ours.Layers {
 		kept[ours.Layers[i].Name] = &ours.Layers[i]
@@ -213,8 +213,10 @@ func compare(theirs orbmvt.Layers, ours *scene.Tile) (compared int, err error) {
 					// their panics. **A number this decoder invents where
 					// they read none is still a failure**, and geometry,
 					// classes, names, feature counts and which layers are
-					// kept stay exact on every input.
-					if !onlyRefused(got.Rank, rank) || !onlyRefused(int32(got.AdminLevel), int32(level)) || (got.Maritime && !sea) {
+					// kept stay exact on every input. On the fixture tiles,
+					// which are well formed, the attributes are exact too:
+					// the allowance is for damaged input alone.
+					if !damaged || !onlyRefused(got.Rank, rank) || !onlyRefused(int32(got.AdminLevel), int32(level)) || (got.Maritime && !sea) {
 						return compared, fmt.Errorf("layer %s feature %d: rank %d level %d maritime %v; they have %d, %d, %v", their.Name, n, got.Rank, got.AdminLevel, got.Maritime, rank, level, sea)
 					}
 				}
@@ -258,7 +260,7 @@ func TestKeptFeaturesEqualTheProvenDecoder(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", rel, err)
 		}
-		compared, err := compare(theirs, ours)
+		compared, err := compare(theirs, ours, false)
 		if err != nil {
 			t.Errorf("%s: %v", rel, err)
 		}
@@ -315,7 +317,7 @@ func FuzzAgree(f *testing.F) {
 		if err != nil {
 			return
 		}
-		if _, err := compare(theirs, ours); err != nil {
+		if _, err := compare(theirs, ours, true); err != nil {
 			t.Fatal(err)
 		}
 	})

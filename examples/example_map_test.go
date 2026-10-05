@@ -181,3 +181,47 @@ func lightRainPNG() []byte {
 	}
 	return out.Bytes()
 }
+
+// Example_intensityFromTheLegend is how a host words an image answer's
+// intensity (L-13.10): the report gives the class at a place as a number,
+// and the legend says what that class covers, in the image's own unit. The
+// library words nothing itself (D-29); the host says what it likes with the
+// range.
+func Example_intensityFromTheLegend() {
+	m, _ := tuimaps.New(tuimaps.WithSize(80, 24), tuimaps.Embed(assets.Tile, assets.MaxZoom))
+	defer m.Close()
+	image := tuimaps.Image{
+		West: -100, South: 20, East: -70, North: 35,
+		Projection: tuimaps.PlateCarree,
+		PNG:        lightRainPNG(),
+		Table:      []tuimaps.TableEntry{{Colour: tuimaps.RGB{R: 0x04, G: 0xe9, B: 0xe7}, Value: 15}},
+	}
+	if _, err := m.Set(tuimaps.RadarImage("radar", image, noon)); err != nil {
+		fmt.Println(err)
+		return
+	}
+	if _, err := m.Settle(context.Background()); err != nil { // the picture is read by a job
+		fmt.Println(err)
+		return
+	}
+	home := tuimaps.Place{ID: "home", Name: "Home", At: tuimaps.LonLat{Lon: -85, Lat: 28}}
+	report, err := m.Report([]tuimaps.Place{home})
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	ranges := map[string][]tuimaps.Class{}
+	for _, entry := range m.Legend() {
+		ranges[entry.ID] = entry.Classes
+	}
+	for _, place := range report.Places {
+		for _, a := range place.Answers {
+			if a.Form != "image" || a.NoData {
+				continue
+			}
+			fmt.Printf("%s: %s reads %s %s\n", place.Place, a.Overlay, ranges[a.Overlay][a.Class].Label, "dBZ")
+		}
+	}
+	// Output:
+	// Home: radar reads 10 to 20 dBZ
+}

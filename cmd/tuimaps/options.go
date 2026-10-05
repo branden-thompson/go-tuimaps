@@ -45,6 +45,7 @@ type settings struct {
 	cols      int
 	rows      int
 	scenario  int
+	loopDir   string // a recorded radar loop to play (v0.2.0 M1, L10.9)
 	places    []tuimaps.Place
 
 	help bool
@@ -101,6 +102,7 @@ func parse(args []string) (settings, error) {
 	fs.StringVar(&language, "lang", "en", "")
 	fs.StringVar(&s.stylePath, "style", "", "")
 	fs.StringVar(&scenario, "scenario", "", "")
+	fs.StringVar(&s.loopDir, "loop", "", "")
 	named := &namedPlaces{}
 	fs.Var(named, "place", "")
 	_ = places

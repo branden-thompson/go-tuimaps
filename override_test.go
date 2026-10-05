@@ -55,7 +55,7 @@ func TestLocalOverrideRecipe(t *testing.T) {
 	// Step 1 of the recipe: require the library at the placeholder version,
 	// and replace that version with the tree on disk. The host's own floor
 	// is the library's.
-	modFile := "module example.test/host\n\ngo 1.25.0\n\nrequire github.com/branden-thompson/go-tuimaps v0.0.0\n\n" +
+	modFile := "module example.test/host\n\ngo " + goFloor + "\n\nrequire github.com/branden-thompson/go-tuimaps v0.0.0\n\n" +
 		"replace github.com/branden-thompson/go-tuimaps v0.0.0 => " + tree + "\n"
 	write(t, filepath.Join(host, "go.mod"), modFile)
 	write(t, filepath.Join(host, "main.go"), hostMain)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 
 	tuimaps "github.com/branden-thompson/go-tuimaps"
@@ -17,7 +18,7 @@ func errNoCacheToMaintain() error {
 }
 
 func errNothingToDescribe() error {
-	return errors.New("there is nothing to describe; name a place with --place Home@-84.51,33.82, or load one with --scenario")
+	return errors.New("there is nothing to describe; name a place with --place Home@-84.51,33.82, load one with --scenario, or play a loop with --loop")
 }
 
 // sourceFor is where tiles come from for these settings: the app's default,
@@ -90,6 +91,11 @@ func put(m *tuimaps.Map, s settings) error {
 		}
 		places = append(append([]tuimaps.Place(nil), loaded.places...), places...)
 	}
+	if s.loopDir != "" {
+		if err := setLoop(m, s.loopDir); err != nil {
+			return err
+		}
+	}
 	if len(places) == 0 {
 		return nil
 	}
@@ -113,13 +119,39 @@ func frame(m *tuimaps.Map, places []tuimaps.Place) error {
 	return nil
 }
 
+// Files are read no further than the library would take them, so a huge or
+// endless file - `--style /dev/zero` - is refused while it is read.
+const (
+	maxStyleBytes    = 1 << 20 // the library's own limit on a style
+	maxLoopFileBytes = 1 << 20 // a loop file names at most 72 frames
+	maxFrameBytes    = 8 << 20 // the library's limit on one picture's file
+)
+
+// readCapped reads a file no further than most bytes, and refuses one that
+// is longer.
+func readCapped(path string, most int64) ([]byte, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	body, err := io.ReadAll(io.LimitReader(f, most+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(body)) > most {
+		return nil, fmt.Errorf("it is larger than %d bytes, the most this app reads", most)
+	}
+	return body, nil
+}
+
 // useStyleFile reads a style from disk and hands the bytes to the library,
 // which never opens a style file itself (FR-20, D-94).
 func useStyleFile(m *tuimaps.Map, path string) error {
 	if path == "" {
 		return nil
 	}
-	body, err := os.ReadFile(path)
+	body, err := readCapped(path, maxStyleBytes)
 	if err != nil {
 		return fmt.Errorf("the style file %s could not be read: %w", path, plainly(err))
 	}

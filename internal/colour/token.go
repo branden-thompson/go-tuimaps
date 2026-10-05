@@ -60,6 +60,38 @@ const (
 	High          = Middle + 1
 	Track         = High + 1
 	TrackLabel    = Track + 1
+	// Wind1 to Wind6 are the wind preset's classes, calmest first (FR-8,
+	// L-16.3; from watchpost D-109): after the rest, so no token already named moves.
+	Wind1 = TrackLabel + 1
+	Wind6 = Wind1 + 5
+	// Fire and FireFaint are a fire's (L-18.1; from watchpost D-121): its perimeter, its
+	// incident and a strong hotspot; a weaker hotspot. Never an alert.
+	Fire      = Wind6 + 1
+	FireFaint = Fire + 1
+	// QuakeHour, QuakeDay and QuakeOlder are a quake's ring by its age, as
+	// USGS colours it (L-19.3; from watchpost D-123): the past hour, the past day, older.
+	QuakeHour  = FireFaint + 1
+	QuakeDay   = QuakeHour + 1
+	QuakeOlder = QuakeDay + 1
+	// Wave1 to Wave6 are the wave preset's classes, calmest first (L-20).
+	Wave1 = QuakeOlder + 1
+	Wave6 = Wave1 + 5
+	// Buoy and Tide are the sea's stations (L-21, watchpost D-127, D-128): a
+	// buoy's marker and words, a tide station's. Never an alert.
+	Buoy = Wave6 + 1
+	Tide = Buoy + 1
+	// UV1 to UV5 are the UV preset's classes, AQI1 to AQI6 the US AQI's,
+	// lowest first (L-25, watchpost D-137 to D-140).
+	UV1  = Tide + 1
+	UV5  = UV1 + 4
+	AQI1 = UV5 + 1
+	AQI6 = AQI1 + 5
+	// QPF1 to QPF7 are the rain totals' classes, lightest first (L-26,
+	// watchpost D-184).
+	QPF1 = AQI6 + 1
+	QPF7 = QPF1 + 6
+	// lastToken is the last token there is.
+	lastToken = QPF7
 )
 
 // fixedNames are the names of the tokens before the numbered ramps.
@@ -74,7 +106,7 @@ func fixedNames() []string {
 
 // Name is the token's stable name, or nothing for a value that is no token.
 func (t Token) Name() string {
-	if t < Ground || t > TrackLabel {
+	if t < Ground || t > lastToken {
 		return ""
 	}
 	switch {
@@ -92,14 +124,44 @@ func (t Token) Name() string {
 		return "high"
 	case t == Track:
 		return "track"
+	case t == TrackLabel:
+		return "track.label"
+	case t == Fire:
+		return "fire"
+	case t == FireFaint:
+		return "fire.faint"
+	case t == QuakeHour:
+		return "quake.hour"
+	case t == QuakeDay:
+		return "quake.day"
+	case t == QuakeOlder:
+		return "quake.older"
+	case t >= Wave1 && t <= Wave6:
+		return "wave." + strconv.Itoa(int(t-Wave1)+1)
+	case t == Buoy:
+		return "buoy"
+	case t == Tide:
+		return "tide"
+	case t >= UV1 && t <= UV5:
+		return "uv." + strconv.Itoa(int(t-UV1)+1)
+	case t >= AQI1 && t <= AQI6:
+		return "aqi." + strconv.Itoa(int(t-AQI1)+1)
+	case t >= QPF1 && t <= QPF7:
+		return "qpf." + strconv.Itoa(int(t-QPF1)+1)
 	}
-	return "track.label"
+	return "wind." + strconv.Itoa(int(t-Wind1)+1)
+}
+
+// ScaleClass reports whether a token is one of a preset's classes: drawn in
+// the scale's colour, never a word's (L-25).
+func ScaleClass(t Token) bool {
+	return (t >= Radar1 && t <= High) || (t >= Wind1 && t <= Wind6) || (t >= Wave1 && t <= Wave6) || (t >= UV1 && t <= QPF7)
 }
 
 // Tokens lists every token, in the documented order.
 func Tokens() []Token {
-	out := make([]Token, 0, TrackLabel)
-	for t := Ground; t <= TrackLabel; t++ {
+	out := make([]Token, 0, lastToken)
+	for t := Ground; t <= lastToken; t++ {
 		out = append(out, t)
 	}
 	return out
@@ -110,7 +172,7 @@ func ParseToken(name string) (Token, bool) {
 	if name == "" || len(name) > 32 {
 		return 0, false
 	}
-	for t := Ground; t <= TrackLabel; t++ {
+	for t := Ground; t <= lastToken; t++ {
 		if t.Name() == name {
 			return t, true
 		}

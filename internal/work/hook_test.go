@@ -44,10 +44,6 @@ func TestOnPendingFiresOnceInsideOwnerCall(t *testing.T) {
 	if fired != 2 {
 		t.Error("a deferred job is not pending and must not wake the pump")
 	}
-	m.Promote(now)
-	if fired != 3 {
-		t.Errorf("a retry coming due at an owner call: fired %d, want 3", fired)
-	}
 }
 
 // TestOwnerCallFromHookRefused is plan task 07.13, second part.
@@ -55,12 +51,10 @@ func TestOwnerCallFromHookRefused(t *testing.T) {
 	m := member(t)
 	var inHook []error
 	m.WhenPending(func() {
-		inHook = append(inHook, m.Add(tile("from/hook")), m.Keep(func(string) bool { return true }))
-		_, err := m.Promote(time.Time{})
-		inHook = append(inHook, err, m.WhenPending(nil))
+		inHook = append(inHook, m.Add(tile("from/hook")), m.Keep(func(string) bool { return true }), m.WhenPending(nil))
 	})
 	add(t, m, tile("t/1"))
-	if len(inHook) != 4 {
+	if len(inHook) != 3 {
 		t.Fatalf("the hook did not run: %v", inHook)
 	}
 	for i, err := range inHook {

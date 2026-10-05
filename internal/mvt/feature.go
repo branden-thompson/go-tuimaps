@@ -11,6 +11,7 @@ import (
 type attrs struct {
 	class     string
 	nameLang  string
+	nameColon string // name:<lang>, read after name_<lang> (L11.14)
 	name      string
 	houseNum  string
 	localRank []byte // the Value message, read only if no better rank is found
@@ -80,15 +81,14 @@ func featureFields(body []byte) (kind uint64, tags, geometry []byte, err error) 
 
 // wrongWireForFeature reports a field of a feature carrying the wrong kind of
 // value: an id or a type that is not a number, tags or geometry that are not
-// packed. **A damaged stream is refused rather than read past** (D-75), which
-// is the check the layer has always had and the feature had only for half its
-// fields.
+// packed. **A damaged stream is refused rather than read past** (D-75), the
+// same check the layer makes, over every field of the feature.
 //
-// The oracle's fuzzer found the gap (D-126): a feature whose id arrived
-// length-delimited was read by this decoder as a feature with no geometry and
-// dropped, while the proven decoder read the id's own bytes as though they
-// were geometry and made a line out of them. A field the format does not
-// define is still passed over - an encoder may write what it likes there.
+// Without it the decoder and the proven one disagree (D-126): a feature whose
+// id arrives length-delimited would be dropped here as a feature with no
+// geometry, while the proven decoder reads the id's own bytes as though they
+// were geometry and makes a line out of them. A field the format does not
+// define is passed over - an encoder may write what it likes there.
 func wrongWireForFeature(f field) bool {
 	if f.num == 0 {
 		return true // a field number of zero is no field at all: numbering starts at one
@@ -174,6 +174,8 @@ func (d *layerDecoder) keep(a *attrs, role uint8, value []byte) error {
 		a.class = d.intern(text)
 	case roleNameLang:
 		a.nameLang = string(text)
+	case roleNameColon:
+		a.nameColon = string(text)
 	case roleName:
 		a.name = string(text)
 	case roleHouseNum:
@@ -214,10 +216,15 @@ func (d *layerDecoder) intern(text []byte) string {
 	return s
 }
 
-// label is the feature's name by upstream's order with one language kept.
+// label is the feature's name by upstream's order with one language kept:
+// name_<lang>, then name:<lang>, then the local name - whatever order the
+// tags came in (L11.14).
 func (a attrs) label() string {
 	if a.nameLang != "" {
 		return a.nameLang
+	}
+	if a.nameColon != "" {
+		return a.nameColon
 	}
 	if a.name != "" {
 		return a.name

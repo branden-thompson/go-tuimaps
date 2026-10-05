@@ -15,18 +15,6 @@ import (
 // render or speak, never a sentence of the library's own (D-52).
 type Answer = describe.Answer
 
-// Description is everything the map says about one place.
-type Description struct {
-	Place   string
-	Answers []Answer
-	// Pending is true for a part that is not worked out yet. **It is always
-	// false**: the description is computed from the data the host handed in,
-	// not from anything the library has to prepare first, so a call answers
-	// at once and never waits (FR-29). It is here because the contract says
-	// each part is marked, and a part that is ready says so.
-	Pending bool
-}
-
 // Units sets the units the descriptions come back in: miles rather than
 // kilometres, Fahrenheit rather than Celsius. Whichever is in use is always
 // stated in the answer itself.
@@ -44,52 +32,9 @@ func (m *Map) Units(miles, fahrenheit bool) {
 	}
 	want := describe.Units{Miles: miles, Fahrenheit: fahrenheit}
 	if m.units != want {
-		m.units, m.described = want, nil
+		m.units, m.reported = want, nil
 		m.changed++
 	}
-}
-
-// Describe answers, for each place, where every overlay is relative to it:
-// inside or outside an area and how far its edge is, the nearest point or
-// line with its label, a field's value and which way it rises, an image's
-// class and where it gets heavier (FR-29, D-52).
-//
-// It is computed from the host's own geometry, unsimplified - never from
-// the drawn cells, which cannot show a distance smaller than one cell - and
-// it needs no Work to have run. With no places given it describes the map's
-// own.
-func (m *Map) Describe(places []Place) (out []Description, err error) {
-	defer guard("Describe", &err)
-	m.plant("Describe")
-
-	if m == nil {
-		return nil, closed()
-	}
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if m.shut {
-		return nil, closed()
-	}
-	asked := places
-	if len(asked) == 0 {
-		asked = m.places
-	}
-	if len(asked) == 0 {
-		return nil, nil
-	}
-	if kept, ok := m.rememberedDescription(asked); ok {
-		return kept, nil
-	}
-	described := make([]Description, 0, len(asked))
-	for _, place := range asked {
-		one, err := checkPlace(place)
-		if err != nil {
-			return nil, err
-		}
-		described = append(described, Description{Place: nameOf(one), Answers: m.answersFor(one)})
-	}
-	m.described, m.describedKey = described, m.describeKey(asked)
-	return described, nil
 }
 
 // nameOf is what a place is called in a description: its name, or its id
@@ -104,24 +49,29 @@ func nameOf(p Place) string {
 // describeKey is what a description was computed from: it changes whenever
 // the answer would (FR-29).
 type describeKey struct {
-	overlays uint64
-	places   uint64
-	units    describe.Units
-	stale    bool
-	asked    uint64
+	overlays   uint64
+	places     uint64
+	units      describe.Units
+	stale      bool
+	staleWhich uint64 // which overlays are stale: the clock's one part in an answer (W14, P-11)
+	asked      uint64
+	nearby     float64      // what "nearby" means (L-13.6)
+	view       project.View // which alerts are in view, and the view's centre, for motion with no place
+	landed     uint64       // what work has landed: a picture decoded is a frame motion can read
 }
 
 // describeKey is the key for this call.
 func (m *Map) describeKey(asked []Place) describeKey {
-	return describeKey{overlays: m.overlays, places: m.placesVersion, units: m.units, stale: m.staleNow, asked: askedFingerprint(asked)}
+	return describeKey{overlays: m.overlays, places: m.placesVersion, units: m.units, stale: m.staleNow, staleWhich: m.staleWhich, asked: askedFingerprint(asked),
+		nearby: m.nearby, view: m.view, landed: m.store.Landed()}
 }
 
 // askedFingerprint is what was asked about, not how much of it.
 //
 // **A host may ask about places the map does not store** - that is what the
-// argument to Describe is for, and a station watching several locations uses
+// argument to Report is for, and a station watching several locations uses
 // it for exactly that. `placesVersion` counts changes to the map's OWN places
-// and says nothing about these, so keying on the count alone answered a
+// and says nothing about these, so keying on the count alone would answer a
 // question about one place with the answer about another (FR-29 requires the
 // key to change whenever the answer would).
 //
@@ -142,33 +92,24 @@ func askedFingerprint(asked []Place) uint64 {
 	return h.Sum64()
 }
 
-// rememberedDescription is the description already worked out, when nothing
-// it was worked out from has changed. Repeating a call then costs nothing,
-// which is what lets a host ask on every frame (FR-29).
-func (m *Map) rememberedDescription(asked []Place) ([]Description, bool) {
-	if m.described == nil || m.describedKey != m.describeKey(asked) {
-		return nil, false
+// rememberedReport is the report already worked out, when nothing it was
+// worked out from has changed. Repeating a call then costs nothing, which is
+// what lets a host ask on every frame (FR-29).
+func (m *Map) rememberedReport(asked []Place) (Report, bool) {
+	if m.reported == nil || m.reportedKey != m.describeKey(asked) {
+		return Report{}, false
 	}
-	return m.described, true
+	return *m.reported, true
 }
 
-// answersFor is what every overlay says about one place.
-func (m *Map) answersFor(place Place) []Answer {
-	var out []Answer
-	for _, id := range m.store.IDs() {
-		reader, ok := m.store.Read(id)
-		if !ok {
-			continue
-		}
-		o := reader.Overlay()
-		reader.Done()
-		answer := m.answerOf(place, id, o)
-		answer.Valid = o.Valid
-		answer.Stale = m.staleOverlay(o)
-		answer.UnderOneCell = m.underOneCell(answer)
-		out = append(out, answer.Cleaned())
-	}
-	return out
+// answerFor is one overlay's answer for a place, with its valid time, its
+// stale mark and whether the picture can settle it, cleaned.
+func (m *Map) answerFor(place Place, id string, o Overlay) Answer {
+	answer := m.answerOf(place, id, o)
+	answer.Valid = o.Valid
+	answer.Stale = m.staleOverlay(o)
+	answer.UnderOneCell = m.underOneCell(answer)
+	return answer.Cleaned()
 }
 
 // staleOverlay reports whether one overlay is out of date, by the rule the
@@ -180,7 +121,7 @@ func (m *Map) staleOverlay(o Overlay) bool {
 	if m.wallClock.IsZero() {
 		return false
 	}
-	return overlay.FreshnessAt(o.Valid, o.Keeps, m.wallClock).DrawnStale()
+	return overlay.FreshnessAt(overlay.Valid(o), o.Keeps, m.wallClock).DrawnStale()
 }
 
 // answerOf is the one answer for a place and an overlay, by its shape.
@@ -237,6 +178,10 @@ func (m *Map) fieldAnswer(place Place, id string, o Overlay) Answer {
 		return Answer{Place: nameOf(place), Overlay: id, Form: describe.FieldForm, NoData: true}
 	}
 	reading := grid.At(place.At, kind.Breaks)
+	if o.Grid.From != nil { // a vector field: its speed and where it blows from (FR-8)
+		dir := describe.Grid{West: grid.West, South: grid.South, East: grid.East, North: grid.North, Cols: grid.Cols, Rows: grid.Rows, Values: o.Grid.From}
+		return describe.OfWind(nameOf(place), id, reading, dir.At(place.At, nil).Value, o.Grid.Type.Unit)
+	}
 	return describe.OfField(nameOf(place), id, reading, o.Grid.Type.Preset == "temperature", m.units)
 }
 
@@ -250,7 +195,7 @@ func (m *Map) imageAnswer(place Place, id string) Answer {
 		return Answer{Place: nameOf(place), Overlay: id, Form: describe.ImageForm, NoData: true}
 	}
 	image := describe.Image{West: raster.West, South: raster.South, East: raster.East, North: raster.North,
-		Width: raster.Width, Height: raster.Height, Classes: raster.Classes}
+		Width: raster.Width, Height: raster.Height, Classes: raster.Classes, Mercator: raster.Projection == uint8(WebMercator)}
 	class, here := image.ClassAt(place.At)
 	return describe.OfImage(nameOf(place), id, class, here, image.NearestHeavier(place.At), m.units)
 }
@@ -274,14 +219,13 @@ func (m *Map) underOneCell(a Answer) bool {
 }
 
 // noteWallClock keeps the time the last frame was drawn at, which is what
-// staleness in a description is judged by (D-114).
+// staleness in a description is judged by (D-114). The clock alone is no
+// change to a description: which overlays are stale is, and the kept report
+// is keyed by it (W14, P-11) - a host passes its clock to every Render.
 func (m *Map) noteWallClock(now time.Time) {
 	if now.IsZero() {
 		return
 	}
-	stale := m.stale(now)
-	if m.wallClock != now || m.staleNow != stale {
-		m.described = nil // the answer would differ; it is worked out again
-	}
-	m.wallClock, m.staleNow = now, stale
+	m.wallClock = now
+	m.staleNow, m.staleWhich = m.stale(now)
 }

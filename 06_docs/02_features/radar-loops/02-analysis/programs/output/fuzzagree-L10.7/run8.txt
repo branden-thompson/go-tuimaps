@@ -1,0 +1,21 @@
+fuzz: elapsed: 2s, gathering baseline coverage: 0/1014 completed
+fuzz: elapsed: 2s, gathering baseline coverage: 1014/1014 completed, now fuzzing with 18 workers
+fuzz: elapsed: 5s, execs: 305406 (101794/sec), new interesting: 0 (total: 1014)
+fuzz: elapsed: 8s, execs: 506937 (67180/sec), new interesting: 0 (total: 1014)
+fuzz: elapsed: 11s, execs: 584872 (25971/sec), new interesting: 0 (total: 1014)
+fuzz: elapsed: 14s, execs: 623062 (12734/sec), new interesting: 0 (total: 1014)
+fuzz: elapsed: 17s, execs: 933244 (103363/sec), new interesting: 1 (total: 1015)
+fuzz: elapsed: 20s, execs: 2700281 (589016/sec), new interesting: 2 (total: 1016)
+fuzz: elapsed: 23s, execs: 4236711 (512306/sec), new interesting: 4 (total: 1018)
+fuzz: elapsed: 26s, execs: 5098257 (287092/sec), new interesting: 5 (total: 1019)
+fuzz: elapsed: 29s, execs: 5384992 (95578/sec), new interesting: 5 (total: 1019)
+fuzz: elapsed: 32s, execs: 5384992 (0/sec), new interesting: 5 (total: 1019)
+fuzz: elapsed: 35s, execs: 5384992 (0/sec), new interesting: 5 (total: 1019)
+fuzz: elapsed: 38s, execs: 5384992 (0/sec), new interesting: 5 (total: 1019)
+fuzz: elapsed: 41s, execs: 5384992 (0/sec), new interesting: 5 (total: 1019)
+fuzz: elapsed: 44s, execs: 5384992 (0/sec), new interesting: 5 (total: 1019)
+fuzz: elapsed: 47s, execs: 5384992 (0/sec), new interesting: 5 (total: 1019)
+fuzz: elapsed: 50s, execs: 5384992 (0/sec), new interesting: 5 (total: 1019)
+fuzz: elapsed: 50s, execs: 5700000 (491759/sec), new interesting: 5 (total: 1019)
+PASS
+ok  	github.com/branden-thompson/go-tuimaps/tools/oracle	50.565s

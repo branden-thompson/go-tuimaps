@@ -4,6 +4,7 @@ import (
 	"context"
 	"math"
 	"strconv"
+	"strings"
 
 	"github.com/branden-thompson/go-tuimaps/internal/fault"
 	"github.com/branden-thompson/go-tuimaps/internal/project"
@@ -14,8 +15,6 @@ import (
 const (
 	// defaultShapeBytes is the shape cache's default cap (D-85).
 	defaultShapeBytes = 250_000
-	// runLength is how many vertices one box of the run index covers.
-	runLength = 64
 	// bytesPerVertex is what a vertex costs the cache: 8 bytes for itself and
 	// its share of a 16-byte box for each run of 64 (constants, section 3).
 	bytesPerVertex = 8.25
@@ -34,6 +33,10 @@ const (
 	NotReady   Path = iota // nothing is prepared yet; a job will prepare it
 	Cached                 // from the library's own simplified copy
 	FromMemory             // straight from the host's memory, culled by the run index: its simplified form is larger than the whole shape cap
+	// StandIn is the prepared form of the geometry a Set replaced, drawn until
+	// the replacement is prepared, which a job is still to do (v0.2.0 L11.5,
+	// L-14.4): an overlay handed in again never drops out of the frame.
+	StandIn
 )
 
 type prepared struct {
@@ -71,8 +74,8 @@ func buildIndex(o Overlay) []Box {
 	var index []Box
 	for _, f := range o.Features {
 		for _, ring := range f.Rings {
-			for start := 0; start < len(ring); start += runLength {
-				end := min(start+runLength, len(ring)-1)
+			for start := 0; start < len(ring); start += scene.RunLength {
+				end := min(start+scene.RunLength, len(ring)-1)
 				west, east, south, north := 180.0, -180.0, 90.0, -90.0
 				for _, p := range ring[start : end+1] {
 					west, east = math.Min(west, p.Lon), math.Max(east, p.Lon)
@@ -98,38 +101,6 @@ func boxOf(west, south, east, north float64) Box {
 	return Box{MinX: fixed(x0), MinY: fixed(y0), MaxX: fixed(x1), MaxY: fixed(y1)}
 }
 
-// fingerprint is a sum of one run's coordinates, bit for bit.
-func fingerprint(ring []project.LonLat, run int) uint64 {
-	if run < 0 || run*runLength >= len(ring) {
-		return 0
-	}
-	sum := uint64(14695981039346656037)
-	for _, p := range ring[run*runLength : min((run+1)*runLength, len(ring))] {
-		// A word at a time: this guards against a host changing what it lent
-		// by mistake, not against someone trying to fool it.
-		sum = (sum ^ math.Float64bits(p.Lon)) * 1099511628211
-		sum = (sum ^ math.Float64bits(p.Lat)) * 1099511628211
-	}
-	return sum
-}
-
-// fingerprints are taken run by run at hand-in: the same runs as the index,
-// so that a read re-checks what it reads and no more.
-func fingerprints(o Overlay) map[[2]int][]uint64 {
-	out := map[[2]int][]uint64{}
-	for fi, f := range o.Features {
-		for ri, ring := range f.Rings {
-			runs := (len(ring) + runLength - 1) / runLength
-			sums := make([]uint64, runs)
-			for run := range runs {
-				sums[run] = fingerprint(ring, run)
-			}
-			out[[2]int{fi, ri}] = sums
-		}
-	}
-	return out
-}
-
 // Index is the run index of the version this reader holds, or nil if the
 // overlay is small enough never to need one.
 func (r *Reader) Index() []Box {
@@ -137,29 +108,6 @@ func (r *Reader) Index() []Box {
 		return nil
 	}
 	return r.h.index
-}
-
-// CheckRuns re-checks the runs a read is about to use against the
-// fingerprints taken at hand-in. A change while in use is a warning naming
-// the overlay, and false. With the borrow check off it checks nothing.
-func (r *Reader) CheckRuns(feature, ring, fromRun, toRun int) bool {
-	if r == nil || r.h == nil || r.h.prints == nil {
-		return true
-	}
-	sums, ok := r.h.prints[[2]int{feature, ring}]
-	if !ok || feature >= len(r.h.overlay.Features) || ring >= len(r.h.overlay.Features[feature].Rings) {
-		return true
-	}
-	borrowed := r.h.overlay.Features[feature].Rings[ring]
-	for run := max(fromRun, 0); run <= min(toRun, len(sums)-1); run++ {
-		if fingerprint(borrowed, run) != sums[run] {
-			r.store.mu.Lock()
-			r.store.warnLocked(fault.BorrowChanged, textsafe.Quote(r.id))
-			r.store.mu.Unlock()
-			return false
-		}
-	}
-	return true
 }
 
 // Register adds a live view of the overlays. It needs nothing until it
@@ -258,6 +206,30 @@ func (s *Store) ShapeUse() Use {
 	return Use{Need: s.shapeNeed, Held: s.shapeHeld, Cap: int64(s.caps.ShapeBytes)}
 }
 
+// standInLocked keeps what was prepared from an overlay's old geometry, to be
+// drawn until its replacement is prepared - the contract's section 4: "the
+// old shape keeps drawing from the library's own simplified copy until the
+// new one is prepared" (L11.5) - and forgets the rest. A replacement large
+// enough to be drawn from the host's memory is drawn so on the next frame,
+// and the old copy is dropped (D-92): keep is false for it.
+func (s *Store) standInLocked(id string, keep bool) {
+	s.dropStandInLocked(id) // an older stand-in gives way to the newer
+	if p := s.prepared[id]; keep && len(p) > 0 {
+		s.stand[id] = p
+		delete(s.prepared, id) // its bytes stay counted, now the stand-in's
+	}
+	s.dropPreparedLocked(id)
+}
+
+// dropStandInLocked forgets an overlay's stand-in: its replacement is
+// prepared, or the overlay is gone.
+func (s *Store) dropStandInLocked(id string) {
+	for _, p := range s.stand[id] {
+		s.shapeHeld -= p.bytes
+	}
+	delete(s.stand, id)
+}
+
 // dropPreparedLocked forgets what was prepared from an overlay's old geometry.
 func (s *Store) dropPreparedLocked(id string) {
 	for _, p := range s.prepared[id] {
@@ -266,8 +238,7 @@ func (s *Store) dropPreparedLocked(id string) {
 	delete(s.prepared, id)
 	delete(s.fromMemory, id)
 	delete(s.fields, id)
-	delete(s.rasters, id)
-	delete(s.reports, id)
+	delete(s.pictures, id)
 }
 
 // Drawn is what is drawn for an overlay at a bucket now: its prepared form at
@@ -293,21 +264,14 @@ func (s *Store) Drawn(id string, bucket int) ([]scene.Shape, int, Path) {
 	if s.fromMemory[id] {
 		return nil, bucket, FromMemory
 	}
-	return nil, 0, NotReady
-}
-
-// TakeReleased returns, once, the ids whose replaced or removed geometry has
-// been read for the last time since it was last called: what a Work or Settle
-// call reports among its results (D-86).
-func (s *Store) TakeReleased() []string {
-	if s == nil {
-		return nil
+	have = have[:0]
+	for b := range s.stand[id] {
+		have = append(have, b)
 	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	out := s.released
-	s.released = nil
-	return out
+	if nearest, ok := Nearest(bucket, have); ok {
+		return s.stand[id][nearest].shapes, nearest, StandIn // the library's own copy, never the host's memory (D-86)
+	}
+	return nil, 0, NotReady
 }
 
 // prepareJob prepares one overlay for one bucket, inside a Work call.
@@ -325,12 +289,30 @@ func (s *Store) PrepareJob(id string, bucket int) scene.Job {
 // Kind says this is an overlay job.
 func (j *prepareJob) Kind() scene.JobKind { return scene.KindOverlayPrepare }
 
+// prepareKeyPrefix begins every preparation's key.
+const prepareKeyPrefix = "overlay/"
+
 // Key names the work: an overlay and a bucket.
 func (j *prepareJob) Key() string {
 	if j == nil {
 		return ""
 	}
-	return "overlay/" + j.id + "/" + strconv.Itoa(j.bucket)
+	return prepareKeyPrefix + j.id + "/" + strconv.Itoa(j.bucket)
+}
+
+// PreparesOf reads a preparation's key back: the overlay and the bucket it
+// prepares; ok is false for any other work's key. It allocates nothing.
+func PreparesOf(key string) (id string, bucket int, ok bool) {
+	rest, found := strings.CutPrefix(key, prepareKeyPrefix)
+	at := strings.LastIndexByte(rest, '/')
+	if !found || at < 0 {
+		return "", 0, false
+	}
+	bucket, err := strconv.Atoi(rest[at+1:])
+	if err != nil {
+		return "", 0, false
+	}
+	return rest[:at], bucket, true
 }
 
 // Run reads the host's geometry, which it holds for as long as it reads, and
@@ -348,9 +330,9 @@ func (j *prepareJob) Run(ctx context.Context) error {
 		return nil // removed meanwhile: nothing to do
 	}
 	if img := reader.Overlay().Image; img != nil {
-		raster, report, err := j.store.readPicture(img, reader.h.kind)
+		pictures, err := j.store.readPictures(ctx, j.id, img, reader.h.kind)
 		if err == nil {
-			j.store.keepRaster(reader, raster, report)
+			j.store.keepPictures(reader, pictures)
 		}
 		reader.Done()
 		return err
@@ -378,6 +360,7 @@ func (s *Store) keepField(r *Reader, field scene.Field) {
 	defer s.mu.Unlock()
 	if !r.h.retired {
 		s.fields[r.id] = field
+		s.landed++
 	}
 }
 
@@ -400,8 +383,10 @@ func (s *Store) keep(r *Reader, bucket int, shapes []scene.Shape) {
 		}
 	}
 	bytes := int64(math.Ceil(float64(vertices) * bytesPerVertex))
+	s.dropStandInLocked(r.id) // the replacement is ready: the stand-in has done its work (L11.5)
 	if bytes > int64(s.caps.ShapeBytes) {
 		s.fromMemory[r.id] = true
+		s.landed++
 		return
 	}
 	if s.prepared[r.id] == nil {
@@ -413,5 +398,6 @@ func (s *Store) keep(r *Reader, bucket int, shapes []scene.Shape) {
 	s.clock++
 	s.prepared[r.id][bucket] = &prepared{shapes: shapes, bytes: bytes, used: s.clock}
 	s.shapeHeld += bytes
+	s.landed++
 	s.settleLocked()
 }

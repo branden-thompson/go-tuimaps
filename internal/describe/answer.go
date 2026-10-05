@@ -59,6 +59,7 @@ type Answer struct {
 	// edge. For points and lines, the nearest one, with its label.
 	Relation Where
 	Distance float64
+	Km       float64 // the distance in kilometres, whatever unit Distance is in
 	Unit     string
 	Bearing  float64
 	Compass  string
@@ -72,6 +73,7 @@ type Answer struct {
 	Class     int
 	Heavier   string // the compass word towards the nearest heavier class
 	HeavierAt float64
+	From      string // for wind, the compass word it blows from (FR-8), or empty
 	NoData    bool
 
 	// What is true of the overlay itself, whatever its shape.
@@ -107,6 +109,7 @@ func OfArea(place, overlay string, at project.LonLat, areas [][][]project.LonLat
 		return out
 	}
 	out.Distance, out.Unit = u.Distance(edge.Km)
+	out.Km = edge.Km
 	out.Bearing, out.Compass = edge.Bearing, compassOf(edge.Bearing)
 	return out
 }
@@ -119,6 +122,7 @@ func OfNear(place, overlay string, form Form, near Near, ok bool, u Units) Answe
 		return out
 	}
 	out.Distance, out.Unit = u.Distance(near.Km)
+	out.Km = near.Km
 	out.Bearing, out.Compass = near.Bearing, compassOf(near.Bearing)
 	out.Label = textsafe.Clean(near.Label).String()
 	return out
@@ -138,6 +142,19 @@ func OfField(place, overlay string, reading Reading, temperature bool, u Units) 
 	if reading.Rising {
 		out.Rises = compassOf(reading.Rises)
 	}
+	return out
+}
+
+// OfWind is the answer for one place against a vector field (FR-8): the
+// speed here in the grid's unit, and the compass word it blows from - "wind
+// from the south-west at 15 mph" (M1 scenario 5).
+func OfWind(place, overlay string, speed Reading, from float64, unit string) Answer {
+	out := Answer{Place: place, Overlay: overlay, Form: FieldForm, Band: speed.Band}
+	if speed.NoData || math.IsNaN(from) {
+		out.NoData = true
+		return out
+	}
+	out.Value, out.ValueUnit, out.From = speed.Value, unit, compassOf(from)
 	return out
 }
 
@@ -189,6 +206,11 @@ func (a Answer) Cleaned() Answer {
 	a.Place = textsafe.Clean(a.Place).String()
 	a.Overlay = textsafe.Clean(a.Overlay).String()
 	a.Label = textsafe.Clean(a.Label).String()
+	a.Unit = textsafe.Clean(a.Unit).String()
+	a.Compass = textsafe.Clean(a.Compass).String()
+	a.ValueUnit = textsafe.Clean(a.ValueUnit).String()
+	a.Rises = textsafe.Clean(a.Rises).String()
+	a.Heavier = textsafe.Clean(a.Heavier).String()
 	return a
 }
 

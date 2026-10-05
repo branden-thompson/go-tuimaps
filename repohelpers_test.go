@@ -2,8 +2,25 @@ package tuimaps_test
 
 import (
 	"bytes"
+	"os"
+	"regexp"
 	"strings"
 )
+
+// goFloor is the go version the root go.mod states. A tree a test plants
+// for the gate states it too, so the gate there uses the toolchain it
+// already has, with no download - the planted runs are offline.
+var goFloor = func() string {
+	mod, err := os.ReadFile("go.mod")
+	if err != nil {
+		panic("the root go.mod could not be read: " + err.Error())
+	}
+	m := regexp.MustCompile(`(?m)^go (\S+)$`).FindSubmatch(mod)
+	if m == nil {
+		panic("the root go.mod states no go version")
+	}
+	return string(m[1])
+}()
 
 // allowedModules is the whole of the library's permitted module graph: the
 // library itself and the two text modules of rulings D-75 and D-81.

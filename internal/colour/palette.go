@@ -52,6 +52,9 @@ func NewPalette(values map[string]RGB) (Palette, []string) {
 	return p, unknown
 }
 
+// Own reports whether the host has given any token a colour of its own.
+func (p Palette) Own() bool { return len(p.set) > 0 }
+
 // Resolve is the colour of a token: the host's if it set one, else the
 // library's default for the kind of ground in effect. It is false for a
 // value that is no token, and for a token with no default yet.
@@ -63,7 +66,7 @@ func (p Palette) Resolve(t Token, ground GroundKind) (RGB, bool) {
 // own ramp for that depth; every other colour is the same at every depth and
 // is mapped to the depth's palette when it is drawn.
 func (p Palette) ResolveAt(t Token, ground GroundKind, depth Depth) (RGB, bool) {
-	if t < Ground || t > TrackLabel {
+	if t < Ground || t > lastToken {
 		return RGB{}, false
 	}
 	ramp := t >= AlertExtremeOutline && t <= High
@@ -132,6 +135,21 @@ func (p Palette) Warnings(ground GroundKind, depth Depth) []fault.Warning {
 	}
 	if p.sets(Radar1, Radar6) {
 		report(textsafe.Const("radar"), len(Check(p.effective(Radar1, Radar6, 1, ground, depth), RampCheck{Ground: under, Depth: depth, Midpoint: -1})))
+	}
+	if p.sets(UV1, UV5) {
+		report(textsafe.Const("uv"), len(Check(p.effective(UV1, UV5, 1, ground, depth), RampCheck{Ground: under, Depth: depth, Midpoint: -1})))
+	}
+	if p.sets(AQI1, AQI6) {
+		report(textsafe.Const("aqi"), len(Check(p.effective(AQI1, AQI6, 1, ground, depth), RampCheck{Ground: under, Depth: depth, Midpoint: -1})))
+	}
+	if p.sets(QPF1, QPF7) {
+		report(textsafe.Const("qpf"), len(Check(p.effective(QPF1, QPF7, 1, ground, depth), RampCheck{Ground: under, Depth: depth, Midpoint: -1})))
+	}
+	if p.sets(Wave1, Wave6) {
+		report(textsafe.Const("waves"), len(Check(p.effective(Wave1, Wave6, 1, ground, depth), RampCheck{Ground: under, Depth: depth, Midpoint: -1})))
+	}
+	if p.sets(Wind1, Wind6) {
+		report(textsafe.Const("wind"), len(Check(p.effective(Wind1, Wind6, 1, ground, depth), RampCheck{Ground: under, Depth: depth, Midpoint: -1, Lines: true})))
 	}
 	if p.sets(Temperature1, Temperature17) {
 		mid := Midpoint(Temperature, ground, depth)

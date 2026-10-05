@@ -192,3 +192,57 @@ func TestOverlayWarningsReachTheHost(t *testing.T) {
 		t.Errorf("a warning was reported twice: %v", again)
 	}
 }
+
+// TestTheBucketInViewIsPrepared (REVIEW, perf F16): after a zoom, an
+// overlay is drawn from the nearest bucket it has while the bucket in view
+// is prepared, and once settled it is drawn from the bucket in view.
+func TestTheBucketInViewIsPrepared(t *testing.T) {
+	m := world(t, 80, 24)
+	must(t, m.Zoom(2))
+	mustSet(t, m, warning("alerts"))
+	settle(t, m)
+	must(t, m.Zoom(9))
+	if _, err := m.Render(tuimaps.Size{Cols: 80, Rows: 24}, noon); err != nil {
+		t.Fatal(err)
+	}
+	settle(t, m)
+	if drawn, inView := tuimaps.DrawnBucket(m, "alerts"); drawn != inView {
+		t.Errorf("settled at the new zoom, the alert is drawn from bucket %d; the view is at %d", drawn, inView)
+	}
+}
+
+// TestAFrameIsNotReusedOverNewShapes (REVIEW, perf F15): a replaced alert
+// is drawn from its stand-in until its new shapes land; when they land, the
+// next frame draws them, though the count of shapes is the same.
+func TestAFrameIsNotReusedOverNewShapes(t *testing.T) {
+	m := world(t, 80, 24)
+	must(t, m.Recentre(tuimaps.LonLat{Lon: -84, Lat: 30}))
+	must(t, m.Zoom(4))
+	mustSet(t, m, warning("alerts"))
+	settle(t, m)
+	moved := warning("alerts")
+	moved.Features[0].Rings = [][]tuimaps.LonLat{{{Lon: -96, Lat: 34}, {Lon: -92, Lat: 34}, {Lon: -92, Lat: 38}, {Lon: -96, Lat: 38}, {Lon: -96, Lat: 34}}}
+	mustSet(t, m, moved)
+	render := func() string {
+		f, err := m.Render(tuimaps.Size{Cols: 80, Rows: 24}, noon)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return strings.Join(f.Lines, "\n")
+	}
+	standIn := render() // the old square, drawn while the new one is prepared
+	settle(t, m)
+	landed := render()
+	fresh := world(t, 80, 24)
+	must(t, fresh.Recentre(tuimaps.LonLat{Lon: -84, Lat: 30}))
+	must(t, fresh.Zoom(4))
+	mustSet(t, fresh, moved)
+	settle(t, fresh)
+	f, err := fresh.Render(tuimaps.Size{Cols: 80, Rows: 24}, noon)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if landed == standIn || landed != strings.Join(f.Lines, "\n") {
+		t.Error("the frame after the new shapes landed is not the new alert's: an old frame was reused")
+	}
+}

@@ -104,6 +104,10 @@ type Vertex struct{ X, Y uint32 }
 // (D-92).
 type Run struct{ MinX, MinY, MaxX, MaxY uint32 }
 
+// RunLength is how many vertices one box of a run index covers: the overlay
+// store builds the index at it, and the renderer reads the index at it.
+const RunLength = 64
+
 // ShapeKind is how a prepared overlay shape is drawn.
 type ShapeKind uint8
 
@@ -122,6 +126,14 @@ type Shape struct {
 	Rings [][]Vertex
 	Role  uint8
 	Label string
+	Mark  string // an alert's severity digit, repeated along its outline (D-65); empty for anything else
+	Word  string // an alert's severity word: what its label falls back to when it does not fit (L-8.5)
+	// Dots makes a point a ring of that radius on the screen, in braille
+	// dots (L-19); zero for anything else.
+	Dots int
+	// Overlay is the id of the overlay the shape came from, so that a label
+	// the frame drops can be named to the host.
+	Overlay string
 }
 
 // Field is a prepared scalar grid: each value classified once, on the host's
@@ -138,6 +150,18 @@ type Field struct {
 	// (D-35). Labels[c] is the value of the boundary below class c, so class
 	// 0 - everything under the first break - has none.
 	Labels []string
+	// Lines is the host's ask for the field's lines over faint bands, with
+	// or without an image on the map (L-15.4).
+	Lines bool
+	// From and Speeds make it a vector field (FR-8): each cell's direction,
+	// where the wind blows from, and its speed. Nil for a scalar field.
+	From, Speeds []float64
+	// Gusts are a vector field's gusts, one a cell, NaN where none is said
+	// (L-24); empty when it has none.
+	Gusts []float64
+	// Marks are the host's text, one a cell, cleaned on hand-in; empty
+	// where there is none (L-17.2).
+	Marks []string
 }
 
 // Raster is a prepared image: one class a pixel, one byte each, in the
