@@ -17,7 +17,7 @@ var colours = regexp.MustCompile("\x1b\\[[0-9;]*m")
 
 // world is a settled map of the world at a size, drawn from the embedded
 // tiles and reaching nothing.
-func world(t *testing.T, cols, rows int) *tuimaps.Map {
+func world(t testing.TB, cols, rows int) *tuimaps.Map {
 	t.Helper()
 	m, err := tuimaps.New(tuimaps.WithSize(cols, rows), tuimaps.Embed(assets.Tile, assets.MaxZoom))
 	if err != nil {
@@ -76,7 +76,8 @@ func TestLookSettingsChangeTheNextFrame(t *testing.T) {
 		t.Error("no colour sequences at 256 colours")
 	}
 
-	// The layers: the water switched off takes the shore with it.
+	// The layers: the water switched off takes the lakes; the sea and its
+	// coast stay (L-14.2).
 	m.ColourDepth(tuimaps.NoColour)
 	m.Layers(tuimaps.WaterLayer, false)
 	_, withoutWater := drawn(t, m, cols, rows)

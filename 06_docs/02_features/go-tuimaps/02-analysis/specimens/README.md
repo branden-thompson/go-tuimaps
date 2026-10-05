@@ -4,7 +4,7 @@ Authorised by ruling D-31. Every overlay *rendering approach* in this project is
 
 ## How these were made
 
-A throwaway program, kept **outside this repository**, built from off-the-shelf libraries. It is not the start of the implementation and none of it is copied into the project; FULL TDD is untouched. Only the specimen files and the findings below enter the repo.
+A throwaway program, kept **outside this repository**, built from off-the-shelf libraries. It is not the start of the implementation and none of it is copied into the project; FULL TDD is untouched. Only the specimen files and the findings below enter the repo. **Specimens 26 onward are different**: they were drawn by the library's own public calls, and specimen 29's programs are filed under `radar-loops/02-analysis/programs/` (v0.2.0 D-32).
 
 | File type | What it is | How to judge it |
 |---|---|---|
@@ -300,3 +300,120 @@ Unlike every specimen above, these were not drawn by the throwaway program of PL
 
 Four frames, 149 by 38, drawn by the library's own packages from the embedded tiles: five alert areas over the central United States, one of each severity - extreme, severe, moderate, minor, unknown - each its tint, its outline and its label. `28-alert-areas-dark-truecolor`, `-light-truecolor`, `-dark-256`, `-light-256`; the `.txt` beside the first is the same frame without colour. Show them with `cat`. **This is the look task 08.23 asks of HUM LEAD before any reference frame is frozen (RS-26).**
 
+
+## Specimen 29 — radar under a warning (v0.2.0 DISCOVER)
+
+No earlier specimen drew radar and an alert together: 22 is radar alone, 28 is alerts alone. This one uses real weather captured 2026-09-23 14:28Z: a Flash Flood Warning (Severe) over Lincoln and Putnam counties, West Virginia, with heavy rain inside it, and IEM NEXRAD n0q reflectivity read through the provider's published 256-entry table. Hamlin is the selected place. The frames come from the library's public calls, with OpenFreeMap tiles, at 69 by 12 and 149 by 38; `.ans` is truecolor on a painted dark ground and `.txt` has no colour.
+
+| File | What it is |
+|---|---|
+| `29a-radar-under-warning-as-built-*` | The library as built (FR-12): the tint is drawn over the image, so the radar inside the warning is hidden |
+| `29b-radar-under-warning-radar-wins-*` | **A one-line patch to a scratch copy, not the library:** the image is drawn over the tint. It shows the alternative and does not propose an implementation |
+| `29c-warning-without-radar-control-*` | The same warning with no radar: the control |
+
+| # | Finding | Consequence |
+|---|---|---|
+| S29-1 | In colour, 29a draws the warning as a solid block, and the heaviest rain on the map, which falls inside that block, cannot be seen. In 29b the rain shows through; the tint survives only on the label's cells and in dry cells, so on a wet day the outline alone carries the warning. | A HUM LEAD ruling for v0.2.0 |
+| S29-2 | **With no colour, the radar's block shades replace everything else in their cells**: the warning's outline, hatch and label, the place marker, the scale mark and the credit line. 29c shows all of these drawn when the radar is absent. The same happens in both orders. | A defect against FR-18a (outlines go over everything beneath them), not a ruling. It becomes a v0.2.0 requirement |
+| S29-3 | At 69 by 12 the Hamlin marker and name are not drawn even in the control, although the fit includes Hamlin. | Recorded, not diagnosed |
+| S29-4 | The county picture (596 by 546) was refused at the fixed 250,000-byte image cap and had to be cropped to 447 by 348. | Evidence for C-3 (wave 1, W1-A): a host cannot raise the cap |
+
+**Added at HUM LEAD's request, 2026-09-23: a blend of the two orders.** HUM LEAD preferred 29b, and asked to see the warning's colour laid over the radar as a partial tint. `29d-*`, `29e-*` and `29f-*` blend it in at 20%, 35% and 50%, composited in linear light. They are made by a small scratch function, not by the library, and are `.ans` only: with no colour they are identical to 29b.
+
+| # | Finding | Consequence |
+|---|---|---|
+| S29-5 | Measured with the library's own checker (D-88: the least Lab distance under four kinds of vision; floor 10). On a dark ground under the Severe tint, 20% keeps every tinted class at least 14.5 from every other plain class. At 35%, tinted heavy rain (class 5) is 9.3 from plain moderate rain (class 3); at 50% it is 1.8. Across all five severities, 20% is the only strength that clears 10 (lowest 11.7). | A fixed blend strength holds only on a dark ground, and only faintly |
+| S29-6 | On a light ground the blend fails at every strength tried: tinted classes 3 and 4 come within 3.9 to 9.6 of each other even at 20%. | A per-class tint chosen by search, as the ramps were, is the only form that might hold, and on a light ground it may have no solution. An option for PLAN, not shown here |
+| S29-7 | **Re-measured with both kinds of pair on both grounds (D-32)**, because S29-5 reported tinted-against-plain on the dark ground and S29-6 tinted-against-tinted on the light. Lowest distance across all five severities: **dark ground** — 20 %: 17.0 tinted/tinted, 11.7 tinted/plain (**both clear 10**); 35 %: 13.9 and 6.2; 50 %: 9.7 and 1.8. **Light ground** — 20 %: 3.9 and 1.9; 35 %: 2.6 and 5.0; 50 %: 1.6 and 4.0 (**nothing clears 10**). Raw output: `radar-loops/02-analysis/programs/output/blend-measure.txt`. | S29-5 and S29-6's conclusions stand: a fixed blend holds only on a dark ground at about 20 %. The light ground is D-27's search, with 29b's order as its fallback |
+
+**Ruled (v0.2.0 D-14, `radar-loops/02-analysis/rulings.md`):** the tint blends over the radar, with the outline and label on top. Blend strength and colours are tuned in PLAN, held by the checker, and must pass on both grounds. HUM LEAD rules the light ground solvable by adjusting the radar ramps or the alert colours.
+
+## Specimen 30 — an outbreak: overlapping warnings over heavy radar (v0.2.0 PLAN entry, OW-11, D-44)
+
+A past severe day, taken from the Iowa Environmental Mesonet's archive: **27 April 2011, 21:00 UTC,
+west-central Alabama**. That is IEM `n0q` archive radar (500×430 for one box) under the 20 NWS
+warnings valid then and in view (17 tornado, 3 flash flood), with Tuscaloosa as the named place. Tornado
+warnings are drawn as Extreme, flash flood as Severe. Drawn by the library's public calls with
+OpenFreeMap tiles, at 69×12 and 149×38; `.ans` is truecolor on a dark ground, `.txt` has no colour.
+The program and its inputs are in `radar-loops/02-analysis/programs/` (`ow11-render.go.txt`,
+`inputs/ow11/`).
+
+| File | What it is |
+|---|---|
+| `30a-outbreak-as-built-*` | The library as built: the tint over the radar |
+| `30b-outbreak-blend-20pct-*` | The D-14 blend at 20 %, the only strength that passed on a dark ground (S29-7), by the scratch patch `spec29d-f-blend.patch` |
+
+| # | Finding | Consequence |
+|---|---|---|
+| S30-1 | **As built, tornado tint covers 1,234 cells at 149×38 and hides the radar in all of them.** With the blend, the radar's classes show through inside the warnings (19 blended colours); bare tint is left only in the warnings' dry cells. | Confirms D-14 on the picture that matters most. |
+| S30-2 | **Labels crowd out in an outbreak:** at 149×38 only 7 of the 17 tornado warnings and none of the 3 flash-flood warnings get a label. | Most warnings on a severe day carry no word. Severity must come from D-17's dash, and L-8.5's fallback and the description (L-13.5) carry the rest. PLAN should weigh the labelling rule for overlapping areas. |
+| S30-3 | **The named place's name, "Tuscaloosa", is drawn at neither size, even in colour.** Whether its ring is drawn cannot be told from the text. | This widens S29-3 (OW-3). On a severe day the one place the listener chose can vanish from the picture. |
+| S30-4 | With no colour, the radar's shades again replace the warnings' outlines and hatch across the rain. | L-8.3 at an outbreak's scale. |
+
+## Specimen 31 — a partial alert area (watchpost 0.18.0 PLAN, FR-4.4, M4)
+
+Watchpost's DISCOVER asked for "the partial-area ruling, made with a drawing on screen". This is that
+drawing. A live NWS **Flood Watch (Severe) over five West Texas zones**, 2026-09-23, with the
+**Davis Mountains** zone's shape withheld to make it partial, the way a failed or capped zone fetch
+does. **Fort Davis**, the named place, lies inside the missing zone. At 69×12 and 149×38, with and
+without colour. Program and inputs: `radar-loops/02-analysis/programs/partial-render.go.txt`,
+`inputs/partial/`.
+
+| File | What it is |
+|---|---|
+| `31a-whole-*` | All five zones: the truth, for comparison |
+| `31b-found-labelled-*` | Partial, drawn as found; the label says "4 of 5 zones" |
+| `31c-found-labelled-noted-*` | As 31b, plus a line below the map, in watchpost's chrome, naming the missing zone and saying the place is in it |
+| `31d-withheld-*` | Partial, withheld: nothing drawn until every zone is in; the line says why |
+
+| # | Finding | Consequence |
+|---|---|---|
+| S31-1 | **Drawn as found, the picture puts Fort Davis outside the watch it is inside.** The label's "4 of 5" says the area is incomplete, but not where the gap is, and not that the place is in it. | Watchpost knows the selected place's zone and the alert's zone list, so it can say "the place is in the missing zone" — a fact the picture cannot show. |
+| S31-2 | **The named place's name is drawn at neither size**, in any variant. | The third specimen in a row (S29-3, S30-3); OW-3's diagnosis matters. |
+
+## Specimen 32 — severity without colour: a word and a dash (v0.2.0 PLAN, D-17, OW-2, D-63)
+
+D-17 ruled that an alert's severity reads without colour by a **word in its label** and **one outline
+dash a severity**, and made a specimen owed before PLAN commits to it; D-63 drew it to learn whether the
+approach is feasible. Five alerts, one a severity: specimen 29's real Flash Flood Warning (Severe) and
+four synthetic areas. Dashes, in braille dots: EXTREME solid and two thick; SEVERE 8 on, 2 off;
+MODERATE 4 on, 3 off; MINOR 1 on, 2 off; UNKNOWN 6 on, 2 off, 1 on, 2 off (the line overlay's own dash
+is 5 on, 4 off, two thick). The frame time and `stale` sit on the bottom row beside the scale. Drawn
+from a scratch copy of the library with a throwaway patch that also lets outlines, labels and furniture
+survive radar shades (the specimen 29 defect D-17 depends on). Program and patch:
+`radar-loops/02-analysis/programs/ow2-render.go.txt`, `ow2-severity-dash.patch`; inputs: `inputs/spec29/`.
+
+| File | What it is |
+|---|---|
+| `32-*` | The five alerts over specimen 29's radar, at 69×12 and 149×38, no colour, 16 colours and truecolor |
+| `32k-*` | The dash key: the five as long stacked boxes, no radar, the same sizes and depths |
+
+| # | Finding | Consequence |
+|---|---|---|
+| S32-1 | **At 149×38 all five words are drawn, and the five rhythms read on horizontal edges.** Vertical edges read less well: a braille cell is four dots tall, so a dash spans one or two cells. MODERATE and UNKNOWN are the closest pair. | The approach is feasible at the comfortable size, with the word doing most of the work |
+| S32-2 | **At 69×12, three of the five labels are dropped** in both scenes; only EXTREME and MINOR fit. Small areas are four to six cells across, too short for a rhythm to repeat. | At the floor size the dash cannot rank severity on its own; the description must carry the dropped words (L-8.5) |
+| S32-3 | **With the patch, outlines, labels, the scale, the frame time, `stale` and the credit all survive radar** at no colour and 16 colours. | L-8.3's fix works as planned |
+| S32-4 | The hatch still draws inside each area; with the word and the dash it adds noise over radar. | Whether the hatch stays is a question for the ruling |
+| S32-5 | Hamlin, the named place, is still not drawn. | D-60, in BUILD |
+
+## Specimen 33 — severity as a mark on the outline (v0.2.0 PLAN, D-64, ruled D-65)
+
+D-64 asked for option C before falling back to specimen 32's dashes: a severity mark repeated along
+each alert's outline. The same five alerts, radar and sizes as specimen 32; the outline is solid, the
+word stays in the label, and every fifth outline cell (staggered by row) carries a **letter** — E S M m
+U. **D-65 then ruled a digit scale instead** (Extreme 4, Severe 3, Moderate 2, Minor 1, Unknown `?`),
+with the key in the host's legend: the placement drawn here is the one ruled, the characters are not.
+Program: `ow2-render.go.txt` with `SPECIMEN_MODE=letters`.
+
+| File | What it is |
+|---|---|
+| `33-*` | The five alerts over radar, marks on the outlines |
+| `33k-*` | The key: five long boxes, no radar |
+
+| # | Finding | Consequence |
+|---|---|---|
+| S33-1 | **At 69×12 every area carries its mark**, including the three whose labels are dropped (specimen 32 could rank two of five there) | Severity survives the floor size on the picture itself |
+| S33-2 | At 149×38 the marks repeat along vertical edges too, the dashes' weak case | — |
+| S33-3 | A mark can land in a free bottom-row cell beside the furniture (the key's `14:28ZU`) | Marks stay off the furniture rows (L-8.1) |
+| S33-4 | Minor and moderate differed only by case (`m`, `M`) | Resolved by D-65's digits |
+| S33-5 | On a very small area, marks take outline cells and can crowd its label | Every area keeps at least one mark (L-8.1); crowding is judged in BUILD's goldens |

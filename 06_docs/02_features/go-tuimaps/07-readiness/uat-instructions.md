@@ -129,7 +129,7 @@ the program — the world down to zoom 3.
 built-in tiles to draw, and at street scale the screen is empty but for the credit line.
 That is honest and it is not a fault; the status row says so and says what to do:
 
-    no tiles at this zoom - run without --offline to fetch them
+    no map at this zoom - the built-in map reaches zoom 3; run without --offline to fetch the rest
 
 Drop `--offline` and the same view draws the streets, fetched from OpenFreeMap: the
 scenarios then sit on a drawn map rather than on an empty one. **The judged frames are

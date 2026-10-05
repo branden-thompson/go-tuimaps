@@ -72,7 +72,7 @@ func (s settings) check() error {
 	if (s.purge || s.verify) && s.cacheRoot == "" {
 		return errNoCacheToMaintain()
 	}
-	if s.describe && len(s.places) == 0 && s.scenario == 0 {
+	if s.describe && len(s.places) == 0 && s.scenario == 0 && s.loopDir == "" {
 		return errNothingToDescribe()
 	}
 	return nil

@@ -23,7 +23,7 @@ func (m *Map) Animate(at time.Time) {
 		return
 	}
 	m.driven, m.animation = true, at
-	m.changed++
+	m.giveLocked(at) // time, not an input: it moves FrameTicks when a frame advances, never Changed (D-66)
 }
 
 // FollowClock gives the animation clock back to Render's own: markers move
@@ -41,7 +41,6 @@ func (m *Map) FollowClock() {
 		return
 	}
 	m.driven = false
-	m.changed++
 }
 
 // animationAt is the moment the markers are drawn at: the host's own if it
@@ -54,11 +53,13 @@ func (m *Map) animationAt(wall time.Time) time.Time {
 }
 
 // stale reports whether any overlay on the frame is out of date on the wall
-// clock. Data whose valid time is far ahead of the clock counts, so that a
-// bad timestamp cannot keep old data looking fresh (FR-32).
-func (m *Map) stale(wall time.Time) bool {
+// clock, and which: a fingerprint of the stale overlays' IDs, which is what
+// a description depends on the clock through (W14, P-11). Data whose valid
+// time is far ahead of the clock counts, so that a bad timestamp cannot keep
+// old data looking fresh (FR-32).
+func (m *Map) stale(wall time.Time) (some bool, which uint64) {
 	if wall.IsZero() {
-		return false // a host that gives no time is told nothing about time
+		return false, 0 // a host that gives no time is told nothing about time
 	}
 	for _, id := range m.store.IDs() {
 		reader, ok := m.store.Read(id)
@@ -67,16 +68,16 @@ func (m *Map) stale(wall time.Time) bool {
 		}
 		o := reader.Overlay()
 		reader.Done()
-		if overlay.FreshnessAt(o.Valid, o.Keeps, wall).DrawnStale() {
-			return true
+		if overlay.FreshnessAt(overlay.Valid(o), o.Keeps, wall).DrawnStale() {
+			some, which = true, which*1099511628211^idHash(id)
 		}
 	}
-	return false
+	return some, which
 }
 
 // NextCall is the wall-clock moment by which the map wants another Render:
-// the earliest of the next marker phase, a failed tile's retry time and an
-// overlay going stale (FR-25). It is false when nothing at all is due, and
+// the earliest of the next marker phase, a playing loop's next frame advance,
+// a failed tile's retry time and an overlay going stale (FR-25, L-1.8). It is false when nothing at all is due, and
 // then a host may sleep until something happens to it instead.
 func (m *Map) NextCall(wall time.Time) (time.Time, bool) {
 	defer m.guardQuiet("NextCall")
@@ -94,6 +95,11 @@ func (m *Map) NextCall(wall time.Time) (time.Time, bool) {
 	if !m.driven && m.blinking() {
 		due = soonest(due, m.motion.Next(wall))
 	}
+	if !m.driven {
+		if at, ok := m.nextAdvanceLocked(wall); ok {
+			due = soonest(due, at) // a frame advance: the fourth source (L-1.8)
+		}
+	}
 	if !wall.IsZero() {
 		for _, id := range m.store.IDs() {
 			reader, ok := m.store.Read(id)
@@ -102,7 +108,7 @@ func (m *Map) NextCall(wall time.Time) (time.Time, bool) {
 			}
 			o := reader.Overlay()
 			reader.Done()
-			if at, ok := overlay.NextChange(o.Valid, o.Keeps, wall); ok {
+			if at, ok := overlay.NextChange(overlay.Valid(o), o.Keeps, wall); ok {
 				due = soonest(due, at)
 			}
 		}

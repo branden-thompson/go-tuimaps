@@ -207,6 +207,7 @@ func (m *Map) move(change func(*project.View)) error {
 func (m *Map) moveLocked(change func(*project.View)) error {
 	was := m.view
 	change(&m.view)
+	m.view = m.boundedLocked(m.view) // the host's bound, on every move (L-3.1)
 	if err := m.view.Validate(); err != nil {
 		m.view = was
 		return badView(textsafe.Const("the map would not be a map of anywhere"), textsafe.Const("move it a shorter way, or zoom out first"))
@@ -218,4 +219,106 @@ func (m *Map) moveLocked(change func(*project.View)) error {
 		m.changed++
 	}
 	return nil
+}
+
+// Bound is where a host keeps its map (L-3.1): a least zoom, and a box it
+// never looks outside of. West may be east of East: the box then crosses the
+// antimeridian, as Alaska's and the Pacific's do. The zero Bound is none.
+type Bound struct {
+	MinZoom    float64
+	W, S, E, N float64
+}
+
+// SetBound sets the map's bound, and moves the view into it at once. It is
+// held on every path that moves the view - a pan, a zoom, a fit, a change of
+// size and the fall-back to the whole world - and is called again whenever
+// the host's region changes. The zero Bound takes it away.
+func (m *Map) SetBound(b Bound) (err error) {
+	defer guard("SetBound", &err)
+	m.plant("SetBound")
+
+	if m == nil {
+		return closed()
+	}
+	if b != (Bound{}) {
+		ok := b.MinZoom >= 0 && b.MinZoom <= project.MaxViewZoom &&
+			b.W >= -180 && b.W <= 180 && b.E >= -180 && b.E <= 180 && b.W != b.E &&
+			b.S >= -project.MaxLatitude && b.N <= project.MaxLatitude && b.S < b.N
+		if !ok {
+			return badView(textsafe.Const("the bound is not a box on the map, or its least zoom is not a zoom"),
+				textsafe.Const("give west and east from -180 to 180 and not equal, south below north, and a least zoom the map can draw"))
+		}
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.shut {
+		return closed()
+	}
+	if b == (Bound{}) {
+		m.bound = nil
+	} else {
+		m.bound = &b
+	}
+	if m.sized {
+		if held := m.boundedLocked(m.view); held != m.view {
+			m.view = held
+		}
+	}
+	m.changed++
+	return nil
+}
+
+// boundedLocked is a view held inside the map's bound: its zoom raised to the
+// least, and each axis moved into the box - or, where the box is narrower
+// than the view, centred on it. It works in the world's projected fractions,
+// where a box across the antimeridian is one unbroken span.
+func (m *Map) boundedLocked(v project.View) project.View {
+	b := m.bound
+	if b == nil {
+		return v
+	}
+	v.Zoom = math.Max(v.Zoom, b.MinZoom)
+	x0, y0, err0 := project.ToTile(project.LonLat{Lon: b.W, Lat: b.N}, 0)
+	x1, y1, err1 := project.ToTile(project.LonLat{Lon: b.E, Lat: b.S}, 0)
+	cx, cy, err2 := project.ToTile(v.Centre, 0)
+	if err0 != nil || err1 != nil || err2 != nil {
+		return v
+	}
+	if b.W > b.E {
+		x1++ // across the antimeridian: the box runs on past the world's edge
+	}
+	// Of the centre's copies a world apart, the one nearest the box: a
+	// centre just west of a box that crosses the antimeridian goes to its
+	// west end, not round the world to its east end.
+	best := cx
+	for _, c := range []float64{cx - 1, cx + 1} {
+		if gap(c, x0, x1) < gap(best, x0, x1) {
+			best = c
+		}
+	}
+	cx = best
+	world := project.TileSize * math.Exp2(v.Zoom)
+	hw := float64(v.Cols*project.DotsPerCol) / 2 / world
+	hh := float64(v.Rows*project.DotsPerRow) / 2 / world
+	cx, cy = within(cx, x0, x1, hw), within(cy, y0, y1, hh)
+	at, err := project.FromTile(cx-math.Floor(cx), cy, 0)
+	if err != nil {
+		return v
+	}
+	v.Centre = at
+	return v
+}
+
+// gap is how far a value lies outside a span, zero inside it.
+func gap(c, lo, hi float64) float64 {
+	return math.Max(0, math.Max(lo-c, c-hi))
+}
+
+// within holds a centre so that a half-width either side of it stays in a
+// span, or centres it on a span narrower than that.
+func within(c, lo, hi, half float64) float64 {
+	if hi-lo <= 2*half {
+		return (lo + hi) / 2
+	}
+	return math.Max(lo+half, math.Min(hi-half, c))
 }

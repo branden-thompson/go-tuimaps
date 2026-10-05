@@ -1,0 +1,23 @@
+legend 500x30, gradient rows [0 1 2 3 4 5 6 7 8 9]
+distinct legend colours 1232
+
+national 596x304: clear 172156, drawn 9028 (opaque 9028, partly transparent 0), distinct colours 94
+  exactly a legend colour: 5391 (59.7%); within dE 10 of one: 3634 (40.3%); beyond: 3 (0.0%)
+  nearest-legend gap for non-exact pixels: median 0.56 p90 1.01 p99 1.46 max 30.27
+  near-matched pixels with a different class also within dE 10: 984
+  library, 256-entry table, Exact=true: warnings "{unmatched-image-colours mrms 7243}"
+  library, 256-entry table, Exact=false: warnings "{unmatched-image-colours mrms 3}"
+
+region 596x358: clear 188058, drawn 25310 (opaque 25310, partly transparent 0), distinct colours 101
+  exactly a legend colour: 14930 (59.0%); within dE 10 of one: 10337 (40.8%); beyond: 43 (0.2%)
+  nearest-legend gap for non-exact pixels: median 0.56 p90 1.01 p99 4.66 max 30.27
+  near-matched pixels with a different class also within dE 10: 2647
+  library, 256-entry table, Exact=true: warnings "{unmatched-image-colours mrms 20397}"
+  library, 256-entry table, Exact=false: warnings "{unmatched-image-colours mrms 43}"
+
+state 298x152: clear 37240, drawn 8056 (opaque 8056, partly transparent 0), distinct colours 90
+  exactly a legend colour: 4945 (61.4%); within dE 10 of one: 3105 (38.5%); beyond: 6 (0.1%)
+  nearest-legend gap for non-exact pixels: median 0.56 p90 0.87 p99 1.44 max 20.35
+  near-matched pixels with a different class also within dE 10: 944
+  library, 256-entry table, Exact=true: warnings "{unmatched-image-colours mrms 6447}"
+  library, 256-entry table, Exact=false: warnings "{unmatched-image-colours mrms 6}"

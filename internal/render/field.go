@@ -2,6 +2,7 @@ package render
 
 import (
 	"math"
+	"slices"
 
 	"github.com/branden-thompson/go-tuimaps/internal/colour"
 	"github.com/branden-thompson/go-tuimaps/internal/project"
@@ -61,39 +62,48 @@ func mercator(lat float64) float64 {
 	return math.Atanh(math.Sin(lat * math.Pi / 180))
 }
 
-// rasterClass is an image's class at a position, in the projection the host
-// stated: rows in equal steps of latitude, or in equal steps of the web map's
-// height.
-func rasterClass(ra *scene.Raster, lon, lat float64) int8 {
-	if ra == nil || ra.Width <= 0 || ra.Height <= 0 || len(ra.Classes) != ra.Width*ra.Height {
-		return -1
+// presetOf is the preset an image's or field's class ink belongs to.
+func presetOf(ink uint8) colour.Preset {
+	switch t := colour.Token(ink); {
+	case t >= colour.Radar1 && t <= colour.Radar6:
+		return colour.Radar
+	case t >= colour.Temperature1 && t <= colour.Temperature17:
+		return colour.Temperature
+	case t >= colour.Wind1 && t <= colour.Wind6:
+		return colour.Wind
+	case t >= colour.Wave1 && t <= colour.Wave6:
+		return colour.Waves
+	case t >= colour.UV1 && t <= colour.UV5:
+		return colour.UV
+	case t >= colour.AQI1 && t <= colour.AQI6:
+		return colour.AirQuality
+	case t >= colour.QPF1 && t <= colour.QPF7:
+		return colour.QPF
 	}
-	if !(lon >= ra.West && lon < ra.East && lat > ra.South && lat <= ra.North) {
-		return -1
-	}
-	col := int((lon - ra.West) / (ra.East - ra.West) * float64(ra.Width))
-	down := (ra.North - lat) / (ra.North - ra.South)
-	if ra.Projection == 2 {
-		down = (mercator(ra.North) - mercator(lat)) / (mercator(ra.North) - mercator(ra.South))
-	}
-	row := int(down * float64(ra.Height))
-	return ra.Classes[min(max(row, 0), ra.Height-1)*ra.Width+min(col, ra.Width-1)]
+	return 0
 }
 
 // classInk is the ink of a preset's class. Radar's class 0 is below its first
-// floor: no rain, and nothing is drawn.
+// floor: no rain, and nothing is drawn; so is a total's, a trace (L-26).
 func classInk(preset uint8, class int8) uint8 {
-	if class < 0 {
+	if class < 0 || (class == 0 && colour.FloorsFirst(colour.Preset(preset))) {
 		return 0
 	}
 	switch colour.Preset(preset) {
 	case colour.Temperature:
 		return uint8(colour.Temperature1) + uint8(min(int(class), 16))
 	case colour.Radar:
-		if class == 0 {
-			return 0
-		}
 		return uint8(colour.Radar1) + uint8(min(int(class), 6)) - 1
+	case colour.QPF:
+		return uint8(colour.QPF1) + uint8(min(int(class), 7)) - 1
+	case colour.Wind:
+		return uint8(colour.Wind1) + uint8(min(int(class), 5))
+	case colour.Waves:
+		return uint8(colour.Wave1) + uint8(min(int(class), 5))
+	case colour.UV:
+		return uint8(colour.UV1) + uint8(min(int(class), 4))
+	case colour.AirQuality:
+		return uint8(colour.AQI1) + uint8(min(int(class), 5))
 	}
 	return 0
 }
@@ -114,27 +124,82 @@ func (r *Renderer) underlays(in Input) {
 		return
 	}
 	g := r.grid
+	// WHERE AN IMAGE SHARES THE MAP, A FIELD IS ITS LINES (L-15.3, D-88):
+	// both ramps run blue to red, so a band under an echo would read as
+	// rain. The field is its labelled contours, over its bands drawn faintly
+	// where the image has no echo; the image keeps its own colours.
+	shared := in.ImageHeld || len(in.Rasters) > 0 || slices.ContainsFunc(in.Fields, func(f scene.Field) bool { return isRain(&f) })
+	for i := range in.Fields {
+		if f := &in.Fields[i]; f.Marks != nil {
+			r.gridMarks(in, f) // before any value the fields write: a day's total takes the place of a speed or an isotherm's value beside it (L-17.2)
+		}
+	}
 	for i := range in.Fields {
 		f := &in.Fields[i]
-		if rampless(in.Depth) {
+		if f.From != nil {
+			r.arrows(in, f) // a vector field is its arrows, never bands (L-16)
+			continue
+		}
+		if isRain(f) {
+			continue // drawn as an image is, after every field (L-17.1)
+		}
+		lined := shared || f.Lines // L-15.4: the host may ask for the look alone
+		if rampless(in.Depth) || lined {
 			r.contours(in, f)
+		}
+		if rampless(in.Depth) {
 			continue
 		}
 		for row := range g.rows {
 			for col := range g.cols {
-				if !in.FieldsOverWater && r.painter.Water(col, row) {
-					continue // temperature stops at the shore (D-32)
+				if offItsGround(f, in, r.painter.Water(col, row)) {
+					continue
 				}
 				lon, lat := (r.lons[2*col]+r.lons[2*col+1])/2, (r.lats[4*row+1]+r.lats[4*row+2])/2
 				if ink := classInk(f.Preset, fieldClass(f, lon, lat)); ink != 0 {
-					g.cells[row*g.cols+col].under = ink
+					g.cells[row*g.cols+col].under, g.cells[row*g.cols+col].faint = ink, lined
 				}
 			}
+		}
+	}
+	for i := range in.Fields {
+		if f := &in.Fields[i]; isRain(f) {
+			r.rain(in, f.Preset, f.ClassCount, func(col, row int) int8 { return r.heaviestOf(f, col, row) })
 		}
 	}
 	for i := range in.Rasters {
 		r.image(in, &in.Rasters[i])
 	}
+}
+
+// offItsGround reports whether a field is not drawn over a cell: a field
+// stops at the shore (D-32) unless the host says otherwise; waves are the
+// sea's alone (L-20.1), whatever the host says.
+func offItsGround(f *scene.Field, in Input, water bool) bool {
+	if colour.Preset(f.Preset) == colour.Waves {
+		return !water
+	}
+	return water && !in.FieldsOverWater
+}
+
+// isRain reports whether a field is in radar's scale: A GRID OF RAIN IS
+// DRAWN AS RAIN (L-17.1, watchpost D-115, D-116) - in its own colours at full
+// strength, over the sea, over any field, never lined - and a field beside it
+// takes its lines, as beside an image.
+func isRain(f *scene.Field) bool {
+	return f.From == nil && colour.Preset(f.Preset) == colour.Radar
+}
+
+// heaviestOf is the heaviest class of a field among a cell's eight dots, as
+// an image's is (D-78).
+func (r *Renderer) heaviestOf(f *scene.Field, col, row int) int8 {
+	best := int8(-1)
+	for dy := range 4 {
+		for dx := range 2 {
+			best = max(best, fieldClass(f, r.lons[2*col+dx], r.lats[4*row+dy]))
+		}
+	}
+	return best
 }
 
 // maxSpan bounds how many pixels across and down one dot's footprint is
@@ -146,15 +211,43 @@ const maxSpan = 4
 // at the dot's centre alone can fall either side of a storm's core one pixel
 // wide - and D-78's own words are "better to overstate than under".
 func (r *Renderer) under(ra *scene.Raster, x, y int) int8 {
+	if ra == nil || ra.Width <= 0 || ra.Height <= 0 || len(ra.Classes) != ra.Width*ra.Height {
+		return -1
+	}
 	w, h := len(r.lons), len(r.lats)
 	halfLon := (r.lons[min(x+1, w-1)] - r.lons[max(x-1, 0)]) / 4
 	halfLat := (r.lats[max(y-1, 0)] - r.lats[min(y+1, h-1)]) / 4
-	best := int8(-1)
+	// Each of the footprint's rows and columns is placed in the image once,
+	// and a web map image's projected bounds once a dot: the same arithmetic
+	// as sampling each of the sixteen points, done four times, not sixteen.
+	top, span := ra.North, ra.North-ra.South
+	if ra.Projection == 2 {
+		top = mercator(ra.North)
+		span = top - mercator(ra.South)
+	}
+	var rows, cols [maxSpan]int
 	for i := range maxSpan {
 		lat := r.lats[y] + halfLat - 2*halfLat*(float64(i)+0.5)/maxSpan
-		for j := range maxSpan {
-			lon := r.lons[x] - halfLon + 2*halfLon*(float64(j)+0.5)/maxSpan
-			best = max(best, rasterClass(ra, lon, lat))
+		rows[i] = -1
+		if lat > ra.South && lat <= ra.North {
+			down := (ra.North - lat) / span
+			if ra.Projection == 2 {
+				down = (top - mercator(lat)) / span
+			}
+			rows[i] = min(max(int(down*float64(ra.Height)), 0), ra.Height-1)
+		}
+		lon := r.lons[x] - halfLon + 2*halfLon*(float64(i)+0.5)/maxSpan
+		cols[i] = -1
+		if lon >= ra.West && lon < ra.East {
+			cols[i] = min(int((lon-ra.West)/(ra.East-ra.West)*float64(ra.Width)), ra.Width-1)
+		}
+	}
+	best := int8(-1)
+	for _, row := range rows {
+		for _, col := range cols {
+			if row >= 0 && col >= 0 {
+				best = max(best, ra.Classes[row*ra.Width+col])
+			}
 		}
 	}
 	return best
@@ -172,36 +265,38 @@ func (r *Renderer) heaviest(ra *scene.Raster, col, row int) int8 {
 	return best
 }
 
-// image colours the cells an image covers - over water as over land, because
-// rain falls on the sea (D-87) - or with no ramp shades them.
+// image colours the cells an image covers.
 func (r *Renderer) image(in Input, ra *scene.Raster) {
+	r.rain(in, ra.Preset, ra.ClassCount, func(col, row int) int8 { return r.heaviest(ra, col, row) })
+}
+
+// rain colours the cells an image or a grid of rain covers - over water as
+// over land, because rain falls on the sea (D-87) - or with no ramp shades
+// them; class is a cell's heaviest.
+func (r *Renderer) rain(in Input, preset uint8, classCount int, class func(col, row int) int8) {
 	g := r.grid
 	for row := range g.rows {
 		for col := range g.cols {
 			if in.ImagesMaskedByWater && r.painter.Water(col, row) {
 				continue
 			}
-			class := r.heaviest(ra, col, row)
-			ink := classInk(ra.Preset, class)
+			k := class(col, row)
+			ink := classInk(preset, k)
 			if ink == 0 {
 				continue
 			}
 			c := &g.cells[row*g.cols+col]
 			if !rampless(in.Depth) {
-				c.under = ink
+				c.under, c.faint = ink, false // the echo in its own colour, over any field (L-15.3)
 				continue
 			}
 			shade := shadeLight
-			if 3*int(class) > 2*(ra.ClassCount-1) {
+			if 3*int(k) > 2*(classCount-1) {
 				shade = shadeHeavy
-			} else if 3*int(class) > ra.ClassCount-1 {
+			} else if 3*int(k) > classCount-1 {
 				shade = shadeMedium
 			}
-			area, owned := r.painter.Area(col, row)
-			if !owned {
-				area = 0
-			}
-			*c = cell{text: shade, ink: uint8(colour.LabelRegion), taken: true, area: area}
+			c.shade = max(c.shade, shade) // laid last, by shades: it claims nothing now (L-8.3)
 		}
 	}
 }
@@ -216,7 +311,7 @@ func (r *Renderer) contours(in Input, f *scene.Field) {
 	for y := range h - 1 {
 		for x := range w - 1 {
 			here := fieldClass(f, r.lons[x], r.lats[y])
-			if here < 0 || (!in.FieldsOverWater && r.painter.Water(x/2, y/4)) {
+			if here < 0 || offItsGround(f, in, r.painter.Water(x/2, y/4)) {
 				continue
 			}
 			east, south := fieldClass(f, r.lons[x+1], r.lats[y]), fieldClass(f, r.lons[x], r.lats[y+1])

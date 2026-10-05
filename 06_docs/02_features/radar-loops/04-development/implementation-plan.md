@@ -1,0 +1,379 @@
+---
+title: "go-tuiMaps v0.2.0 — Radar loops — IMPLEMENTATION PLAN"
+date: 2026-09-23
+phase: BUILD
+sev: SEV-0
+authority: HUM LEAD
+status: "APPROVED by the HUM LEAD 2026-09-23 (D-73); BUILD follows it and is at BUILD exit. As-built notes in the task rows record where the code differs from a row. No code: signatures, shapes, test descriptions, file paths and order only (watchpost D-13, v0.2.0 D-52)."
+---
+
+# Implementation plan
+
+**Goal.** Build v0.2.0 as `requirements.md` states it, in the order `integration-map.md` fixes, each
+task test-first (FULL TDD).
+
+**External services** BUILD relies on: `govulncheck`'s database at tag time (L10.4), a hosted runner with the second architecture (L10.5), and the Storm Prediction Center's outlooks for OW-12's trigger (L6.8).
+
+**Tech stack.** Go at the module's floor toolchain; **no new module**. The library's third-party
+graph stays go-runewidth and uax29 (v0.1.0 D-81). Hashing, HTTP and PNG handling are standard
+library. `govulncheck` (L10.4) is pinned by version: the release check (`scripts/gate --release`)
+refuses any other installed scanner, and it never enters `go.mod`.
+
+**Architecture.** The four approaches as ruled: the declarative loop and one playback API (D-54), the
+host transport (D-55), fetch-time age and a cache generation (D-56), and the structured `Report`
+(D-57). Within v0.1.0's shape: the library starts no goroutine, the host drives `Work`, and `Set`
+replaces (v0.1.0 D-74, D-86).
+
+**The contract.** v0.2.0 edits the library's one contract in place:
+`06_docs/02_features/go-tuimaps/03-architecture-design/contract.md` (called `contract.md` below).
+
+**Branch.** `feature/radar-loops`, squash-merged into `release/v0.2.0` at SHIP (D-1).
+
+**BUILD's readiness record (D-120).** The framework's before-you-write-code gate has no READY verdict
+written at BUILD's start. Its record is PLAN's red team as dispositioned - the reviewers' "not ready" and
+each blocker ruled in D-66 to D-72 - and the HUM LEAD's approval of PLAN's exit, D-73, before task L1.1.
+No verdict is written after the fact.
+
+**The map it follows.** Reconciled with the integration map at `9e333bf` (L10.12, D-72): every work package
+named here is one the map names, and a test holds that.
+
+**Every task follows the same order.**
+1. Write the named test and watch it fail for the named reason.
+2. Make the change.
+3. Verify: the package's tests, then the full gate (`scripts/gate`) for any code; `scripts/gate
+   --docs` for a Markdown-only change.
+4. Mutation check: delete or disable what the test protects, watch it fail, and restore.
+
+**The trace.** The table at the end maps every requirement, metric and owed item to its task.
+`requirements.md`'s Instrument column is brought up to date once, at BUILD exit, under one ruling row.
+
+## Numbers this plan proposes
+
+Set here because D-49 item 3 gives them to PLAN; each goes to the HUM LEAD in the PLAN report.
+
+| Number | Proposed | Why |
+|---|---|---|
+| `MaxFrames` (L-1.15), gaps included | **72** (D-68) | Two hours at MRMS's ~2-minute cadence is about 60 frames, plus forecast; a host may let its listener choose it |
+| A frame's file-size cap (L-12.4) | **4 bytes a pixel plus 64 KiB** | An honest uncompressed RGBA frame fits; a padded 250,000-pixel PNG does not |
+| M1's non-visual arm (D-24, D-71) | **Scored first**, on the words a listener hears (watchpost W9.7), over five recorded loops, one with several cells; the ground truth is the HUM LEAD's own reading of the loops, set before either arm is scored; **pass: four of five within one point of an 8-point compass** | Scored as M1's visual arm is |
+| M6's run count (D-6) | **Five consecutive full gate runs** before SHIP with no unattributable failure, counted from `06_docs/gate-runs.md` | Enough to see a flake that fires one run in three |
+| The reference machine (L-12.5) | The development Mac named in wave 2's Limits | The one wave 2 measured on |
+
+## Where the code lives
+
+| File | New or changed | Tasks |
+|---|---|---|
+| `overlays.go` | changed | L2.1, L4.9a, L5.1, L6.1 |
+| `map.go` | changed | L2.6, L3.2, L3.11, L4.7, L7.1, L7.2, L9.3 |
+| `playback.go` | **new** | L4.1, L4.4, L4.5, L4.7 |
+| `clock.go` | changed | L4.2, L4.3, L4.9 |
+| `look.go` | changed | L4.6, L10.2 |
+| `report.go` | **new** | L5.2, L5.3, L5.4, L5.5 |
+| `facts.go` | changed | L3.11a, L5.6 |
+| `tables.go` | **new** | L6.1, L6.2, L6.3, L6.5, L6.7, L6.9 |
+| `view.go` | changed | L7.1, L7.2 |
+| `tiles.go` | changed | L8.1, L8.2, L8.4, L9.2, L9.4 |
+| `work.go` | changed | L4.7 |
+| `describe.go` | changed | L4.7, L4.9 |
+| `internal/overlay/image.go`, `store.go`, `cache.go`, `classified.go`, `fresh.go` | changed | L2.1, L2.2, L2.3, L2.4, L2.5, L2.6, L2.7, L2.8, L2.9, L4.9, L4.9a, L5.1, L6.4, L6.6 |
+| `internal/render/frame.go`, `raster.go`, `field.go`, `hatch.go`, `marker.go`, `motion.go` | changed | L3.1, L3.3, L3.6, L3.9, L3.10, L3.11, L3.13, L4.1, L4.2, L4.8 |
+| `internal/render/profile_test.go` | changed | L3.14 |
+| `internal/colour/check.go`, `preset.go` | changed | L3.7, L3.8, L3.12 |
+| `internal/describe/area.go`, `near.go` | changed | L5.4 |
+| `internal/fetch/fetch.go`, `get.go` | changed | L8.1, L8.2, L8.3, L8.4, L8.5, L8.6, L8.7 |
+| `internal/tiles/disk.go`, `pipeline.go`, `remote.go` | changed | L8.5, L9.1, L9.2, L9.3, L9.5, L9.6, L10.2 |
+| `surface_test.go`, `readme_test.go`, `rules_test.go`, `memory_test.go`, `view_test.go`, `gate_test.go` | changed | L1.1, L1.4, L2.10, L7.3, L10.1, L10.3, L10.8 |
+| `contract_test.go` | **new** | L1.2, L1.6, L10.6 |
+| `playback_test.go` | **new** | L4.10 |
+| `examples/example_playback_test.go` | **new** | L4.11 |
+| `examples/example_map_test.go` | changed | L5.7 |
+| `contract.md`, `README.md` | changed | L1.2, L1.3, L1.5, L1.6, L5.7, L10.6 |
+| `06_docs/02_features/go-tuimaps/07-readiness/public-surface.txt`, `release-checklist.md` | changed | L1.1, L6.7, L10.4 |
+| `scripts/gate` | changed | L10.3, L10.4, L10.5, L10.8 |
+| `.github/workflows/gate.yml` | **new** | L10.5 |
+| `testdata/mrms/`, `testdata/loops/` | **new** | L6.3, L6.9, L10.9 |
+| `06_docs/02_features/radar-loops/02-analysis/capture-procedure.md` | **new** | L6.8 |
+
+## Work packages and order
+
+| WP | What | Requirements | Needs |
+|---|---|---|---|
+| L1 | Contract skeleton, a surface test that records signatures, the contract's new text | L-4, contract text for L-1.10d, L-7.3, L-8.3, L-9.3, L-9.6, L-12.3 | — |
+| L2 | Loops: frames, copy, validation, keys, budget | L-1.1–L-1.4, L-1.7, L-1.9, L-1.14, L-1.15, L-12 | L1 |
+| L3 | Renderer: frame identity, blend, furniture, place labels, severity word and dash | L-1.6, L-1.16, L-8, L-11, L-12.5 | L2, L4.1–L4.4 for L3.1 and L3.2 |
+| L4 | Playback API and clock | L-1.5, L-1.8, L-1.10a–g, L-1.11, L-1.13 | L2 |
+| L5 | `Report` | L-1.12, L-13.5–L-13.7, L-13.9, L-13.10 | L3, L4, L6 for L5.6 |
+| L6 | MRMS table, the provider-table seam, the heavy end | L-2 | L1 |
+| L7 | View bound | L-3 | L1 |
+| L8 | Fetch options and confinement | L-7, L-10 | L1 |
+| L9 | Cache age and purge | L-9 | L8 |
+| L10 | Defects, the first release's close-out, the gate's own evidence | L-5, L-6, L-13.1–L-13.4, L-13.8, M4, M6, OW-4 | L5–L9 |
+| L11 | Watchpost UAT-1's library needs (D-82, D-83): detail levels, major and minor roads apart, the footer | L-14 (new), L-8 | L3 |
+
+L2 → L4 → L3 → L5 is the critical path (L3's frame-identity tasks need a way to advance the shown
+frame, which L4 gives). L6, L7 and L8 → L9 run beside it once L1 lands.
+
+---
+
+## WP-L1 — Contract skeleton and signature-level surface test (L-4)
+
+| # | Task | Files | Shape | Test first (RED) |
+|---|---|---|---|---|
+| L1.1 | The surface snapshot records signatures and struct fields, not names only (L-4.3) | `surface_test.go`, `public-surface.txt` | The snapshot line becomes `func (*Map) Render(Size, time.Time) (Frame, error)`, and `type Frame struct{ Lines []string; Status Status; … }` | Change one exported signature in a scratch copy: today's test passes; the new one must fail |
+| L1.2 | A test holds `contract.md` to the surface both ways (L-4.1) | `contract_test.go`, `contract.md` | Every exported name in the snapshot appears in `contract.md`, and every code span in `contract.md` naming a Go identifier exists | Today it fails, listing `SetSize`, `Pan`, `ZoomAround`, `Focused`, `BorrowCheck`, `Frame.Line`, `WriteTo` (W1-B) |
+| L1.3 | The five false behavioural claims are corrected (L-4.2), and a sixth: `Changed()` "moves whenever a redraw would differ" (D-66) | `contract.md`, `contract_test.go` | Text, and a behaviour test for each | **Each corrected claim is held by a test of the behaviour it describes** (D-72), not only by its name existing |
+| L1.4 | The README's promises join the check (L-4.4, D-34) | `readme_test.go` | The README's user-agent, `Purge` and "nothing until you name a source" sentences are asserted against behaviour | Each promise's behaviour is exercised: break the behaviour and the test fails |
+| L1.5 | A changelog section in `contract.md` for v0.2.0's breaks (D-58), including `Changed()` redefined (D-66), `Describe` removed and the other simplifications (D-70), and the borrow check with its warning kind removed (D-74) and playback made map-wide (D-67) | `contract.md` | One row per break: what changed, why, and what a host does instead | L1.2 requires the section to exist |
+| L1.6 | The contract states what a host needs to know: the loop's name is the host's (L-1.10d); the time bound holds only if the host's transport honours its context, and what `CheckedDialer` does and does not cover (L-7.3, L-10.3); `Purge` does not reach a released root (L-9.3); cache-root guidance (L-9.6); dot-grid guidance and "a host that raises the budget owns the memory" (L-12.3); what carries severity inside rain cells (L-8.3) | `contract.md`, `contract_test.go` | Text | A test holds one sentence for each named row; where a sentence states behaviour, a behaviour test holds it too (D-72) |
+| L1.7 | **The borrow check removed** (D-74, OW-13): the fingerprints, the re-check, `Caps.BorrowCheck`, their test and benchmark leg, and the warning kind `BorrowChanged` | `internal/overlay/cache.go`, `internal/overlay/store.go`, `internal/fault/fault.go`, `kinds.go`, `contract.md` | — | The surface snapshot records the removal; the contract test passes without the names; `go vet` finds nothing left behind |
+
+## WP-L2 — Loops (D-54)
+
+| # | Task | Files | Shape | Test first (RED) |
+|---|---|---|---|---|
+| L2.1 | `LoopFrame`; `Image.Frames` | `overlays.go`, `internal/overlay/image.go` | `type LoopFrame struct{ Valid time.Time; PNG []byte; Gap, Forecast bool }` (forecast from D-67); `Image.Frames []LoopFrame`; a single picture is `PNG` with no `Frames` | `Set` of an image with three frames is accepted; with both `PNG` and `Frames` set it is refused with a clear error |
+| L2.2 | Validation at hand-in (L-1.9, L-1.15) | `internal/overlay/image.go` | Every frame's header and size checked; times strictly increasing; a gap has no bytes; `const MaxFrames = 72`, exported, gaps included (D-68) | A table test: out-of-order times, a duplicate time, a gap with bytes, frame 73, a bad PNG in frame 7: each refused, naming the frame |
+| L2.3 | Copy at hand-in, for the single image and every frame (L-1.14) | `internal/overlay/image.go`, `internal/overlay/store.go` | The store keeps its own copies of `PNG` and `Table`; the host's slices are never read after `Set` returns | Mutate the host's PNG and table after `Set`: the drawn picture and classes are unchanged |
+| L2.4 | Decode reads the size from the copy before it allocates, and re-checks the cap and the budget (L-1.14) | `internal/overlay/image.go` (`rasterise`) | The header is checked before `png.Decode` | A header claiming 4× the cap is refused without the allocation (the allocation counter stays under a bound) |
+| L2.5 | Keys: valid time plus a hash of the bytes; reuse on a re-`Set` (L-1.7) | `internal/overlay/cache.go`, `internal/overlay/classified.go` | A frame's key is its valid time and a content hash; a re-`Set` keeps decoded frames whose key it already holds | Re-`Set` with 11 frames the same and 1 new: exactly one decode (a decode counter) |
+| L2.6 | The budget's surface (L-12.1): a setter; a hand-in over it is refused, saying by how much | `map.go`, `internal/overlay/store.go` | `(*Map).SetImageBudget(bytes int64) error` (D-70: no paired option); default 6 MiB (D-68, raised from D-61's 3 MiB) Lowering it below what is held keeps what is held and refuses the next hand-in that does not fit, saying so (D-72) | Over the budget: refused, and the error says by how much; lowered below use: nothing dropped, the next `Set` over it refused |
+| L2.7 | What the budget counts (L-12.4, L-12.6): retained PNG bytes, classified pixels, fields and the shared classified set | `internal/overlay/store.go`, `internal/overlay/classified.go` | — | A loop's counted bytes equal the sum of its parts, checked against a hand count |
+| L2.8 | A frame's file size is capped relative to its pixels (L-12.4) | `internal/overlay/image.go` | 4 bytes a pixel plus 64 KiB | A padded 250,000-pixel PNG is refused; an honest one passes |
+| L2.9 | `ImageKey` hashes a value's exact bits (L-12.6) | `internal/overlay/classified.go` | The key covers each value's bit pattern | Two tables that differ only at 1e18 get different keys |
+| L2.10 | The library never fetches radar (L-1.4) | `rules_test.go` | — | A rules test: no package on the image path imports `internal/fetch` or `net/http` |
+
+## WP-L4 — Playback (D-25, D-26, D-54)
+
+L4 comes before L3 in the build order, because L3.1 and L3.2 need to advance the shown frame.
+
+| # | Task | Files | Shape | Test first (RED) |
+|---|---|---|---|---|
+| L4.1 | Playback is one per map, and persists across `Set`; off by default; the frame step is a setting (L-1.5, L-1.11, D-67, D-76) | `playback.go`, `internal/render/motion.go` | `type Playback uint8` (`PlaybackOff`, `PlaybackOn`); `(*Map).SetPlayback(p Playback) error`; `(*Map).SetPlaybackStep(step time.Duration) error`, 200 ms to 1000 ms, zero the default 500 ms | A new map reads `PlaybackOff` at 500 ms; a refresh `Set` leaves both as they were; a step outside 200–1000 ms is refused |
+| L4.2 | The loop advances on the animation clock one frame a step, holds the last frame 2 s and repeats; **one change ceiling per map** (D-76): while a loop plays, the blink's half-period is the step, or the smallest multiple of it that is at least 400 ms, so every change falls on one grid; from 400 ms up the ceiling of 2.5 a second holds, and below it the ceiling is lifted by the host's choice (L-1.10g, watchpost D-43) | `clock.go`, `internal/render/motion.go` | The frame shown is a function of the animation time since `Play`, as the blink phase is | A table over animation times: the frame shown at each; at each step from 400 ms to 1000 ms, two loops plus blink never exceed 2.5 changes a second; at 200 ms, one change a step and the state read says the ceiling is lifted |
+| L4.3 | `NextCall` includes the next frame change (L-1.8, D-66) | `clock.go` | A fourth source; the signal that time has something due | With a loop playing, `NextCall` returns the next advance time |
+| L4.4 | **The listener's controls** (L-1.10b, D-67): `Play()` from the oldest held frame through "right now" and on through forecast frames; `Stop()` holds; `Reset()` returns to "right now", the newest observed frame; `Step(by int)` moves by frames and stops playback; **position is a valid time** | `playback.go` | `(*Map).Play() error`, `Stop() error`, `Reset() error`, `Step(by int) error` | Open → "right now"; play → oldest first, then in time order, then forecast; stop → held; step at each end; reset; **a refresh `Set` that drops the oldest frame keeps the same moment on screen** |
+| L4.5 | The state read (L-1.10d) | `playback.go` | `type LoopState struct{ At, Now, Oldest, Newest time.Time; Index, Count int; Playing, Advancing, Gap, Forecast, CeilingLifted bool; Playback Playback; Step time.Duration; Off OffReason }` (D-76; *as built: `Oldest`, `Newest`, `Index`, `Count` and `Gap` added, because L-1.10d asks for the frame index, count, gap and span and this shape left them out*), the zero `OffReason` meaning not off (D-70); `(*Map).Loop() LoopState`; `Advancing` false when the clock is frozen; the precedence of off reasons | Freeze with `Animate`: `Advancing` false; reduce motion over a host "normal": off because of reduce motion |
+| L4.6 | `ReduceMotion` forces off and restores (L-1.10c) | `look.go` | Existing call, new effect | Normal → reduce on → off → reduce off → normal |
+| L4.7 | **The counters, one job each** (L-1.10e, D-66): `Changed()` counts inputs, raised by `Work` when it lands something visible and never by `Render`; `FrameTicks()` counts frame advances as of the last time given | `map.go`, `work.go`, `playback.go`, `describe.go` | `FrameTicks() uint64`; a tick changes neither `Changed()` nor the description's key | A tile landed by `Work` raises `Changed()` with no `Render`; a `Render` of unchanged inputs leaves it alone; advance ten frames: `Changed()` unchanged, `FrameTicks()` +10, the description cached |
+| L4.8 | Gaps hold the last real frame, the time reads "gap"; the shown frame's time is on the map, marked when it is a forecast; with two loops, the newest loop's time (L-1.2, L-1.10a, L-1.10f, L-1.10g, D-67) | `internal/render/frame.go` (furniture) | Frame-time text beside `stale` | Golden: a gap shows the previous frame's picture with "gap 14:10"; a forecast frame's time reads as a forecast; two loops show the newer one's time |
+| L4.9 | The newest observed non-gap frame drives `stale` and the description (L-1.3, D-39, D-67) | `internal/overlay/fresh.go`, `clock.go` (`stale`), `describe.go` | — | Stepping to an old frame does not raise `stale`; an old newest frame does; a forecast frame never counts as newest |
+| L4.9a | Forecast frames (D-67): `LoopFrame.Forecast`; only a forecast frame may carry a future valid time | `overlays.go`, `internal/overlay/image.go` | `LoopFrame{Valid time.Time; PNG []byte; Gap, Forecast bool}` | An observed frame dated past now plus a small skew is refused; a forecast frame so dated is accepted and drawn after "right now" |
+| L4.10 | **Correct parts, correctly connected** (RK-1): the whole path through the public `Map` | `playback_test.go` | — | `Set` a loop, `SetPlayback`, `Play`, `Animate` forward, `Render`: the lines differ from the first render and `FrameTicks` moved |
+| L4.11 | One standard playback API a host wires with no state of its own (L-1.13) | `examples/example_playback_test.go` | An example host: controls and Settings rows driven only by `SetPlayback`, `SetPlaybackStep`, `Play`, `Stop`, `Reset`, `Step` and `Loop`, woken by `Changed` and `NextCall` | The example's output; a rules test that the example declares no playback state |
+
+## WP-L3 — Renderer (D-14, D-17, D-28, D-45, D-59, D-60)
+
+| # | Task | Files | Shape | Test first (RED) |
+|---|---|---|---|---|
+| L3.1 | The frame-reuse test sees the shown frame (L-1.6) | `internal/render/frame.go` (`sameOverlays`), `internal/render/raster.go` | `scene.Raster` gains the shown frame's key; reuse compares it. *As built (L4.2): the map raises the renderer's overlays version whenever the moment shown changes, so reuse sees it without a key on the raster; the description's key reads the overlays' own version only (L-1.10e)* | `Step` the shown frame with nothing else changed: the frame is redrawn, not reused |
+| L3.2 | `Frame` carries `Changed` and `FrameTicks` (L-1.16) | `map.go` | `type Frame struct{ Lines []string; Status Status; Changed, FrameTicks uint64; Dropped []Drop }` (named as the methods, D-72); `type Drop struct{ Kind DropKind; Overlay, Label, Shown string }`, kinds `DropAlertLabel`, `DropPlaceName` | A render after a `Set` carries the new `Changed`; after a frame advance, the new `FrameTicks` |
+| L3.3 | Furniture is never erased by an image or field at NoColour: outline, hatch, label, marker (L-8.3) | `internal/render/field.go`, `internal/render/frame.go` | Shade cells yield to them | Specimen 29's scene at NoColour: each present (today they vanish) |
+| L3.4 | The same at NoColour for the `stale` word, the notice, the frame time, the scale and the credit (L-8.3) | same | — | Specimen 29's scene: each present |
+| L3.5 | L3.3 and L3.4 at Colours16 (L-8.3) | same | — | The same scene at Colours16 |
+| L3.6 | The tint blends over the image (L-11.1) | `internal/render/frame.go` (`colours`) | The bare tint only where there is no image; otherwise the image's class colour shifted toward the tint in linear light | Pixel test over a blended cell; mutant: the tint wins |
+| L3.7 | The checker holds the blend: class separation ≥ 10 and visibility ≥ 5, on each ground where the blend is used (L-11.2, L-11.5) | `internal/colour/check.go` | `CheckBlend(ramp, tints, ground, strength) []Finding` | Today's 35 % fails; 20 % passes on dark; the light ground selects L-11.4's fallback |
+| L3.8 | The light-ground search, or its named fallback (L-11.3, L-11.4, D-27) | `internal/colour/preset.go` | Search the light ramp, the alert colours and per-class tints; if nothing passes, radar over tint on light. **Re-run whenever the palette or the ground changes** (a host palette can break the blend), and the result reported in `Legend()` and `Warnings()` (D-72) | The checker picks the fallback when no candidate passes, and says so; a host palette set after `New` re-runs it *As built: the search is per alert tint, over strengths from 50 % down to 10 % in steps of 5, the strongest that keeps every class separated (L-11.2) chosen, and none meaning the image is drawn over that tint (L-11.4, D-27); the other candidates this row names (the light ramp, the alert colours) would need new colours and are not searched. It runs in the map when the palette, ground or depth changes. A fallback under a host palette is a `Warnings()` entry; the legend's report joins the alert legend section (L3.11a). Measured result: see "Blend search, as measured" below.* |
+| L3.9 | The severity word in the label (L-8.1) | `internal/render/frame.go` | The word from the feature's severity (L5.1) | Specimen 33's scene as goldens at both sizes and depths: every label that fits carries its word |
+| L3.10 | **A severity digit repeated along each alert outline** (L-8.1, D-65): Extreme 4, Severe 3, Moderate 2, Minor 1, Unknown `?`; the outline solid; never on the furniture rows; at least one digit on every area | `internal/render/frame.go`, `internal/render/basemap.go` | A digit every few outline cells, staggered by row, placed after overlay labels and before basemap names | Specimen 33's scenes: every area carries its digit at 69×12 and 149×38; no digit in a furniture row; a four-cell area still gets one |
+| L3.11 | The hatch at Colours16 (L-8.7); a label that doesn't fit falls back to the word, and a dropped label is reported (L-8.5) | `internal/render/hatch.go`, `map.go` | Uses L3.2's `Frame.Dropped` | At 69×12 the fallback is drawn and `Frame.Dropped` names it |
+| L3.11a | `Legend()` carries the severity digit key (D-65) | `facts.go` | A legend section for alert severity: digit and word. *As built: an alert overlay's `LegendEntry` with `Preset` "alert" and five `Class`es carrying `Mark` (the digit); and `LegendEntry.Blended []Severity` on image and field entries, L3.8's legend report* | The legend of a frame with alerts lists the five |
+| L3.12 | Contrast of outline and label over the blend (L-8.8) | `internal/colour/check.go` | 3:1 for outlines and 4.5:1 for labels, truecolor and 256 | Checker test at each severity on each ground |
+| L3.13 | **The named place's marker and name are preserved** (L-8.9, D-60) | `internal/render/marker.go`, `internal/render/frame.go` | Places outrank alert labels, basemap labels and furniture where they collide; a shorter form, or the marker alone, and a `DropPlaceName` in `Frame.Dropped` | Specimens 29, 30 and 31 as tests: the place's name is drawn at 149×38 in each, and at 69×12 either it or its reported short form |
+| L3.14 | A frame advance costs ≤ 15 ms at 149×38 (L-12.5, D-61) | `internal/render/profile_test.go` | `BenchmarkFrameAdvance` over a 12-frame loop. **Not a gated timing** (timing in the gate is flaky): the gate holds an allocation count per advance, and the time is measured on the reference machine and recorded in the SHIP report | The allocation pin; the recorded time ≤ 15 ms *As built: `BenchmarkFrameAdvance` and `TestAFrameAdvanceAllocates` in the root package, through the public `Map`, so the advance includes the timeline and each loop's frame; measured 2026-09-25 on the development Mac, 3.8 ms and 469 allocations an advance; the pin is 520. SHIP records the time.* |
+
+## WP-L5 — `Report` (D-42, D-43, D-57)
+
+| # | Task | Files | Shape | Test first (RED) |
+|---|---|---|---|---|
+| L5.1 | Severity and times as data on a feature (L-13.9) | `overlays.go`, `internal/overlay/store.go` | `Feature.Severity Severity; Feature.Valid, Expires time.Time` (zero: derived as today); constants `SeverityUnknown`, `SeverityMinor`, `SeverityModerate`, `SeveritySevere`, `SeverityExtreme` | A feature with no severity reports the one its role implies |
+| L5.2 | `Report`'s shape | `report.go` | `type Report struct{ Alerts []AlertShown; Places []PlaceReport; Motion []MotionReport }`; `AlertShown{Overlay, Feature, Label string; Severity Severity; Valid, Expires time.Time; Stale bool}`; `PlaceReport{Place string; Alerts []PlaceAlert; Images []ImageAnswer}`; `PlaceAlert{Overlay, Feature string; Where Where; Distance float64; Unit string; Bearing float64; Compass string}` — v0.1.0's names and units, honouring `Units()`; `Feature.ID string` so an entry joins back to the host's alert; **every string cleaned on the way out** (FR-34); `(*Map).Report(places []Place) (Report, error)` (D-72) | An empty map returns an empty `Report`, never nil sections; a hostile label comes back cleaned; distances follow `Units()` *As built: `PlaceAlert` also carries the alert's `Label` and `Severity` (L-13.6 asks for its name and severity word); `PlaceReport.Answers []Answer` holds every non-alert answer `Describe` gives - images, fields, nearest points and lines - since L5.8 needs every answer kept, not only the images'; `Report.Motion` joins with L5.5.* |
+| L5.3 | The alerts shown, no place needed (L-13.5) | `report.go` | — | Three alerts in view → three entries in draw order |
+| L5.4 | Per place, each alert on its own; "nearby" (L-13.6, D-43) | `report.go`, `internal/describe/area.go`, `internal/describe/near.go` | `Where` gains `Nearby`; `SetNearby(km float64) error`, default 10 km | Specimen 31: Fort Davis is "outside" the partial watch, and with its zone in, "inside"; a place 6 km from an edge is "nearby", 14 km is "outside"; `SetNearby(20)` moves it |
+| L5.5 | Motion, relative to a place or to the view (L-1.12, D-42) | `report.go`, `internal/describe/` | `MotionReport{Overlay, Place string; Threshold int; From, To Sighting; Relation Where; Span time.Duration}`; an empty `Place` means relative to the view's centre. **The motion rule** (D-72, D-122): the heavier rain is every pixel at or above the threshold class (taken from the provider table's legend); its motion near a place is the sum, over every pair of observed frames, of the shift that best lines up the heavier rain within 100 km of the nearest heavier rain at the newest frame, counted in blocks about 2 km a side and placed between blocks by a parabola; `MotionReport` gains `Heading`, `HeadingCompass`, `SpeedKmh`, `Moving` and, for a loop with no motion, `Missing` (D-111) | A two-frame loop with a cell moving 12 km east; a two-cell scene where each place gets its nearest; a gap at the oldest frame; with no place, relative to the view *As built: `MotionReport{Overlay, Place string; Threshold int; From, To Sighting; Trend Trend; Span time.Duration}`, `Sighting{Valid; At; Distance; Unit; Bearing; Compass}`; "came closer, moved away or held" is a `Trend` (`Held`, `Closer`, `Away`, held within 2 km), not a `Where`. The stated distance is what rain travels at 150 km/h between the frames, at least 10 km. Heavier rain: radar from 40 dBZ; a host type, the top third of its classes. Found meanwhile: F-3, image answers ignore the projection.* |
+| L5.6 | The legend says when a table is approximate (L-13.10) | `facts.go` | `LegendEntry.Approximate bool`, read from the image's provider table (L6.1) | MRMS's legend entry is approximate; IEM's is not |
+| L5.7 | The contract and the example show a host wording intensity from `Legend()` (L-13.10) | `contract.md`, `examples/example_map_test.go` | Example only | The example's output names a class range |
+| L5.8 | **`Describe` is removed** (D-70); every answer it gave is in `Report` (`PlaceReport` keeps the image answers, B-1) | `describe.go`, `report.go`, `examples/` | — | The surface test records the removal; the changelog row exists; each `Describe` test is ported to `Report` and passes *As built: the answers per alert group the features that share a non-empty `Feature.ID` into one alert (inside if inside any of its areas, the nearest edge of all), because a service sends one hazard as several overlapping zones and the answer must be about the hazard; `PlaceAlert` gains `Valid`, `Stale` and `UnderOneCell`, which `Answer` carried; `Report` keeps v0.1.0's memo (FR-29: asked again unchanged, no allocation), its key widened by the nearby distance, the view and the work landed; L-1.10e now binds `Report`'s key. The CLI's --describe and its describe panel read `Report`.* |
+
+## WP-L6 — MRMS, the table seam, the heavy end (D-19, D-35, D-44)
+
+| # | Task | Files | Shape | Test first (RED) |
+|---|---|---|---|---|
+| L6.1 | The provider-table seam (L-2.5), and how an image uses it | `tables.go`, `overlays.go`, `internal/colour/` | An internal table registry, one registration per provider (D-70); `type Provider uint8` with `ProviderIEM`, `ProviderMRMS`; `Image.Provider Provider` names one, used when `Image.Table` is empty, and carries its approximate and unverified marks | A third provider is added inside the library without editing the other two (an architectural test); an image naming a provider draws with its table *As built: `internal/overlay/providers.go` holds the seam and the `Provider` constants; each provider registers from `provider_<name>.go`, generated from its evidence by `tables_test.go` with `TUIMAPS_WRITE_TABLES` set; an architectural test holds each file to its own provider. A table the host hands in wins, and drops the provider's marks.* |
+| L6.2 | IEM's published table as the first entry | `tables.go` | From `02-analysis/programs/inputs/spec29/n0q-table-raw.json` | Round trip against those values |
+| L6.3 | MRMS's observed palette, approximate (L-2.1, L-2.4) | `tables.go`, `testdata/mrms/` | The 111 colours from `02-analysis/programs/output/mrms-palette.txt`, valued from the legend | Every observed colour matches exactly; the entry is approximate |
+| L6.4 | Fallback matches counted apart from unmatched ones (L-2.3, OW-10) | `internal/overlay/image.go` | — | A frame with known fallback pixels reports their count |
+| L6.5 | **The heavy end valued better than the nearest legend colour** (L-2.3): a colour off the table is valued by where it projects onto the legend's heavy-end gradient, not by the nearest single colour | `internal/colour/`, `tables.go` | — | Colours 3–30 from any legend colour (wave 2 M-A) are valued in order along the gradient |
+| L6.6 | A warning whenever a colour takes the fallback (L-2.3) | `internal/overlay/image.go` | Warning kind `table-fallback`, with the count | A frame with one fallback pixel raises it |
+| L6.7 | The shipped state if no severe day comes before SHIP (L-2.3, RK-2, RK-11): MRMS's heavy end marked unverified in the legend, and a release-note line | `tables.go`, `facts.go`, `release-checklist.md` | `LegendEntry.Unverified bool` (D-70); the unseen range named in the contract and the release note | The legend says so; while it is set, a human ticks the release checklist's row 0.10 only against the line in `release-notes.md` *As built: `LegendEntry.Unverified` and MRMS's table set `Unverified`; the unseen range (above about 48.5 dBZ) is named in the contract and in `release-notes.md`. No automatic check reads the note: row 0.10 is ticked by hand.* |
+| L6.8 | The triggered capture procedure (OW-12) | `02-analysis/capture-procedure.md` | When a Moderate or High risk or a tornado watch is issued, capture the two-hour window and extend the palette | A reviewer can follow it cold; a checklist row points to it |
+| L6.9 | The fallback-share test (L-2.3) | `tables.go` tests, `testdata/mrms/` | — | A frame whose fallback share exceeds the threshold (the PLAN report's number) fails; the IEM archive frames (OW-11) pass as a control; **MRMS's heavy end has no oracle before OW-12**, and the record says so (D-72) *As built (L6.4–L6.6, L6.9): MRMS's table carries its legend from 30 dBZ up as gradient stops; an off-table colour within 30 (wave 2's measured spread) is valued where it projects onto it, counted in `Report.Fallback` and warned of as `table-fallback`; beyond 30 it matches nothing. `TestTheFallbackShare` holds wave 2's 18 MRMS frames to 1 % (all 0 %, since every observed colour is in the table) with OW-11's IEM archive frame as the control, and says MRMS's heavy end has no oracle before OW-12.* |
+
+## WP-L7 — View bound (L-3)
+
+| # | Task | Files | Shape | Test first (RED) |
+|---|---|---|---|---|
+| L7.1 | A bound set once | `view.go`, `map.go` | `type Bound struct{ MinZoom float64; W, S, E, N float64 }`; `(*Map).SetBound(Bound) error`, called again whenever the host's region changes (D-70: no paired option). **A box that crosses the antimeridian (W > E) is accepted**: Alaska's and the Pacific territories' regions need it | A zero-area box is refused; an Aleutians box is held |
+| L7.2 | Held on every path | `view.go` (`moveLocked`), `map.go` (`viewAt`) | Both enforce it (W1-C) | M3: resize, fit, pan, zoom and fall-back each stay inside, including across the antimeridian |
+| L7.3 | A host that sets none gets v0.1.0's behaviour (L-3.2) | `view_test.go` | — | The existing view tests pass unchanged, with a named test that sets no bound |
+
+## WP-L8 — Fetch options and confinement (D-55)
+
+| # | Task | Files | Shape | Test first (RED) |
+|---|---|---|---|---|
+| L8.1 | `FetchOptions`, taking effect at once (L-7.1, L-7.2, L-7.4) | `tiles.go`, `internal/fetch/fetch.go` | `type FetchOptions struct{ Transport http.RoundTripper; UserAgent string; Timeout time.Duration; AllowHTTP []string }`; `(*Map).SetFetchOptions(FetchOptions) error` | A transport set after `Source` is the one used for the next fetch *As built: `FetchOptions` is an alias of `internal/fetch.HostOptions`, since only the fetch package may import `net/http` (the static rule holds); a bad user-agent is refused at `SetFetchOptions` even with no source named. Redirects and requests are confined to the source's own scheme, host and port; the v0.1.0 redirect allow-list of other hosts, which no host could reach, is gone (L-10.1).* |
+| L8.2 | `Fetcher` (`tiles.go:13`, `:70`) removed, and `fetch.Checked` with it (D-62) | `tiles.go`, `internal/fetch/get.go` | — | The surface test records the removal; the changelog row exists |
+| L8.3 | Bytes bounded; late answers dropped; time bounded while the context is honoured (L-7.3) | `internal/fetch/get.go` | The library reads the body through its limit; checks the deadline after the transport returns | An endless-body transport is cut at the limit; a transport that ignores its context blocks only its own `Work` call, and its late answer is discarded *As built: the fetch gets a deadline of its own, with a cause, so an answer after it is dropped even when the transport returns no error; running out of time reads as a transport error, not as the host's cancelling. Held by `TestALateAnswerIsNeverUsed`.* |
+| L8.4 | `CheckedDialer`, exported at the root (L-10.3) | `tiles.go` (wrapper), `internal/fetch/fetch.go` | `func CheckedDialer() func(context.Context, string, string) (net.Conn, error)` | A host transport using it refuses a private address *As built: `Dialer` is an alias of `internal/fetch.Dialer`, so the root needs no `net` import. Held by `TestCheckedDialerRefusesAPrivateAddress`.* |
+| L8.5 | One allow-list; scheme, host, port; plain http refused unless allowed (L-10.2) | `internal/fetch/fetch.go`, `internal/tiles/remote.go` | One list feeds both | Through `Map.Source`, with the library's and a host's transport: another host, another port and http each refused *As built: `fetch.Confined` is the one test; `ParseTileJSON` and `NewRemote` lost their allow-hosts parameter, and a TileJSON template on a CDN host other than the source's is refused.* |
+| L8.6 | The proxy decision per connection; the reserved ranges completed (L-10.3) | `internal/fetch/fetch.go` | — | A redirect to a host the proxy does not carry still meets the private-address check; each new range refused *As built: the fetcher records the proxy addresses its proxy function hands out, and the dialer skips the check only for a connection to one of them; the per-request marking is gone.* |
+| L8.7 | The real version in the user-agent (L-13.1) | `internal/fetch/fetch.go` | `Version` stays a constant; the release checklist bumps it, and L10.3's `--release` check refuses a tag it does not match | At the tag, the user-agent names the tag; `-dev` at a tag is refused *As built: `fetch.Version` is "0.2.0", and `scripts/gate --release` refuses a tag whose version is not the library's (a release candidate leads to the same release); `TestTheTagIsTheReleaseTheLibrarySays`. Before this, the note claimed the check and none existed (BUILD-exit red team).* |
+
+## WP-L9 — Cache age and purge (D-56)
+
+| # | Task | Files | Shape | Test first (RED) |
+|---|---|---|---|---|
+| L9.1 | The file time is the fetch time; reads never touch it (L-9.4) | `internal/tiles/disk.go` (`Load`, `Flush`) | The file time is set only at store | Load a tile hourly for a day: its file time never changes *As built: `NoteRead`, `Flush` and the hourly recency write are gone. A plan with no clock (Settle's) keeps the last clock a frame gave, so its jobs date what they fetch; with no clock ever, the file keeps the date the system gave it, and age is not judged until a clock comes. Held by `TestReadsNeverTouchTheFileTime`, `TestAPlanWithNoClockKeepsTheLastOne`, `TestNoClockJudgesNothing`.* |
+| L9.2 | A maximum age, enforced at `CacheRoot` and in every job; oldest-fetched evicted first, tiles in view protected; a future time counts as expired (L-9.4) | `tiles.go`, `internal/tiles/disk.go`, `internal/tiles/pipeline.go` | `(*Map).SetCacheMaxAge(time.Duration) error` (D-70); `CacheRoot`'s signature unchanged | A tile past its age is fetched again; a future-dated one too; `CacheRoot` over an aged root drops them; a tile in view survives eviction over the cap *As built: `CacheRoot` and `SetCacheMaxAge` judge age by the clock of the last frame. Each job calls `Disk.Expire`, which walks the cache only once the oldest file held is due, so a job otherwise pays one comparison. A negative age is `cache-refused`. The plan names the view's tiles to the disk (`InView`, memory only). Tiles held in memory are not aged: the maximum age is the disk's (L-9.1).* |
+| L9.3 | The cache generation (L-9.3) | `internal/tiles/pipeline.go`, `map.go` | A counter raised by `Purge`, a `CacheRoot` change or off, and `Close`; a store lands only if unchanged | A fetch in flight across each of the three writes nothing *As built: the generation is the disk cache's own, raised by `Empty` and `Release`; a job reads it before its fetch and `Store` checks it under the disk's lock. A replaced or turned-off root and the root of a closed map are released, so a store after them writes nothing. Close already cancelled a fetch in flight; the test keeps it as a guard.* |
+| L9.4 | `Purge` of everything; replaced roots released (L-9.2, L-9.3); counts reported (L-9.5) | `tiles.go` | `Purge() (PurgeReport, error)`; `type PurgeReport struct{ Removed, Failed int }` (D-70: one call) | After `Purge`, nothing under the root, memory empty; the old root's descriptor is closed; a failed remove shows in `Failed` *As built: memory means the fetched tiles (the embedded ones record nothing and stay) and the decoded pictures kept only for reuse: a replaced loop's spare frames and the shared set of readings. The picture an overlay shows now is the host's and stays, since nothing would read it again. With no disk cache, memory is emptied and the error is `cache-refused` as before. Descriptors are counted through `/dev/fd`. The README's purge sentence and its test changed with it.* |
+| L9.5 | Failures raised and counted honestly (L-9.5) | `internal/tiles/pipeline.go`, `internal/tiles/disk.go` | `cache-write-failed` raised; only successful removals counted | A read-only root raises the warning; a failed remove is not counted *As built: the disk counts failed writes and the pipeline's `TakeWarnings` carries them as one `cache-write-failed` with the count.* |
+| L9.6 | A root others can read is warned of (L-9.6); `ReadBack` reads through its limit (L-12.6) | `internal/tiles/disk.go` | — | A 0755 root warns; an oversized file is not read whole *As built: a new warning kind, `cache-root-readable`, raised once per root. `Load` and `ReadBack` share one reader through the limit (`readTile`), tested with a file that never ends.* |
+
+## WP-L10 — Defects, close-out, and the gate's own evidence
+
+| # | Task | Files | Shape | Test first (RED) |
+|---|---|---|---|---|
+| L10.1 | A test lists the library's environment reads (L-13.8) | `rules_test.go`, `contract.md` | Allowed: `look.go`'s colour-depth read; the proxy variables `net/http` reads are named in the contract (D-72) | A new `os.Getenv` in a library file fails *As built: `TestEveryEnvironmentReadIsListed` walks every library file (not the command, examples or tools, which are modules of their own) for the os and syscall readers and `http.ProxyFromEnvironment`; the list is exactly look.go's `NO_COLOR` read and the fetcher's proxy function. Contract section 11 row L-13.8 names each variable, and the test requires it.* |
+| L10.2 | Doc comments corrected (L-13.4) | `internal/tiles/disk.go`, `look.go` | Text | The two comments' claims each asserted by a test of the behaviour they describe *As built: `TestNoDocCommentNamesAnotherDeclaration` refuses, in every library package, a doc comment that opens with another declaration's name; it found the three cache `Use` comments and one more, `classInk`'s comment stranded above `presetOf`. `ReduceMotion`'s comment now says what it does: motion stops, and a stale overlay's moment and a failed tile's retry stay due; `TestNextCall` holds the exact stale moment under reduce-motion. **Fixed 2026-09-25** (found by that day's diagram audit, not caught by the drift test because each named a real thing wrongly): `NextCall`'s comment names the loop advance; `markerNames` and the precedence comment above its call say marker labels come before every other name (L-8.9, D-80), as the call site places them; `askedFingerprint` says Report; `examples/doc.go` names the examples that exist.* |
+| L10.3 | A gate test refuses the **final** tag while its checklist is unfinished (L-5.3); release candidates `v0.2.0-rc.N` are tagged as packages land, each naming the packages it holds (D-69) | `gate_test.go`, `scripts/gate`, `release-checklist.md` | A `--release` check; an rc row in the checklist | An unticked row refuses the final tag; all ticked passes; an rc tag is not refused *As built: `scripts/gate --release TAG` refuses a final tag while a row of `radar-loops/07-readiness/release-checklist.md` ends in `[ ]`, holds no rc to it, and logs the run as `release`; `release_gate_test.go`* |
+| L10.4 | A pinned `govulncheck` at the tag, requiring no reachable finding (L-5.5) | `scripts/gate`, `release-checklist.md` | The version pinned | An injected vulnerable module fails the release check *As built: `GOVULNCHECK_PIN` (v1.8.0) in `scripts/gate`; the release check refuses any other installed scanner and any reachable finding without a ruled-exception row (a GO- id and its D- ruling); held by a stub scanner in `release_gate_test.go`* |
+| L10.5 | Hosted CI (L-6.1) | `.github/workflows/gate.yml` | The gate on Linux; the second architecture on a runner that has it; actions pinned by SHA, `permissions: contents: read` (D-72) | A run on the branch, green; **the workflow fails when the architecture leg did not run** *As built (D-105): `.github/workflows/gate.yml`, quick on push, full nightly and on dispatch, linux/amd64 and linux/arm64 each native, `GATE_ARCH_LEG=sibling` (`archleg_test.go`), and `both-architectures` failing the workflow unless both ran green; the first green run on the branch is the task's evidence; the first hosted run (amd64 red, arm64 green, the last job failing the workflow as it should) found `TestBorrowReuseUnderRaceDetector`'s early case relying on timing: the writes now overlap the read by construction, and the race is required in one of five runs, the patient case clean in one* |
+| L10.6 | The default tile memory cache documented against a large view (L-6.3) | `contract.md`, `contract_test.go` | Text | L1.6's sentence test covers it *As built: section 11 row L-6.3, held by `TestTheDefaultTileCacheAgainstALargeView` (200×60 at zoom 4 needs about 800 KB). **Defect found and fixed:** the tile cache's `cache-under-need` was recorded but never reached the host - nothing called `Cache.TakeWarning`; the pipeline's warnings now carry it.* |
+| L10.7 | **OW-4:** the 40-second `FuzzAgree` freeze examined | `06_docs/gate-runs.md` | `FuzzAgree` under the limiter, ten runs, each recorded | Ten runs recorded; a freeze, if seen, gets a cause or an open row with its evidence *As built: ten runs recorded in `gate-fuzz-deadline.md`; the first ten found D-106's zero-area ring, the ten after the fix all green; the freeze is input minimisation (a 5 s minimise time removes it), OW-4 closed* |
+| L10.8 | **M4:** a 12-frame loop at dot resolution adds ≤ 1 MiB of heap over an empty map, within ±5 % over an hour (D-61); **re-measured on 24 region frames and brought back as a number** (D-68) | `memory_test.go`, `scripts/gate` | A five-minute form in the full gate; the hour form in `scripts/gate --soak`, run once before SHIP and recorded | The five-minute form's bound; the hour run in the SHIP report *As built: `loop_memory_test.go` (`TestALoopsHeapCostAndHold`: about 0.6 MiB for 12 frames at dot resolution, held within ±5 % while playing; `TestTwentyFourRegionFramesCost`: about 5.8 MiB); the full gate plays it five minutes, `scripts/gate --soak` the hour, recorded in the BUILD report* |
+| L10.9 | **M1:** the ground truth first, then the non-visual arm, then the visual arm (D-24, D-71) | `testdata/loops/`, the SHIP report | Five recorded loops from real radar, the OW-11 outbreak and a several-cell scene among them; the non-visual arm read from watchpost's worded description (W9.7) | **Human-graded:** done when the HUM LEAD's scores for both arms are recorded *Ready for the sitting: five loops in `testdata/loops` (`programs/m1-capture.py.txt`), the demo plays them (`--loop`, `p`, `[`, `]`) and says their motion in words (`--describe`); the procedure and score sheet in `07-readiness/m1-sitting.md`. Done when the HUM LEAD's scores are recorded* |
+| L10.10 | **M6:** five consecutive full runs with no unattributable failure before SHIP | `06_docs/gate-runs.md` | Counted from the log | A test reads the log and reports the current run of green *As built, the instrument: `m6_test.go` counts consecutive green full runs at the end of the log (docs, fuzz and release runs do not count; an interrupted run is not clean) and reports it; the count itself is the checklist's row 0.8* |
+| L10.11 | **v0.2.0's REVIEW covers everything v0.1.0 shipped** (L-5.4, D-72): the review's scope written as a list of v0.1.0's packages and requirements, and the red team briefed on it | `release-checklist.md`, `08-reports/` | A scope statement | The checklist row names the scope; the SHIP report shows each item reviewed |
+| L10.12 | The integration map and both plans kept in step (D-72): each plan records the map commit it was reconciled against, and a docs-lane test refuses a plan that names a work package the map does not | `scripts/gate`, `gate_test.go` | — | A plan citing a package missing from the map fails the docs lane *As built: the plan records `Reconciled with the integration map at <commit>`, and `plan_map_test.go` refuses a plan naming a WP- the map does not and a recorded commit that does not hold the map; it runs in the docs lane with every module's tests. Watchpost's plan records the same line on its side* |
+| L10.13 | **P10 clean at BUILD exit** (D-103): `a2dh validate` 100%, no live P10 finding | `tiles.go`, `internal/fetch`, `internal/tiles`, `internal/overlay`, `internal/describe` | Real fixes, no exemption: internal callees renamed off the public names, a bounded flood fill, twelve guards in `internal/fetch` | `edges_test.go`: the int64 edges, nil receivers, a malformed IP *As built: 0 live findings; every guard's mutant caught but the flood fill's `break` (equivalent: idle iterations, the same result)* |
+| L10.14 | **F-3: an image is answered in its own projection** | `internal/describe/field.go`, `describe.go`, `report.go` | `describe.Image.Mercator`: the answer's row and a sighting's centre in equal steps of the web map's height, as `internal/render` draws | `internal/describe/projection_test.go`; `projection_test.go` through `Report`: an answer at 58 north and a loop's sighting at 60 north *As built: four mutants caught (each hand-off, the row, the centre)* |
+| L10.15 | **OW-10: a near colour is counted and warned of** (L-2.2, D-104) | `internal/fault`, `kinds.go`, `internal/overlay/image.go`, the contract (section 7) | Warning kind `near-image-colours`; `Report.Near`; a table marked Approximate is exempt | `internal/overlay/near_test.go`; `near_test.go` through `Map.Warnings` *As built: six mutants caught; `WarningKinds` runs to the new last kind, and a list left short is caught by `TestErrorKindsClosed` against the contract* |
+
+## WP-L11 — Watchpost UAT-1's library needs (D-82, D-83)
+
+**Added 2026-09-25 by D-82 and D-83**: every go-tuiMaps change watchpost 0.18.0 needs is v0.2.0 scope,
+and v0.2.0 is tagged only when 0.18.0 is accepted. **L-14** is new: *a host chooses how much of the
+basemap is drawn for its purpose, and the picture it does not ask to thin is the picture as it was.*
+
+| # | Task | Files | Shape | Test first (RED) |
+|---|---|---|---|---|
+| L11.1 | Detail levels on the built-in style's ranking (D-82; the ranking is v0.1.0 D-83) | `internal/style/`, `look.go`, `contract.md` | `type Detail uint8`; `DetailEssential` (coast, water, borders), `DetailWeather` (+ rivers, place names, major roads), `DetailStandard` (+ rail, parks), `DetailFull` (+ minor roads, runways, the default); `func (m *Map) SetDetail(d Detail) error`, a value outside the four refused; a level and a switched-off layer both apply; a host's own style's rules draw at every level | A scene holding every built-in rule, drawn at each level, draws exactly that level's rules; `DetailFull` draws every existing golden unchanged; a fifth value is refused *As built: `style.Detail` with a least level per built-in rule (`ruleDetail`), the profile's `WithDetail`, `Map.SetDetail`; a zero level reads as Full, so the picture is unchanged for a host that never asks; `TestEachDetailLevelDrawsItsRules`, `TestSetDetailThinsThePictureAndFullIsTheDefault`* |
+| L11.2 | Major and minor roads switch apart (D-82) | `internal/style/profile.go`, `look.go` | `MinorRoadLayer` joins the switchable layers; `RoadLayer` is the major roads (motorway, trunk, primary) | Minor off: the major roads drawn, the minor not; major off: the reverse *As built: `MinorRoadLayer` groups `road-minor`; `RoadLayer` is `road-major`; both thin together under a cover. `TestLayerToggle` updated to the ruled meaning; a changelog row records the break* |
+| L11.3 | The footer's scale bar and credit never touch (watchpost U1-1) | `internal/render/frame.go` | At least one clear cell between them, or the credit moves to the next row | The 69-wide frame where they met reads with a space between *As built: the defect was an order - the credit measured the cell before it before the scale mark was written. The credit keeps its width (FR-14) and the scale mark takes what is left less one cell, or is not drawn; `TestTheScaleMarkAndTheCreditNeverTouch` was RED at 70 columns, U1-1 exactly; ten reference frames at 69×12 changed on the footer row alone, rewritten by D-84. `TestLayerToggleInFrame` updated to D-82 (major and minor apart, both off draws no road)* |
+| L11.5 | A replaced overlay is drawn as it was until its replacement is prepared - the contract's section 4 already said so, and the store had drifted from it (watchpost UAT-1 U1-28: an alert handed in again blinked out of the frame) | `internal/overlay/cache.go`, `store.go`, `overlays.go` | A stand-in path beside `Cached`: the old prepared copy (the library's own, never the host's memory, D-86), drawn while a job prepares the new; let go when it is prepared or the overlay removed; none for a replacement drawn from memory (D-92) | A frame drawn right after a replace still shows the overlay; its bytes are let go when its work is done *As built: RED first at the map (`TestAReplacedOverlayIsDrawnUntilItsReplacementIsReady`); two store tests that held the drift were brought to the contract; `TestALargeReplacementGetsNoStandIn`, `TestAStandInIsLetGoOnceItsWorkIsDone`. `v0.2.0-rc.10`.* |
+| L11.6 | The water switch takes the lakes and inland water, never the sea or its coast (D-85; watchpost UAT-1 U1-39) | `internal/style/builtin.go`, `style.go`, `profile.go`, `look.go` | A `sea` fill for class `ocean` ahead of `water`; `coast` and `sea` marked always, so `Group` gives them no layer | With every layer off, the coast and the sea draw; an ocean area is filled by `sea` and a lake by `water` *As built: RED first (`TestTheSeaRulesAreNeverSwitched`), and at the public API `TestTheSeaOutlastsTheWaterSwitch` (a blank world without the fix); `TestLayerToggle` and the detail table take the sea. `v0.2.0-rc.11`.* |
+| L11.7 | The world repeats across the antimeridian (D-86; watchpost UAT-2 U2-7) | `internal/project/view.go`, `map.go`, `internal/render/frame.go`, `basemap.go` | `View.Shift` and `View.Shifts`; `View.Placements` gives each tile and its copy; the overlays, markers and the names' world box drawn per copy; `FromDot` normalised, so images and fields fall on the right side | A view centred at 179.5°E draws land and names past 180°; an alert just east of 180° is drawn whole, east of the centre; a map wider than the world is filled *As built: RED first (`TestTheWorldRepeatsAcrossTheAntimeridian`, `TestAnOverlayAcrossTheSeamIsDrawnWhole`); `TestThreeCalls` brought to the new rule; the frame-advance pin 520 → 700 for the whole-world map that now draws the world and a half. A first cut chose each point's nearest copy; `TestDrawFromRunIndex` caught it tearing lines across the frame, and the copy moved to the view. `v0.2.0-rc.12`.* |
+| L11.8 | A host may take the top row's stamp over (D-87; watchpost D-92) | `facts.go`, `map.go`, `internal/render/frame.go` | `func (m *Map) ShowStamp(on bool)`, on by default; the renderer's look changes when the stamp is taken or given back, not on each advance | With the stamp off the top row carries no time and no stale word; on again it does; the switch moves `Changed` *As built: `TestAHostCanTakeTheStampOver`. `v0.2.0-rc.12`.* |
+| L11.9 | L11.7's defect: past the antimeridian the land was painted sea (watchpost UAT-2 U2-11) | `internal/render/basemap.go` | `World` paints ocean only above and below the poles; east and west of the world is its next copy | Beyond the world's edge is ocean only above and below it; the next copy is never painted ocean *As built: `TestParityP22_OceanOutsideWorld` brought to D-86 (P-22's east and west half overturned with P-19); L11.7's own test counted lines, not land. `v0.2.0-rc.13`.* |
+| L11.10 | An overlay drawn during a span; the moment the host says while no loop is held (D-88; watchpost D-94, D-96, D-98) | `internal/overlay/store.go`, `overlays.go`, `playback.go` | `Overlay.During Span`; `func (m *Map) ShowMoment(from, to time.Time) error`; the frame is redrawn when the set of overlays left out changes | An alert beginning mid-loop is off the earlier frames; a day's field is drawn only on its day; a swap of one day for another is never the earlier frame reused |
+| L11.11 | A field sharing the map with an image is its lines (D-88; watchpost D-95) | `internal/render/field.go`, `internal/render/frame.go`, `overlays.go` | The contours at any depth while an image is held; the bands blended toward the ground (0.3) where it has no echo; text keeps the faint band | Alone, bands and no value; with an image, values and no band's own colour |
+| L11.12 | The gate's fuzzer, running L11.10: a third disagreement with the proven decoder (D-126's kind). A point's geometry is one MoveTo (MVT 2.1, 4.3.5); this decoder read a second MoveTo command as more points | `internal/mvt/geometry.go` | A second MoveTo in a point is refused (D-75) | `TestAPointIsOneMoveTo`; the fuzzer's input kept in `tools/oracle/testdata/fuzz/FuzzAgree` |
+| L11.13 | A field asks for its lines alone (D-89; watchpost D-102) | `internal/overlay/field.go`, `internal/scene/scene.go`, `internal/render/field.go`, `facts.go`, `internal/colour/blend.go` | `Grid.Lines bool`; the faint strength one constant, `colour.FaintField`, read by the frame and the legend | A lined field alone: values on the map, no band's own colour; its legend classes faint |
+| L11.14 | The gate's fuzzer, running L11.13: a fourth disagreement with the proven decoder. A feature carrying both `name_<lang>` and `name:<lang>` kept whichever came last; upstream's order is `name_<lang>`, then `name:<lang>`, then `name` | `internal/mvt/layer.go`, `internal/mvt/feature.go` | Two roles, the colon one read after the underscore one | `TestNameUnderscoreLangOutranksColon`; the fuzzer's input kept in `tools/oracle/testdata/fuzz/FuzzAgree` |
+| L11.15 | Wind (D-90; watchpost D-108 to D-110; FR-8) | `internal/colour/`, `internal/overlay/field.go`, `internal/overlay/grid.go`, `internal/scene/scene.go`, `internal/render/arrows.go`, `internal/describe/answer.go`, `describe.go`, `overlays.go`, `facts.go`, `look.go` | `Grid.From`; `func WindGrid(id string, speed Grid, from []float64, unit SpeedUnit, validAt time.Time) Overlay`; `SpeedUnit`; tokens `wind.1`-`wind.6` | Arrows downwind; no wind, no arrow; longer when stronger; labels; the answer's speed and direction; the legend; the refusals |
+| L11.16 | Watchpost D-113's loop of forecast frames alone, beside the observed loop: "right now" became the forecast's far end, because each loop offered its own newest shown frame. L-1.10d says right now is the newest observed frame | `internal/overlay/timeline.go` | `RightNow` reads the newest observed frame of every loop, the loops' own rule only where none has one | `TestRightNowIsTheNewestObservedFrameAcrossLoops` |
+| L11.17 | Rain as a grid, and a grid's marks (D-91; watchpost D-115 to D-118) | `internal/overlay/field.go`, `internal/scene/scene.go`, `internal/render/field.go`, `internal/render/arrows.go`, `internal/render/frame.go`, `internal/render/basemap.go`, `facts.go` | `Grid.Marks []string`; a radar-preset grid drawn by the images' own path (`rain`), after every field; marks placed first, `tight` | `TestARadarGridIsDrawnAsRain`, `TestAGridsMarksAreWrittenOnTheMap`, `TestAGridsMarksAreChecked` |
+| L11.18 | L11.17's defect, found building it: the legend keyed radar's classes one colour off from the frame - the class below the first floor, never drawn, in the first colour, and the heaviest past the ramp's end in a temperature colour; a lined rain grid keyed faint | `facts.go` | The class below radar's first floor keyed not drawn, each class after it in the token the frame draws it in; a rain grid never keyed faint | `TestTheRainLegendKeysTheColoursDrawn` |
+| L11.19 | Fire's roles (D-92; watchpost D-121) | `internal/colour/token.go`, `defaults.go`, `sixteen.go`, `overlays.go`, `constants.md` | `Fire`, `FireFaint`; tokens `fire`, `fire.faint` after the wind's, so none moves | `TestFireIsARoleOfItsOwn`, `TestTokensMatchTheDocumentedList`, `TestFireHasItsColoursOnBothGrounds` |
+| L11.20 | Quakes as USGS draws them (D-93; watchpost D-122, D-123) | `internal/overlay/store.go`, `prepare.go`, `internal/scene/scene.go`, `internal/render/basemap.go`, `internal/colour/`, `overlays.go` | `Feature.RadiusDots`, `MaxRingDots`; `scene.Shape.Dots`, drawn by the markers' `markCircle`; tokens `quake.hour`, `quake.day`, `quake.older` | `TestAScreenRingKeepsItsSizeAtEveryZoom`, `TestAScreenRingIsChecked`, `TestTheQuakesColoursAreTokens`, `TestTheQuakesHaveTheirColoursOnBothGrounds` |
+| L11.21 | The gate's own defect, found stopping a run: a gate stopped by TERM reached its EXIT trap with status 0 and logged the run green after five seconds - a line M6 would count as clean. Its row was taken out of the log by hand (2026-09-28T03:18:10Z, 0e2add3) | `scripts/gate` | INT, TERM and HUP trapped: the run exits non-zero and is logged INTERRUPTED | `TestAStoppedRunIsLoggedInterrupted` |
+| L11.22 | Waves (D-94; watchpost D-125, D-126) | `internal/colour/preset.go`, `token.go`, `palette.go`, `internal/overlay/grid.go`, `internal/render/field.go`, `facts.go`, `look.go`, `overlays.go` | `WaveGrid`, `WaveUnit` (`Feet`, `Metres`); preset `waves` in `ft` or `m`; tokens `wave.1` to `wave.6`; `offItsGround`: waves the sea's alone | `TestWavesAreDrawnOverTheSeaAlone`, `TestTheWaveLegendIsItsSixClasses`, `TestTheWavePresetIsCheckedAndNamed`, `TestTheWaveScalePassesOnTheSea` |
+| L11.23 | The sea's stations' roles (D-95; watchpost D-127, D-128) | `internal/colour/token.go`, `defaults.go`, `sixteen.go`, `overlays.go`, `constants.md` | `Buoy`, `Tide`; tokens `buoy`, `tide` after every other | `TestBuoysAndTidesAreRolesOfTheirOwn`, `TestBuoysAndTidesHaveTheirColoursOnBothGrounds`, `TestTokensMatchTheDocumentedList` |
+| L11.24 | The basemap always shows (D-96; watchpost U2-34, D-124) | `internal/work/work.go`, `run.go`, `internal/render/frame.go`, `constants.md` | past the cap, the tiles of the view shown go last; within a view they run first; the loading notice speaks to a person | `TestTheBasemapDrawsUnderAFloodOfOverlays`, `TestTheBasemapIsNeverStarved`, `TestAViewNoLongerShownGoesFirst`, `TestNewestViewFirst`, `TestTheNoticeWhileTheMapLoadsSpeaksToAPerson`, `TestTheNoTilesNoticeNamesTheRealCause` |
+| L11.25 | The place names before the data (D-97; watchpost U2-38, D-135) | `internal/render/frame.go`, `L2-render.md`, `parity-matrix.md` | the basemap's names before every overlay label but an alert's or a marker's, and before the contours' values | `TestThePlaceNamesComeBeforeTheData`, `TestAFieldsContoursCarryTheirValues`, `TestOverlayLabelBeforeBasemap` |
+| L11.26 | Gusts on the arrows (D-98; watchpost D-136) | `internal/overlay/field.go`, `internal/scene/scene.go`, `internal/render/arrows.go` | `Grid.Gusts`; "15G30" | `TestAGustIsSaidBesideItsSpeed`, `TestAWindGridsGustsAreChecked` |
+| L11.27 | UV and air quality (D-99; watchpost D-137 to D-140) | `internal/colour/`, `internal/overlay/grid.go`, `internal/render/field.go`, `basemap.go`, `overlays.go`, `constants.md` | `UVGrid`, `AirQualityGrid`, `AirQualityRole`; tokens `uv.*`, `aqi.*` | `TestUVAndAirQualityAreTheirScales`, `TestUVAndAirQualityAreChecked`, `TestAMonitorIsDrawnInItsCategory`, `TestTheUVAndAirQualityScalesPass` |
+| L11.28 | The report kept while only the clock moves (watchpost W14, P-11): the kept report was keyed on the frame's clock, which a host passes to every Render, so every frame worked it out again - 9.8 ms and 11 MB with a twelve-frame loop, all of it the loop's motion, which the clock does not touch; it is keyed on which overlays are stale, the clock's one part in an answer (0.02 ms). An idle Map.Render's allocations pinned (63, 3.9 µs recorded) | `clock.go`, `describe.go`, `map.go`, `idle_bench_test.go` | `describeKey.staleWhich`; `Map.stale` says which | `TestAReportIsKeptWhileOnlyTheClockMoves`, `TestAReportFollowsEachOverlayGoingStale`, `TestAnIdleFrameCostsItsBudget` |
+| L11.29 | A place's distance to an alert measured once; a radar frame read from its pixels (watchpost W14): the nearest edge of every alert's areas from a place - 28 ms a report over a day's alerts - was paid again by every job landing and every pan, since a report is worked out again on each; it is kept per overlay, alert and place while the overlays and units stand (a watchpost warm open's answer-to-M5 0.7 s -> 0.01-0.25 s). A 600x275 radar PNG read through image.Image allocated for every pixel (165,049, 2.7 ms); NRGBA and paletted pictures are read from their pixels (50 allocations, 1.3 ms), every other layout as before | `report.go`, `map.go`, `internal/overlay/image.go` | `areaMemo`, `maxAreaMeasures`; `newMatcher`, `readClasses` | `TestAnAlertsDistanceIsMeasuredOnce`, `TestEveryLayoutIsReadAsTheGeneralReadingReadsIt`, `TestAFrameIsReadWithoutAnAllocationAPixel` |
+| L11.30 | A UV reading's band as a marker's role (watchpost W18.4, its D-167): `UVRole(index)` - the UV preset's own colour for the band a city's reading falls in, as `AirQualityRole` is AQI's | `overlays.go`, `public-surface.txt` | `UVRole` | `TestAUVReadingIsDrawnInItsBand` |
+| L11.31 | Rain and snow totals (L-26, D-100; watchpost W18.5, D-168, D-184): a `qpf` preset in mm, WPC's floors, nothing under a trace (`FloorsFirst`, shared with radar's rule), `QPFGrid` | `internal/colour`, `internal/overlay/grid.go`, `internal/render/field.go`, `facts.go`, `overlays.go` | `QPFGrid`, `colour.QPFFloors`, `colour.FloorsFirst` | `TestRainTotalsAreWPCsScale`, `TestRainTotalsAreChecked`, `TestTheRainTotalsScalePasses` |
+| L11.32 | A refreshed loop keeps drawing (L-27; watchpost U2-47, C-10, D-199): its old pictures stand in at the moment shown until the new ones land - live runs saw one frame with no radar on every refresh and zoom | `internal/overlay/store.go`, `image.go`, `timeline.go` | `standLoop`, `standPicturesLocked`, `standRasterLocked` | `TestARefreshedLoopKeepsDrawing`, `TestARefreshedLoopDrawsTheOldFramesUntilTheNewLand` |
+| L11.33 | The names stand still as a loop plays (L-28; watchpost U2-46, D-200): an overlay outside the moment is reserved - its alert words and digits hold their room, its field or image the name budget - so a name never comes and goes with an alert's hours | `overlays.go`, `internal/render/basemap.go`, `frame.go` | `Input.Reserved`, `Input.Covered`, `Painter.Reserve`, `Map.reserve` | `TestNamesHoldStillAsALoopPlays`, `TestAReservedAlertHoldsItsWordsRoom`, `TestAReservedOutlineHoldsItsDigits`, `TestTheNameBudgetHoldsAcrossALoop`, `TestReservingIsAChangeOfFrame` |
+| L11.34 | A render keeps an overlay's preparation (L-30; watchpost UAT-2 U2-59): a render's plan withdrew every job that was not a tile the view wanted, so the preparation of a held overlay in flight was cancelled at each render - a radar loop that takes tens of milliseconds to prepare, beside a host rendering on every landed unit, was cancelled and asked again for as long as other work landed (a watchpost live run: 48 s of no radar, 92 preparations of one loop, half the boxes drawn) | `map.go`, `overlays.go`, `internal/overlay` | `stillWanted`, `overlay.PreparesOf`, `Store.Holds` | `TestARenderKeepsAHeldOverlaysPreparation`, `TestALoopIsPreparedOnceWhileTheHostRenders` |
+| L11.35 | A blink phase redraws only what blinks (L-29; watchpost W14 P-10): the renderer compared the blink phase on every frame, so a map with no blinking marker repainted in full twice a blink period - measured on an idle 149x38 map with a twelve-frame loop, a render across a flip 5.9 ms and 556 KB, where an unchanged one is 3.1 µs and 4 KB | `internal/render/frame.go`, `blink_test.go` | `sameOverlays` compares the phase only when a marker blinks | `TestAPhaseFlipRedrawsOnlyWhatBlinks`, `TestTheRendererSeesThePhaseOnlyOnABlinkingMarker` |
+| L11.4 | The contract, the surface test, the diagrams and `v0.2.0-rc.9` | `contract.md`, `surface_test.go`, the diagrams | Section rows for L-14; the surface golden gains the new names | The surface test and the contract-sentence test, RED on the new names first |
+
+## Dependencies within packages
+
+L2.1 → L2.2 → L2.3 → L2.4 → L2.5 → L2.6 → L2.7 → L2.8 · L4.1 → L4.2 → L4.3; L4.4 and L4.5 need L4.1;
+L4.10 needs L4.4 · L3.1 and L3.2 need L4.4 and L4.7 · L3.3 → L3.4 → L3.5; L3.6 → L3.7 → L3.8 ·
+L3.9–L3.11a need L3.5 and L5.1 · L5.1 → L5.2 → L5.3–L5.5; L5.5 and L5.6 need L6.1 · L6.1 → L6.2, L6.3 →
+L6.4 → L6.5, L6.6 → L6.9 · L8.1 → L8.2, L8.3; L8.5 → L8.6 · L9.3 needs L8.1; L9.1 → L9.2.
+
+## The trace
+
+| Requirement | Task | | Requirement | Task |
+|---|---|---|---|---|
+| L-1.1 | L2.1 | | L-7.1, L-7.2, L-7.4, L-13.2 | L8.1, L8.2 |
+| L-1.2, L-1.10a, L-1.10f | L4.8 | | L-7.3 | L8.3, L1.6 |
+| L-1.3 | L4.9 | | L-8.1, L-8.5, L-8.7 | L3.9–L3.11a (D-65) |
+| L-1.4 | L2.10 | | L-8.3 | L3.3–L3.5, L1.6 |
+| L-1.5, L-1.11 | L4.1 | | L-8.8 | L3.12 |
+| L-1.6 | L3.1 | | L-8.9 | L3.13 |
+| L-1.7 | L2.5 | | L-9.2, L-9.3 | L9.3, L9.4, L1.6 |
+| L-1.8 | L4.3 | | L-9.1, L-9.4 | L9.1, L9.2 |
+| L-1.9, L-1.15 | L2.2 | | L-9.5 | L9.4, L9.5 |
+| L-1.10b | L4.4 | | L-9.6 | L9.6, L1.6 |
+| L-1.10c | L4.6 | | L-10.2 | L8.5 |
+| L-1.10d | L4.5, L1.6 | | L-10.3 | L8.4, L8.6 |
+| L-1.10e | L4.7 | | L-11.1 | L3.6 |
+| L-1.10g | L4.2, L4.8 | | L-11.2, L-11.5 | L3.7 |
+| L-1.12 | L5.5 | | L-11.3, L-11.4 | L3.8 |
+| L-1.13 | L4.11 | | L-12.1 | L2.6 |
+| L-1.14 | L2.3, L2.4 | | L-12.2, M4 | L2.6, L10.8 |
+| L-1.16 | L3.2 | | L-12.3 | L1.6 |
+| L-2.1, L-2.4 | L6.3 | | L-12.4 | L2.7, L2.8 |
+| L-2.3, RK-2, RK-11, OW-12 | L6.4–L6.9 | | L-12.5 | L3.14 |
+| L-2.5 | L6.1, L6.2 | | L-12.6 | L2.7, L2.9, L9.6 |
+| L-3.1, M3 | L7.1, L7.2 | | L-13.1 | L8.7 |
+| L-3.2 | L7.3 | | L-13.4 | L10.2 |
+| L-4.1, L-4.2, M5 | L1.2, L1.3 | | L-13.5 | L5.3 |
+| L-4.3 | L1.1 | | L-13.6 | L5.4 |
+| L-4.4 | L1.4 | | L-13.9 | L5.1, L5.2 |
+| L-5.3 | L10.3 | | L-13.8 | L10.1 |
+| L-5.5 | L10.4 | | L-13.10 | L5.6, L5.7 |
+| L-6.1 | L10.5 | | M1 | L10.9 |
+| L-6.3 | L10.6 | | M2 | L4.8, L4.9 |
+| L-6.4, OW-4 | L10.7 | | M6 | L10.10 |
+| L-5.4 | L10.11 | | the plans in step | L10.12 |
+| RK-1 | L4.10 | | NFR-1 (breaks listed) | L1.5 |
+| L-10.1 | existing: `TestTileJSONAddressesObeyFetchRules`, `FuzzTileJSON` | | L-13.3 | done (D-38) |
+| L-13.7 | deferred (D-29), no task | | L-8.2 | context for L-8.1, no task |
+
+## Deviations from DISCOVER, recorded
+
+- **L-7.3's time promise** is what a library that starts no goroutine can keep (D-55).
+- **L-8.4 withdrawn** (D-50): the 16-colour shade defect was a miscount.
+- **`Fetcher` and `fetch.Checked` are removed** and L-7.1 reworded (D-62).
+- **Severity without colour is a digit, not a dash**: 4, 3, 2, 1 and `?` repeated along the outline replace the per-severity dash (D-65).
+- **Seek is removed**: one playback per map, its position a valid time, driven by `Play`, `Stop`, `Reset` and `Step` (D-67).
+- **The image budget's default is 6 MiB, not 3 MiB**, and `MaxFrames` is 72, not 36, for two hours of loop (D-68).
+- **`Describe` is removed**; `Report` gives every answer it gave (D-70).
+- **The borrow check is dropped**, with its warning kind `BorrowChanged` (D-74).
+- **The flash ceiling can be lifted**: a playback step below 400 ms lifts the 2.5-changes-a-second ceiling, by the host's choice, and the state read says so (D-76).
+- **A vector-tile ring of zero area is a hole** of the polygon before it, not a polygon of its own (D-106).
+
+## Blend search, as measured (L3.7, L3.8; L-11.5's record)
+
+The checker's result for the library's own palette, per image preset, ground and depth, one column a tint. A strength is the blend chosen; "under 5" names the classes whose tinted form is less than 5 from the same class outside the area, where the outline, label and severity digit carry the warning (L-11.5). "drawn over" is the fallback: the image over the tint. **One deviation from L-11.4:** it expected the dark ground to keep the blend; for temperature fields in truecolour no strength separates the 17 classes on either ground, so they are drawn over the tint on the dark ground too, and at 256 colours every blend that separates is too faint for any class but one to be visible. **A blend no class shows is drawn over (D-114):** where the strongest strength that separates leaves every class under 5, the image is drawn over the tint - the same picture, without the blend's work - which is why three of temperature's 256-colour tints read "drawn over".
+
+| Preset | Ground | Depth | Extreme | Severe | Moderate | Minor | Unknown |
+|---|---|---|---|---|---|---|---|
+| radar | dark | truecolour | 20 %; under 5: class 1, 2 | 30 % | 35 % | 25 %; under 5: class 1, 2 | 25 %; under 5: class 2 |
+| radar | dark | 256 | 25 %; under 5: class 1, 2 | 25 %; under 5: class 2 | 20 %; under 5: class 1, 2, 3, 4, 5 | 15 %; under 5: class 1, 2, 3, 4, 5 | 20 %; under 5: class 1, 2, 3, 4, 5 |
+| radar | light | truecolour | drawn over | drawn over | drawn over | drawn over | drawn over |
+| radar | light | 256 | drawn over | drawn over | drawn over | drawn over | 35 %; under 5: class 1, 2 |
+| temperature | dark | truecolour | drawn over | drawn over | drawn over | drawn over | drawn over |
+| temperature | dark | 256 | drawn over | drawn over | 10 %; under 5: class 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 | drawn over | drawn over |
+| temperature | light | truecolour | drawn over | drawn over | drawn over | drawn over | drawn over |
+| temperature | light | 256 | drawn over | drawn over | drawn over | drawn over | drawn over |

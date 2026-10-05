@@ -1,0 +1,55 @@
+--- internal/render/frame.go	2026-09-21 11:28:18
++++ internal/render/frame.go	2026-09-23 07:48:56
+@@ -2,6 +2,7 @@
+ 
+ import (
+ 	"math"
++	"os"
+ 	"sort"
+ 	"strconv"
+ 	"strings"
+@@ -658,8 +659,12 @@
+ 	if area, ok := r.painter.Colour(c.area, in.Palette, kind, in.Depth); ok {
+ 		bg = area
+ 	}
+-	if under, ok := r.painter.Colour(c.under, in.Palette, kind, in.Depth); ok && !tinted {
+-		bg = under
++	if under, ok := r.painter.Colour(c.under, in.Palette, kind, in.Depth); ok { // SPECIMEN 29d SCRATCH PATCH
++		if tinted {
++			bg = specimenBlend(under, bg)
++		} else {
++			bg = under
++		}
+ 	}
+ 	own, ok := r.painter.Colour(c.ink, in.Palette, kind, in.Depth)
+ 	if !ok {
+@@ -840,3 +845,29 @@
+ 	}
+ 	p.fg, p.bg, p.fresh = fg, bg, false
+ }
++
++// specimenBlend is SPECIMEN 29d's scratch patch: the tint laid over the image
++// at SPECIMEN_ALPHA (default 0.35), composited in linear light.
++func specimenBlend(image, tint colour.RGB) colour.RGB {
++	a := 0.35
++	if v, err := strconv.ParseFloat(os.Getenv("SPECIMEN_ALPHA"), 64); err == nil {
++		a = v
++	}
++	lin := func(c uint8) float64 {
++		x := float64(c) / 255
++		if x <= 0.04045 {
++			return x / 12.92
++		}
++		return math.Pow((x+0.055)/1.055, 2.4)
++	}
++	enc := func(x float64) uint8 {
++		if x <= 0.0031308 {
++			x *= 12.92
++		} else {
++			x = 1.055*math.Pow(x, 1/2.4) - 0.055
++		}
++		return uint8(math.Round(math.Max(0, math.Min(1, x)) * 255))
++	}
++	mix := func(i, t uint8) uint8 { return enc((1-a)*lin(i) + a*lin(t)) }
++	return colour.RGB{R: mix(image.R, tint.R), G: mix(image.G, tint.G), B: mix(image.B, tint.B)}
++}

@@ -1,0 +1,28 @@
+fuzz: elapsed: 3s, gathering baseline coverage: 0/1036 completed
+fuzz: elapsed: 4s, gathering baseline coverage: 1036/1036 completed, now fuzzing with 18 workers
+fuzz: elapsed: 6s, execs: 336523 (112143/sec), new interesting: 0 (total: 1036)
+fuzz: elapsed: 9s, execs: 685363 (116274/sec), new interesting: 0 (total: 1036)
+fuzz: elapsed: 12s, execs: 938824 (84495/sec), new interesting: 5 (total: 1041)
+fuzz: elapsed: 15s, execs: 1285042 (115426/sec), new interesting: 8 (total: 1044)
+fuzz: elapsed: 18s, execs: 1744882 (153239/sec), new interesting: 9 (total: 1045)
+fuzz: elapsed: 21s, execs: 2221860 (159036/sec), new interesting: 10 (total: 1046)
+fuzz: elapsed: 24s, execs: 2651064 (143074/sec), new interesting: 11 (total: 1047)
+fuzz: elapsed: 27s, execs: 2992902 (113942/sec), new interesting: 12 (total: 1048)
+fuzz: elapsed: 30s, execs: 3350366 (119142/sec), new interesting: 15 (total: 1051)
+fuzz: elapsed: 33s, execs: 3617518 (89057/sec), new interesting: 17 (total: 1053)
+fuzz: elapsed: 36s, execs: 4036288 (139555/sec), new interesting: 20 (total: 1056)
+fuzz: elapsed: 39s, execs: 4286858 (83528/sec), new interesting: 22 (total: 1058)
+fuzz: elapsed: 42s, execs: 4475294 (62809/sec), new interesting: 24 (total: 1060)
+fuzz: elapsed: 45s, execs: 4671968 (65558/sec), new interesting: 25 (total: 1061)
+fuzz: elapsed: 48s, execs: 4890435 (72846/sec), new interesting: 26 (total: 1062)
+fuzz: elapsed: 51s, execs: 5064556 (58022/sec), new interesting: 26 (total: 1062)
+fuzz: elapsed: 54s, execs: 5226463 (53986/sec), new interesting: 27 (total: 1063)
+fuzz: elapsed: 57s, execs: 5386866 (53461/sec), new interesting: 28 (total: 1064)
+fuzz: elapsed: 1m0s, execs: 5460732 (24620/sec), new interesting: 29 (total: 1065)
+fuzz: elapsed: 1m3s, execs: 5516492 (18585/sec), new interesting: 29 (total: 1065)
+fuzz: elapsed: 1m6s, execs: 5568506 (17338/sec), new interesting: 29 (total: 1065)
+fuzz: elapsed: 1m9s, execs: 5570367 (620/sec), new interesting: 30 (total: 1066)
+fuzz: elapsed: 1m12s, execs: 5674830 (34821/sec), new interesting: 30 (total: 1066)
+fuzz: elapsed: 1m13s, execs: 5700000 (40426/sec), new interesting: 30 (total: 1066)
+PASS
+ok  	github.com/branden-thompson/go-tuimaps/tools/oracle	73.532s

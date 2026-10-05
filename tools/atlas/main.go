@@ -1,7 +1,7 @@
 // Command atlas builds the architecture atlas from the tracked documents.
 //
 // **The documents are the source of truth and the page is generated from
-// them.** It reads every fenced mermaid block under 06_docs/ and docs/, takes
+// them.** It reads every fenced mermaid block under 06_docs/, takes
 // the heading above each as its title and the paragraph between as its lead,
 // and groups them by the feature they belong to.
 //
@@ -11,11 +11,13 @@
 // in the reading order below is still built, after the named ones, so nothing
 // is silently dropped.
 //
-// Run from the repository root: go run ./tools/atlas
+// tools/atlas is a module of its own, so it runs from its own directory with
+// the repository root named: cd tools/atlas && go run . -root ../..
 package main
 
 import (
 	_ "embed"
+	"flag"
 	"fmt"
 	"html"
 	"os"
@@ -44,34 +46,102 @@ var (
 
 type diagram struct{ feature, file, title, lead, src string }
 
+// safeID is what a feature's directory must look like to become an HTML id
+// and a link target without escaping.
+var safeID = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
+
+// check refuses what would write a broken page rather than writing it: no
+// diagrams at all, a template missing a place the page is filled into, a
+// diagram with nothing to draw, or a feature name that is not safe as an id.
+func check(found []diagram, page string) error {
+	if len(found) == 0 {
+		return fmt.Errorf("no mermaid blocks found")
+	}
+	for _, mark := range []string{"<!--NAV-->", "<!--BODY-->", "<!--COUNT-->"} {
+		if !strings.Contains(page, mark) {
+			return fmt.Errorf("the page template has no %s, so the page would be written without it", mark)
+		}
+	}
+	for _, d := range found {
+		if strings.TrimSpace(d.src) == "" {
+			return fmt.Errorf("%s: a mermaid block with nothing in it", d.file)
+		}
+		if !safeID.MatchString(d.feature) {
+			return fmt.Errorf("%s: feature %q is not safe as an id in the page", d.file, d.feature)
+		}
+	}
+	return nil
+}
+
 func main() {
-	if err := run(); err != nil {
+	root := flag.String("root", ".", "the repository root, whose 06_docs/ is read and written")
+	flag.Parse()
+	if err := run(*root); err != nil {
 		fmt.Fprintln(os.Stderr, "atlas:", err)
 		os.Exit(1)
 	}
 }
 
-func run() error {
+// dest is where the page is written, relative to the repository root.
+var dest = filepath.Join("06_docs", "architecture-atlas.html")
+
+func run(root string) error {
+	out, count, err := build(root)
+	if err != nil {
+		return err
+	}
+	path := filepath.Join(root, dest)
+	if err := os.WriteFile(path, []byte(out), 0o644); err != nil {
+		return err
+	}
+	_, err = fmt.Printf("%d diagrams -> %s\n", count, path)
+	return err
+}
+
+// build makes the page from the documents under root/06_docs, with every
+// path in it relative to root, so a test can build it from anywhere and
+// compare it with the page that is committed.
+func build(root string) (string, int, error) {
+	found, err := collect(root)
+	if err != nil {
+		return "", 0, err
+	}
+	if err := check(found, page); err != nil {
+		return "", 0, err
+	}
+	nav, body := compose(found)
+	return strings.NewReplacer(
+		"<!--NAV-->", nav,
+		"<!--BODY-->", body,
+		"<!--COUNT-->", fmt.Sprint(len(found)),
+	).Replace(page), len(found), nil
+}
+
+// collect reads every diagram under root/06_docs.
+func collect(root string) ([]diagram, error) {
 	var found []diagram
-	for _, root := range []string{"06_docs"} {
-		err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-			if err != nil || info.IsDir() || !strings.HasSuffix(path, ".md") {
-				return err
-			}
-			raw, err := os.ReadFile(path)
-			if err != nil {
-				return err
-			}
-			found = append(found, read(path, string(raw))...)
-			return nil
-		})
+	err := filepath.Walk(filepath.Join(root, "06_docs"), func(path string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() || !strings.HasSuffix(path, ".md") {
+			return err
+		}
+		raw, err := os.ReadFile(path)
 		if err != nil {
 			return err
 		}
-	}
-	if len(found) == 0 {
-		return fmt.Errorf("no mermaid blocks found")
-	}
+		rel, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+		found = append(found, read(rel, string(raw))...)
+		return nil
+	})
+	return found, err
+}
+
+// compose lays the diagrams out as the page's navigation and body.
+// It sorts a copy, so the caller's slice is left as it was.
+func compose(given []diagram) (string, string) {
+	found := append([]diagram(nil), given...)
 	sort.SliceStable(found, func(i, j int) bool { return found[i].file < found[j].file })
 
 	seen := map[string]bool{}
@@ -118,17 +188,7 @@ func run() error {
 		body.WriteString("</section>")
 	}
 
-	out := strings.NewReplacer(
-		"<!--NAV-->", nav.String(),
-		"<!--BODY-->", body.String(),
-		"<!--COUNT-->", fmt.Sprint(len(found)),
-	).Replace(page)
-	dest := filepath.Join("06_docs", "architecture-atlas.html")
-	if err := os.WriteFile(dest, []byte(out), 0o644); err != nil {
-		return err
-	}
-	fmt.Printf("%d diagrams -> %s\n", len(found), dest)
-	return nil
+	return nav.String(), body.String()
 }
 
 // read pulls every diagram out of one document.

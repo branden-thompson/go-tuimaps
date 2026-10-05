@@ -52,8 +52,79 @@ type Feature struct {
 	Rings    [][]project.LonLat
 	Centre   project.LonLat
 	RadiusKm float64
-	Role     colour.Token // the token it is drawn in; for an alert, its outline's
-	Label    string
+	// RadiusDots makes a circle a ring fixed on the screen (L-19): its
+	// radius in braille dots, the same at every zoom - a quake's, sized by
+	// its magnitude as USGS's map sizes it. A circle has one radius or the
+	// other, never both.
+	RadiusDots int
+	Role       colour.Token // the token it is drawn in; for an alert, its outline's
+	Label      string
+	// Severity is an alert's, as data; zero means the one its role implies
+	// (L-13.9). Valid and Expires are its times, zero when not given.
+	Severity       Severity
+	Valid, Expires time.Time
+	// ID is the host's name for the feature, so that an entry of Report can
+	// be joined back to the host's own alert. It is the host's to give.
+	ID string
+}
+
+// Severity is how severe an alert is. The zero value means "as the role
+// says": a feature drawn in an alert's colours has that alert's severity.
+type Severity uint8
+
+// The severities, least first.
+const (
+	SeverityUnknown Severity = iota + 1
+	SeverityMinor
+	SeverityModerate
+	SeveritySevere
+	SeverityExtreme
+)
+
+// Word is a severity as the label says it (L-8.1), and Digit as the outline
+// repeats it (D-65): extreme 4, severe 3, moderate 2, minor 1, unknown ?.
+func (s Severity) Word() string {
+	return [...]string{"", "UNKNOWN", "MINOR", "MODERATE", "SEVERE", "EXTREME"}[min(int(s), 5)]
+}
+
+// Digit is the severity's digit, or empty for no severity.
+func (s Severity) Digit() string {
+	return [...]string{"", "?", "1", "2", "3", "4"}[min(int(s), 5)]
+}
+
+// LabelOf is what an alert's label says on the map: the host's label and the
+// severity as a word, "Tornado Warning · EXTREME", or the word alone when
+// there is no label (L-8.1). Any other feature's label is its own.
+func LabelOf(f Feature) string {
+	word := SeverityOf(f).Word()
+	switch {
+	case word == "":
+		return f.Label
+	case f.Label == "":
+		return word
+	}
+	return f.Label + " · " + word
+}
+
+// SeverityOf is a feature's severity: the one it states, or the one its role
+// implies; zero for a feature that is no alert.
+func SeverityOf(f Feature) Severity {
+	if f.Severity != 0 {
+		return f.Severity
+	}
+	switch f.Role {
+	case colour.AlertExtremeOutline, colour.AlertExtremeTint:
+		return SeverityExtreme
+	case colour.AlertSevereOutline, colour.AlertSevereTint:
+		return SeveritySevere
+	case colour.AlertModerateOutline, colour.AlertModerateTint:
+		return SeverityModerate
+	case colour.AlertMinorOutline, colour.AlertMinorTint:
+		return SeverityMinor
+	case colour.AlertUnknownOutline, colour.AlertUnknownTint:
+		return SeverityUnknown
+	}
+	return 0
 }
 
 // Overlay is what a host hands in: an id, when its data was valid and how
@@ -62,19 +133,31 @@ type Overlay struct {
 	ID       string
 	Valid    time.Time
 	Keeps    time.Duration
+	During   Span // when it is drawn: while the map's moment meets it; the zero span, always (L-15.1)
 	Credit   string
 	Features []Feature
 	Grid     *Grid  // a scalar grid; an overlay is features, or a grid, or an image, and one only
 	Image    *Image // a georeferenced image with its colour table
 }
 
+// Span is when an overlay is drawn (L-15.1): while the map's moment - the
+// loop's frame, the host's moment, or the frame's clock - meets it. A zero
+// From is open into the past, a zero Until open into the future, so the zero
+// span is always.
+type Span struct{ From, Until time.Time }
+
+// Meets reports whether the span meets a moment from one time to another,
+// both ends included.
+func (sp Span) Meets(from, to time.Time) bool {
+	return (sp.Until.IsZero() || !sp.Until.Before(from)) && (sp.From.IsZero() || !sp.From.After(to))
+}
+
 // Caps are a store's limits, fixed when it is made.
 type Caps struct {
-	OverlayVertices int  // zero means 2,000,000
-	StoreVertices   int  // zero means 4,000,000
-	ShapeBytes      int  // the shape cache's cap; zero means 250,000
-	ImageBytes      int  // the image cap, at one byte a pixel; zero means 250,000
-	BorrowCheck     bool // fingerprint borrowed geometry at hand-in, and re-check what is read
+	OverlayVertices int // zero means 2,000,000
+	StoreVertices   int // zero means 4,000,000
+	ShapeBytes      int // the shape cache's cap; zero means 250,000
+	ImageBytes      int // the image cap, at one byte a pixel; zero means 250,000
 	// Classified is the pictures the maps of a shared set have already
 	// read. Nil means this store reads its own and shares them with nobody
 	// (D-116).
@@ -98,11 +181,11 @@ type held struct {
 	overlay  Overlay
 	vertices int
 	readers  int
-	retired  bool                // replaced or removed: released when its last reader leaves
-	kind     Kind                // a grid's type, resolved at hand-in
-	box      project.Box         // where it is, recorded at hand-in so fit-to needs no work (D-76)
-	index    []Box               // built inside Set for a shape that may be drawn from memory (D-92)
-	prints   map[[2]int][]uint64 // fingerprints by feature, ring and run, if the borrow check is on
+	retired  bool        // replaced or removed: released when its last reader leaves
+	kind     Kind        // a grid's type, resolved at hand-in
+	box      project.Box // where it is, recorded at hand-in so fit-to needs no work (D-76)
+	index    []Box       // built inside Set for a shape that may be drawn from memory (D-92)
+	charge   int64       // what it costs the image budget: an image's files and pixels, a grid's field
 }
 
 // Store holds a map's overlays. Set and Remove never wait: a version that is
@@ -117,13 +200,17 @@ type Store struct {
 	vertices int
 	warnings []fault.Warning
 
-	prepared   map[string]map[int]*prepared // by overlay id, then bucket
-	fields     map[string]scene.Field       // prepared grids, by overlay id
-	rasters    map[string]scene.Raster      // prepared images, by overlay id
-	reports    map[string]Report            // what matching each image's colours found
-	fromMemory map[string]bool              // overlays whose prepared form is larger than the whole cap
-	views      map[*ShapeView]int           // live views, and the bucket each draws at
-	released   []string
+	prepared   map[string]map[int]*prepared    // by overlay id, then bucket
+	stand      map[string]map[int]*prepared    // a replaced geometry's prepared form, drawn until the new one is (L11.5)
+	fields     map[string]scene.Field          // prepared grids, by overlay id
+	pictures   map[string][]picture            // decoded pictures, by overlay id, one a frame
+	spare      map[string]map[[32]byte]picture // a replaced loop's decoded frames, by key, for its refresh to keep (L-1.7)
+	standPics  map[string]standLoop            // a replaced loop's pictures, drawn until the new ones land (L11.32)
+	decodes    int                             // pictures decoded, counted so a test can see a refresh reuse them
+	budget     int64                           // what the images may hold in all (L-12.1)
+	landed     uint64                          // prepared forms kept, for Work to see (D-66)
+	fromMemory map[string]bool                 // overlays whose prepared form is larger than the whole cap
+	views      map[*ShapeView]int              // live views, and the bucket each draws at
 	shapeHeld  int64
 	shapeNeed  int64
 	overNeed   bool
@@ -149,7 +236,7 @@ func NewStore(c Caps) (*Store, error) {
 	if c.ImageBytes == 0 {
 		c.ImageBytes = defaultImageBytes
 	}
-	return &Store{caps: c, current: map[string]*held{}, retiring: map[string]int{}, prepared: map[string]map[int]*prepared{}, fields: map[string]scene.Field{}, rasters: map[string]scene.Raster{}, reports: map[string]Report{}, fromMemory: map[string]bool{}, views: map[*ShapeView]int{}}, nil
+	return &Store{budget: defaultImageBudget, caps: c, current: map[string]*held{}, retiring: map[string]int{}, prepared: map[string]map[int]*prepared{}, stand: map[string]map[int]*prepared{}, fields: map[string]scene.Field{}, pictures: map[string][]picture{}, spare: map[string]map[[32]byte]picture{}, standPics: map[string]standLoop{}, fromMemory: map[string]bool{}, views: map[*ShapeView]int{}}, nil
 }
 
 func refused(kind fault.Kind, why, todo textsafe.Text) error {
@@ -178,6 +265,10 @@ func checkRing(ring []project.LonLat) error {
 	return nil
 }
 
+// MaxRingDots is the largest ring on the screen, in braille dots: 24 cells
+// across, a quake of magnitude 8 or more.
+const MaxRingDots = 48
+
 // checkFeature validates one feature and counts its vertices.
 func checkFeature(f Feature) (int, error) {
 	if f.Kind < Point || f.Kind > Circle {
@@ -188,9 +279,20 @@ func checkFeature(f Feature) (int, error) {
 		return 0, refused(fault.UnknownPreset, textsafe.Const("one of its features names a role that is no token"),
 			textsafe.Const("give each feature one of the library's tokens, such as an alert's outline"))
 	}
+	if f.Severity > SeverityExtreme {
+		return 0, refused(fault.UnknownPreset, textsafe.Const("one of its features gives a severity that is none of the library's"),
+			textsafe.Const("give unknown, minor, moderate, severe or extreme, or none for the one its role implies"))
+	}
 	if f.Kind == Circle && len(f.Rings) != 0 {
 		return 0, refused(fault.InvalidCoordinates, textsafe.Const("a circle has a centre and a radius and no rings, and this one has rings as well"),
 			textsafe.Const("hand a circle in with its centre and radius alone, or hand the rings in as a polygon"))
+	}
+	if f.Kind == Circle && f.RadiusDots != 0 {
+		if f.RadiusKm != 0 || f.RadiusDots < 1 || f.RadiusDots > MaxRingDots {
+			return 0, refused(fault.InvalidCoordinates, textsafe.Const("a ring's radius on the screen is not from 1 to 48 dots, or it has a radius in kilometres as well"),
+				textsafe.Const("give a circle its radius in kilometres or in dots, one of them; in dots, from 1 to 48"))
+		}
+		return 1, checkRing([]project.LonLat{f.Centre})
 	}
 	if f.Kind == Circle {
 		if !(f.RadiusKm > 0 && f.RadiusKm <= 20040) {
@@ -228,6 +330,10 @@ func (s *Store) check(o Overlay) (int, error) {
 	err := CheckCurrency(o.Valid, o.Keeps)
 	if err != nil {
 		return 0, err
+	}
+	if sp := o.During; !sp.From.IsZero() && !sp.Until.IsZero() && sp.Until.Before(sp.From) {
+		return 0, refused(fault.BadCurrency, textsafe.Const("its span ends before it begins"),
+			textsafe.Const("give During a From at or before its Until, or leave either zero for open"))
 	}
 	kinds := 0
 	for _, has := range []bool{len(o.Features) != 0, o.Grid != nil, o.Image != nil} {
@@ -399,14 +505,25 @@ func (s *Store) retireLocked(id string, h *held) bool {
 	return false
 }
 
-// Set adds an overlay, or replaces the one of the same id. It never waits.
+// HandIn (behind Map.Set) adds an overlay, or replaces the one of the same id. It never waits.
 func (s *Store) HandIn(o Overlay) (SetResult, error) {
 	if s == nil {
 		return SetResult{}, refused(fault.Internal, textsafe.Const("there is no store to set it in"), textsafe.Const("this is a defect in the library; report it"))
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	vertices, err := s.check(o)
+	// THE BUDGET IS ASKED BEFORE ANYTHING IS COPIED: the charge reads the host's
+	// pictures' headers alone, so a loop over the budget is refused without the
+	// copy that would be the memory the budget exists to bound.
+	charge := chargeOf(o)
+	err := s.fitsBudgetLocked(o.ID, charge)
+	if err == nil && o.Image != nil {
+		o.Image, err = copied(o.Image) // the copy is what is checked and kept (L-1.14)
+	}
+	vertices := 0
+	if err == nil {
+		vertices, err = s.check(o)
+	}
 	if err == nil {
 		replaced := 0
 		if old, ok := s.current[o.ID]; ok {
@@ -417,6 +534,9 @@ func (s *Store) HandIn(o Overlay) (SetResult, error) {
 				textsafe.Join(textsafe.Const("with it the map's overlays would have more than "), textsafe.Clean(grouped(s.caps.StoreVertices)), textsafe.Const(" vertices in all")),
 				textsafe.Const("remove an overlay first, or simplify the geometry before handing it in"))
 		}
+	}
+	if err == nil {
+		charge = chargeOf(o) // the store's own copy, which is what is kept
 	}
 	if err != nil {
 		s.warnLocked(fault.SetRefused, textsafe.Quote(o.ID)) // a discarded error still shows
@@ -434,7 +554,7 @@ func (s *Store) HandIn(o Overlay) (SetResult, error) {
 			}
 		}
 	}
-	next := &held{overlay: o, vertices: vertices, box: boxOfOverlay(o)}
+	next := &held{overlay: o, vertices: vertices, box: boxOfOverlay(o), charge: charge}
 	if o.Image != nil {
 		next.kind, _ = ResolveType(o.Image.Type) // it resolved a moment ago, in check
 	}
@@ -447,16 +567,171 @@ func (s *Store) HandIn(o Overlay) (SetResult, error) {
 	if vertices > s.IndexFrom() {
 		next.index = buildIndex(o) // one linear pass, inside Set, so the shape draws next frame (D-92)
 	}
-	if s.caps.BorrowCheck {
-		next.prints = fingerprints(o)
-	}
-	s.dropPreparedLocked(o.ID) // what was prepared from the old geometry is not this overlay's
+	s.spareFramesLocked(o)                   // a refresh keeps the frames it shares with the loop it replaces (L-1.7)
+	s.standPicturesLocked(o)                 // and draws the old ones until its own land (L11.32)
+	s.standInLocked(o.ID, next.index == nil) // what was prepared from the old geometry is drawn until this is prepared (L11.5), unless this is drawn from memory (D-92)
 	s.current[o.ID] = next
 	s.vertices += vertices
 	return res, nil
 }
 
-// Remove takes an overlay away. It never waits, and an id that is not set is
+// Landed counts the prepared shapes, fields and pictures kept: what a Work
+// call compares before and after, to know it landed something (D-66).
+func (s *Store) Landed() uint64 {
+	if s == nil {
+		return 0
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.landed
+}
+
+// chargeOf is what an overlay costs the image budget: an image's files and
+// pixels, or a grid's field at one byte a cell. Features cost it nothing:
+// the shape cache has its own cap.
+func chargeOf(o Overlay) int64 {
+	if o.Grid != nil {
+		return int64(o.Grid.Cols) * int64(o.Grid.Rows)
+	}
+	return imageCharge(o.Image)
+}
+
+// SetBudget sets what the map's images may hold in all. Zero or less is the
+// library's own, 6 MiB. Lowering it below what is held drops nothing; the
+// next hand-in that does not fit is refused (D-72). A host that raises it
+// owns the memory it asks for.
+func (s *Store) SetBudget(bytes int64) {
+	if s == nil {
+		return
+	}
+	if bytes <= 0 {
+		bytes = defaultImageBudget
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.budget = bytes
+}
+
+// ImageUse is what the budget counts now: every image's and grid's charge,
+// and the shared classified set. The shared set counts in full, even where it
+// holds this map's own pictures, so the count errs high, never low (L-12.6).
+func (s *Store) ImageUse() int64 {
+	if s == nil {
+		return 0
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.imageUseLocked()
+}
+
+func (s *Store) imageUseLocked() int64 {
+	total := int64(0)
+	for _, h := range s.current {
+		total += h.charge
+	}
+	shared, _ := s.caps.Classified.Bytes()
+	return total + shared
+}
+
+// fitsBudgetLocked refuses a hand-in that would take the images over the
+// budget, saying by how much. The version it replaces is not counted.
+func (s *Store) fitsBudgetLocked(id string, charge int64) error {
+	if charge == 0 {
+		return nil
+	}
+	use := s.imageUseLocked() + charge
+	if old, ok := s.current[id]; ok {
+		use -= old.charge
+	}
+	if use <= s.budget {
+		return nil
+	}
+	return refused(fault.OverImageCap,
+		textsafe.Join(textsafe.Const("with it the map's images would come to "), textsafe.Clean(grouped(int(use))), textsafe.Const(" bytes, "),
+			textsafe.Clean(grouped(int(use-s.budget))), textsafe.Const(" over its image budget of "), textsafe.Clean(grouped(int(s.budget)))),
+		textsafe.Const("hand in fewer or smaller frames, remove an image, or raise the budget with SetImageBudget"))
+}
+
+// spareFramesLocked keeps, by key, the decoded frames of the loop an overlay
+// replaces, for the new version's job to take instead of decoding them again.
+// Only a loop replacing a loop keeps any; the new version's own keys decide
+// which it takes, and what it does not take is dropped when it is kept.
+//
+// Two refreshes before any work keep what the first kept: the spare set grows
+// only by frames a job decoded, and the job that keeps a version empties it,
+// so it never holds more than one version's frames.
+func (s *Store) spareFramesLocked(o Overlay) {
+	spare := s.spare[o.ID]
+	delete(s.spare, o.ID)
+	if o.Image == nil || len(o.Image.Frames) == 0 {
+		return
+	}
+	if spare == nil {
+		spare = map[[32]byte]picture{}
+	}
+	for _, p := range s.pictures[o.ID] {
+		if p.ready && p.key != ([32]byte{}) {
+			spare[p.key] = p
+		}
+	}
+	if len(spare) > 0 {
+		s.spare[o.ID] = spare
+	}
+}
+
+// standLoop is a replaced image's pictures and the image they were decoded
+// from: what a moment shows until the replacement's pictures land.
+type standLoop struct {
+	img      *Image
+	pictures []picture
+}
+
+// standPicturesLocked keeps an image's decoded pictures as its stand-in when
+// it is handed in again (L11.32), so a refreshed radar loop is drawn while its
+// job decodes the new version - the picture form of what L11.5 does for
+// shapes. A stand-in already held, its replacement not yet landed, is kept:
+// it is the newest drawn. The pictures are the spare set's own, so nothing
+// more is held.
+func (s *Store) standPicturesLocked(o Overlay) {
+	old, ok := s.current[o.ID]
+	if !ok || old.overlay.Image == nil || o.Image == nil {
+		delete(s.standPics, o.ID)
+		return
+	}
+	if pics := s.pictures[o.ID]; len(pics) > 0 {
+		s.standPics[o.ID] = standLoop{img: old.overlay.Image, pictures: pics}
+	}
+}
+
+// standRasterLocked is the stand-in's picture for frame index i of its own
+// image, or false.
+func (s *Store) standRasterLocked(id string, pick func(*Image) int) (scene.Raster, Report, bool) {
+	st, ok := s.standPics[id]
+	if !ok {
+		return scene.Raster{}, Report{}, false
+	}
+	i := pick(st.img)
+	if i < 0 || i >= len(st.pictures) || !st.pictures[i].ready {
+		return scene.Raster{}, Report{}, false
+	}
+	return st.pictures[i].raster, st.pictures[i].report, true
+}
+
+// DropSpares drops the decoded pictures kept only to be used again: a
+// replaced loop's spare frames, and the shared set of readings (L-9.3). What
+// an overlay shows now is the host's, and stays.
+func (s *Store) DropSpares() {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	s.spare = map[string]map[[32]byte]picture{}
+	classified := s.caps.Classified
+	s.mu.Unlock()
+	classified.Empty()
+}
+
+// Drop takes an overlay away. It never waits, and an id that is not set is
 // not an error: the result says it was not found.
 func (s *Store) Drop(id string) (RemoveResult, error) {
 	if s == nil {
@@ -473,7 +748,10 @@ func (s *Store) Drop(id string) (RemoveResult, error) {
 		return RemoveResult{Released: true}, nil
 	}
 	delete(s.current, id)
+	delete(s.spare, id)
+	delete(s.standPics, id) // a removed loop's stand-in goes with it
 	s.dropPreparedLocked(id)
+	s.dropStandInLocked(id) // a removed overlay's stand-in goes with it
 	for i, other := range s.order {
 		if other == id {
 			s.order = append(s.order[:i], s.order[i+1:]...)
@@ -483,7 +761,7 @@ func (s *Store) Drop(id string) (RemoveResult, error) {
 	return RemoveResult{Found: true, Released: s.retireLocked(id, old)}, nil
 }
 
-// InUse reports whether any call is still reading geometry of that id that
+// Reading (behind Map.InUse) reports whether any call is still reading geometry of that id that
 // has been replaced or removed.
 func (s *Store) Reading(id string) bool {
 	if s == nil || id == "" {
@@ -492,6 +770,31 @@ func (s *Store) Reading(id string) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.retiring[id] > 0
+}
+
+// During is when an overlay is drawn (L-15.1), and false when none is set.
+func (s *Store) During(id string) (Span, bool) {
+	if s == nil || id == "" {
+		return Span{}, false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	h, ok := s.current[id]
+	if !ok {
+		return Span{}, false
+	}
+	return h.overlay.During, true
+}
+
+// Holds reports whether the store holds overlay id.
+func (s *Store) Holds(id string) bool {
+	if s == nil {
+		return false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	_, ok := s.current[id]
+	return ok
 }
 
 // IDs lists the overlays set, in the order they were first set.
@@ -517,8 +820,15 @@ func (s *Store) OwnedBytes() int {
 	for _, f := range s.fields {
 		total += len(f.Classes)
 	}
-	for _, r := range s.rasters {
-		total += len(r.Classes) // one byte a pixel (D-36)
+	for _, pictures := range s.pictures {
+		for _, p := range pictures {
+			total += len(p.raster.Classes) // one byte a pixel (D-36)
+		}
+	}
+	for _, spare := range s.spare {
+		for _, p := range spare {
+			total += len(p.raster.Classes) // held until the refresh's job takes or drops it
+		}
 	}
 	for id, h := range s.current {
 		total += 160 + len(id) + len(h.overlay.Credit) + 96*len(h.overlay.Features) + 16*len(h.index)
@@ -561,8 +871,8 @@ func (r *Reader) Overlay() Overlay {
 }
 
 // Done ends the read. It returns the id if this was the last read of geometry
-// that has been replaced or removed: that is how a release that Set or Remove
-// could not report is reported, by the return of the call that ended it.
+// that has been replaced or removed, which a host learns from InUse turning
+// false (D-132).
 func (r *Reader) Done() []string {
 	if r == nil || r.h == nil {
 		return nil
@@ -581,6 +891,5 @@ func (r *Reader) Done() []string {
 		return nil
 	}
 	delete(s.retiring, r.id)
-	s.released = append(s.released, r.id)
 	return []string{r.id}
 }

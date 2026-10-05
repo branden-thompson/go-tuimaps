@@ -13,7 +13,7 @@ import (
 
 // TestParityP72a_Chrome is plan task 13.2: the app's own chrome, as
 // upstream draws it - a row of keys at rows-2 and a status row at rows-1,
-// the status row showing the focused marker's label after two arrows.
+// the status row naming the focused place.
 func TestParityP72a_Chrome(t *testing.T) {
 	home := tuimaps.Place{Name: "Home", At: tuimaps.LonLat{Lon: -84.5, Lat: 33.8}}
 	a, out := upFor(t, home)
@@ -33,15 +33,15 @@ func TestParityP72a_Chrome(t *testing.T) {
 	if strings.TrimSpace(status) == "" {
 		t.Error("the status row is empty")
 	}
-	// Focused, it is upstream's own: two arrows and the label.
+	// Focused, it names the place (D-135).
 	a.act(keyFocus)
 	out.Reset()
 	if err := a.drawn(noon); err != nil {
 		t.Fatal(err)
 	}
 	rows = strings.Split(out.String(), "\r\n")
-	if got := colourless(rows[a.rows-1]); !strings.Contains(got, ">> Home") {
-		t.Errorf("the status row with a place focused is %q, want it to carry >> Home", got)
+	if got := colourless(rows[a.rows-1]); !strings.Contains(got, "focused: Home") {
+		t.Errorf("the status row with a place focused is %q, want it to carry focused: Home", got)
 	}
 	// The map keeps the rest, and no more: the library is given the exact
 	// rectangle that is left (L-17 g).
@@ -63,8 +63,10 @@ func TestPanelsReplaceTheMapAndGoAway(t *testing.T) {
 	home := tuimaps.Place{Name: "Home", At: tuimaps.LonLat{Lon: -84.5, Lat: 33.8}}
 	a, out := upFor(t, home)
 	for _, c := range []struct{ key, says string }{
-		{keyHelp, "braille"},
-		{keyDescribe, "Home"},
+		{keyHelp, "focus place before"},
+		// Not the place's name: the map itself shows the named place's name
+		// (L3.13, D-60), so only the panel's own words show it open.
+		{keyDescribe, "nothing is set over this place"},
 	} {
 		a.act(c.key)
 		out.Reset()

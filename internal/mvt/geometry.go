@@ -68,13 +68,19 @@ func (d *layerDecoder) runCommands(geometry []byte, kind scene.GeomKind) error {
 			return malformed() // each point is two integers of at least a byte each
 		}
 		switch {
+		case id == cmdMoveTo && kind == scene.GeomPoint && c.partStart >= 0:
+			// **A point is one MoveTo** (MVT 2.1, 4.3.5), its count the points.
+			// A second MoveTo command would grow more points the proven
+			// decoder never reads, and the two would disagree (L11.12). A
+			// damaged stream is refused (D-75).
+			err = malformed()
 		case id == cmdMoveTo:
 			rest, err = d.moveTo(&c, rest, int(count), kind)
 		case kind == scene.GeomPoint:
-			// **A point has no line and no ring.** Reading these anyway grew
-			// a single point into a run of positions, which the proven
-			// decoder does not do - the second disagreement the oracle's
-			// fuzzer found (D-126). A damaged stream is refused (D-75).
+			// **A point has no line and no ring.** Reading these anyway would
+			// grow a single point into a run of positions, which the proven
+			// decoder does not do, and the two would disagree (D-126). A
+			// damaged stream is refused (D-75).
 			err = malformed()
 		case id == cmdLineTo:
 			rest, err = d.lineTo(&c, rest, int(count))
@@ -148,7 +154,12 @@ func (d *layerDecoder) lineTo(c *cursor, rest []byte, count int) ([]byte, error)
 }
 
 // closePath re-pushes the ring's first point, as upstream does, and ends
-// the part. The pen does not move.
+// the part. The pen does not move. **A ring of four points or more whose last
+// point is already its first is closed, and gets nothing more**: repeating
+// the point would add a segment of no length that paulmach/orb's decoder -
+// the proven decoder the oracle compares against (tools/oracle) - does not
+// have (v0.2.0 D-16). A ring of fewer points is not closed by that judgement
+// (orb's Ring.Closed), and gets its first point again, as orb gives it.
 func (d *layerDecoder) closePath(c *cursor, count uint64) error {
 	if count != 1 {
 		return malformed()
@@ -156,7 +167,11 @@ func (d *layerDecoder) closePath(c *cursor, count uint64) error {
 	if c.partStart < 0 || len(d.layer.Coords)-c.partStart < 2 {
 		return malformed()
 	}
-	d.layer.Coords = append(d.layer.Coords, d.layer.Coords[c.partStart], d.layer.Coords[c.partStart+1])
+	first, last := c.partStart, len(d.layer.Coords)-2
+	points := (len(d.layer.Coords) - c.partStart) / 2
+	if points < 4 || d.layer.Coords[last] != d.layer.Coords[first] || d.layer.Coords[last+1] != d.layer.Coords[first+1] {
+		d.layer.Coords = append(d.layer.Coords, d.layer.Coords[first], d.layer.Coords[first+1])
+	}
 	d.endPart(c)
 	return nil
 }
@@ -170,18 +185,20 @@ func (d *layerDecoder) endPart(c *cursor) {
 	c.partStart = -1
 }
 
-// groupRings splits a polygon feature as upstream does (P-39): a ring whose
-// signed area is zero or more starts a new polygon, a negative one is a
-// hole in the polygon before it, and each polygon becomes a feature of its
-// own. A hole with no outline before it is a polygon of its own.
+// groupRings splits a polygon feature (P-39, D-106): a ring whose signed area
+// is above zero starts a new polygon; a negative one is a hole in the polygon
+// before it, and so is a ring with no area at all - its points on one line -
+// as the proven decoder keeps it; each polygon becomes a feature of its own.
+// The first ring always starts one, so a hole with no outline before it is a
+// polygon of its own.
 func (d *layerDecoder) groupRings(feature scene.Feature, firstPart, endPart uint32) error {
 	if firstPart >= endPart || int(endPart) > len(d.layer.Parts) {
 		return malformed()
 	}
 	start := firstPart
 	for p := firstPart + 1; p <= endPart; p++ {
-		if p < endPart && d.signedArea(p) < 0 {
-			continue // a hole: it stays with the polygon before it
+		if p < endPart && d.signedArea(p) <= 0 {
+			continue // a hole, or a ring with no area: it stays with the polygon before it
 		}
 		d.features++
 		if d.features > d.lim.Features {

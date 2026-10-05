@@ -98,12 +98,13 @@ type track struct {
 // owner calls; a job's Run may be on any goroutine. Its lock is never held
 // across a fetch or a decode.
 type Pipeline struct {
+	landed   uint64 // tiles that passed the gate into the cache, for Work to see (D-66)
 	mu       sync.Mutex
 	opts     Options
 	pins     *PinSet
 	tracks   map[Key]*track
 	wanted   map[string]bool // the last plan's job keys
-	now      time.Time       // the host's clock at the last plan; jobs date what they write by it
+	now      time.Time       // the host's clock at the last plan that had one; jobs date what they write by it
 	failed   int
 	lastFail scene.TileID
 }
@@ -198,6 +199,19 @@ func (p *Pipeline) SetLanguage(code string) error {
 	return nil
 }
 
+// ForgetFetched empties the memory cache of fetched tiles. The tiles the
+// view needs are fetched again, through the disk cache if it still holds
+// them.
+func (p *Pipeline) ForgetFetched() {
+	if p == nil {
+		return
+	}
+	p.mu.Lock()
+	cache := p.opts.Cache
+	p.mu.Unlock()
+	cache.EmptyFetched()
+}
+
 // SetDisk gives the pipeline a disk cache, or with nil takes it away
 // (FR-21b). What is already in memory stays there.
 func (p *Pipeline) SetDisk(d *Disk) error {
@@ -210,7 +224,7 @@ func (p *Pipeline) SetDisk(d *Disk) error {
 	return nil
 }
 
-// Use is what the tile cache in memory needs, holds and may hold (D-90).
+// Holding is what the tile cache in memory needs, holds and may hold (D-90).
 func (p *Pipeline) Holding() Use {
 	if p == nil {
 		return Use{}
@@ -249,6 +263,17 @@ func (p *Pipeline) maxZoomLocked() uint8 {
 	}
 	_, hi := p.opts.Network.zooms()
 	return hi
+}
+
+// Landed counts the tiles that have passed the gate into the cache: what a
+// Work call compares before and after, to know it landed something (D-66).
+func (p *Pipeline) Landed() uint64 {
+	if p == nil {
+		return 0
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.landed
 }
 
 // Deepest is the deepest tile zoom this pipeline can actually draw at: the
@@ -326,7 +351,9 @@ func (p *Pipeline) Plan(now time.Time, wanted []scene.TileID) Plan {
 	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.now = now
+	if !now.IsZero() {
+		p.now = now // a plan with no clock, as Settle's, keeps the last one known
+	}
 	for k, tr := range p.tracks {
 		if tr.state == Dropped {
 			delete(p.tracks, k)
@@ -334,6 +361,7 @@ func (p *Pipeline) Plan(now time.Time, wanted []scene.TileID) Plan {
 	}
 	var first, then []Key // stand-ins to fetch, then the tiles themselves
 	var chains [][]Key
+	var onDisk []scene.TileID // the source's tiles the view needs, which the disk cache keeps over its cap
 	seen := map[Key]bool{}
 	for _, tile := range wanted {
 		if tile.Validate() != nil {
@@ -346,10 +374,10 @@ func (p *Pipeline) Plan(now time.Time, wanted []scene.TileID) Plan {
 		seen[primary] = true
 		chains = append(chains, chain)
 		then = append(then, primary)
-		_, drawn, onHand := p.opts.Cache.First(chain)
-		if onHand && drawn == primary && primary.Source != embeddedIdentity {
-			p.opts.Disk.NoteRead(primary.Source, primary.Tile) // memory only; the next job writes it down
+		if p.opts.Network != nil && primary.Source == p.opts.Network.Identity {
+			onDisk = append(onDisk, primary.Tile)
 		}
+		_, _, onHand := p.opts.Cache.First(chain)
 		if onHand {
 			continue
 		}
@@ -359,6 +387,9 @@ func (p *Pipeline) Plan(now time.Time, wanted []scene.TileID) Plan {
 		}
 	}
 	p.pins.Publish(chains)
+	if p.opts.Network != nil {
+		p.opts.Disk.InView(p.opts.Network.Identity, onDisk) // memory only: a plan does no input or output
+	}
 	plan := Plan{}
 	p.wanted = map[string]bool{}
 	for _, k := range append(first, then...) {
@@ -430,8 +461,8 @@ func (p *Pipeline) releaseLocked(needed map[Key]bool) {
 		switch tr.state {
 		case Queued, Waiting:
 			tr.state, _ = Next(tr.state, LeftView)
-		case Wanted, Unavailable:
-			delete(p.tracks, k)
+		case Wanted, Unavailable, OnHand, Evicted:
+			delete(p.tracks, k) // a tile on hand stays in the cache; its record is made again when a view needs it
 		}
 	}
 }
@@ -471,6 +502,9 @@ func (p *Pipeline) State(tile scene.TileID) State {
 	defer p.mu.Unlock()
 	primary, _ := p.resolveLocked(tile)
 	if _, ok := p.tracks[primary]; !ok {
+		if p.opts.Cache.Has(primary) {
+			return OnHand // no view needs it, and the cache still holds it
+		}
 		return Wanted
 	}
 	return p.trackLocked(primary).state
@@ -493,20 +527,25 @@ func (p *Pipeline) Draw(tile scene.TileID) (got *scene.Tile, at scene.TileID, ex
 	return got, k.Tile, k == primary, true
 }
 
-// TakeWarnings returns, once, how many tiles failed since it was last
-// called, and the last of them.
+// TakeWarnings returns, once, what the tiles have to tell the host: the disk
+// cache's warnings, the memory cache's need over its cap, and how many tiles
+// failed since it was last called, with the last of them.
 func (p *Pipeline) TakeWarnings() []fault.Warning {
 	if p == nil {
 		return nil
 	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
+	out := p.opts.Disk.DrainWarnings()
+	if w, ok := p.opts.Cache.TakeWarning(); ok {
+		out = append(out, w) // need alone over the cap: told once, by whichever map sharing the cache asks first
+	}
 	if p.failed == 0 {
-		return nil
+		return out
 	}
 	w := fault.Warning{Kind: fault.TileFailed, Subject: textsafe.Clean(tileName(p.lastFail)), Count: p.failed}
 	p.failed = 0
-	return []fault.Warning{w}
+	return append(out, w)
 }
 
 func tileName(t scene.TileID) string {
@@ -584,6 +623,7 @@ func (j *tileJob) Run(ctx context.Context) error {
 	switch {
 	case err == nil:
 		o.Cache.Put(j.k, tile)
+		p.landed++
 		tr.state, _ = Next(tr.state, PassedGate)
 		tr.failures, tr.notBefore = 0, time.Time{}
 	case isKind(err, fault.Cancelled):
@@ -625,7 +665,8 @@ func (j *tileJob) load(ctx context.Context, o Options, now time.Time) (*scene.Ti
 	if o.Network == nil || o.Network.Identity != j.k.Source {
 		return nil, cancelled() // the source was changed while this waited
 	}
-	o.Disk.Flush(now)
+	gen := o.Disk.Generation() // a purge or a release after this, and nothing is written (L-9.3)
+	o.Disk.Expire(now)
 	if body, ok := o.Disk.Load(j.k.Source, j.k.Tile, now); ok {
 		tile, err := mvt.Decode(body, want, o.Limits)
 		if err == nil {
@@ -642,7 +683,7 @@ func (j *tileJob) load(ctx context.Context, o Options, now time.Time) (*scene.Ti
 		return nil, err
 	}
 	if o.Disk != nil {
-		_ = o.Disk.Store(j.k.Source, j.k.Tile, body, now) // only after a complete decode; a cache that cannot be written costs the tile nothing
+		_ = o.Disk.Store(j.k.Source, j.k.Tile, body, now, gen) // only after a complete decode; a cache that cannot be written costs the tile nothing, and says so
 	}
 	return tile, nil
 }

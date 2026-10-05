@@ -1,0 +1,233 @@
+diff -ru render.orig/basemap.go lib/internal/render/basemap.go
+--- render.orig/basemap.go	2026-09-23 17:00:21
++++ lib/internal/render/basemap.go	2026-09-23 17:08:45
+@@ -2,6 +2,7 @@
+ 
+ import (
+ 	"math"
++	"os"
+ 
+ 	"github.com/branden-thompson/go-tuimaps/internal/colour"
+ 	"github.com/branden-thompson/go-tuimaps/internal/fault"
+@@ -238,6 +239,10 @@
+ 				p.lines.Set(ring[0].X+dx, ring[0].Y+dy, s.Role)
+ 			}
+ 		}
++		return
++	}
++	if seq, thick, ok := severityDash(s.Role); ok && s.Kind == scene.ShapeArea && os.Getenv("SPECIMEN_MODE") != "letters" {
++		p.pattern(ring, s.Role, seq, thick) // OW-2 specimen: one dash a severity
+ 		return
+ 	}
+ 	if s.Kind == scene.ShapeLine && colourless(p.depth) {
+diff -ru render.orig/field.go lib/internal/render/field.go
+--- render.orig/field.go	2026-09-23 17:00:21
++++ lib/internal/render/field.go	2026-09-23 17:00:21
+@@ -197,11 +197,7 @@
+ 			} else if 3*int(class) > ra.ClassCount-1 {
+ 				shade = shadeMedium
+ 			}
+-			area, owned := r.painter.Area(col, row)
+-			if !owned {
+-				area = 0
+-			}
+-			*c = cell{text: shade, ink: uint8(colour.LabelRegion), taken: true, area: area}
++			c.shade = shade // OW-2 specimen: laid last, under outline, label, marker and furniture
+ 		}
+ 	}
+ }
+diff -ru render.orig/frame.go lib/internal/render/frame.go
+--- render.orig/frame.go	2026-09-23 17:00:21
++++ lib/internal/render/frame.go	2026-09-23 17:08:45
+@@ -2,6 +2,7 @@
+ 
+ import (
+ 	"math"
++	"os"
+ 	"sort"
+ 	"strconv"
+ 	"strings"
+@@ -127,10 +128,11 @@
+ 	text   string // a cluster of text, which wins over dots (P-10); empty for a dot cell
+ 	glyph  rune
+ 	ink    uint8
+-	area   uint8 // the ink of the area that owns the cell's background, or 0
+-	under  uint8 // the ink of the field or image class that colours the cell, or 0
+-	taken  bool  // text occupies the cell: a label, or the second half of a wide character
+-	strict bool  // the cell holds text, held to the text contrast
++	area   uint8  // the ink of the area that owns the cell's background, or 0
++	under  uint8  // the ink of the field or image class that colours the cell, or 0
++	taken  bool   // text occupies the cell: a label, or the second half of a wide character
++	strict bool   // the cell holds text, held to the text contrast
++	shade  string // OW-2 specimen: an image shade with no colour, laid only where nothing else claimed the cell
+ }
+ 
+ type box struct{ left, right, top, bottom int }
+@@ -507,9 +509,13 @@
+ 	for _, l := range r.painter.OverlayLabels() {
+ 		g.label(l)
+ 	}
++	if os.Getenv("SPECIMEN_MODE") == "letters" {
++		r.letters()
++	}
+ 	if !in.Labels {
+ 		r.markerNames() // the host's own places are not the basemap's names
+ 		r.bandNames()
++		r.shades()
+ 		if colourless(in.Depth) {
+ 			r.hatch()
+ 		}
+@@ -552,11 +558,57 @@
+ 	if len(r.painter.BandLabels()) == 0 {
+ 		r.markerNames() // P-60's own place, on every frame with no field on it
+ 	}
++	r.shades()
+ 	if colourless(in.Depth) {
+ 		r.hatch() // last of all: it fills what nothing else has taken (FR-18a)
+ 	}
+ }
+ 
++// letters writes a severity letter on an alert's outline every few cells
++// (OW-2 specimen, option C): E extreme, S severe, M moderate, m minor,
++// U unknown. A cell something else claimed keeps it.
++func (r *Renderer) letters() {
++	g := r.grid
++	for row := range g.rows {
++		for col := range g.cols {
++			c := &g.cells[row*g.cols+col]
++			if c.taken || c.glyph == blank || (col+2*row)%letterStride != 0 {
++				continue
++			}
++			var l string
++			switch colour.Token(c.ink) {
++			case colour.AlertExtremeOutline:
++				l = "E"
++			case colour.AlertSevereOutline:
++				l = "S"
++			case colour.AlertModerateOutline:
++				l = "M"
++			case colour.AlertMinorOutline:
++				l = "m"
++			case colour.AlertUnknownOutline:
++				l = "U"
++			default:
++				continue
++			}
++			g.write(col, row, textsafe.Clean(l), c.ink)
++		}
++	}
++}
++
++const letterStride = 5
++
++// shades lays an image's shade in every cell nothing else claimed (OW-2 specimen).
++func (r *Renderer) shades() {
++	g := r.grid
++	for i := range g.cells {
++		c := &g.cells[i]
++		if c.shade == "" || c.taken || c.glyph != blank {
++			continue
++		}
++		c.text, c.ink, c.taken = c.shade, uint8(colour.LabelRegion), true
++	}
++}
++
+ // bandNames places the values a field's contours carry, after every other
+ // name. **They are last because they are the least of them and the most
+ // numerous**: a field drawn without colour puts a value on every contour it
+@@ -596,9 +648,31 @@
+ 		fit := textsafe.Fit(notice, g.cols)
+ 		g.write((g.cols-textsafe.Width(fit))/2, g.rows/2, fit, uint8(colour.Notice))
+ 	}
+-	if in.Stale {
++	at := os.Getenv("SPECIMEN_FRAMETIME") // OW-2 specimen: the frame time and stale on the bottom row
++	if in.Stale && at == "" {
+ 		mark := textsafe.Fit(textsafe.Const(staleMark), g.cols)
+ 		g.write(g.cols-textsafe.Width(mark), 0, mark, uint8(colour.Stale))
++	}
++	if at != "" {
++		used := 0
++		if in.Scale {
++			sm := scaleMark(in.View, g.cols/3)
++			g.write(0, g.rows-1, sm, uint8(colour.Scale))
++			used = textsafe.Width(sm) + 1
++		}
++		when := at
++		if in.Stale {
++			when += " " + staleMark
++		}
++		wt := textsafe.Clean(when)
++		if g.write(used, g.rows-1, wt, uint8(colour.Stale)) {
++			used += textsafe.Width(wt) + 1
++		}
++		if room := g.cols - used; room > 0 {
++			credit := textsafe.Fit(in.Credit, room)
++			g.write(g.cols-textsafe.Width(credit), g.rows-1, credit, uint8(colour.Credit))
++		}
++		return
+ 	}
+ 	credit := textsafe.Fit(in.Credit, g.cols)
+ 	if w := textsafe.Width(credit); w > 0 {
+diff -ru render.orig/hatch.go lib/internal/render/hatch.go
+--- render.orig/hatch.go	2026-09-23 17:00:21
++++ lib/internal/render/hatch.go	2026-09-23 17:00:21
+@@ -90,3 +90,59 @@
+ func along(a, b Point, at, steps int) Point {
+ 	return Point{X: a.X + (b.X-a.X)*at/steps, Y: a.Y + (b.Y-a.Y)*at/steps}
+ }
++
++// severityDash is an alert outline's dash, one a severity (OW-2 specimen,
++// D-17): on and off runs in dots, and the thickness. Extreme is solid and
++// thick; the line overlay's own dash is five on, four off, two thick.
++func severityDash(role uint8) ([]int, int, bool) {
++	switch colour.Token(role) {
++	case colour.AlertExtremeOutline:
++		return nil, 2, true
++	case colour.AlertSevereOutline:
++		return []int{8, 2}, 1, true
++	case colour.AlertModerateOutline:
++		return []int{4, 3}, 1, true
++	case colour.AlertMinorOutline:
++		return []int{1, 2}, 1, true
++	case colour.AlertUnknownOutline:
++		return []int{6, 2, 1, 2}, 1, true
++	}
++	return nil, 0, false
++}
++
++// pattern draws a ring with a dash sequence, carried across bends; an empty
++// sequence is a solid line.
++func (p *Painter) pattern(ring []Point, ink uint8, seq []int, thick int) {
++	if len(seq) == 0 {
++		for i := 0; i+1 < len(ring); i++ {
++			p.lines.Line(ring[i].X, ring[i].Y, ring[i+1].X, ring[i+1].Y, thick, ink)
++		}
++		return
++	}
++	period := 0
++	for _, n := range seq {
++		period += n
++	}
++	run := 0
++	for i := 0; i+1 < len(ring); i++ {
++		a, b := ring[i], ring[i+1]
++		steps := max(abs(b.X-a.X), abs(b.Y-a.Y))
++		for k := 0; k <= steps; k++ {
++			phase, on := run%period, false
++			for j, n := range seq {
++				if phase < n {
++					on = j%2 == 0
++					break
++				}
++				phase -= n
++			}
++			if on {
++				pt := along(a, b, k, max(steps, 1))
++				p.lines.Line(pt.X, pt.Y, pt.X, pt.Y, thick, ink)
++			}
++			if k < steps {
++				run++
++			}
++		}
++	}
++}

@@ -81,7 +81,7 @@ func FuzzTable(f *testing.F) {
 			ownKind(t, err)
 			return
 		}
-		m := &matcher{table: table, breaks: []float64{10, 20, 30, 40, 50, 60}, tolerance: 10, known: map[colour.RGB]int8{}, sampled: map[colour.RGB]bool{}}
+		m := &matcher{table: table, breaks: []float64{10, 20, 30, 40, 50, 60}, tolerance: 10, known: map[colour.RGB]reading{}, sampled: map[colour.RGB]bool{}}
 		for _, c := range []color.NRGBA{{A: 255}, {R: 255, G: 255, B: 255, A: 255}, {R: 1, G: 2, B: 3, A: 255}, {R: 9, G: 9, B: 9, A: 0}, {R: table[0].Colour.R, G: table[0].Colour.G, B: table[0].Colour.B, A: 255}} {
 			if got := m.pixel(c); got < NoData || got > 6 {
 				t.Fatalf("colour %v is class %d", c, got)

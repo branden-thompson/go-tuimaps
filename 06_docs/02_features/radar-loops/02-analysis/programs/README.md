@@ -1,0 +1,47 @@
+# Measurement programs — reference copies (D-32)
+
+The programs behind wave 2 (`../wave2-measurements.md`) and specimen 29's radar and blend findings,
+filed with the exact inputs they ran on and their raw output, **so every number can be re-run**.
+They are **reference files, not built by the gate**: the `.go.txt` suffix keeps them out of the
+build. They were written against the library's public calls as released at the **`v0.1.0` tag**, which were
+unchanged through D-32 (`public-surface.txt` is identical); the work branch they ran on is deleted
+after release (D-33), so no work-branch hash is given. **A change to the API can stop them compiling, and nothing
+will say so** (the accepted cost of D-32). Checked by hand on 2026-10-04 against v0.2.0's release-candidate
+tree: every program still builds - each command against the public package, and `blend-measure_test.go.txt`
+placed in `internal/colour`, the package it tests. Update a program when it is re-run.
+
+| Program | What it measures | Inputs | Output |
+|---|---|---|---|
+| `spec29-render.go.txt` | Specimen 29's frames through the public calls: 69×12 and 149×38, truecolor and no colour; `NORADAR=1` gives the 29c control | `inputs/spec29/` | the `29*` specimen files |
+| `spec29-radar-crop.go.txt` | Crops the county radar image under the 250,000-pixel cap | `inputs/spec29/radar-county.png` | `inputs/spec29/radar-crop.png` |
+| `spec29b-radar-over.patch` | 29b: the one-line renderer change that draws the image over the tint | — | — |
+| `spec29d-f-blend.patch` | 29d–f: the blend of the tint over the image, strength from `SPECIMEN_ALPHA` | — | — |
+| `blend-measure_test.go.txt` | Class separation under the blend, at 20/35/50 %, all five severities, both grounds, both pair kinds | the library's own ramps | `output/blend-measure.txt` |
+| `mrms-legend.go.txt` | The MRMS legend's pixel layout | `inputs/mrms/legend.png` | — |
+| `mrms-measure.go.txt` | Wave 2 M-A: frames against a legend-derived table, independently and through the library | `inputs/mrms/` | `output/mrms-measure.txt` |
+| `mrms-palette.go.txt` | Wave 2 M-A: the palette MRMS uses, across 18 frames | `inputs/mrms/` | `output/mrms-palette.txt` |
+| `ow2-render.go.txt`, `ow2-severity-dash.patch` | Specimen 32 (OW-2, D-63): five alerts, one a severity, with a word and one dash each; `KEY=1` draws the dash key; `SPECIMEN_FRAMETIME` puts the frame time on the bottom row; `SPECIMEN_MODE=letters` draws specimen 33 (a mark on the outline, solid outline). The patch applies to `internal/render` of a scratch copy | `inputs/spec29/` | the `32*` and `33*` specimen files |
+| `loopmem.go.txt` | Wave 2 M-B: heap cost of twelve frames on a map | `inputs/loopmem/`, `inputs/spec29/n0q-table-raw.json` | `output/loopmem.txt` |
+| `m1-capture.py.txt` | M1's five recorded loops (L10.9): IEM's archived N0Q composite through its time-enabled WMS, twelve frames five minutes apart | the archive at mesonet.agron.iastate.edu | `testdata/loops/*` |
+| `output/fuzzagree-L10.7/driver.sh.txt` | L10.7 / OW-4: `FuzzAgree` ten times as the gate's leg runs it, and two controls at a 5 s minimise time | the oracle's corpus | `output/fuzzagree-L10.7/run*.txt`, `control-*.txt` |
+
+## Re-running one
+
+1. Copy the program into an empty directory outside the repository as `main.go`
+   (`blend-measure_test.go.txt` goes into a copy of the repository instead, as
+   `internal/colour/zz_blend_specimen_test.go`, because it uses unexported code).
+2. Add a `go.mod` with `require github.com/branden-thompson/go-tuimaps v0.0.0` and
+   `replace github.com/branden-thompson/go-tuimaps => <path to your checkout>`, then run
+   `GOWORK=off go mod tidy`.
+3. Lay the inputs out where the program looks, which is relative to where it runs:
+   - `mrms-measure` and `mrms-palette` run in a subdirectory of a copy of `inputs/mrms/`.
+   - `loopmem` runs in a directory holding `frames/`, a copy of `inputs/loopmem/`, and has
+     `../spec29/n0q-table-raw.json` beside it.
+   - `spec29-render` takes three arguments: the inputs directory, an output prefix, and a label for
+     the frames' header line.
+4. `GOWORK=off go run .`, then compare with `output/`.
+
+Specimen 29's frames also need the network: they draw OpenFreeMap tiles for the basemap.
+
+**Machine:** every output here came from one 18-core Apple M-series Mac on 2026-09-23. The memory
+figures in `output/loopmem.txt` are Go heap bytes (`HeapAlloc` after two collections) in MiB.

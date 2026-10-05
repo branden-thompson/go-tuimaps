@@ -52,21 +52,33 @@ func TestGeometryCommands(t *testing.T) {
 }
 
 func TestParityP38_MVTDecode(t *testing.T) {
-	// ClosePath re-pushes the ring's first point, as upstream does.
+	// ClosePath re-pushes the ring's first point, as upstream does - unless the
+	// ring already ends there, which paulmach/orb's decoder (the oracle's
+	// proven decoder) leaves as it is (v0.2.0 D-16).
 	square := testFeature(3, nil, []uint32{moveTo(1), zz(0), zz(0), lineTo(3), zz(10), zz(0), zz(0), zz(10), zz(-10), zz(0), closePath()})
 	tile := decodeOne(t, testLayer("l", 0, nil, nil, square))
 	got := parts(tile, tile.Layers[0].Features[0])
 	if !reflect.DeepEqual(got, [][]int16{{0, 0, 10, 0, 10, 10, 0, 10, 0, 0}}) {
 		t.Errorf("a closed square: %v", got)
 	}
+	already := testFeature(3, nil, []uint32{moveTo(1), zz(0), zz(0), lineTo(4), zz(10), zz(0), zz(0), zz(10), zz(-10), zz(0), zz(0), zz(-10), closePath()})
+	tile = decodeOne(t, testLayer("l", 0, nil, nil, already))
+	if got := parts(tile, tile.Layers[0].Features[0]); !reflect.DeepEqual(got, [][]int16{{0, 0, 10, 0, 10, 10, 0, 10, 0, 0}}) {
+		t.Errorf("a square that already ends where it began gained a point: %v", got)
+	}
+	point := testFeature(3, nil, []uint32{moveTo(1), zz(3), zz(4), closePath()})
+	tile = decodeOne(t, testLayer("l", 0, nil, nil, point))
+	if got := parts(tile, tile.Layers[0].Features[0]); !reflect.DeepEqual(got, [][]int16{{3, 4, 3, 4}}) {
+		t.Errorf("a one-point ring: %v; want its point again, as upstream and the proven decoder close it", got)
+	}
 	if tile.Layers[0].Extent != 4096 {
 		t.Errorf("default extent %d", tile.Layers[0].Extent)
 	}
 }
 
-// TestParityP39_RingGrouping: a ring of area >= 0 starts a new polygon, a
+// TestParityP39_RingGrouping: a ring of area above 0 starts a new polygon, a
 // negative one is a hole in the polygon before it, and each polygon becomes
-// a feature of its own.
+// a feature of its own (a ring of no area: TestAZeroAreaRingIsAHole).
 func TestParityP39_RingGrouping(t *testing.T) {
 	outer := []uint32{moveTo(1), zz(0), zz(0), lineTo(3), zz(20), zz(0), zz(0), zz(20), zz(-20), zz(0), closePath()}
 	hole := []uint32{moveTo(1), zz(5), zz(5), lineTo(3), zz(0), zz(5), zz(5), zz(0), zz(0), zz(-5), closePath()}
@@ -91,6 +103,20 @@ func TestParityP39_RingGrouping(t *testing.T) {
 	orphan := decodeOne(t, testLayer("l", 4096, nil, nil, testFeature(3, nil, hole)))
 	if len(orphan.Layers[0].Features) != 1 {
 		t.Errorf("an orphan hole gave %d features", len(orphan.Layers[0].Features))
+	}
+}
+
+// TestAZeroAreaRingIsAHole (D-106; FuzzAgree's input 26e9df9a071f1ff0): a
+// ring with no area - its points on one line - is neither an outline nor a
+// hole by its winding, and stays with the polygon before it, as the proven
+// decoder keeps it. It does not become a feature of its own.
+func TestAZeroAreaRingIsAHole(t *testing.T) {
+	outer := []uint32{moveTo(1), zz(0), zz(0), lineTo(3), zz(20), zz(0), zz(0), zz(20), zz(-20), zz(0), closePath()}
+	flat := []uint32{moveTo(1), zz(10), zz(-15), lineTo(2), zz(0), zz(5), zz(0), zz(-2), closePath()}
+	tile := decodeOne(t, testLayer("l", 4096, nil, nil, testFeature(3, nil, append(append([]uint32{}, outer...), flat...))))
+	fs := tile.Layers[0].Features
+	if len(fs) != 1 || fs[0].EndPart-fs[0].FirstPart != 2 {
+		t.Errorf("an outline and a zero-area ring gave %d features (the first with %d rings); want one feature of two rings", len(fs), fs[0].EndPart-fs[0].FirstPart)
 	}
 }
 
@@ -309,5 +335,91 @@ func TestAPointDoesNotAcceptALine(t *testing.T) {
 	kept, err := Decode(tile, Want{Layers: []string{"water"}}, DefaultLimits())
 	if err != nil || len(kept.Layers) != 1 || len(kept.Layers[0].Features) != 1 {
 		t.Fatalf("a line of three positions was refused: %v %+v", err, kept)
+	}
+}
+
+// TestAPointIsOneMoveTo is the third disagreement the oracle's fuzzer found
+// (L11.12). A point's geometry is one MoveTo whose count is its points (MVT
+// 2.1, 4.3.5); a second MoveTo command is a damaged stream. This decoder read
+// each as more points, where the proven decoder kept the first - so both
+// read fifteen and one "points" from bytes neither should have accepted.
+func TestAPointIsOneMoveTo(t *testing.T) {
+	tile := func(geom []byte) []byte {
+		feature := append([]byte{0x18, 0x01, 0x22, byte(len(geom))}, geom...)
+		layer := append([]byte{0x78, 0x02, 0x0a, 0x05, 'w', 'a', 't', 'e', 'r', 0x12, byte(len(feature))}, feature...)
+		return append([]byte{0x1a, byte(len(layer))}, layer...)
+	}
+	// MoveTo 1 point, then MoveTo 1 more: two commands.
+	if _, err := Decode(tile([]byte{0x09, 0x02, 0x02, 0x09, 0x02, 0x02}), Want{Layers: []string{"water"}}, DefaultLimits()); err == nil {
+		t.Error("a point of two MoveTo commands was accepted")
+	}
+	// One MoveTo of two points is a multipoint, and is kept.
+	kept, err := Decode(tile([]byte{0x11, 0x02, 0x02, 0x02, 0x02}), Want{Layers: []string{"water"}}, DefaultLimits())
+	if err != nil || len(kept.Layers) != 1 || len(kept.Layers[0].Features) != 1 {
+		t.Fatalf("one MoveTo of two points was refused: %v %+v", err, kept)
+	}
+}
+
+// TestNameUnderscoreLangOutranksColon is the fourth disagreement the oracle's
+// fuzzer found (L11.14). A feature carrying both name_<lang> and name:<lang>
+// kept whichever came last; upstream's order - and the proven decoder's
+// reading of it - is name_<lang>, then name:<lang>, then name. Real tiles
+// carry the two equal, which is why it never showed.
+func TestNameUnderscoreLangOutranksColon(t *testing.T) {
+	for _, order := range [][2]string{{"name_en", "name:en"}, {"name:en", "name_en"}} {
+		values := map[string]string{"name_en": "Underscore", "name:en": "Colon"}
+		keys := []string{order[0], order[1]}
+		var kv []byte
+		for _, k := range keys {
+			kv = append(kv, 0x1a, byte(len(k)))
+			kv = append(kv, k...)
+		}
+		for _, k := range keys {
+			v := values[k]
+			val := append([]byte{0x0a, byte(len(v))}, v...)
+			kv = append(kv, 0x22, byte(len(val)))
+			kv = append(kv, val...)
+		}
+		geom := []byte{0x09, 0x02, 0x02}
+		feature := []byte{0x12, 0x04, 0x00, 0x00, 0x01, 0x01, 0x18, 0x01, 0x22, byte(len(geom))}
+		feature = append(feature, geom...)
+		layer := append([]byte{0x78, 0x02, 0x0a, 0x05, 'p', 'l', 'a', 'c', 'e', 0x12, byte(len(feature))}, feature...)
+		layer = append(layer, kv...)
+		tile := append([]byte{0x1a, byte(len(layer))}, layer...)
+		got, err := Decode(tile, Want{Layers: []string{"place"}, Language: "en"}, DefaultLimits())
+		if err != nil || len(got.Layers) != 1 || len(got.Layers[0].Features) != 1 {
+			t.Fatalf("%v: %v %+v", order, err, got)
+		}
+		if name := got.Layers[0].Features[0].Name.String(); name != "Underscore" {
+			t.Errorf("tags in the order %v: the name is %q; want name_en's", order, name)
+		}
+	}
+}
+
+// TestARingOfThreePointsIsClosedAgain: a ring closed only when it has four
+// points or more, as the proven decoder judges it - a ring of three points
+// whose last is its first (A, B, A) gets its first point again on
+// ClosePath, A, B, A, A; a ring of four or more already closed gets nothing
+// (D-16). Found by FuzzAgree at VALIDATE.
+func TestARingOfThreePointsIsClosedAgain(t *testing.T) {
+	outer := []uint32{moveTo(1), zz(0), zz(0), lineTo(3), zz(20), zz(0), zz(0), zz(20), zz(-20), zz(0), closePath()}
+	back := []uint32{moveTo(1), zz(10), zz(-15), lineTo(2), zz(-1), zz(2), zz(1), zz(-2), closePath()} // A, B, A
+	tile := decodeOne(t, testLayer("l", 4096, nil, nil, testFeature(3, nil, append(append([]uint32{}, outer...), back...))))
+	layer := tile.Layers[0]
+	f := layer.Features[0]
+	last := f.EndPart - 1
+	coords, err := tile.Layers[0].Part(int(last))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(coords) != 8 {
+		t.Errorf("a ring A, B, A closed to %v; want A, B, A, A", coords)
+	}
+	first, err := tile.Layers[0].Part(int(f.FirstPart))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(first) != 10 {
+		t.Errorf("a square of five points, already closed, became %v; want it unchanged", first)
 	}
 }

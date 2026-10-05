@@ -30,10 +30,13 @@ func reuse(wait bool) {
 	if !ok {
 		panic("nothing to read")
 	}
-	done, reading := make(chan struct{}), make(chan struct{})
+	done, reading, writing := make(chan struct{}), make(chan struct{}), make(chan struct{})
 	go func() { // what a Work call does: it reads the host's geometry where it lies
 		defer close(done)
 		close(reading)
+		if !wait {
+			<-writing // early: the read begins once the host has begun to write
+		}
 		Prepare(reader.Overlay(), 8)
 		reader.Done()
 	}()
@@ -43,17 +46,22 @@ func reuse(wait bool) {
 	}
 	if wait {
 		<-done // the call that was reading the old geometry has returned
-		s.TakeReleased()
 		scribble(ring)
 		return
 	}
+	// EARLY, THE WRITES OVERLAP THE READ BY CONSTRUCTION, not by timing: the
+	// reader starts after the first write, and every write after that one is
+	// unordered with its reads until done is received - so the detector sees
+	// the race on every run, however fast the reader.
+	scribble(ring)
+	close(writing)
 	for {
+		scribble(ring)
 		select {
 		case <-done:
 			return
 		default:
 		}
-		scribble(ring)
 	}
 }
 
@@ -98,12 +106,31 @@ func TestBorrowReuseUnderRaceDetector(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			run := exec.Command(os.Args[0], "-test.run=^TestBorrowReuseCase$", "-test.count=1")
-			run.Env = append(os.Environ(), borrowCase+"="+c.name)
-			out, err := run.CombinedOutput()
-			found := strings.Contains(string(out), "DATA RACE")
-			if c.race && (err == nil || !found) {
-				t.Errorf("writing over borrowed geometry before the release was reported: exit %v, race reported %v; want a failed run with a data race", err, found)
+			// THE DETECTOR KEEPS A BOUNDED HISTORY of each word's accesses, so
+			// a race that happened is reported in nearly every run, not in
+			// every one (about one run in thirty missed it under load). The
+			// early program is run up to earlyTries times and passes on the
+			// first run that reports the race; it fails only when none does.
+			// The patient program runs once and must be clean: a race reported
+			// there is a defect, never the detector's luck.
+			tries := 1
+			if c.race {
+				tries = earlyTries
+			}
+			var err error
+			var found bool
+			var out []byte
+			for range tries {
+				run := exec.Command(os.Args[0], "-test.run=^TestBorrowReuseCase$", "-test.count=1")
+				run.Env = append(os.Environ(), borrowCase+"="+c.name)
+				out, err = run.CombinedOutput()
+				found = strings.Contains(string(out), "DATA RACE")
+				if c.race && err != nil && found {
+					return
+				}
+			}
+			if c.race {
+				t.Errorf("writing over borrowed geometry before the release was reported: in %d runs no data race was reported (last: exit %v); want a failed run with a data race", tries, err)
 			}
 			if !c.race && (err != nil || found) {
 				t.Errorf("writing over it after the release was reported: exit %v, race reported %v; want a clean run\n%s", err, found, out)
@@ -111,3 +138,7 @@ func TestBorrowReuseUnderRaceDetector(t *testing.T) {
 		})
 	}
 }
+
+// earlyTries is how many runs of the early program may pass before one
+// reports its race.
+const earlyTries = 5

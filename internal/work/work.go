@@ -66,16 +66,6 @@ func NewQueue(limit int) *Queue {
 	return &Queue{limit: limit, flying: map[string]*flight{}}
 }
 
-// Waiting is how many jobs wait, for every member together.
-func (q *Queue) Waiting() int {
-	if q == nil {
-		return 0
-	}
-	q.mu.Lock()
-	defer q.mu.Unlock()
-	return len(q.waiting)
-}
-
 // deferred is a failed job waiting for the time it may be tried again.
 type deferred struct {
 	job scene.Job
@@ -84,16 +74,14 @@ type deferred struct {
 
 // Member is one map's share of a queue.
 type Member struct {
-	q         *Queue
-	closed    bool
-	view      uint64
-	hook      func()
-	inHook    bool // a hook fired by an owner call is running: owner calls are refused
-	changed   uint64
-	later     []deferred
-	deadlines map[string]time.Time
-	idle      int  // renders in a row that found work pending with no Work called
-	warned    bool // the no-work warning has been given since the last Work
+	q      *Queue
+	closed bool
+	view   uint64
+	hook   func()
+	inHook bool // a hook fired by an owner call is running: owner calls are refused
+	later  []deferred
+	idle   int  // renders in a row that found work pending with no Work called
+	warned bool // the no-work warning has been given since the last Work
 }
 
 // Join adds a map to the queue.
@@ -101,7 +89,7 @@ func (q *Queue) Join() (*Member, error) {
 	if q == nil {
 		return nil, internal()
 	}
-	return &Member{q: q, deadlines: map[string]time.Time{}}, nil
+	return &Member{q: q}, nil
 }
 
 // internal is the error for a defect inside the library. It repeats nothing
@@ -151,7 +139,7 @@ func (m *Member) pendingLocked() int {
 	return n
 }
 
-// Pending is how many of this map's jobs wait to be picked up. It may be
+// Backlog (behind Map.Pending) is how many of this map's jobs wait to be picked up. It may be
 // called from any goroutine.
 func (m *Member) Backlog() int {
 	if m == nil || m.q == nil {
@@ -162,7 +150,7 @@ func (m *Member) Backlog() int {
 	return m.pendingLocked()
 }
 
-// InFlight is how many of this map's jobs are inside a Work call.
+// Flying is how many of this map's jobs are inside a Work call.
 func (m *Member) Flying() int {
 	if m == nil || m.q == nil {
 		return 0
@@ -178,18 +166,7 @@ func (m *Member) Flying() int {
 	return n
 }
 
-// Changed moves whenever a job this map wanted finishes or fails: either
-// changes what a redraw would show. It may be called from any goroutine.
-func (m *Member) Changed() uint64 {
-	if m == nil || m.q == nil {
-		return 0
-	}
-	m.q.mu.Lock()
-	defer m.q.mu.Unlock()
-	return m.changed
-}
-
-// OnPending sets the hook called when this map's pending work goes from
+// WhenPending (behind Map.OnPending) sets the hook called when this map's pending work goes from
 // none to some. It is called with no lock held and must not call the map.
 func (m *Member) WhenPending(hook func()) error {
 	err := m.owner()
@@ -297,20 +274,29 @@ func (q *Queue) addLocked(m *Member, job scene.Job) {
 	}
 }
 
-// dropOneLocked drops the oldest job of a view no map is showing any more,
-// or failing that the oldest job.
+// dropOneLocked drops the oldest job of a view no map is showing any more;
+// failing that the oldest job that is no tile; and only then the oldest.
+// THE BASEMAP IS NEVER STARVED BY THE OVERLAYS (L-22): a flood of overlays
+// past the cap gives up its own jobs before the view's tiles, so the map
+// never draws its overlays over no basemap at all.
 func (q *Queue) dropOneLocked() {
-	victim, stale := -1, false
+	victim, rank := -1, 0
 	for i, e := range q.waiting {
+		r := 1 // a tile of a view shown: the last to go
+		if e.job.Kind() != scene.KindTile {
+			r = 2
+		}
 		old := true
 		for w := range e.wanters {
 			if e.view >= w.view {
 				old = false
 			}
 		}
-		better := victim < 0 || (old && !stale) || (old == stale && e.seq < q.waiting[victim].seq)
-		if better {
-			victim, stale = i, old
+		if old {
+			r = 3
+		}
+		if victim < 0 || r > rank || (r == rank && e.seq < q.waiting[victim].seq) {
+			victim, rank = i, r
 		}
 	}
 	if victim >= 0 {

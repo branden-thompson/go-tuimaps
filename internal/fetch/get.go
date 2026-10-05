@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -25,6 +26,9 @@ func refusedSource() error {
 // source's scheme and host - all of an address an error may name - and keeps
 // nothing of the transport's error, which holds the whole address.
 func (f *Fetcher) problem(kind fault.Kind, why textsafe.Text) error {
+	if f == nil {
+		return refusedSource() // no source to name
+	}
 	about := textsafe.Join(textsafe.Const("a request to "), textsafe.Quote(f.scheme+"://"+f.host))
 	switch kind {
 	case fault.FetchRefused:
@@ -47,30 +51,54 @@ func tooLarge() error {
 		textsafe.Const("check the source; the limits protect the host's memory"))
 }
 
+// errTooLate is why a request's own deadline ends it: the source, or the
+// host's transport, did not answer in time. The caller's own cancellation is
+// told apart from it by its cause.
+var errTooLate = errors.New("fetch: no answer in time")
+
 // Fetch fetches one request from the source. The transport's own error is
 // never returned or wrapped: it holds the address.
 func (f *Fetcher) Fetch(ctx context.Context, r Request) ([]byte, error) {
 	if f == nil || ctx == nil {
 		return nil, refusedSource()
 	}
+	// The request's own deadline, not only the caller's: the client's timeout
+	// cannot take back an answer from a transport that ignores cancellation,
+	// so the answer is judged against this context once it is read (L-7.3).
+	ctx, cancel := context.WithTimeoutCause(ctx, f.timeout, errTooLate)
+	defer cancel()
 	resp, err := f.send(ctx, r)
 	if err != nil {
 		return nil, err
 	}
 	data, err := f.readReply(ctx, resp, r)
 	_ = resp.Body.Close() // the body was read through its limit or is being abandoned; a close error changes nothing
+	if err == nil && ctx.Err() != nil {
+		// A late answer is never used (L-7.3): a transport that ignored its
+		// context has held this call past its end, and what it brought back
+		// is thrown away.
+		return nil, f.transportError(ctx, ctx.Err())
+	}
 	return data, err
 }
 
 // send checks a request against the source's policy and makes it. The caller
 // closes the reply's body.
 func (f *Fetcher) send(ctx context.Context, r Request) (*http.Response, error) {
-	if r.MaxBytes <= 0 || r.RangeStart < 0 || r.RangeLen < 0 {
+	if f == nil || f.client == nil {
 		return nil, refusedSource()
+	}
+	if r.MaxBytes <= 0 || r.MaxBytes == math.MaxInt64 || r.RangeStart < 0 || r.RangeLen < 0 {
+		return nil, refusedSource() // the read's limit is one byte more than MaxBytes, which must not wrap
+	}
+	if r.RangeStart > math.MaxInt64-r.RangeLen {
+		return nil, refusedSource() // a range's last byte past the largest int64 is not the range meant
 	}
 	u, err := url.Parse(r.URL)
 	if err != nil {
-		return nil, f.problem(fault.FetchRefused, textsafe.Text{})
+		return nil, fault.Make(fault.FetchRefused, textsafe.Const("a tile request was refused"),
+			textsafe.Const("its address could not be read as an address"),
+			textsafe.Const("check the tile address the source's TileJSON names"))
 	}
 	if !f.allowed(u) {
 		return nil, f.problem(fault.FetchRefused, textsafe.Text{})
@@ -83,13 +111,6 @@ func (f *Fetcher) send(ctx context.Context, r Request) (*http.Response, error) {
 	if r.RangeLen > 0 {
 		req.Header.Set("Range", "bytes="+strconv.FormatInt(r.RangeStart, 10)+"-"+strconv.FormatInt(r.RangeStart+r.RangeLen-1, 10))
 	}
-	proxy, err := f.transport.Proxy(req)
-	if err != nil {
-		return nil, f.problem(fault.FetchFailed, textsafe.Const("the proxy settings in the environment could not be read"))
-	}
-	if proxy != nil {
-		req = req.WithContext(context.WithValue(ctx, viaProxy{}, true))
-	}
 	resp, err := f.client.Do(req)
 	if err != nil {
 		return nil, f.transportError(ctx, err)
@@ -100,8 +121,14 @@ func (f *Fetcher) send(ctx context.Context, r Request) (*http.Response, error) {
 // transportError turns the client's error into one of the library's own,
 // keeping nothing of it.
 func (f *Fetcher) transportError(ctx context.Context, err error) error {
-	if ctx.Err() != nil {
-		return f.problem(fault.Cancelled, textsafe.Text{})
+	if err == nil {
+		return nil // nothing went wrong, so there is nothing to translate
+	}
+	if ctx == nil {
+		return f.problem(fault.FetchFailed, textsafe.Const("the request had no context to judge its end by"))
+	}
+	if ctx.Err() != nil && context.Cause(ctx) != errTooLate {
+		return f.problem(fault.Cancelled, textsafe.Text{}) // the caller's work ended
 	}
 	if errors.Is(err, errPolicy) {
 		return f.problem(fault.FetchRefused, textsafe.Text{})
@@ -115,6 +142,9 @@ func (f *Fetcher) transportError(ctx context.Context, err error) error {
 func (f *Fetcher) readReply(ctx context.Context, resp *http.Response, r Request) ([]byte, error) {
 	if resp == nil || resp.Body == nil {
 		return nil, f.problem(fault.FetchFailed, textsafe.Const("the source sent no reply to read"))
+	}
+	if r.MaxBytes <= 0 || r.MaxBytes == math.MaxInt64 {
+		return nil, refusedSource() // the limit read below is MaxBytes+1
 	}
 	want := http.StatusOK
 	if r.RangeLen > 0 {
@@ -141,32 +171,4 @@ func (f *Fetcher) readReply(ctx context.Context, resp *http.Response, r Request)
 		return nil, f.problem(fault.FetchFailed, textsafe.Const("the source sent a different number of bytes than the range that was asked for"))
 	}
 	return data, nil
-}
-
-// Checked wraps a host's replacement fetcher: the range and the maximum
-// length are passed to it, and what comes back is held to them. Its error
-// is not passed on, because it may hold the address.
-func Checked(replacement Func) Func {
-	if replacement == nil {
-		return nil
-	}
-	return func(ctx context.Context, r Request) ([]byte, error) {
-		if r.MaxBytes <= 0 || r.RangeStart < 0 || r.RangeLen < 0 {
-			return nil, refusedSource()
-		}
-		data, err := replacement(ctx, r)
-		if ctx.Err() != nil {
-			return nil, fault.Make(fault.Cancelled, textsafe.Const("a request was abandoned"), textsafe.Const("the work it was part of was cancelled or ran out of time"), textsafe.Const("nothing; it is asked for again if it is still wanted"))
-		}
-		if err != nil {
-			return nil, fault.Make(fault.FetchFailed, textsafe.Const("the host's own fetcher failed"), textsafe.Const("it returned an error, which is not repeated here because it may hold the tile's address"), textsafe.Const("check the host's fetcher"))
-		}
-		if int64(len(data)) > r.MaxBytes {
-			return nil, tooLarge()
-		}
-		if r.RangeLen > 0 && int64(len(data)) != r.RangeLen {
-			return nil, fault.Make(fault.FetchFailed, textsafe.Const("the host's own fetcher failed"), textsafe.Const("it returned a different number of bytes than the range that was asked for"), textsafe.Const("check the host's fetcher"))
-		}
-		return data, nil
-	}
 }

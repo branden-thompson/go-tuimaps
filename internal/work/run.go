@@ -17,7 +17,7 @@ type SettleResult struct {
 	Why      error // the first failure, so a result with nothing fetched says why
 }
 
-// Work runs at most one job, on the caller's goroutine, and says whether it
+// RunOne (behind Map.Work) runs at most one job, on the caller's goroutine, and says whether it
 // ran one. It may be called from any goroutine, any number at once: no Work
 // waits on another. It must not be called from the interface goroutine - a
 // fetch can take seconds.
@@ -39,8 +39,9 @@ func (m *Member) RunOne(ctx context.Context) (did bool, err error) {
 	return true, m.finish(ctx, e, failure)
 }
 
-// takeLocked picks the next job - the newest view's first, then the order
-// asked for - and marks it in flight under a context of its own.
+// takeLocked picks the next job - the newest view's first, its tiles before
+// anything else (the basemap first, L-22), then the order asked for - and
+// marks it in flight under a context of its own.
 func (m *Member) takeLocked(ctx context.Context) (*entry, context.Context, error) {
 	m.q.mu.Lock()
 	defer m.q.mu.Unlock()
@@ -49,8 +50,23 @@ func (m *Member) takeLocked(ctx context.Context) (*entry, context.Context, error
 	}
 	m.idle, m.warned = 0, false
 	best := -1
+	tile := func(e *entry) bool { return e.job.Kind() == scene.KindTile }
 	for i, e := range m.q.waiting {
-		if best < 0 || e.view > m.q.waiting[best].view || (e.view == m.q.waiting[best].view && e.seq < m.q.waiting[best].seq) {
+		if best < 0 {
+			best = i
+			continue
+		}
+		b := m.q.waiting[best]
+		switch {
+		case e.view != b.view:
+			if e.view > b.view {
+				best = i
+			}
+		case tile(e) != tile(b):
+			if tile(e) {
+				best = i
+			}
+		case e.seq < b.seq:
 			best = i
 		}
 	}
@@ -102,9 +118,6 @@ func (m *Member) finish(ctx context.Context, e *entry, failure error) error {
 		fire(woken, false)
 		return problem(fault.Cancelled)
 	}
-	for w := range e.wanters {
-		w.changed++
-	}
 	m.q.mu.Unlock()
 	return own(failure)
 }
@@ -140,7 +153,7 @@ func own(failure error) error {
 	return internal()
 }
 
-// Settle is the pump's loop run on the caller's goroutine: Work until
+// Drain (behind Map.Settle) is the pump's loop run on the caller's goroutine: Work until
 // nothing is pending or the context ends. Work that failed and waits for
 // its retry time is not pending, so Settle always ends; and it never waits
 // on a Work running elsewhere - it returns and says how many there are.
@@ -193,52 +206,9 @@ func (m *Member) Defer(job scene.Job, notBefore time.Time) error {
 	return nil
 }
 
-// Promote queues every deferred job whose time has come, and says how many.
-// The map calls it at each owner call, with the wall clock the host passed
-// in: nothing in the library can make a retry come due by itself.
-func (m *Member) Promote(now time.Time) (int, error) {
-	err := m.owner()
-	if err != nil {
-		return 0, err
-	}
-	m.q.mu.Lock()
-	before, promoted := m.pendingLocked(), 0
-	kept := m.later[:0]
-	for _, d := range m.later {
-		if d.at.After(now) {
-			kept = append(kept, d)
-			continue
-		}
-		m.q.addLocked(m, d.job)
-		promoted++
-	}
-	m.later = kept
-	woke := before == 0 && m.pendingLocked() > 0
-	m.q.mu.Unlock()
-	if woke {
-		fire([]*Member{m}, true)
-	}
-	return promoted, nil
-}
-
-// SetDeadline names a moment the host should call again by: a marker's next
-// phase, an overlay going stale. The zero time clears it.
-func (m *Member) SetDeadline(name string, at time.Time) {
-	if m.owner() != nil || name == "" {
-		return
-	}
-	m.q.mu.Lock()
-	defer m.q.mu.Unlock()
-	if at.IsZero() {
-		delete(m.deadlines, name)
-		return
-	}
-	m.deadlines[name] = at
-}
-
-// NextCall is the earliest moment anything is due: a named deadline, or a
-// deferred job's retry time. Waiting work is not a deadline, so an offline
-// map with nothing set reports nothing due.
+// DueAt (behind Map.NextCall) is the earliest moment a deferred job's
+// retry time comes. Waiting work is not due at a time, so an offline map with
+// nothing deferred reports nothing due.
 func (m *Member) DueAt(now time.Time) (time.Time, bool) {
 	if m == nil || m.q == nil {
 		return time.Time{}, false
@@ -246,11 +216,6 @@ func (m *Member) DueAt(now time.Time) (time.Time, bool) {
 	m.q.mu.Lock()
 	defer m.q.mu.Unlock()
 	var earliest time.Time
-	for _, at := range m.deadlines {
-		if earliest.IsZero() || at.Before(earliest) {
-			earliest = at
-		}
-	}
 	for _, d := range m.later {
 		if earliest.IsZero() || d.at.Before(earliest) {
 			earliest = d.at

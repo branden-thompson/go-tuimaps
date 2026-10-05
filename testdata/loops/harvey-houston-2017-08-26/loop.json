@@ -1,0 +1,60 @@
+{
+ "name": "harvey-houston-2017-08-26",
+ "west": -96.5,
+ "south": 28.5,
+ "east": -94.5,
+ "north": 30.5,
+ "projection": "plate-carree",
+ "provider": "IEM",
+ "source": "Iowa Environmental Mesonet, NEXRAD N0Q composite archive (WMS-T, nexrad-n0q-wmst)",
+ "frames": [
+  {
+   "valid": "2017-08-26T11:05:00Z",
+   "file": "20170826T1105Z.png"
+  },
+  {
+   "valid": "2017-08-26T11:10:00Z",
+   "file": "20170826T1110Z.png"
+  },
+  {
+   "valid": "2017-08-26T11:15:00Z",
+   "file": "20170826T1115Z.png"
+  },
+  {
+   "valid": "2017-08-26T11:20:00Z",
+   "file": "20170826T1120Z.png"
+  },
+  {
+   "valid": "2017-08-26T11:25:00Z",
+   "file": "20170826T1125Z.png"
+  },
+  {
+   "valid": "2017-08-26T11:30:00Z",
+   "file": "20170826T1130Z.png"
+  },
+  {
+   "valid": "2017-08-26T11:35:00Z",
+   "file": "20170826T1135Z.png"
+  },
+  {
+   "valid": "2017-08-26T11:40:00Z",
+   "file": "20170826T1140Z.png"
+  },
+  {
+   "valid": "2017-08-26T11:45:00Z",
+   "file": "20170826T1145Z.png"
+  },
+  {
+   "valid": "2017-08-26T11:50:00Z",
+   "file": "20170826T1150Z.png"
+  },
+  {
+   "valid": "2017-08-26T11:55:00Z",
+   "file": "20170826T1155Z.png"
+  },
+  {
+   "valid": "2017-08-26T12:00:00Z",
+   "file": "20170826T1200Z.png"
+  }
+ ]
+}

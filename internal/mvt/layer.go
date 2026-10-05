@@ -12,8 +12,9 @@ import (
 const (
 	roleNone uint8 = iota
 	roleClass
-	roleNameLang // name_<lang> or name:<lang>, the one configured language (D-82)
-	roleName     // the local name
+	roleNameLang  // name_<lang>, the one configured language (D-82)
+	roleNameColon // name:<lang>, which name_<lang> outranks (L11.14)
+	roleName      // the local name
 	roleHouseNum
 	roleLocalRank
 	roleScaleRank
@@ -131,7 +132,7 @@ func readHeader(body []byte) (header, error) {
 			// is not a layer of this format, and reading past it is
 			// guessing at what was meant. The proven decoder drops such a
 			// layer; this one refuses it, which is the same answer said
-			// plainly (found by the differential fuzz target).
+			// plainly (the differential fuzz target holds the two to it).
 			return header{}, malformed()
 		}
 	}
@@ -230,8 +231,13 @@ func roleOf(key []byte, language string) uint8 {
 	case "maritime":
 		return roleMaritime
 	}
-	if len(key) == len("name_")+len(language) && string(key[:4]) == "name" && (key[4] == '_' || key[4] == ':') && string(key[5:]) == language {
-		return roleNameLang
+	if len(key) == len("name_")+len(language) && string(key[:4]) == "name" && string(key[5:]) == language {
+		switch key[4] {
+		case '_':
+			return roleNameLang
+		case ':':
+			return roleNameColon
+		}
 	}
 	return roleNone
 }

@@ -74,14 +74,16 @@ const (
 	NearDuplicateID
 	UnknownToken
 	SetRefused
-	BorrowChanged
 	NoWorkCalled
 	TileFailed
 	CacheWriteFailed
 	RenderFailed
 	CacheUnderNeed
+	TableFallback     // pixels of an image were valued by its provider's legend gradient, off its table (v0.2.0 L-2.3)
+	CacheRootReadable // other users can read the disk cache's root, and so where the user looked (v0.2.0 L-9.6)
+	NearImageColours  // pixels of an image matched a published or host table only within the tolerance (v0.2.0 L-2.2)
 
-	lastWarningKind = CacheUnderNeed
+	lastWarningKind = NearImageColours
 )
 
 // String returns the warning kind's name as the contract writes it.
@@ -91,8 +93,9 @@ func (k WarningKind) String() string {
 	}
 	return [...]string{
 		"ramp-rule-broken", "unmatched-image-colours", "stale-overlay", "future-valid-time",
-		"implausible-unit", "near-duplicate-id", "unknown-token", "set-refused", "borrow-changed", "no-work-called",
-		"tile-failed", "cache-write-failed", "render-failed", "cache-under-need",
+		"implausible-unit", "near-duplicate-id", "unknown-token", "set-refused", "no-work-called",
+		"tile-failed", "cache-write-failed", "render-failed", "cache-under-need", "table-fallback",
+		"cache-root-readable", "near-image-colours",
 	}[k-1]
 }
 
@@ -125,6 +128,17 @@ func Make(kind Kind, what, why, todo textsafe.Text) *Error {
 		}
 	}
 	return &Error{kind: kind, what: what, why: why, todo: todo}
+}
+
+// Of is the same error said of one part of what was handed in, such as one
+// frame of a loop: its first sentence names the part.
+func (e *Error) Of(part textsafe.Text) *Error {
+	if e == nil {
+		return nil
+	}
+	said := *e
+	said.what = textsafe.Join(part, textsafe.Const(": "), e.what)
+	return &said
 }
 
 // Kind returns the error's kind.

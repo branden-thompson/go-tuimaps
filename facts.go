@@ -15,17 +15,28 @@ import (
 // Class is one step of a legend: the values it covers, the words for them,
 // and the colour it is drawn in where there is one.
 type Class struct {
-	Label  string // the range in words, in the overlay's own unit
+	Label  string // the range in words, in the overlay's own unit; for an alert, its severity
 	Colour RGB
-	Drawn  bool // false where the depth in use draws no colour at all
+	Drawn  bool   // false where the depth in use draws no colour at all
+	Mark   string // for an alert, the digit its outline repeats (D-65); empty otherwise
 }
 
 // LegendEntry is what one overlay puts on the map, as data (FR-18).
 type LegendEntry struct {
 	ID      string
 	Unit    string
-	Preset  string // "temperature", "radar", or empty for a host's own type
+	Preset  string // "temperature", "radar", "alert", or empty for a host's own type
 	Classes []Class
+	// Blended is, for an image or a field, the severities whose alert tint
+	// blends over it (L-11.1); under the others it is drawn over the tint,
+	// the warning carried by the outline, label and digit (L-11.4, D-27).
+	Blended []Severity
+	// Approximate says an image's table was read from a provider's legend
+	// rather than published (L-13.10, D-19); Unverified says part of its
+	// range has not yet been seen in data, so its values there are the
+	// library's best reading (L-2.3). Both come from the provider's table the
+	// image is read with; a table of the host's own carries neither.
+	Approximate, Unverified bool
 }
 
 // Scaled is the scale of the map as data, in the terms the mark on the frame
@@ -77,14 +88,76 @@ func (m *Map) legendOf(id string) (LegendEntry, bool) {
 	case o.Image != nil:
 		kind = o.Image.Type
 	default:
-		return LegendEntry{}, false
+		return m.alertLegend(id, o)
 	}
 	resolved, err := overlay.ResolveType(kind)
 	if err != nil {
 		return LegendEntry{}, false
 	}
-	return LegendEntry{ID: id, Unit: kind.Unit, Preset: kind.Preset,
-		Classes: m.classesOf(resolved)}, true
+	entry := LegendEntry{ID: id, Unit: kind.Unit, Preset: kind.Preset,
+		Classes: m.classesOf(resolved), Blended: m.blendedUnder(resolved.Preset)}
+	if o.Grid != nil && o.Grid.Lines && resolved.Preset != colour.Radar { // keyed as drawn: faint on the ground (L-15.4); rain never is (L-17.1)
+		ground, _ := m.look.ground.InEffect(m.look.palette)
+		for i, c := range entry.Classes {
+			if c.Drawn {
+				entry.Classes[i].Colour = colour.Blend(ground, c.Colour, colour.FaintField)
+			}
+		}
+	}
+	if o.Image != nil {
+		if t, ok := overlay.TableOf(o.Image.Provider); ok {
+			entry.Approximate, entry.Unverified = t.Approximate, t.Unverified
+		}
+	}
+	return entry, true
+}
+
+// severities are the alert severities as the legend lists them, extreme
+// first, with the outline token each is drawn in.
+var severities = [5]struct {
+	severity Severity
+	outline  Token
+}{
+	{SeverityExtreme, colour.AlertExtremeOutline}, {SeveritySevere, colour.AlertSevereOutline},
+	{SeverityModerate, colour.AlertModerateOutline}, {SeverityMinor, colour.AlertMinorOutline},
+	{SeverityUnknown, colour.AlertUnknownOutline},
+}
+
+// alertLegend is an alert overlay's legend: the digit key (D-65), every
+// severity with its digit, its word and its outline's colour. A feature
+// overlay with no alert in it has no legend: it carries its own labels.
+func (m *Map) alertLegend(id string, o overlay.Overlay) (LegendEntry, bool) {
+	alert := false
+	for _, f := range o.Features {
+		alert = alert || overlay.SeverityOf(f) != 0
+	}
+	if !alert {
+		return LegendEntry{}, false
+	}
+	depth := m.depthInEffect()
+	ground := m.look.ground.Kind(m.look.palette)
+	entry := LegendEntry{ID: id, Preset: "alert"}
+	for _, s := range severities {
+		one := Class{Label: strings.ToLower(s.severity.Word()), Mark: s.severity.Digit()}
+		if depth != NoColour {
+			one.Colour, one.Drawn = m.look.palette.ResolveAt(s.outline, ground, depth)
+		}
+		entry.Classes = append(entry.Classes, one)
+	}
+	return entry, true
+}
+
+// blendedUnder is the severities whose tint blends over a preset's images,
+// as the map's blend search found it (L3.8).
+func (m *Map) blendedUnder(preset colour.Preset) []Severity {
+	m.searchBlendsLocked(m.depthInEffect())
+	var out []Severity
+	for tint, s := range severities {
+		if _, ok := m.look.blends.Strength(preset, tint); ok {
+			out = append(out, s.severity)
+		}
+	}
+	return out
 }
 
 // classesOf is one type's classes: one more than its breaks, each labelled
@@ -99,8 +172,12 @@ func (m *Map) classesOf(kind overlay.Kind) []Class {
 	out := make([]Class, 0, len(kind.Breaks)+1)
 	for i := range len(kind.Breaks) + 1 {
 		one := Class{Label: classLabel(kind.Breaks, i)}
-		if ramped && depth != NoColour {
-			one.Colour, one.Drawn = m.look.palette.ResolveAt(first+Token(i), ground, depth)
+		tok := first + Token(i)
+		if colour.FloorsFirst(kind.Preset) { // below radar's first floor is no rain, below a total's a trace, and nothing is drawn (L-17.1, L-26)
+			tok--
+		}
+		if ramped && depth != NoColour && tok >= first {
+			one.Colour, one.Drawn = m.look.palette.ResolveAt(tok, ground, depth)
 		}
 		out = append(out, one)
 	}
@@ -115,6 +192,16 @@ func rampToken(preset colour.Preset) (Token, bool) {
 		return colour.Temperature1, true
 	case colour.Radar:
 		return colour.Radar1, true
+	case colour.Wind:
+		return colour.Wind1, true
+	case colour.Waves:
+		return colour.Wave1, true
+	case colour.UV:
+		return colour.UV1, true
+	case colour.AirQuality:
+		return colour.AQI1, true
+	case colour.QPF:
+		return colour.QPF1, true
 	}
 	return 0, false
 }
@@ -133,12 +220,22 @@ func classLabel(breaks []float64, i int) string {
 	return number(breaks[i-1]) + " to " + number(breaks[i])
 }
 
-// number is a break written as shortly as it can be read.
+// number is a break written as shortly as it can be read: a second decimal
+// where one would misstate it - a trace of rain is 0.25 mm, not 0.2 (L-26).
 func number(v float64) string {
 	if v == math.Trunc(v) {
 		return strconv.FormatFloat(v, 'f', 0, 64)
 	}
-	return strconv.FormatFloat(v, 'f', 1, 64)
+	if one := strconv.FormatFloat(v, 'f', 1, 64); math.Abs(v-mustFloat(one)) < 1e-9 {
+		return one
+	}
+	return strconv.FormatFloat(v, 'f', 2, 64)
+}
+
+// mustFloat is a number this file wrote, read back.
+func mustFloat(s string) float64 {
+	v, _ := strconv.ParseFloat(s, 64)
+	return v
 }
 
 // Credits are every credit the map owes: the basemap's, then each overlay's
@@ -233,6 +330,25 @@ func cut(v float64, places int) string {
 	scale := math.Pow(10, float64(places))
 	whole := math.Trunc(v*scale) / scale
 	return strconv.FormatFloat(whole, 'f', places, 64)
+}
+
+// ShowStamp draws the top row's stamp - the loop's moment and the stale word
+// - or, off, leaves them to the host, which must then show both itself: a
+// frame's age is never hidden (L-1.9, D-87). It is on by default.
+func (m *Map) ShowStamp(on bool) {
+	defer m.guardQuiet("ShowStamp")
+	m.plant("ShowStamp")
+
+	if m == nil {
+		return
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.shut || m.stampOff == !on {
+		return
+	}
+	m.stampOff = !on
+	m.changed++
 }
 
 // ShowFooter draws the footer inside the map, or takes it off again. It is

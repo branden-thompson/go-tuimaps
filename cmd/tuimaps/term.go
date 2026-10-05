@@ -79,13 +79,15 @@ func (t *terminal) restore() {
 
 // readingKeys sends what is typed, decoded into key names, until the context is
 // done. A terminal in raw mode hands over each key as it is pressed, so the
-// loop hears a key without waiting for a line.
+// loop hears a key without waiting for a line; an escape sequence split
+// across two reads is held until it is whole.
 func readingKeys(ctx context.Context, in io.Reader, events chan<- event) {
 	buffer := make([]byte, 64)
+	var keys keyReader
 	for {
 		read, err := in.Read(buffer)
 		if read > 0 {
-			for _, key := range decode(buffer[:read]) {
+			for _, key := range keys.read(buffer[:read]) {
 				select {
 				case events <- event{key: key}:
 				case <-ctx.Done():

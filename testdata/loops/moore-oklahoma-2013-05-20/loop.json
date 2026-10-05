@@ -1,0 +1,60 @@
+{
+ "name": "moore-oklahoma-2013-05-20",
+ "west": -98.6,
+ "south": 34.6,
+ "east": -96.8,
+ "north": 36.0,
+ "projection": "plate-carree",
+ "provider": "IEM",
+ "source": "Iowa Environmental Mesonet, NEXRAD N0Q composite archive (WMS-T, nexrad-n0q-wmst)",
+ "frames": [
+  {
+   "valid": "2013-05-20T19:25:00Z",
+   "file": "20130520T1925Z.png"
+  },
+  {
+   "valid": "2013-05-20T19:30:00Z",
+   "file": "20130520T1930Z.png"
+  },
+  {
+   "valid": "2013-05-20T19:35:00Z",
+   "file": "20130520T1935Z.png"
+  },
+  {
+   "valid": "2013-05-20T19:40:00Z",
+   "file": "20130520T1940Z.png"
+  },
+  {
+   "valid": "2013-05-20T19:45:00Z",
+   "file": "20130520T1945Z.png"
+  },
+  {
+   "valid": "2013-05-20T19:50:00Z",
+   "file": "20130520T1950Z.png"
+  },
+  {
+   "valid": "2013-05-20T19:55:00Z",
+   "file": "20130520T1955Z.png"
+  },
+  {
+   "valid": "2013-05-20T20:00:00Z",
+   "file": "20130520T2000Z.png"
+  },
+  {
+   "valid": "2013-05-20T20:05:00Z",
+   "file": "20130520T2005Z.png"
+  },
+  {
+   "valid": "2013-05-20T20:10:00Z",
+   "file": "20130520T2010Z.png"
+  },
+  {
+   "valid": "2013-05-20T20:15:00Z",
+   "file": "20130520T2015Z.png"
+  },
+  {
+   "valid": "2013-05-20T20:20:00Z",
+   "file": "20130520T2020Z.png"
+  }
+ ]
+}

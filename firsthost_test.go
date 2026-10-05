@@ -66,11 +66,14 @@ func TestTheNoTilesNoticeNamesTheRealCause(t *testing.T) {
 		t.Fatal(err)
 	}
 	if frame.Status != NoTiles {
-		t.Skipf("the frame is %v, so there is no notice to read", frame.Status)
+		t.Fatalf("the frame drawn before any work is %v, not no-tiles: the notice this test reads is not there to read, so the proof cannot be made", frame.Status) // fails, never skips: a skip would read as a pass
 	}
 	text := strings.Join(frame.Lines, "\n")
-	if !strings.Contains(text, "Work") && !strings.Contains(text, "Settle") {
-		t.Errorf("the map has tiles and no work has run, and the notice says nothing of either:\n%s", text)
+	// THE HOST LEARNS IT FROM THE STATUS, THE LISTENER FROM THE WORDS (L-22.2,
+	// overturning 14.19's wording for watchpost D-124): the notice once told
+	// the host to run Work - on a listener's screen. NoTiles tells the host.
+	if !strings.Contains(text, "Loading the map") {
+		t.Errorf("the map has tiles and no work has run, and the notice does not say it is loading:\n%s", text)
 	}
 	if strings.Contains(text, "name a source") {
 		t.Error("the notice tells a host with tiles to name a source")

@@ -24,9 +24,14 @@ const (
 type Label struct {
 	X, Y       int // its first vertex
 	Name       textsafe.Text
+	Short      textsafe.Text // an alert's severity word, placed when the name does not fit (L-8.5)
+	Overlay    string        // the overlay an alert's label belongs to, for Frame.Dropped
 	Rank       int32
 	Ink        uint8
 	fromPoint  bool // placed from its point, not centred on it: a marker's label (P-60)
+	reserved   bool // an alert's outside the moment: it holds its room and is never written (L-28)
+	place      bool // a host's place: a label that cannot fit whole is a DropPlaceName
+	tight      bool // one of a grid's marks: on an even spacing already, so kept a cell from its neighbours, not a name's margin (L-17.2)
 	first, end int  // its vertices, among the painter's: each is tried in turn (P-32)
 }
 
@@ -38,6 +43,8 @@ type Painter struct {
 	literals      []colour.RGB
 	labels        []Label
 	overlayLabels []Label
+	outlines      []Outline // alert areas' outlines, for their severity digits (D-65)
+	outlineCells  []Point   // every outline's cells, one backing kept from frame to frame (NFR-4)
 	markerLabels  []Label
 	glyphs        []Label
 	// bandLabels are the values a field's contours carry with no colour
@@ -50,6 +57,7 @@ type Painter struct {
 	ring        []Point
 	edge        []bool // for each point of ring: the segment that ends there lies along the tile's border
 	rings       [][]Point
+	starts      []int // where each kept stretch of a borrowed alert's outline begins in ring (D-108)
 	profile     style.Profile
 	depth       colour.Depth
 	reads       Reads
@@ -81,6 +89,7 @@ func (p *Painter) Reset() {
 	p.areas.Wipe()
 	p.literals, p.labels, p.labelPts = p.literals[:0], p.labels[:0], p.labelPts[:0]
 	p.overlayLabels = p.overlayLabels[:0]
+	p.outlines, p.outlineCells = p.outlines[:0], p.outlineCells[:0]
 	p.markerLabels, p.glyphs = p.markerLabels[:0], p.glyphs[:0]
 	p.bandLabels = p.bandLabels[:0]
 	p.culled, p.lastPoints = 0, 0
@@ -158,8 +167,15 @@ func (p *Painter) World(v project.View) error {
 	if err != nil {
 		return err
 	}
+	lo, hi, err := v.Shifts()
+	if err != nil {
+		return err
+	}
 	w, h := p.areas.Dots()
-	left, top, right, bottom := toDot(x), toDot(y), toDot(x+side), toDot(y+side)
+	// EAST AND WEST OF THE WORLD IS MORE WORLD (D-86): only above and below
+	// the poles is beyond it. Painting ocean either side of the one copy put
+	// the sea over every land the view reached past the antimeridian.
+	left, top, right, bottom := toDot(x+float64(lo)*side), toDot(y), toDot(x+float64(hi+1)*side), toDot(y+side)
 	ink := uint8(colour.WaterFill)
 	for _, r := range [4][4]int{{0, 0, left, h}, {right, 0, w, h}, {0, 0, w, top}, {0, bottom, w, h}} {
 		if r[0] >= r[2] || r[1] >= r[3] {
@@ -187,19 +203,77 @@ func (p *Painter) Shape(v project.View, s scene.Shape) error {
 		p.culled++
 		return nil
 	}
-	role := colour.Token(s.Role)
-	if s.Kind == scene.ShapeArea && role >= colour.AlertExtremeOutline && role <= colour.AlertUnknownOutline {
+	if s.Kind == scene.ShapeArea && alertRole(s.Role) {
 		p.areas.Fill(p.rings, s.Role+1) // an alert's tint is the token after its outline's
 	}
+	p.keepOutline(s, false)
 	p.lines.Forcing(true)
 	for _, ring := range p.rings {
 		p.mark(ring, s)
 	}
 	p.lines.Forcing(false)
-	if s.Label != "" && len(p.overlayLabels) < maxLabels {
-		p.overlayLabels = append(p.overlayLabels, Label{X: (box[0] + box[2]) / 2, Y: (box[1] + box[3]) / 2, Name: textsafe.Clean(s.Label), Ink: s.Role})
-	}
+	p.keepLabel(s, box, false)
 	return nil
+}
+
+// Reserve takes one prepared shape of an overlay outside the moment (L-15.1)
+// and paints nothing of it: an alert's word and severity digits are kept, as
+// Shape keeps them, to hold their room from the basemap's names (L-28).
+// Placed as if every alert in view were present, the names stand still as a
+// loop plays past each alert's hours (L-28.1; from watchpost D-200).
+func (p *Painter) Reserve(v project.View, s scene.Shape) error {
+	if p == nil {
+		return badTile()
+	}
+	if !alertRole(s.Role) {
+		return nil // only an alert's words come before the names
+	}
+	x, y, side, err := v.TilePlace(scene.TileID{})
+	if err != nil {
+		return err
+	}
+	box, visible := p.place(s.Rings, x, y, side)
+	if !visible {
+		return nil
+	}
+	p.keepOutline(s, true)
+	p.keepLabel(s, box, true)
+	return nil
+}
+
+// alertRole reports whether a shape's role is an alert's outline.
+func alertRole(role uint8) bool {
+	t := colour.Token(role)
+	return t >= colour.AlertExtremeOutline && t <= colour.AlertUnknownOutline
+}
+
+// keepOutline keeps an alert area's outline, just placed, for its digits.
+func (p *Painter) keepOutline(s scene.Shape, reserved bool) {
+	if mark, ok := digitText(s.Mark); ok && s.Kind == scene.ShapeArea && len(p.outlines) < maxLabels {
+		start := len(p.outlineCells)
+		w, h := p.lines.Dots()
+		p.outlineCells = cellsAlong(p.outlineCells, p.rings, w, h)
+		p.outlines = append(p.outlines, Outline{Mark: mark, Ink: s.Role, from: start, to: len(p.outlineCells), reserved: reserved})
+	}
+}
+
+// keepLabel keeps a shape's words, at its box, for the label pass.
+func (p *Painter) keepLabel(s scene.Shape, box [4]int, reserved bool) {
+	if s.Label == "" || len(p.overlayLabels) >= maxLabels {
+		return
+	}
+	ink := s.Role
+	if colour.ScaleClass(colour.Token(ink)) {
+		ink = uint8(colour.MarkerLabel) // a scale's colour marks the point; its words need a colour that reads (L-25)
+	}
+	l := Label{X: (box[0] + box[2]) / 2, Y: (box[1] + box[3]) / 2, Name: textsafe.Clean(s.Label), Ink: ink, reserved: reserved}
+	if s.Dots > 0 { // a ring's words begin beside it, not over it (L-19)
+		l.X, l.fromPoint = box[0]+s.Dots+2, true
+	}
+	if s.Word != "" {
+		l.Short, l.Overlay = textsafe.Clean(s.Word), s.Overlay
+	}
+	p.overlayLabels = append(p.overlayLabels, l)
 }
 
 // place takes a shape's rings to dots, a point on one dot kept once, and
@@ -232,6 +306,10 @@ func (p *Painter) mark(ring []Point, s scene.Shape) {
 	if len(ring) == 0 {
 		return
 	}
+	if s.Kind == scene.ShapePoint && s.Dots > 0 {
+		p.markCircle(ring[0], s.Dots, false, s.Role) // a ring fixed on the screen (L-19)
+		return
+	}
 	if s.Kind == scene.ShapePoint {
 		for dy := -1; dy <= 1; dy++ {
 			for dx := -1; dx <= 1; dx++ {
@@ -255,6 +333,108 @@ func (p *Painter) BandLabels() []Label {
 		return nil
 	}
 	return p.bandLabels
+}
+
+// Outline is an alert area's outline, cell by cell in the order it runs, and
+// the severity digit it carries (D-65).
+type Outline struct {
+	Mark     textsafe.Text
+	Ink      uint8
+	from, to int  // its cells, in the painter's outline cells
+	reserved bool // an alert's outside the moment: its digits' cells are held, not written (L-28)
+}
+
+// Outlines are the alert areas' outlines, in the order drawn.
+func (p *Painter) Outlines() []Outline {
+	if p == nil {
+		return nil
+	}
+	return p.outlines
+}
+
+// Cells is an outline's cells, in cells not dots, in the order it runs.
+func (p *Painter) Cells(o Outline) []Point {
+	if p == nil || o.to > len(p.outlineCells) {
+		return nil
+	}
+	return p.outlineCells[o.from:o.to]
+}
+
+// digitText is a severity digit as the frame writes it: constant text, so a
+// frame allocates nothing for it (NFR-4).
+func digitText(mark string) (textsafe.Text, bool) {
+	switch mark {
+	case "4":
+		return textsafe.Const("4"), true
+	case "3":
+		return textsafe.Const("3"), true
+	case "2":
+		return textsafe.Const("2"), true
+	case "1":
+		return textsafe.Const("1"), true
+	case "?":
+		return textsafe.Const("?"), true
+	}
+	return textsafe.Text{}, false
+}
+
+// cellsAlong appends the cells a shape's rings pass through within a w by h
+// dot view and its clip pad, in order, each once in a row: a braille cell is
+// two dots wide and four high.
+func cellsAlong(out []Point, rings [][]Point, w, h int) []Point {
+	start := len(out)
+	add := func(x, y int) {
+		c := Point{X: floorDiv(x, 2), Y: floorDiv(y, 4)}
+		if len(out) == start || out[len(out)-1] != c {
+			out = append(out, c)
+		}
+	}
+	for _, ring := range rings {
+		for i := 0; i+1 < len(ring); i++ {
+			a, b, ok := clipped(ring[i], ring[i+1], w, h)
+			if !ok {
+				continue // nothing of this edge is in the view or its pad
+			}
+			steps := max(abs(b.X-a.X), abs(b.Y-a.Y), 1)
+			for k := 0; k <= steps; k++ {
+				add(a.X+(b.X-a.X)*k/steps, a.Y+(b.Y-a.Y)*k/steps)
+			}
+		}
+	}
+	return out
+}
+
+// clipped is the part of an edge, in dots, inside a w by h view grown by the
+// clip pad, and whether any of it is: so an edge running far off the screen
+// is walked only where it can carry a digit.
+func clipped(a, b Point, w, h int) (Point, Point, bool) {
+	lo, hiX, hiY := float64(-clipMargin), float64(w+clipMargin), float64(h+clipMargin)
+	x0, y0, dx, dy := float64(a.X), float64(a.Y), float64(b.X-a.X), float64(b.Y-a.Y)
+	t0, t1 := 0.0, 1.0
+	for _, edge := range [4][2]float64{{-dx, x0 - lo}, {dx, hiX - x0}, {-dy, y0 - lo}, {dy, hiY - y0}} {
+		p, q := edge[0], edge[1]
+		switch {
+		case p == 0 && q < 0:
+			return a, b, false
+		case p < 0:
+			t0 = math.Max(t0, q/p)
+		case p > 0:
+			t1 = math.Min(t1, q/p)
+		}
+	}
+	if t0 > t1 {
+		return a, b, false
+	}
+	at := func(t float64) Point { return Point{X: int(math.Round(x0 + t*dx)), Y: int(math.Round(y0 + t*dy))} }
+	return at(t0), at(t1), true
+}
+
+func floorDiv(a, b int) int {
+	q := a / b
+	if (a%b != 0) && ((a < 0) != (b < 0)) {
+		q--
+	}
+	return q
 }
 
 // OverlayLabels are the labels of the overlays' shapes, in the order drawn.
@@ -348,9 +528,16 @@ type frame struct {
 // Tile paints one tile on hand. at is the tile it is - the wanted tile, or an
 // ancestor standing in for it, which is drawn larger (D-30).
 func (p *Painter) Tile(v project.View, tile *scene.Tile, at scene.TileID, s *style.Style) error {
+	return p.TileShifted(v, tile, at, 0, s)
+}
+
+// TileShifted paints a tile a number of worlds east or west of its own place
+// (D-86: the world repeats across the antimeridian).
+func (p *Painter) TileShifted(v project.View, tile *scene.Tile, at scene.TileID, shift int, s *style.Style) error {
 	if p == nil || tile == nil || s == nil {
 		return badTile()
 	}
+	v.Shift = shift
 	x, y, side, err := v.TilePlace(at)
 	if err != nil {
 		return err

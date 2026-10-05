@@ -1,0 +1,5 @@
+baseline, no overlays, 3 maps: heap +2.16 MB (0.72 MB a map)
+298x152 frames, 12 frames (PNG 67 KB), 1 map(s): heap +1.32 MB (1.32 MB a map); first render with all 12 27.229792ms a map
+298x152 frames, 12 frames (PNG 67 KB), 3 map(s): heap +3.94 MB (1.31 MB a map); first render with all 12 26.883375ms a map
+596x304 frames, 12 frames (PNG 245 KB), 1 map(s): heap +2.91 MB (2.91 MB a map); first render with all 12 26.423666ms a map
+596x304 frames, 12 frames (PNG 245 KB), 3 map(s): heap +8.74 MB (2.91 MB a map); first render with all 12 26.800402ms a map

@@ -74,8 +74,8 @@ func checkPlace(p Place) (Place, error) {
 		return Place{}, badPlaceID(textsafe.Const("it asks for a marker the library does not draw"),
 			textsafe.Const("use one of the marker styles the package names, or none at all"))
 	}
-	if p.ID != "" && textsafe.Clean(p.ID).String() != p.ID {
-		return Place{}, badPlaceID(textsafe.Const("its id holds characters that would have to be cleaned"),
+	if _, err := textsafe.ID(p.ID); p.ID != "" && err != nil { // the rule an overlay's id is held to
+		return Place{}, badPlaceID(textsafe.Const("its id is longer than 256 bytes, or holds characters that would have to be cleaned"),
 			textsafe.Const("give it an id of plain text, or none, in which case its position becomes its id"))
 	}
 	p.Name = textsafe.Clean(p.Name).String()
@@ -117,7 +117,7 @@ func (m *Map) SetPlaces(places []Place) (ids []string, err error) {
 	}
 	m.places = kept
 	m.placesVersion++
-	m.described = nil
+	m.reported = nil
 	m.changed++
 	return ids, nil
 }
@@ -147,14 +147,14 @@ func (m *Map) AddPlace(p Place) (id string, err error) {
 		if m.places[i].ID == one.ID {
 			m.places[i] = one
 			m.placesVersion++
-			m.described = nil
+			m.reported = nil
 			m.changed++
 			return one.ID, nil
 		}
 	}
 	m.places = append(m.places, one)
 	m.placesVersion++
-	m.described = nil
+	m.reported = nil
 	m.changed++
 	return one.ID, nil
 }
@@ -182,7 +182,7 @@ func (m *Map) RemovePlace(id string) (gone int, err error) {
 	gone = was - len(m.places)
 	if gone > 0 {
 		m.placesVersion++
-		m.described = nil
+		m.reported = nil
 		m.changed++
 	}
 	return gone, nil
@@ -214,7 +214,7 @@ func (m *Map) markers() []render.Marker {
 			shape = MarkerDot
 		}
 		m.drawnPlaces = append(m.drawnPlaces, render.Marker{At: p.At, Shape: shape, Radius: p.Radius,
-			Text: p.Glyph, Label: p.Name, Ink: uint8(colour.Marker), Blink: p.Blink})
+			Text: p.Glyph, Label: p.Name, Ink: uint8(colour.Marker), Blink: p.Blink, ID: p.ID})
 	}
 	return m.drawnPlaces
 }

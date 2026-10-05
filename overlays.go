@@ -46,6 +46,32 @@ type Type = overlay.Type
 // mean (D-45).
 type Image = overlay.Image
 
+// LoopFrame is one frame of an image's loop: when its picture was valid, and
+// the picture. A gap is a missing frame, stated as missing, with no bytes; a
+// forecast frame is one the provider forecast rather than observed.
+type LoopFrame = overlay.LoopFrame
+
+// Span is when an overlay is drawn: while the map's moment meets it - the
+// loop's frame, or the host's moment (ShowMoment), or the frame's clock. A
+// zero end is open (L-15.1).
+type Span = overlay.Span
+
+// MaxFrames is the most frames a loop may have, gaps included.
+const MaxFrames = overlay.MaxFrames
+
+// Severity is how severe an alert is; the zero value means the one its role
+// implies.
+type Severity = overlay.Severity
+
+// The severities, least first.
+const (
+	SeverityUnknown  = overlay.SeverityUnknown
+	SeverityMinor    = overlay.SeverityMinor
+	SeverityModerate = overlay.SeverityModerate
+	SeveritySevere   = overlay.SeveritySevere
+	SeverityExtreme  = overlay.SeverityExtreme
+)
+
 // TableEntry is one row of that table: a colour of the provider's, the
 // value it stands for, and whether it means "no data".
 type TableEntry = overlay.TableEntry
@@ -81,6 +107,13 @@ const (
 	AlertMinor    = colour.AlertMinorOutline
 	AlertUnknown  = colour.AlertUnknownOutline
 	Track         = colour.Track
+	Fire          = colour.Fire       // a fire's perimeter, its incident, a strong hotspot (L-18)
+	FireFaint     = colour.FireFaint  // a weaker hotspot
+	QuakeHour     = colour.QuakeHour  // a quake of the past hour (L-19)
+	QuakeDay      = colour.QuakeDay   // of the past day
+	QuakeOlder    = colour.QuakeOlder // older
+	Buoy          = colour.Buoy       // a buoy's marker and words (L-21)
+	Tide          = colour.Tide       // a tide station's
 	Low           = colour.Low
 	Middle        = colour.Middle
 	High          = colour.High
@@ -101,6 +134,109 @@ type Warning = fault.Warning
 func TemperatureGrid(id string, grid Grid, unit Unit, validAt time.Time) Overlay {
 	grid.Type = Type{Preset: "temperature", Unit: unitName(unit)}
 	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &grid}
+}
+
+// SpeedUnit is a unit of wind speed (FR-8).
+type SpeedUnit = colour.SpeedUnit
+
+// The units of wind speed.
+const (
+	MilesPerHour      = colour.MilesPerHour
+	KilometresPerHour = colour.KilometresPerHour
+	MetresPerSecond   = colour.MetresPerSecond
+	Knots             = colour.Knots
+)
+
+// WindGrid is a wind field in one call (FR-8, L-16): the speeds in a unit,
+// and the direction each blows FROM, meteorological degrees clockwise from
+// north, one a speed, NaN where there is none. It is drawn as arrows, never
+// bands, and the preset supplies the classes and their colours.
+func WindGrid(id string, speed Grid, from []float64, unit SpeedUnit, validAt time.Time) Overlay {
+	speed.From = from
+	speed.Type = Type{Preset: "wind", Unit: speedUnitName(unit)}
+	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &speed}
+}
+
+// speedUnitName is the name the overlay store knows a speed unit by.
+func speedUnitName(u SpeedUnit) string {
+	switch u {
+	case KilometresPerHour:
+		return "km/h"
+	case MetresPerSecond:
+		return "m/s"
+	case Knots:
+		return "kt"
+	}
+	return "mph"
+}
+
+// WaveUnit is a unit of wave height (L-20).
+type WaveUnit = colour.WaveUnit
+
+// The units of wave height.
+const (
+	Feet   = colour.Feet
+	Metres = colour.Metres
+)
+
+// WaveGrid is a wave-height field in one call (L-20): the preset supplies
+// the classes and their colours, and the field is drawn over the sea alone.
+func WaveGrid(id string, grid Grid, unit WaveUnit, validAt time.Time) Overlay {
+	name := "ft"
+	if unit == Metres {
+		name = "m"
+	}
+	grid.Type = Type{Preset: "waves", Unit: name}
+	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &grid}
+}
+
+// UVGrid is a UV index field in one call (L-25): the preset supplies its
+// five categories and their colours.
+func UVGrid(id string, grid Grid, validAt time.Time) Overlay {
+	grid.Type = Type{Preset: "uv", Unit: "index"}
+	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &grid}
+}
+
+// AirQualityGrid is a US AQI field in one call (L-25): the preset supplies
+// its six categories and their colours.
+func AirQualityGrid(id string, grid Grid, validAt time.Time) Overlay {
+	grid.Type = Type{Preset: "aqi", Unit: "AQI"}
+	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &grid}
+}
+
+// QPFGrid is a field of rain and snow totals, liquid-equivalent, in mm, in
+// one call (L-26): the preset supplies WPC's seven classes and their
+// colours, and draws nothing under a trace.
+func QPFGrid(id string, grid Grid, validAt time.Time) Overlay {
+	grid.Type = Type{Preset: "qpf", Unit: "mm"}
+	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &grid}
+}
+
+// AirQualityRole is the role a feature is drawn in to show an AQI - a
+// monitor's reading - in its category's colour, as the AQI preset draws it
+// (L-25). Its words are drawn in the markers' ink, which reads on the ground.
+func AirQualityRole(aqi float64) Token {
+	c := 0
+	for _, b := range colour.AirQualityBreaks() {
+		if aqi >= b {
+			c++
+		}
+	}
+	return colour.AQI1 + Token(c)
+}
+
+// UVRole is the role a feature is drawn in to show a UV index - a city's
+// reading - in its band's colour, as the UV preset draws it (watchpost W18.4,
+// its D-167: EPA's UV index as markers). Its words are drawn in the markers'
+// ink, as AirQualityRole's.
+func UVRole(index float64) Token {
+	c := 0
+	for _, b := range colour.UVBreaks() {
+		if index >= b {
+			c++
+		}
+	}
+	return colour.UV1 + Token(c)
 }
 
 // RadarImage is a radar image in one call: the host gives the picture, the
@@ -133,12 +269,19 @@ func (m *Map) Set(o Overlay) (res SetResult, err error) {
 	if m.shut {
 		return SetResult{}, closed()
 	}
+	if o.Image != nil {
+		if err := overlay.CheckFrameTimes(o.Image, m.wallClock); err != nil {
+			return SetResult{}, err
+		}
+	}
 	res, err = m.store.HandIn(o)
 	if err != nil {
 		return res, err
 	}
 	m.overlays++
-	m.described = nil
+	m.reported = nil
+	delete(m.tracked, o.ID)       // its old pictures are not held for motion
+	m.play.seen = m.shownLocked() // a refresh that moves the moment is an input, not an advance
 	m.changed++
 	return res, nil
 }
@@ -162,7 +305,9 @@ func (m *Map) Remove(id string) (res RemoveResult, err error) {
 		return res, err
 	}
 	m.overlays++
-	m.described = nil
+	m.reported = nil
+	delete(m.tracked, id)
+	m.play.seen = m.shownLocked() // a refresh that moves the moment is an input, not an advance
 	m.changed++
 	return res, nil
 }
@@ -226,15 +371,17 @@ func (m *Map) bucket() int {
 func (m *Map) overlayWork() error {
 	bucket := m.bucket()
 	for _, id := range m.store.IDs() {
-		_, _, path := m.store.Drawn(id, bucket)
-		if path == overlay.Cached {
+		// Another bucket's shapes are drawn while the bucket in view is
+		// prepared; once it is cached, nothing is left to do.
+		_, drawn, path := m.store.Drawn(id, bucket)
+		if path == overlay.Cached && drawn == bucket {
 			continue
 		}
 		if _, ok := m.store.Field(id); ok {
 			continue
 		}
-		if _, _, ok := m.store.Raster(id); ok {
-			continue
+		if m.store.OwnPicture(id) {
+			continue // its own pictures are decoded; a stand-in is not (L-27.1)
 		}
 		err := m.member.Add(m.store.PrepareJob(id, bucket))
 		if err != nil {
@@ -244,30 +391,100 @@ func (m *Map) overlayWork() error {
 	return nil
 }
 
+// stillWanted reports whether a render's plan keeps the work under key: a
+// tile the view needs, or the preparation, at the bucket in view, of an
+// overlay the map holds (L-30.1; from watchpost UAT-2 U2-59). A preparation withdrawn here
+// is cancelled where it runs, so a loop that takes longer to prepare than the
+// gap between two renders would never be drawn. It allocates nothing: a
+// render pays it for every job waiting or running.
+func (m *Map) stillWanted(key string) bool {
+	if m.pipe.StillWanted(key) {
+		return true
+	}
+	id, bucket, ok := overlay.PreparesOf(key)
+	return ok && bucket == m.bucket() && m.store.Holds(id)
+}
+
 // draw fills in what the overlays put on this frame: prepared shapes, fields
 // and images, and the ones read straight from the host's memory (D-92).
 func (m *Map) draw(in *render.Input) {
 	bucket := m.bucket()
-	m.shapes, m.fields, m.rasters, m.borrowed = m.shapes[:0], m.fields[:0], m.rasters[:0], m.borrowed[:0]
+	shown := m.shownLocked()
+	if !shown.Equal(m.play.drawn) {
+		m.play.moved++ // another frame of a loop is drawn: the last frame cannot be reused
+		m.play.drawn = shown
+	}
+	m.shapes, m.reserved, m.fields, m.rasters, m.borrowed = m.shapes[:0], m.reserved[:0], m.fields[:0], m.rasters[:0], m.borrowed[:0]
+	from, to := m.momentLocked(shown)
+	hidden := uint64(0)
 	for _, id := range m.store.IDs() {
+		// AN OVERLAY OUTSIDE THE MOMENT IS NOT DRAWN (L-15.1), but it stays
+		// prepared: the frame that meets it draws it at once, never a frame late.
+		if span, ok := m.store.During(id); ok && !span.Meets(from, to) {
+			hidden = hidden*1099511628211 ^ idHash(id)
+			m.reserve(in, id, bucket)
+			continue
+		}
 		if field, ok := m.store.Field(id); ok {
 			m.fields = append(m.fields, field)
 			continue
 		}
-		if raster, _, ok := m.store.Raster(id); ok {
+		if raster, _, ok := m.store.RasterAt(id, shown); ok {
 			m.rasters = append(m.rasters, raster)
+			in.ImageHeld = true
+			continue
+		}
+		if _, _, ok := m.store.Raster(id); ok {
+			in.ImageHeld = true // a loop on a gap still shares the map: the field's look holds across it (L-15.3)
 			continue
 		}
 		shapes, _, path := m.store.Drawn(id, bucket)
 		switch path {
-		case overlay.Cached:
+		case overlay.Cached, overlay.StandIn: // a stand-in is drawn while its replacement is prepared (L11.5)
 			m.shapes = append(m.shapes, shapes...)
 		case overlay.FromMemory:
 			m.borrow(id)
 		}
 	}
-	in.Shapes, in.Fields, in.Rasters, in.Borrowed = m.shapes, m.fields, m.rasters, m.borrowed
-	in.OverlaysVersion = m.overlays
+	if hidden != m.play.hidden {
+		m.play.moved++ // another set of overlays is drawn: the last frame cannot be reused
+		m.play.hidden = hidden
+	}
+	in.Shapes, in.Reserved, in.Fields, in.Rasters, in.Borrowed = m.shapes, m.reserved, m.fields, m.rasters, m.borrowed
+	// Every count only grows, so their sum moves whenever any does: an input,
+	// a frame advance, or prepared shapes, fields or pictures landing. The
+	// report's key reads only the first (L-1.10e).
+	in.OverlaysVersion = m.overlays + m.play.moved + m.store.Landed()
+}
+
+// reserve keeps what an overlay outside the moment would take from the names
+// (L-28, watchpost D-200): its prepared shapes, whose alert words and digits
+// hold their room, and the cover a field or image puts on the name budget.
+// The names are placed as if every overlay in view were present, so they
+// stand still as a loop plays past each one's hours. Reading a prepared form
+// marks it used, which keeps it from eviction until its hour comes round. An
+// overlay read from the host's memory holds nothing: it is read only to draw.
+func (m *Map) reserve(in *render.Input, id string, bucket int) {
+	if _, ok := m.store.Field(id); ok {
+		in.Covered = true
+		return
+	}
+	if _, _, ok := m.store.Raster(id); ok {
+		in.Covered = true
+		return
+	}
+	if shapes, _, path := m.store.Drawn(id, bucket); path == overlay.Cached || path == overlay.StandIn {
+		m.reserved = append(m.reserved, shapes...)
+	}
+}
+
+// idHash is an overlay id's FNV-1a hash, for the set of those left out.
+func idHash(id string) uint64 {
+	h := uint64(14695981039346656037)
+	for i := range len(id) {
+		h = (h ^ uint64(id[i])) * 1099511628211
+	}
+	return h
 }
 
 // borrow reads one overlay where it lies, through its run index: the frame
@@ -285,7 +502,10 @@ func (m *Map) borrow(id string) {
 		for _, ring := range f.Rings {
 			runs += (len(ring) + render.RunLength - 1) / render.RunLength
 		}
-		lent := render.Borrowed{Kind: shapeKind(f.Kind), Rings: f.Rings, Role: uint8(f.Role), Label: f.Label}
+		lent := render.Borrowed{Kind: shapeKind(f.Kind), Rings: f.Rings, Role: uint8(f.Role), Label: overlay.LabelOf(f), Overlay: id}
+		if lent.Kind == scene.ShapeArea { // an alert's word and digit, as a cached shape carries them (D-108)
+			lent.Mark, lent.Word = overlay.SeverityOf(f).Digit(), overlay.SeverityOf(f).Word()
+		}
 		if at+runs <= len(index) {
 			lent.Index = index[at : at+runs]
 		}
@@ -304,3 +524,14 @@ func shapeKind(k FeatureKind) scene.ShapeKind {
 	}
 	return scene.ShapeLine
 }
+
+// Provider names a source of radar images whose colour table the library
+// carries: an image that names one, with no table of its own, is read with
+// the provider's (L-2.5).
+type Provider = overlay.Provider
+
+// The providers the library carries tables for.
+const (
+	ProviderIEM  = overlay.ProviderIEM  // the Iowa Environmental Mesonet's N0Q composite, its published table
+	ProviderMRMS = overlay.ProviderMRMS // NOAA's MRMS reflectivity, its observed palette valued from its legend: approximate
+)

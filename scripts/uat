@@ -5,11 +5,12 @@
 #   scripts/uat --frames   write the reference frames again (they are then
 #                          HUM LEAD's to approve — plan task 14.16)
 #
-# No remote exists until SHIP, so the app's module cannot resolve the
-# library the ordinary way. This script writes a throw-away workspace file
-# **outside the repository** and builds through it: the tree is left exactly
-# as it was found, because a tracked workspace file is something the gate
-# refuses.
+# The app's module requires the library at v0.0.0, a version that is never
+# published, so it resolves the library from this tree. This script writes a
+# throw-away workspace file **outside the repository** and builds through it:
+# the tree is left exactly as it was found, because a tracked workspace file
+# is something the gate refuses. Modules the build needs are fetched through
+# the ordinary module proxy, so a fresh clone builds.
 
 set -u
 set -o pipefail
@@ -27,18 +28,25 @@ done
 
 if [ "$frames" = 1 ]; then
   echo "uat: writing the reference frames"
-  TUIMAPS_WRITE_REFERENCE_FRAMES=1 GOFLAGS=-mod=readonly GOPROXY=off \
+  TUIMAPS_WRITE_REFERENCE_FRAMES=1 GOFLAGS=-mod=readonly \
     go test -run TestReferenceFrames . || exit 1
   echo "uat: written to 06_docs/02_features/go-tuimaps/07-readiness/reference-frames"
   echo "uat: they are candidates until they are approved (plan task 14.16)"
   exit 0
 fi
 
+# The workspace's go line is the library's own go directive, which every
+# module of the repository shares.
+floor="$(sed -n 's/^go[[:space:]]\{1,\}\([0-9][0-9.]*\)[[:space:]]*$/\1/p' "$root/go.mod" | head -1)"
+if [ -z "$floor" ]; then
+  echo "uat: cannot read the go directive from $root/go.mod" >&2
+  exit 2
+fi
 held="$(mktemp -d)"
 work="$held/go.work"
 trap 'rm -rf "$held"' EXIT
 {
-  echo "go 1.25.0"
+  echo "go $floor"
   echo
   echo "use ("
   echo "	$root"
@@ -49,7 +57,7 @@ trap 'rm -rf "$held"' EXIT
 } > "$work"
 
 mkdir -p "$root/dist"
-if ! GOWORK="$work" GOFLAGS=-mod=readonly GOPROXY=off CGO_ENABLED=0 \
+if ! GOWORK="$work" GOFLAGS=-mod=readonly CGO_ENABLED=0 \
   go build -o "$root/dist/tuimaps" ./cmd/tuimaps; then
   echo "uat: the app did not build" >&2
   exit 1

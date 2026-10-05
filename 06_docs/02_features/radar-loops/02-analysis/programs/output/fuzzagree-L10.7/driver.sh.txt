@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# L10.7 / OW-4: FuzzAgree ten times, as the gate's leg runs it.
+set -u
+root="$(git rev-parse --show-toplevel)"
+cd "$root" || exit 2
+export PATH="$HOME/go/bin:$PATH"
+export GOTOOLCHAIN=go1.25.0 GOFLAGS=-mod=readonly
+modules="$(find . -name go.mod -not -path '*/testdata/*' -not -path '*/.*' -not -path './_*' -not -path './dist/*' | sed 's|/go.mod$||' | sort)"
+rm -f go.work go.work.sum
+trap 'rm -f "$root/go.work" "$root/go.work.sum"' EXIT
+GOFLAGS= go work init $modules || exit 2
+GOFLAGS= go work edit -replace="$(GOWORK=off GOFLAGS= go list -m)@v0.0.0=./" || exit 2
+out="${OUT:-$root/../fuzzagree-runs}"
+mkdir -p "$out"
+echo "| Run | Started (UTC) | Seconds | Result | Slowest 3 s stretch (execs/s) |"
+for i in $(seq 1 10); do
+  start=$(date -u +%Y-%m-%dT%H:%M:%SZ); t0=$SECONDS
+  perl -e 'setpgrp(0,0); alarm 600; exec { $ARGV[0] } @ARGV' -- go test -run '^$' -fuzz '^FuzzAgree$' -fuzztime 5700000x ./tools/oracle > "$out/run$i.log" 2>&1
+  rc=$?
+  secs=$((SECONDS - t0))
+  result="green"; [ $rc -ne 0 ] && result="FAILED ($rc)"; [ $rc -eq 142 ] && result="TIME LIMIT"
+  slow=$(grep -oE 'execs: [0-9]+ \(([0-9]+)/sec\)' "$out/run$i.log" | grep -oE '\([0-9]+/sec' | tr -d '(/sec' | sort -n | head -1)
+  echo "| $i | $start | $secs | $result | ${slow:-n/a} |"
+done

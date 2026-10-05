@@ -90,10 +90,18 @@ func Prepare(o Overlay, bucket int) ([]scene.Shape, error) {
 	for _, f := range o.Features {
 		kind := map[FeatureKind]scene.ShapeKind{Point: scene.ShapePoint, Line: scene.ShapeLine, Polygon: scene.ShapeArea, Circle: scene.ShapeArea}[f.Kind]
 		rings := f.Rings
-		if f.Kind == Circle {
+		dots := 0
+		switch {
+		case f.Kind == Circle && f.RadiusDots > 0: // a ring on the screen: its centre, drawn at its size at every zoom (L-19)
+			kind, rings, dots = scene.ShapePoint, [][]project.LonLat{{f.Centre}}, f.RadiusDots
+		case f.Kind == Circle:
 			rings = [][]project.LonLat{ringOf(f.Centre, f.RadiusKm)}
 		}
-		shape := scene.Shape{Kind: kind, Role: uint8(f.Role), Label: f.Label}
+		shape := scene.Shape{Kind: kind, Role: uint8(f.Role), Label: LabelOf(f), Dots: dots}
+		if kind == scene.ShapeArea {
+			shape.Mark, shape.Word = SeverityOf(f).Digit(), SeverityOf(f).Word()
+		}
+		shape.Overlay = o.ID
 		for _, ring := range rings {
 			prepared, err := prepareRing(ring, kind, tolerance)
 			if err != nil {

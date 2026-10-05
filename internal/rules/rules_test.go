@@ -78,6 +78,9 @@ func TestEveryPlantedViolationIsFound(t *testing.T) {
 		{"time.After", "internal/work/a.go", "package work\nimport \"time\"\nfunc f() { <-time.After(1) }\n", RuleTimer},
 		{"a sleep", "internal/work/a.go", "package work\nimport \"time\"\nfunc f() { time.Sleep(1) }\n", RuleTimer},
 		{"a renamed time import", "internal/work/a.go", "package work\nimport clock \"time\"\nfunc f() { clock.AfterFunc(1, f) }\n", RuleTimer},
+		{"the wall clock", "internal/work/a.go", "package work\nimport \"time\"\nvar _ = time.Now()\n", RuleTimer},
+		{"a duration from now", "internal/work/a.go", "package work\nimport \"time\"\nvar _ = time.Since(time.Time{})\n", RuleTimer},
+		{"a timer in the public assets", "assets/a.go", "package assets\nimport \"time\"\nfunc f() { time.Sleep(1) }\n", RuleTimer},
 		{"a print", "internal/render/a.go", "package render\nimport \"fmt\"\nfunc f() { fmt.Println(1) }\n", RuleOutput},
 		{"standard error", "map.go", "package lib\nimport \"os\"\nvar w = os.Stderr\n", RuleOutput},
 		{"the println builtin", "internal/render/a.go", "package render\nfunc f() { println(1) }\n", RuleOutput},
@@ -157,5 +160,14 @@ func TestCheckRefusesBadArguments(t *testing.T) {
 	root := writeTree(t, map[string]string{"internal/tiles/a.go": "package tiles\nfunc {"})
 	if _, err := Check(root, mod); err == nil {
 		t.Error("a file that does not parse must be an error, not a pass")
+	}
+}
+
+// TestATreeWithNoGoFileIsRefused (REVIEW, code quality 9): a walk that
+// found no Go file to check is an error, never a clean bill.
+func TestATreeWithNoGoFileIsRefused(t *testing.T) {
+	root := writeTree(t, map[string]string{"README.md": "nothing to check\n"})
+	if _, err := Check(root, mod); err == nil {
+		t.Error("a tree with no Go file passed the rules")
 	}
 }

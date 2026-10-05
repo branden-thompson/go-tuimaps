@@ -1,0 +1,32 @@
+ground dark radar ramp [{0 51 102} {34 119 136} {119 170 85} {221 170 34} {255 221 119} {255 255 238}]
+  a=0.20 Extreme  tint {109 31 112}  classes-inside min 17.3 (4/5)  inside-vs-outside min 11.7 (tinted 4 vs plain 3)  from bare tint 3.7
+  a=0.20 Severe   tint {112 36 28}  classes-inside min 18.6 (4/5)  inside-vs-outside min 14.5 (tinted 5 vs plain 4)  from bare tint 31.2
+  a=0.20 Moderate tint {104 78 18}  classes-inside min 17.5 (4/5)  inside-vs-outside min 15.0 (tinted 5 vs plain 4)  from bare tint 23.8
+  a=0.20 Minor    tint {33 86 97}  classes-inside min 17.3 (4/5)  inside-vs-outside min 15.9 (tinted 5 vs plain 3)  from bare tint 10.2
+  a=0.20 Unknown  tint {107 105 101}  classes-inside min 17.0 (4/5)  inside-vs-outside min 16.3 (tinted 5 vs plain 3)  from bare tint 13.8
+  a=0.35 Extreme  tint {109 31 112}  classes-inside min 14.4 (4/5)  inside-vs-outside min 6.2 (tinted 4 vs plain 3)  from bare tint 2.6
+  a=0.35 Severe   tint {112 36 28}  classes-inside min 16.9 (4/5)  inside-vs-outside min 9.3 (tinted 5 vs plain 3)  from bare tint 27.1
+  a=0.35 Moderate tint {104 78 18}  classes-inside min 15.7 (1/2)  inside-vs-outside min 11.2 (tinted 5 vs plain 3)  from bare tint 20.5
+  a=0.35 Minor    tint {33 86 97}  classes-inside min 14.9 (4/5)  inside-vs-outside min 6.6 (tinted 4 vs plain 3)  from bare tint 7.8
+  a=0.35 Unknown  tint {107 105 101}  classes-inside min 13.9 (1/2)  inside-vs-outside min 6.5 (tinted 4 vs plain 3)  from bare tint 11.5
+  a=0.50 Extreme  tint {109 31 112}  classes-inside min 12.0 (4/5)  inside-vs-outside min 6.2 (tinted 4 vs plain 3)  from bare tint 2.1
+  a=0.50 Severe   tint {112 36 28}  classes-inside min 13.3 (1/2)  inside-vs-outside min 1.8 (tinted 5 vs plain 3)  from bare tint 22.5
+  a=0.50 Moderate tint {104 78 18}  classes-inside min 11.3 (1/2)  inside-vs-outside min 4.8 (tinted 5 vs plain 3)  from bare tint 16.9
+  a=0.50 Minor    tint {33 86 97}  classes-inside min 12.2 (4/5)  inside-vs-outside min 4.9 (tinted 4 vs plain 3)  from bare tint 5.9
+  a=0.50 Unknown  tint {107 105 101}  classes-inside min 9.7 (1/2)  inside-vs-outside min 4.6 (tinted 4 vs plain 3)  from bare tint 9.2
+ground light radar ramp [{150 205 215} {60 160 175} {110 150 60} {200 70 0} {150 10 30} {80 0 70}]
+  a=0.20 Extreme  tint {224 137 202}  classes-inside min 5.8 (3/4)  inside-vs-outside min 13.6 (tinted 2 vs plain 3)  from bare tint 7.2
+  a=0.20 Severe   tint {255 190 165}  classes-inside min 7.6 (3/4)  inside-vs-outside min 3.9 (tinted 4 vs plain 3)  from bare tint 21.7
+  a=0.20 Moderate tint {255 228 124}  classes-inside min 9.6 (3/4)  inside-vs-outside min 1.9 (tinted 5 vs plain 3)  from bare tint 23.8
+  a=0.20 Minor    tint {142 205 255}  classes-inside min 3.9 (3/4)  inside-vs-outside min 15.7 (tinted 2 vs plain 1)  from bare tint 7.0
+  a=0.20 Unknown  tint {184 187 184}  classes-inside min 6.9 (3/4)  inside-vs-outside min 9.1 (tinted 4 vs plain 3)  from bare tint 8.6
+  a=0.35 Extreme  tint {224 137 202}  classes-inside min 3.4 (3/4)  inside-vs-outside min 12.4 (tinted 1 vs plain 2)  from bare tint 5.7
+  a=0.35 Severe   tint {255 190 165}  classes-inside min 4.5 (3/4)  inside-vs-outside min 11.1 (tinted 4 vs plain 3)  from bare tint 16.5
+  a=0.35 Moderate tint {255 228 124}  classes-inside min 6.2 (3/4)  inside-vs-outside min 6.2 (tinted 4 vs plain 3)  from bare tint 18.4
+  a=0.35 Minor    tint {142 205 255}  classes-inside min 2.6 (3/4)  inside-vs-outside min 5.0 (tinted 4 vs plain 2)  from bare tint 5.8
+  a=0.35 Unknown  tint {184 187 184}  classes-inside min 3.9 (3/4)  inside-vs-outside min 12.4 (tinted 2 vs plain 1)  from bare tint 7.4
+  a=0.50 Extreme  tint {224 137 202}  classes-inside min 2.2 (3/4)  inside-vs-outside min 7.1 (tinted 6 vs plain 2)  from bare tint 4.4
+  a=0.50 Severe   tint {255 190 165}  classes-inside min 3.0 (3/4)  inside-vs-outside min 15.0 (tinted 2 vs plain 1)  from bare tint 11.9
+  a=0.50 Moderate tint {255 228 124}  classes-inside min 4.0 (3/4)  inside-vs-outside min 11.3 (tinted 5 vs plain 3)  from bare tint 12.8
+  a=0.50 Minor    tint {142 205 255}  classes-inside min 1.6 (3/4)  inside-vs-outside min 4.0 (tinted 5 vs plain 2)  from bare tint 4.5
+  a=0.50 Unknown  tint {184 187 184}  classes-inside min 2.5 (3/4)  inside-vs-outside min 10.8 (tinted 2 vs plain 1)  from bare tint 5.7

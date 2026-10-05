@@ -2,6 +2,10 @@ package tuimaps_test
 
 import (
 	"context"
+	"errors"
+	"os"
+	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -40,6 +44,28 @@ func TestPanicRecoveredAtEveryPublicCall(t *testing.T) {
 		{"ZoomBy", func(m *tuimaps.Map) error { return m.ZoomBy(1) }},
 		{"PanCells", func(m *tuimaps.Map) error { return m.PanCells(1, 1) }},
 		{"FitWorld", func(m *tuimaps.Map) error { return m.FitWorld() }},
+		{"FitTo", func(m *tuimaps.Map) error { return m.FitTo([]tuimaps.LonLat{{Lon: -84, Lat: 33}}, nil, 1) }},
+		{"SetBound", func(m *tuimaps.Map) error { return m.SetBound(tuimaps.Bound{}) }},
+		{"SetDetail", func(m *tuimaps.Map) error { return m.SetDetail(tuimaps.DetailFull) }},
+		{"SetImageBudget", func(m *tuimaps.Map) error { return m.SetImageBudget(0) }},
+		{"SetNearby", func(m *tuimaps.Map) error { return m.SetNearby(0) }},
+		{"Report", func(m *tuimaps.Map) error { _, err := m.Report(nil); return err }},
+		{"Source", func(m *tuimaps.Map) error { return m.Source("") }},
+		{"SetFetchOptions", func(m *tuimaps.Map) error { return m.SetFetchOptions(tuimaps.FetchOptions{}) }},
+		{"CacheRoot", func(m *tuimaps.Map) error { return m.CacheRoot(t.TempDir(), 0) }},
+		{"SetCacheMaxAge", func(m *tuimaps.Map) error { return m.SetCacheMaxAge(0) }},
+		{"Purge", func(m *tuimaps.Map) error { _, err := m.Purge(); return err }},
+		{"Verify", func(m *tuimaps.Map) error { _, _, err := m.Verify(); return err }},
+		{"SetPlayback", func(m *tuimaps.Map) error { return m.SetPlayback(tuimaps.PlaybackOn) }},
+		{"SetPlaybackStep", func(m *tuimaps.Map) error { return m.SetPlaybackStep(0) }},
+		{"Play", func(m *tuimaps.Map) error { return m.Play() }},
+		{"Stop", func(m *tuimaps.Map) error { return m.Stop() }},
+		{"Reset", func(m *tuimaps.Map) error { return m.Reset() }},
+		{"Step", func(m *tuimaps.Map) error { return m.Step(1) }},
+		{"ShowMoment", func(m *tuimaps.Map) error { return m.ShowMoment(noon, noon.Add(time.Hour)) }},
+		// A panic inside Settle's locked region, where the map's lock is held:
+		// the lock is released with it, and the map is still usable.
+		{"Settle.locked", func(m *tuimaps.Map) error { _, err := m.Settle(context.Background()); return err }},
 	}
 	for _, c := range calls {
 		m := world(t, 40, 12)
@@ -49,8 +75,8 @@ func TestPanicRecoveredAtEveryPublicCall(t *testing.T) {
 		if !isKind(err, fault.Internal) {
 			t.Errorf("a panic inside %s gave %v; want an error of the internal kind", c.name, err)
 		}
-		// And the map still works.
-		if _, err := m.Render(tuimaps.Size{Cols: 40, Rows: 12}, noon); err != nil {
+		// And the map still works: a lock left held would hang the next call.
+		if err := renderWithin(m, 5*time.Second); err != nil {
 			t.Errorf("the map is unusable after a panic inside %s: %v", c.name, err)
 		}
 	}
@@ -81,6 +107,15 @@ func TestPanicInACallThatAnswersNothing(t *testing.T) {
 		{"InUse", func(m *tuimaps.Map) { m.InUse("alerts") }},
 		{"Overlays", func(m *tuimaps.Map) { m.Overlays() }},
 		{"Centre", func(m *tuimaps.Map) { m.Centre() }},
+		{"Changed", func(m *tuimaps.Map) { m.Changed() }},
+		{"FrameTicks", func(m *tuimaps.Map) { m.FrameTicks() }},
+		{"Loop", func(m *tuimaps.Map) { m.Loop() }},
+		{"Units", func(m *tuimaps.Map) { m.Units(true, true) }},
+		{"ShowStamp", func(m *tuimaps.Map) { m.ShowStamp(false) }},
+		{"PaintGround", func(m *tuimaps.Map) { m.PaintGround() }},
+		{"CacheUse", func(m *tuimaps.Map) { m.CacheUse() }},
+		{"SourceCredit", func(m *tuimaps.Map) { m.SourceCredit() }},
+		{"DeepestZoom", func(m *tuimaps.Map) { m.DeepestZoom() }},
 	}
 	for _, c := range quiet {
 		m := world(t, 40, 12)
@@ -94,5 +129,65 @@ func TestPanicInACallThatAnswersNothing(t *testing.T) {
 			t.Errorf("the map is unusable after a panic inside %s: %v", c.name, err)
 		}
 	}
-	_ = time.Now
+}
+
+// panicProven is every public call a panic test plants inside, with the
+// calls that cannot be planted for a reason of their own: Warnings is how a
+// planted panic in a quiet call is read back, so it cannot be its own
+// witness; Close is planted in TestAPanicInsideCloseStaysInside.
+var panicProven = map[string]bool{"Warnings": true, "Close": true}
+
+// TestEveryPublicCallIsPanicTested (REVIEW, code quality 2): the panic
+// tests name every exported method of Map, so a call added later cannot be
+// left out of rule 4's proof.
+func TestEveryPublicCallIsPanicTested(t *testing.T) {
+	src, err := os.ReadFile("panic_test.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	mt := reflect.TypeOf(&tuimaps.Map{})
+	for i := range mt.NumMethod() {
+		name := mt.Method(i).Name
+		if panicProven[name] {
+			continue
+		}
+		if !strings.Contains(string(src), "{\""+name+"\", func(m *tuimaps.Map)") {
+			t.Errorf("Map.%s is in no panic test; add it to TestPanicRecoveredAtEveryPublicCall or TestPanicInACallThatAnswersNothing", name)
+		}
+	}
+}
+
+// TestAPanicInsideCloseStaysInside: a panic planted in Close does not escape
+// and is noted, and the map closes on the next Close.
+func TestAPanicInsideCloseStaysInside(t *testing.T) {
+	m, err := tuimaps.New(tuimaps.WithSize(40, 12))
+	if err != nil {
+		t.Fatal(err)
+	}
+	tuimaps.PlantPanic(m, "Close")
+	m.Close() // must not panic out of the library
+	tuimaps.ClearPanic(m)
+	if len(m.Warnings()) == 0 {
+		t.Error("a panic inside Close left no warning behind")
+	}
+	m.Close()
+	if _, err := m.Render(tuimaps.Size{Cols: 40, Rows: 12}, noon); !isKind(err, fault.Closed) {
+		t.Errorf("after Close a Render gave %v; want the closed kind", err)
+	}
+}
+
+// renderWithin renders, or fails if the map does not answer in time - a lock
+// a panic left held hangs the call rather than failing it.
+func renderWithin(m *tuimaps.Map, limit time.Duration) error {
+	done := make(chan error, 1)
+	go func() {
+		_, err := m.Render(tuimaps.Size{Cols: 40, Rows: 12}, noon)
+		done <- err
+	}()
+	select {
+	case err := <-done:
+		return err
+	case <-time.After(limit):
+		return errors.New("Render did not return: the map's lock is still held")
+	}
 }

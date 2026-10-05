@@ -3,17 +3,20 @@ package tuimaps_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"math"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	tuimaps "github.com/branden-thompson/go-tuimaps"
-	"github.com/branden-thompson/go-tuimaps/internal/fetch"
 	"github.com/branden-thompson/go-tuimaps/internal/testkit"
 )
 
@@ -117,15 +120,15 @@ func grid64x48() tuimaps.Overlay {
 
 // fixtureSource is a way of fetching that serves the fixture's own tiles
 // and reaches no network.
-func fixtureSource(t *testing.T) tuimaps.Fetcher {
+func fixtureSource(t *testing.T) http.RoundTripper {
 	t.Helper()
 	root, err := testkit.FixtureRoot()
 	if err != nil {
 		t.Fatal(err)
 	}
 	dirs := []string{"tiles-gulf-z6", "tiles-midwest-z5", "tiles-urban-z14"}
-	return func(_ context.Context, r fetch.Request) ([]byte, error) {
-		z, x, y, ok := tileOf(r.URL)
+	return answering(func(address string) ([]byte, error) {
+		z, x, y, ok := tileOf(address)
 		if !ok {
 			return nil, os.ErrNotExist
 		}
@@ -136,7 +139,7 @@ func fixtureSource(t *testing.T) tuimaps.Fetcher {
 			}
 		}
 		return nil, os.ErrNotExist
-	}
+	})
 }
 
 // TestFixtureMemory is plan task 14.6, and NFR-3 itself: **what the library
@@ -146,34 +149,25 @@ func fixtureSource(t *testing.T) tuimaps.Fetcher {
 //
 // Live is the heap after a forced collection, taken after a tour that fills
 // every cache; peak is the largest the heap is seen to be while the work
-// runs, looked at every 10 ms. Risk RS-7 has stood at High waiting for this.
+// runs, looked at every 10 ms. Each is the median of memoryRuns tours on
+// fresh caches (D-101): one sample of a peak spreads about 1 MB run to run.
 func TestFixtureMemory(t *testing.T) {
-	shared, err := tuimaps.NewShared(0)
-	if err != nil {
-		t.Fatal(err)
-	}
-	live, peak, held := touring(t, shared, fixtureViews())
-	t.Logf("three maps sharing caches, over the fixture region: live %.2f MB, peak %.2f MB, caches %s",
+	live, peak, held := sampled(t, "three maps sharing caches, over the fixture region", fixtureViews())
+	t.Logf("three maps sharing caches, over the fixture region: median live %.2f MB, peak %.2f MB, caches %s",
 		asMB(live), asMB(peak), held)
 	if live > liveLine {
 		t.Errorf("live is %.2f MB; NFR-3's line is 4 MB", asMB(live))
 	}
-	// The peak was 8.54 MB when this was first measured, over NFR-3's line
-	// by 7%, and the cost was located rather than guessed at: each map
-	// decoded its own copy of the same picture. Under D-116 the maps of a
-	// shared set now read a picture once between them.
+	// The maps of a shared set read a picture once between them (D-116);
+	// each decoding its own copy puts the peak about 7% over the line.
 	if peak > peakLine {
 		t.Errorf("peak is %.2f MB; NFR-3's line is 8 MB. Set %s to see what the images cost", asMB(peak), withoutRadar)
 	}
 
 	// One map, for the same reason the line covers one: a host with a
 	// single map must not pay for the arrangement that serves three.
-	alone, err := tuimaps.NewShared(0)
-	if err != nil {
-		t.Fatal(err)
-	}
-	oneLive, onePeak, _ := touring(t, alone, fixtureViews()[:1])
-	t.Logf("one map over the fixture region: live %.2f MB, peak %.2f MB", asMB(oneLive), asMB(onePeak))
+	oneLive, onePeak, _ := sampled(t, "one map over the fixture region", fixtureViews()[:1])
+	t.Logf("one map over the fixture region: median live %.2f MB, peak %.2f MB", asMB(oneLive), asMB(onePeak))
 	if oneLive > liveLine || onePeak > peakLine {
 		t.Errorf("one map: live %.2f MB, peak %.2f MB", asMB(oneLive), asMB(onePeak))
 	}
@@ -188,6 +182,57 @@ func TestFixtureMemory(t *testing.T) {
 	spreadLive, spreadPeak, _ := touring(t, apart, spreadViews())
 	t.Logf("three maps on three different views (recorded, not gated - D-90): live %.2f MB, peak %.2f MB",
 		asMB(spreadLive), asMB(spreadPeak))
+}
+
+// memoryRuns is how many tours NFR-3's figures are the median of (D-101).
+const memoryRuns = 5
+
+// sampled tours views memoryRuns times, each on fresh shared caches, and
+// gives the median live and peak; each run's peak and the highest are
+// logged, so a change that spikes only sometimes is seen (D-101).
+func sampled(t *testing.T, name string, views []placed) (live, peak uint64, held string) {
+	t.Helper()
+	lives, peaks := make([]uint64, 0, memoryRuns), make([]uint64, 0, memoryRuns)
+	for range memoryRuns {
+		shared, err := tuimaps.NewShared(0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		l, p, h := touring(t, shared, views)
+		lives, peaks, held = append(lives, l), append(peaks, p), h
+	}
+	var each []string
+	for _, p := range peaks {
+		each = append(each, fmt.Sprintf("%.2f", asMB(p)))
+	}
+	t.Logf("%s: peaks %s MB, highest %.2f MB", name, strings.Join(each, ", "), asMB(slices.Max(peaks)))
+	return median(lives), median(peaks), held
+}
+
+// median is the middle of values, or the mean of the two middle ones.
+func median(values []uint64) uint64 {
+	if len(values) == 0 {
+		return 0
+	}
+	sorted := slices.Clone(values)
+	slices.Sort(sorted)
+	mid := len(sorted) / 2
+	if len(sorted)%2 == 1 {
+		return sorted[mid]
+	}
+	return (sorted[mid-1] + sorted[mid]) / 2
+}
+
+// TestMedianIsTheMiddle is D-101's figure: one high sample does not move it.
+func TestMedianIsTheMiddle(t *testing.T) {
+	for _, c := range []struct {
+		in   []uint64
+		want uint64
+	}{{[]uint64{7, 6, 9, 6, 8}, 7}, {[]uint64{6, 6, 6, 6, 99}, 6}, {[]uint64{4, 2}, 3}, {nil, 0}} {
+		if got := median(c.in); got != c.want {
+			t.Errorf("median(%v) = %d, want %d", c.in, got, c.want)
+		}
+	}
 }
 
 // placed is one map's size and where it looks.
@@ -259,7 +304,7 @@ func touring(t *testing.T, shared *tuimaps.Shared, views []placed) (live, peak u
 			t.Fatal(err)
 		}
 		defer m.Close()
-		m.Fetcher(fixtureSource(t))
+		useTransport(t, m, fixtureSource(t))
 		if err := m.Source("https://tiles.example.test/"); err != nil {
 			t.Fatal(err)
 		}

@@ -136,8 +136,8 @@ func TestNewestViewFirst(t *testing.T) {
 	m.NewView()
 	add(t, m, record("c", scene.KindTile), record("d", scene.KindDescribe), record("e", scene.KindTile))
 	drain(t, m)
-	if strings.Join(ran, " ") != "c d e a b" {
-		t.Errorf("ran %v; want the newest view's jobs first, each view's in the order asked for", ran)
+	if strings.Join(ran, " ") != "c e d a b" { // the basemap first within a view (L-22)
+		t.Errorf("ran %v; want the newest view's jobs first, its tiles before the rest, each in the order asked for", ran)
 	}
 }
 
@@ -260,22 +260,15 @@ func TestLeftViewCancelsJob(t *testing.T) {
 	}
 }
 
-// TestChangeCounterMovesOnCompletion is plan task 07.7.
-func TestChangeCounterMovesOnCompletion(t *testing.T) {
+// TestAFailedJobsErrorComesBack is plan task 07.7: a job that fails is
+// done, and its error is RunOne's, never swallowed.
+func TestAFailedJobsErrorComesBack(t *testing.T) {
 	m := member(t)
-	before := m.Changed()
 	add(t, m, tile("ok"), job{kind: scene.KindTile, key: "bad", run: func(context.Context) error { return errors.New("no such tile") }})
-	if m.Changed() != before {
-		t.Error("asking for work moved the counter; only finished work changes what a redraw would show")
-	}
 	m.RunOne(context.Background())
-	first := m.Changed()
-	_, err := m.RunOne(context.Background())
-	if first == before || m.Changed() == first {
-		t.Errorf("counter %d, %d, %d; it moves when a job finishes, and when one fails: the frame's status changes either way", before, first, m.Changed())
-	}
-	if err == nil {
-		t.Error("a failed job's error was swallowed")
+	did, err := m.RunOne(context.Background())
+	if !did || err == nil {
+		t.Errorf("a failed job: did %v, error %v; want it done, its error returned", did, err)
 	}
 }
 
@@ -284,17 +277,14 @@ func TestNextCallIsEarliest(t *testing.T) {
 	m := member(t)
 	now := time.Date(2026, 9, 19, 12, 0, 0, 0, time.UTC)
 	if _, due := m.DueAt(now); due {
-		t.Fatal("nothing is set, yet something is due")
+		t.Fatal("nothing is deferred, yet something is due")
 	}
-	m.SetDeadline("blink", now.Add(800*time.Millisecond))
-	m.SetDeadline("stale/radar", now.Add(20*time.Minute))
+	if err := m.Defer(tile("t/later"), now.Add(time.Minute)); err != nil {
+		t.Fatal(err)
+	}
 	if err := m.Defer(tile("t/failed"), now.Add(30*time.Second)); err != nil {
 		t.Fatal(err)
 	}
-	if at, due := m.DueAt(now); !due || !at.Equal(now.Add(800*time.Millisecond)) {
-		t.Errorf("NextCall = %v, %v; want the blink", at, due)
-	}
-	m.SetDeadline("blink", time.Time{}) // cleared: reduce-motion, say
 	if at, due := m.DueAt(now); !due || !at.Equal(now.Add(30*time.Second)) {
 		t.Errorf("NextCall = %v, %v; want the retry time", at, due)
 	}
@@ -320,15 +310,6 @@ func TestPendingCountsWaitingOnly(t *testing.T) {
 	}
 	if m.Backlog() != 0 {
 		t.Error("a failed job waiting for its retry time is pending")
-	}
-	if n, _ := m.Promote(now.Add(29 * time.Second)); n != 0 || m.Backlog() != 0 {
-		t.Error("promoted before its time")
-	}
-	if n, _ := m.Promote(now.Add(30 * time.Second)); n != 1 || m.Backlog() != 1 {
-		t.Errorf("at its time: promoted %d, pending %d", n, m.Backlog())
-	}
-	if _, due := m.DueAt(now); due {
-		t.Error("a promoted retry still counts as a deadline")
 	}
 }
 

@@ -29,7 +29,7 @@ func ToSixteen(c RGB) (uint8, RGB) {
 // form at this depth (D-59). Roads and borders differ in hue, not only in
 // brightness (PL-AX-6).
 func Sixteen(t Token, ground GroundKind) (uint8, bool) {
-	if t < Ground || t > TrackLabel {
+	if t < Ground || t > lastToken {
 		return 0, false
 	}
 	if t >= AlertExtremeOutline && t <= High {
@@ -67,6 +67,32 @@ func sixteenDark(t Token) uint8 {
 		return 9
 	case Track:
 		return 13
+	case Fire:
+		return 9
+	case FireFaint:
+		return 1
+	case QuakeHour:
+		return 13
+	case QuakeDay:
+		return 11
+	case QuakeOlder:
+		return 3
+	case Buoy:
+		return 13
+	case Tide:
+		return 10
+	case UV1, AQI1: // L-25: an AQI marker's category at this depth, green to maroon
+		return 10
+	case UV1 + 1, AQI1 + 1:
+		return 11
+	case UV1 + 2, AQI1 + 2:
+		return 3
+	case UV1 + 3, AQI1 + 3:
+		return 9
+	case UV5, AQI1 + 4:
+		return 13
+	case AQI6:
+		return 1
 	}
 	return 15 // country borders, place names, the focus, a marker's label, a track's
 }
@@ -81,8 +107,18 @@ func sixteenLight(t Token) uint8 {
 		return 4
 	case RoadMajor, Track:
 		return 5
-	case Rail, Notice, Stale, Marker:
+	case Rail, Notice, Stale, Marker, Fire, FireFaint, QuakeDay:
 		return 1
+	case QuakeHour, QuakeOlder, Buoy:
+		return 5
+	case Tide, UV1, AQI1:
+		return 2
+	case UV1 + 1, AQI1 + 1, UV1 + 2, AQI1 + 2:
+		return 3
+	case UV1 + 3, AQI1 + 3, AQI6:
+		return 1
+	case UV5, AQI1 + 4:
+		return 5
 	case BorderRegion, RoadMinor, Park, Runway, LabelRegion, Credit:
 		return 8
 	}

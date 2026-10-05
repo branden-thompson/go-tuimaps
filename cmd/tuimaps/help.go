@@ -35,6 +35,8 @@ Options:
   --describe            say in words where each place is, and draw no map
   --place NAME@LON,LAT  a place to mark and to describe; may be written again
   --scenario N          load M1 scenario N (1, 2, 3, 4, 6 or 7)
+  --loop DIR            open a recorded radar loop, as testdata/loops keeps
+                        one, stopped at its newest frame; p plays it
   --size COLSxROWS      the size to draw, instead of the terminal's
   --style PATH          draw the basemap by a style of your own
   --lang CODE           the language of the map's labels (default en)
@@ -44,7 +46,7 @@ Options:
   --verify              read the tile cache back, drop what is damaged, exit
   --safe-ramps          keep the library's own colours where a scale must
                         stay readable
-  --reduce-motion       draw markers steadily instead of blinking
+  --reduce-motion       stop loops, and draw markers steadily, not blinking
   --no-colour           draw with no colour at all
   -h, --help            print this, and exit
 
@@ -64,16 +66,37 @@ state of the map is reachable only one way:
 		b.WriteString(switched.key)
 		b.WriteString("\n")
 	}
+	b.WriteString("\n")
+	b.WriteString(keysText())
+	return b.String()
+}
+
+// keyTable is every key, two to a row: the key, then what it does.
+var keyTable = [][4]string{
+	{"q, Esc", "quit; Esc: close panel", "n", "names on/off"},
+	{"a, +", "zoom in", "o", "water on/off"},
+	{"z, y, -", "zoom out", "w", "fit the whole world"},
+	{"arrow keys", "pan", "m", "markers on/off"},
+	{"h j k l", "pan", "Tab", "focus next place"},
+	{"p", "play and stop a loop", "Shift+Tab", "focus place before"},
+	{"[ ]", "a loop's step back, on", "s", "safe ramps on/off"},
+	{"0, Home", "\"right now\", stopped", "r", "reduce motion on/off"},
+	{"d", "describe in words", "C", "colour off/on"},
+	{"?", "these keys", "", ""},
+}
+
+// keysText is the key table: what the ? panel shows, and the end of what
+// --help prints. It stands on its own, short enough for the rows a 24-row
+// terminal leaves the map and narrow enough for 69 columns (NFR-7).
+func keysText() string {
+	var b strings.Builder
+	b.WriteString("Keys, while the map is up:\n\n")
+	for _, row := range keyTable {
+		line := "  " + padded(row[0], 12) + padded(row[1], 24) + padded(row[2], 11) + row[3]
+		b.WriteString(strings.TrimRight(line, " "))
+		b.WriteString("\n")
+	}
 	b.WriteString(`
-Keys, while the map is up:
-
-  q, Esc      quit                     n     names on and off
-  a, +        zoom in                  o     water on and off
-  z, y, -     zoom out                 w     fit the whole world
-  arrow keys  pan                      m     markers on and off
-  h j k l     pan                      Tab   focus the next place
-  ?           these keys               s r C d   the switches above
-
 Zooming with a place focused zooms about that place, which is what a
 pointer would do towards what it points at.
 `)

@@ -1,11 +1,55 @@
 #!/usr/bin/env bash
-# The local gate. No remote exists until SHIP, so this script is what stands
-# before every merge; at SHIP it becomes the hosted workflow.
+# The gate. It stands before every merge, run here; the hosted workflow
+# (.github/workflows/gate.yml, L-6.1, D-105) runs it too, on linux/amd64 and
+# linux/arm64 - the quick gate on every push, the full gate nightly and on
+# dispatch.
 #
 #   scripts/gate            every leg
-#   scripts/gate --quick    skip the slow legs: fuzzing, the vulnerability
-#                           scan, licences, the cross-compile, the second
-#                           architecture
+#   scripts/gate --quick    skip the slow legs: fuzzing, the benchmarks, the
+#                           vulnerability scans, the cross-compiles, the
+#                           five-minute M4 leg and the second architecture
+#                           (the licence check and the P10 check still run)
+#   scripts/gate --docs     the docs lane (v0.2.0 D-15, D-41, D-53): for a
+#                           STAGED change of Markdown (and the generated atlas
+#                           page, which the atlas's test holds), every
+#                           module's tests - which is where documents are read
+#                           - and no other leg. Any other staged file is
+#                           refused and sent to the full gate. Stage, run it,
+#                           commit: with nothing staged it fails
+#   scripts/gate --fuzz     the fuzz legs alone
+#   scripts/gate --soak     M4's hour (v0.2.0 D-61, plan task L10.8): a 12-frame
+#                           loop played for an hour while the heap is watched;
+#                           run once before SHIP and recorded. The full gate
+#                           runs the same test for five minutes
+#   scripts/gate --release TAG
+#                           the release check (v0.2.0 L-5.3, L-5.5): it judges
+#                           the committed tree - a tree with uncommitted
+#                           changes is refused, and a tag that exists must be
+#                           HEAD. A final tag (vX.Y.Z) is refused while a row
+#                           of the release checklist is unticked or the
+#                           checklist cannot be read whole; a release
+#                           candidate (vX.Y.Z-rc.N) is not held to the
+#                           checklist. Either way govulncheck must be the
+#                           pinned version and find nothing reachable, in any
+#                           module, at this machine's toolchain or the floor,
+#                           that the checklist does not carry as a ruled
+#                           exception
+#
+# Settings, each written on the run's log line when given:
+#   GATE_FUZZ_LIMIT=N       seconds of wall-clock time a fuzz leg may take
+#                           (600 by default)
+#   GATE_FUZZ_SCALE=N       divides every fuzz count by N, for a machine slower
+#                           than the one the counts were calibrated on (D-129)
+#   GATE_ARCH_LEG=sibling   the second architecture's tests are run elsewhere:
+#                           by the sibling job in hosted CI, or on a machine
+#                           that can run them when this one cannot
+#
+# One mode at most a run. EVERY RUN IS LOGGED to 06_docs/gate-runs.md when
+# that file exists - HEAD, the git tree that was tested, the mode (and the tag
+# a release check judged), the result (and on a failure the legs that
+# failed), the seconds it took and any override of the gate's settings
+# (v0.2.0 D-31, D-40) - so "the gate was green" is a line anyone can check and
+# M6's count of consecutive clean runs has something to count.
 #
 # GATE_ROOT names the tree to check; by default, the repository this script
 # is in. Every module in the tree is checked, one by one - not only the
@@ -13,58 +57,281 @@
 # workspace file written here and removed on exit; tracked module files
 # carry no replace directive, and the workspace file is never tracked.
 #
+# THE FLOOR TOOLCHAIN IS READ FROM THE ROOT MODULE'S go DIRECTIVE (D-133),
+# which every module shares: every leg runs on it, so a newer API cannot creep
+# in, and the vulnerability scan runs on it as well as on this machine's own.
+#
 # What cannot run on this machine is listed at the end as NOT RUN, never
-# counted as passed: Linux, Windows, real amd64 hardware, a nightly soak.
+# counted as passed: the other operating systems, the other architecture's
+# real hardware, the hour's soak, a check whose tool is not installed.
 
 set -u
 set -o pipefail
 
-FLOOR_TOOLCHAIN="go1.25.0"
-FUZZ_TIME="60s"
+# THE FUZZ BUDGET IS A COUNT OF RUNS, NOT A STRETCH OF TIME (D-9). With
+# `-fuzztime <duration>` the engine's coordinator can report its own deadline
+# as a failure: a parent context closes its done channel before it cancels its
+# children (go1.25.0 `internal/fuzz/fuzz.go:129`, `context/context.go:565`
+# then `:569`). That cause is PROBABLE, NOT REPRODUCED
+# (06_docs/02_features/radar-loops/02-analysis/gate-fuzz-deadline.md). A count
+# budget stops through the execution limit and creates no deadline.
+#
+# A COUNT HAS NO WALL CLOCK, so each fuzz leg also runs under FUZZ_LIMIT
+# seconds of real time (D-31) and fails as TIME LIMIT when that runs out. `go
+# test -timeout` cannot do this job: the test binary stops its alarm before it
+# starts fuzzing, and `go test` sets no kill timeout while fuzzing (go1.25.0
+# `testing/testing.go:2335-2340`, `cmd/go/internal/test/test.go:807`).
+#
+# THE COUNT IS PER TARGET (D-10), because the targets differ by more than a
+# hundred times in runs per second. Each count below was set on 2026-09-22 on
+# this machine (an 18-core Apple M-series Mac) from the leg's own measured
+# duration, so every target does about sixty seconds of work.
+#
+# TO RECALIBRATE, one target: run the gate, read that leg's printed duration,
+# and scale its count by sixty over that duration. A short `-fuzztime 8s` run
+# is NOT enough to derive a count from: a leg also re-gathers baseline coverage
+# over the whole cached corpus before it fuzzes, and that overhead does not
+# shrink, so counts derived that way are badly wrong. The printed duration is the calibration
+# instrument; a leg that no longer takes about a minute is the drift signal,
+# and it is why the durations are printed at all.
+#
+# A TARGET WITH NO ROW IS NAMED AND RUN AT THE DEFAULT, never skipped and never
+# silently under-fuzzed.
+#
+# A SLOWER MACHINE DIVIDES THE COUNTS (D-129): GATE_FUZZ_SCALE=N runs every
+# count, the default included, divided by N (at least one run), and each leg
+# names the count it was scaled from. The counts above stay the reference
+# machine's. A scaled run does less fuzzing than the gate's own, so the
+# setting is written on the run's line and M6 does not count the run.
+fuzz_execs() {
+  case "$1" in
+    FuzzEveryReturnedStringIsClean) echo "300000x" ;;
+    FuzzPaint)                      echo "520000x" ;;
+    FuzzTable)                      echo "16500000x" ;;
+    FuzzDecode)                     echo "3790000x" ;;
+    FuzzAgree)                      echo "5700000x" ;;
+    FuzzClean)                      echo "4320000x" ;;
+    FuzzCommandLine)                echo "7060000x" ;;
+    FuzzImage)                      echo "12190000x" ;;
+    FuzzArea)                       echo "8320000x" ;;
+    FuzzHandIn)                     echo "9380000x" ;;
+    FuzzDirectory)                  echo "8740000x" ;;
+    FuzzOpenAndFind)                echo "9090000x" ;;
+    FuzzHeader)                     echo "9320000x" ;;
+    FuzzTileJSON)                   echo "11210000x" ;;
+    FuzzStyle)                      echo "11490000x" ;;
+    FuzzKey)                        echo "23620000x" ;;
+    *)                              echo "" ;;
+  esac
+}
+FUZZ_EXECS_DEFAULT="5000000x"
+# THE SCANNER THE RELEASE IS CHECKED WITH IS PINNED (L-5.5): a newer one may
+# find more, and the checklist records which version said "clean".
+GOVULNCHECK_PIN="v1.8.0"
+
+# scanner_is_pinned reports whether the govulncheck on PATH was built from the
+# pinned module version, read from the binary's own build record: exact, and
+# with no call to the vulnerability database, whose reachability is not the
+# scanner's version ("govulncheck -version" asks the database too, and an
+# unreachable one hides the version line). A stand-in with no build record is
+# asked for its version.
+scanner_is_pinned() {
+  local bin record
+  bin="$(command -v govulncheck)" || return 1
+  record="$(GOTOOLCHAIN=local go version -m "$bin" 2>/dev/null)"
+  if [ -z "$record" ]; then # not a Go binary - a stand-in - so it is asked, as a person would
+    GOTOOLCHAIN=local govulncheck -version 2>/dev/null | grep -q "govulncheck@$GOVULNCHECK_PIN\$"
+    return
+  fi
+  printf '%s\n' "$record" | awk -v pin="$GOVULNCHECK_PIN" '$1 == "mod" && $2 == "golang.org/x/vuln" && $3 == pin { found = 1 } END { exit !found }'
+}
+FUZZ_LIMIT="${GATE_FUZZ_LIMIT:-600}"
+case "$FUZZ_LIMIT" in
+  ''|*[!0-9]*|0) echo "gate: GATE_FUZZ_LIMIT must be a whole number of seconds above zero, not '$FUZZ_LIMIT'" >&2; exit 2 ;;
+esac
+FUZZ_SCALE="${GATE_FUZZ_SCALE:-1}"
+if ! [[ "$FUZZ_SCALE" =~ ^[1-9][0-9]*$ ]]; then
+  echo "gate: GATE_FUZZ_SCALE must be a whole number above zero that divides the fuzz counts, not '$FUZZ_SCALE'" >&2
+  exit 2
+fi
+# scaled_execs COUNT prints COUNT ("<n>x") divided by FUZZ_SCALE, at least 1x.
+scaled_execs() {
+  local n="${1%x}" s
+  s=$((n / FUZZ_SCALE))
+  [ "$s" -lt 1 ] && s=1
+  printf '%sx' "$s"
+}
+# THE SECOND ARCHITECTURE, ON A RUNNER THAT CANNOT EMULATE IT (L-6.1, D-105):
+# hosted CI runs the gate on linux/amd64 and linux/arm64 side by side, each
+# natively, and GATE_ARCH_LEG=sibling hands this leg to the other job. The
+# workflow fails unless both ran green. On any other machine that cannot run
+# the other architecture's binaries, the setting hands the leg to a machine
+# that can. It is written on the run's log line, and M6 does not count such a
+# run.
+case "${GATE_ARCH_LEG:-}" in
+  ''|sibling) ;;
+  *) echo "gate: GATE_ARCH_LEG may only be 'sibling', not '$GATE_ARCH_LEG'" >&2; exit 2 ;;
+esac
 TARGETS="darwin/arm64 darwin/amd64 linux/amd64 linux/arm64 windows/amd64"
 
 quick=0
+docs=0
+fuzzonly=0
+release=0
+soak=0
+release_tag=""
+want_tag=0
+mode="full"
+modes=0
 for arg in "$@"; do
+  if [ "$want_tag" = 1 ]; then
+    release_tag="$arg"
+    want_tag=0
+    continue
+  fi
   case "$arg" in
-    --quick) quick=1 ;;
+    --quick) quick=1; mode="quick"; modes=$((modes + 1)) ;;
+    --docs) docs=1; quick=1; mode="docs"; modes=$((modes + 1)) ;;
+    --fuzz) fuzzonly=1; mode="fuzz"; modes=$((modes + 1)) ;;
+    --release) release=1; mode="release"; modes=$((modes + 1)); want_tag=1 ;;
+    --soak) soak=1; mode="soak"; modes=$((modes + 1)) ;;
     *) echo "gate: unknown argument: $arg" >&2; exit 2 ;;
   esac
 done
+if [ "$want_tag" = 1 ]; then
+  echo "gate: --release needs the tag it checks, vX.Y.Z or vX.Y.Z-rc.N" >&2
+  exit 2
+fi
+# ONE MODE A RUN (D-40): each mode turns legs off, so two together would
+# leave no leg on and print green with nothing checked.
+if [ "$modes" -gt 1 ]; then
+  echo "gate: give one mode at most (--quick, --docs, --fuzz, --soak or --release), not $modes" >&2
+  exit 2
+fi
 
 root="${GATE_ROOT:-}"
 if [ -z "$root" ]; then
   root="$(cd "$(dirname "$0")/.." && pwd)"
 fi
 cd "$root" || { echo "gate: cannot enter $root" >&2; exit 2; }
+# THE GATE CHOOSES ITS OWN WORKSPACE: an inherited GOWORK (off, or a file
+# elsewhere) would change which code the nested modules are built against.
+unset GOWORK
+floor="$(sed -n 's/^go[[:space:]]\{1,\}\([0-9][0-9.]*\)[[:space:]]*$/\1/p' "$root/go.mod" 2>/dev/null | head -1)"
+case "$floor" in
+  '') echo "gate: cannot read the go directive of $root/go.mod; the floor toolchain is read from it" >&2; exit 2 ;;
+  *.*.*) ;;
+  *) floor="$floor.0" ;; # a directive of "1.N" names the language; its first toolchain is go1.N.0
+esac
+FLOOR_TOOLCHAIN="go$floor"
 
-export GOTOOLCHAIN="$FLOOR_TOOLCHAIN"
-export GOFLAGS="-mod=readonly"
-
-failures=""
-fail() { failures="${failures}  FAILED  $1"$'\n'; echo "  FAILED  $1"; }
-pass() { echo "  ok      $1"; }
-
-# leg NAME COMMAND... runs one leg and records the outcome. The output of a
-# failing leg is shown; a passing leg is one line.
-leg() {
-  local name="$1"; shift
-  local out
-  if out="$("$@" 2>&1)"; then
-    pass "$name"
+# --- every run leaves a line -------------------------------------------------
+started_at=$SECONDS
+made_work=0
+# THE LINE NAMES THE TREE THAT WAS TESTED (D-40), not only the commit below
+# it: the git tree of what was checked, leaving this log out - the staged
+# change for the docs lane, the whole working tree otherwise. A commit made
+# from exactly that is the same tree less this file, so a reader can match the
+# two. Every override of the gate's own settings is written beside it.
+tested_tree() {
+  local index tree
+  index="$(mktemp -d)/index" || return 1
+  if [ "$docs" = 1 ]; then
+    cp "$(git -C "$root" rev-parse --git-path index)" "$index" 2>/dev/null || return 1
   else
-    fail "$name"
-    printf '%s\n' "$out" | sed 's/^/          /'
+    GIT_INDEX_FILE="$index" git -C "$root" read-tree HEAD 2>/dev/null || return 1
+    GIT_INDEX_FILE="$index" git -C "$root" add -A 2>/dev/null || return 1
   fi
+  GIT_INDEX_FILE="$index" git -C "$root" rm -q --cached --ignore-unmatch 06_docs/gate-runs.md >/dev/null 2>&1
+  tree="$(GIT_INDEX_FILE="$index" git -C "$root" write-tree 2>/dev/null)" || return 1
+  rm -rf "$(dirname "$index")"
+  printf '%s' "${tree:0:12}"
 }
+log_run() {
+  local rc="$1" result="FAILED" head tree overrides="" why
+  [ -f "$root/06_docs/gate-runs.md" ] || return 0
+  # A FAILURE STATES ITS CAUSE: the legs that failed, each with its module
+  # when it is not the root's, are written beside FAILED.
+  why="$(sed 's/|/\//g' "$failed_legs" 2>/dev/null | awk 'NF && !seen[$0]++' | paste -sd ';' - | sed 's/;/; /g')"
+  [ -n "$why" ] && result="FAILED: $why"
+  [ "$rc" = 0 ] && result="green"
+  [ "$interrupted" = 1 ] && result="INTERRUPTED" # never green, whatever status the signal left
+  head="$(git -C "$root" rev-parse --short HEAD 2>/dev/null || echo none)"
+  tree="$(tested_tree || echo unknown)"
+  [ -n "${GATE_FUZZ_LIMIT:-}" ] && overrides="GATE_FUZZ_LIMIT=$GATE_FUZZ_LIMIT"
+  [ -n "${GATE_FUZZ_SCALE:-}" ] && overrides="${overrides:+$overrides }GATE_FUZZ_SCALE=$GATE_FUZZ_SCALE"
+  [ -n "${GATE_ROOT:-}" ] && overrides="${overrides:+$overrides }GATE_ROOT set"
+  [ -n "${GATE_ARCH_LEG:-}" ] && overrides="${overrides:+$overrides }GATE_ARCH_LEG=$GATE_ARCH_LEG"
+  # THE DOCS LANE LOGS THE STAGED TREE AND TESTS THE WORKING ONE (D-41): when
+  # files were left out as not staged, the line says the tests saw them.
+  [ "$docs" = 1 ] && [ "${unstaged:-0}" -gt 0 ] && overrides="${overrides:+$overrides }tests saw $unstaged unstaged file(s)"
+  printf '| %s | %s | %s | %s | %s | %s | %s |\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$head" "$tree" "$mode" "$result" "$((SECONDS - started_at))" "${overrides:--}" >> "$root/06_docs/gate-runs.md"
+}
+fuzz_legs="$(mktemp)" || exit 2
+failed_legs="$(mktemp)" || exit 2
+release_work=""
+cleanup() {
+  [ "$made_work" = 1 ] && rm -f "$root/go.work" "$root/go.work.sum"
+  rm -f "$fuzz_legs"
+  [ -n "$release_work" ] && rm -rf "$release_work"
+  return 0
+}
+# note_failure CAUSE records one cause for the run's log line. It appends to
+# a file, so a module's subshell can record too.
+where=""
+note_failure() { printf '%s%s\n' "${where:+$where: }" "$1" | sed 's/ \[[0-9]*s\]$//' >> "$failed_legs"; }
+# The workspace file is removed before the line is written, so the tested
+# tree never holds it; the failed legs are read by the line, then removed.
+trap 'rc=$?; cleanup; log_run "$rc"; rm -f "$failed_legs"; exit "$rc"' EXIT
+# A RUN STOPPED BY A SIGNAL IS INTERRUPTED, NEVER GREEN. Stopped with TERM, the
+# shell can reach the EXIT trap with a status of 0, which would log the run
+# green - a line M6 would count as clean (L11.21).
+interrupted=0
+trap 'interrupted=1; exit 130' INT
+trap 'interrupted=1; exit 143' TERM
+trap 'interrupted=1; exit 129' HUP
 
-echo "gate: $root"
-echo "gate: toolchain $FLOOR_TOOLCHAIN, read-only modules$([ "$quick" = 1 ] && echo ', quick legs only')"
-
-# --- the workspace file is never tracked -------------------------------------
-if git -C "$root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  tracked="$(git -C "$root" ls-files -- go.work go.work.sum)"
-  if [ -n "$tracked" ]; then
-    fail "go.work is tracked: $(echo $tracked). Remove it from the index (git rm --cached) - the gate writes its own"
+# --- the docs lane decides from the change, not from a promise ---------------
+# THE LANE IS A RULE THE SCRIPT HOLDS, NOT ONE ANYONE HAS TO REMEMBER. The
+# change it judges is what is STAGED - exactly what `git commit` records
+# (D-41). Stage, run the lane, commit. Files that are not staged are not part
+# of the commit and are left out, and the lane says how many.
+if [ "$docs" = 1 ]; then
+  if ! git rev-parse --verify -q HEAD >/dev/null 2>&1; then
+    echo "gate: the docs lane needs a commit to compare with; run scripts/gate" >&2
+    exit 2
+  fi
+  # EACH GIT COMMAND IS CHECKED ON ITS OWN: a failed diff would otherwise leave
+  # only the untracked files to judge, and the lane would pass on half a change.
+  if ! staged="$(git diff --cached --name-only --no-renames HEAD)"; then
+    echo "gate: the docs lane could not read the staged change (git diff failed); run scripts/gate" >&2
+    exit 2
+  fi
+  if ! loose="$(git status --porcelain --untracked-files=all)"; then
+    echo "gate: the docs lane could not read what is not staged (git status failed); run scripts/gate" >&2
+    exit 2
+  fi
+  changed="$(printf '%s\n' "$staged" | grep -v '^$' | grep -vx '06_docs/gate-runs.md' | sort -u || true)"
+  unstaged="$(printf '%s\n' "$loose" | grep -v '^$' | grep -v '^[MADRC] ' | grep -vc ' 06_docs/gate-runs.md$' || true)"
+  # THE GENERATED ATLAS PAGE RIDES WITH ITS DOCUMENTS (D-53): a diagram edit
+  # regenerates it, and the atlas's own test, which this lane runs, fails
+  # unless it is exactly what the documents build. No other file is excused.
+  others="$(printf '%s\n' "$changed" | grep -v '\.md$' | grep -vx '06_docs/architecture-atlas.html' | grep -v '^$' || true)"
+  if [ -n "$others" ]; then
+    echo "gate: the docs lane is for a change of Markdown and nothing else. Not Markdown:"
+    printf '%s\n' "$others" | sed 's/^/          /'
+    echo "What to do: run scripts/gate, every leg (v0.2.0 D-15)."
+    note_failure "docs lane: a staged file is not Markdown"
+    exit 1
+  fi
+  if [ -z "$changed" ]; then
+    echo "gate: docs lane - nothing to check: nothing is staged. Stage the change, run the lane, then commit."
+    note_failure "docs lane: nothing staged"
+    exit 1
+  fi
+  echo "gate: docs lane - $(printf '%s\n' "$changed" | wc -l | tr -d ' ') Markdown file(s) staged; every module's tests run, and no other leg (v0.2.0 D-15, D-41)"
+  if [ "$unstaged" -gt 0 ]; then
+    echo "gate: docs lane - $unstaged file(s) not staged were left out of the judgement; the tests still run on the working tree"
   fi
 fi
 
@@ -75,14 +342,293 @@ if [ -z "$modules" ]; then
   exit 2
 fi
 
+# --- the release check (L-5.3, L-5.5; plan tasks L10.3, L10.4) --------------
+# THE CHECK JUDGES A COMMIT, NOT A WORKING TREE: uncommitted changes are
+# refused (this run log aside, which every run writes), and a tag that already
+# exists must be HEAD; one that does not yet exist is to be cut at HEAD. The
+# tag is written on the run's line.
+#
+# A FINAL TAG IS REFUSED WHILE ITS CHECKLIST IS UNFINISHED. A row is open while
+# its last cell is "[ ]" and done when it is "[x]"; a release candidate is
+# tagged as packages land (D-69) and is not held to the checklist. THE
+# CHECKLIST IS COUNTED, NOT ONLY SCANNED: a table is a Done table when its
+# header's last cell is Done, and every row numbered in its first cell (0.1,
+# 1.2) must sit in one. No Done table, no row, or a numbered row outside every
+# Done table - a blank line splitting a table leaves the rows after it unread
+# - refuses a final tag. A section whose heading says it comes "after the
+# release check" - the tags themselves, and a host pinning them - is listed,
+# not held: its rows cannot be done before the tag they follow.
+#
+# Every module with packages is scanned, on this machine's own toolchain and
+# on the floor (D-133), with the pinned scanner, through a throw-away
+# workspace file outside the tree; a reachable finding passes only as a ruled
+# exception: a row whose first cell is its GO- id and that names the ruling
+# (D-nn).
+if [ "$release" = 1 ]; then
+  if ! [[ "$release_tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]]; then
+    echo "gate: --release needs a version tag, vX.Y.Z or vX.Y.Z-rc.N, not '$release_tag'" >&2
+    exit 2
+  fi
+  mode="release $release_tag"
+  checklist="$root/06_docs/02_features/radar-loops/07-readiness/release-checklist.md"
+  refused=""
+  refuse() { refused="${refused}  REFUSED $1"$'\n'; note_failure "$(printf '%s' "$1" | head -1 | cut -c1-100)"; }
+  # THE LIBRARY SAYS WHICH RELEASE IT IS (L-13.1): the User-Agent's version
+  # must be the tag's, a release candidate's being the release it leads to.
+  version_file="$root/internal/fetch/fetch.go"
+  tag_version="${release_tag#v}"; tag_version="${tag_version%%-rc.*}"
+  said_version="$(sed -n 's/^[[:space:]]*Version = "\(.*\)"$/\1/p' "$version_file" 2>/dev/null | head -1)"
+  if [ -z "$said_version" ]; then
+    refuse "the library's version could not be read from internal/fetch/fetch.go"
+  elif [ "$said_version" != "$tag_version" ]; then
+    refuse "the library says it is $said_version (internal/fetch/fetch.go) and the tag is $release_tag; set Version to $tag_version"
+  fi
+  if ! head_commit="$(git -C "$root" rev-parse --verify -q HEAD 2>/dev/null)"; then
+    refuse "the release check judges a commit, and $root has none"
+  elif ! dirty="$(git -C "$root" status --porcelain --untracked-files=all 2>/dev/null)"; then
+    refuse "the working tree could not be read (git status failed)"
+  else
+    dirty="$(printf '%s\n' "$dirty" | grep -v '^$' | grep -v ' 06_docs/gate-runs.md$' || true)"
+    if [ -n "$dirty" ]; then
+      refuse "the working tree has uncommitted changes; commit or remove them, the check judges the commit:"$'\n'"$(printf '%s\n' "$dirty" | head -10 | sed 's/^/          /')"
+    fi
+    if tag_commit="$(git -C "$root" rev-parse -q --verify "refs/tags/$release_tag^{commit}" 2>/dev/null)"; then
+      if [ "$tag_commit" != "$head_commit" ]; then
+        refuse "$release_tag is ${tag_commit:0:12}, which is not HEAD (${head_commit:0:12}); check out the tag to check it"
+      else
+        echo "  ok      $release_tag is HEAD (${head_commit:0:12})"
+      fi
+    else
+      echo "  note    $release_tag does not exist yet; the check judges HEAD (${head_commit:0:12}), the commit to tag"
+    fi
+  fi
+  open_rows=""
+  if [ ! -f "$checklist" ]; then
+    refuse "the release checklist is missing: $checklist"
+  else
+    # FAIL CLOSED: every data row of a Done table must end in "[x]"; an empty
+    # cell, "[ ]", "[~]" or any other word is open.
+    parsed="$(awk -F'|' '
+      function trim(s) { gsub(/^[ \t]+|[ \t]+$/, "", s); return s }
+      /^## / { later = ($0 ~ /after the release check/) }
+      /^\|/ && $0 ~ /\| *Done *\| *$/ { intable = 1; print "TABLE"; next }
+      intable && /^\|[-|: ]+\|$/ { next }
+      intable && /^\|/ && later { print "ROW"; if (trim($(NF-1)) != "[x]") print "LATER " $0; next }
+      intable && /^\|/ { print "ROW"; if (trim($(NF-1)) != "[x]") print "OPEN " $0; next }
+      /^\|/ && trim($2) ~ /^[0-9]+(\.[0-9]+)*$/ { print "STRAY " $0 }
+      { intable = 0 }' "$checklist")"
+    tables="$(printf '%s\n' "$parsed" | grep -c '^TABLE$' || true)"
+    rows="$(printf '%s\n' "$parsed" | grep -c '^ROW$' || true)"
+    open_rows="$(printf '%s\n' "$parsed" | sed -n 's/^OPEN //p')"
+    strays="$(printf '%s\n' "$parsed" | sed -n 's/^STRAY //p')"
+    later_rows="$(printf '%s\n' "$parsed" | grep -c '^LATER ' || true)"
+    echo "  note    the checklist: $tables Done table(s), $rows row(s), $(printf '%s' "$open_rows" | grep -c . || true) open, $later_rows row(s) after the release check"
+    if [[ "$release_tag" != *-rc.* ]]; then
+      if [ "$tables" = 0 ]; then
+        refuse "the checklist has no Done table (a table whose header's last cell is Done), so nothing in it was read"
+      elif [ "$rows" = 0 ]; then
+        refuse "the checklist's Done tables have no row, so nothing in it was read"
+      fi
+      if [ -n "$strays" ]; then
+        refuse "numbered rows sit outside every Done table (a blank line or a broken header splits a table), so they were not read:"$'\n'"$(printf '%s\n' "$strays" | cut -c1-120 | sed 's/^/          /')"
+      fi
+    fi
+  fi
+  if [[ "$release_tag" == *-rc.* ]]; then
+    echo "gate: release check for $release_tag, a release candidate: the checklist does not hold it ($(printf '%s' "$open_rows" | grep -c . || true) row(s) open)"
+  elif [ -n "$open_rows" ]; then
+    refuse "$release_tag is a final tag and the checklist has unticked rows:"$'\n'"$(printf '%s\n' "$open_rows" | cut -c1-120 | sed 's/^/          /')"
+  fi
+  if ! command -v govulncheck >/dev/null 2>&1; then
+    refuse "govulncheck is not installed: go install golang.org/x/vuln/cmd/govulncheck@$GOVULNCHECK_PIN"
+  elif ! scanner_is_pinned; then
+    refuse "govulncheck is not the pinned $GOVULNCHECK_PIN: go install golang.org/x/vuln/cmd/govulncheck@$GOVULNCHECK_PIN"
+  elif ! release_work="$(mktemp -d)"; then
+    refuse "could not make a directory for the workspace file"
+  else
+    # The workspace resolves the separate modules' v0.0.0 requirement of the
+    # library to this tree, as the gate's own workspace does.
+    root_module="$(GOWORK=off GOFLAGS= GOTOOLCHAIN="$FLOOR_TOOLCHAIN" go list -m 2>/dev/null)"
+    {
+      echo "go $floor"
+      echo
+      echo "use ("
+      for dir in $modules; do
+        if [ "$dir" = . ]; then echo "	$root"; else echo "	$root/${dir#./}"; fi
+      done
+      echo ")"
+      [ -n "$root_module" ] && printf '\nreplace %s v0.0.0 => %s\n' "$root_module" "$root"
+    } > "$release_work/go.work"
+    local_version="$(GOTOOLCHAIN=local go env GOVERSION 2>/dev/null)"
+    found_ids=""
+    for dir in $modules; do
+      if ! pkgs="$(cd "$dir" && GOWORK="$release_work/go.work" GOFLAGS=-mod=readonly GOTOOLCHAIN="$FLOOR_TOOLCHAIN" go list ./... 2>/dev/null)"; then
+        refuse "the packages of module $dir cannot be listed, so it cannot be scanned"
+        continue
+      fi
+      if [ -z "$pkgs" ]; then
+        echo "  empty   module $dir has no Go packages to scan"
+        continue
+      fi
+      for toolchain in local "$FLOOR_TOOLCHAIN"; do
+        label="$toolchain"; [ "$toolchain" = local ] && label="${local_version:-the local toolchain}"
+        scan="$(cd "$dir" && GOWORK="$release_work/go.work" GOFLAGS=-mod=readonly GOTOOLCHAIN="$toolchain" govulncheck ./... 2>&1)"
+        scan_rc=$?
+        case "$scan_rc" in
+          0) echo "  ok      govulncheck $GOVULNCHECK_PIN, module $dir at $label: nothing reachable" ;;
+          3)
+            ids="$(printf '%s\n' "$scan" | grep -oE '^Vulnerability #[0-9]+: GO-[0-9]+-[0-9]+' | grep -oE 'GO-[0-9]+-[0-9]+')"
+            if [ -z "$ids" ]; then
+              refuse "govulncheck reported findings in module $dir at $label and named none this check can read"
+            fi
+            found_ids="$found_ids $ids"
+            ;;
+          *) refuse "govulncheck could not scan module $dir at $label (exit $scan_rc)" ;;
+        esac
+      done
+    done
+    for id in $(printf '%s\n' $found_ids | sort -u); do
+      if [ -f "$checklist" ] && grep -qE "^\|[[:space:]]*$id[[:space:]]*\|.*D-[0-9]+" "$checklist"; then
+        echo "  ok      $id is reachable and carried as a ruled exception"
+      else
+        refuse "$id is reachable and has no ruled exception in the checklist"
+      fi
+    done
+  fi
+  if [ -n "$refused" ]; then
+    printf '%s' "$refused"
+    echo "gate: release check FAILED for $release_tag"
+    exit 1
+  fi
+  echo "gate: release check green for $release_tag"
+  exit 0
+fi
+
+export GOTOOLCHAIN="$FLOOR_TOOLCHAIN"
+export GOFLAGS="-mod=readonly"
+
+failures=""
+fail() { failures="${failures}  FAILED  $1"$'\n'; echo "  FAILED  $1"; note_failure "$1"; }
+pass() { echo "  ok      $1"; }
+
+# limited SECONDS COMMAND... runs a command in a process group of its own and,
+# when SECONDS of wall-clock time run out, stops the whole group - TERM, then
+# KILL five seconds later for anything that ignored TERM - and says so. It
+# exists for the fuzz legs, whose run-count budget has no clock of its own
+# (D-31). perl starts the group because macOS has no setsid; `exec {$ARGV[0]}`
+# never hands a lone argument to a shell.
+#
+# THE WATCHDOG REPORTS THROUGH ITS EXIT STATUS (124 when it fired), not a
+# file (D-40). Once it has fired it ignores the TERM the caller sends at the
+# end, so the KILL always happens: a group member that survived TERM would
+# otherwise hold the output pipe open and the limit would not be one.
+limited() {
+  local limit="$1" pid dog rc dogrc
+  shift
+  perl -e 'setpgrp(0, 0); exec { $ARGV[0] } @ARGV or die "cannot run $ARGV[0]: $!\n"' -- "$@" &
+  pid=$!
+  (
+    fired=0
+    nap=""
+    trap 'if [ "$fired" = 0 ]; then [ -n "$nap" ] && kill "$nap" 2>/dev/null; exit 0; fi' TERM
+    sleep "$limit" &
+    nap=$!
+    wait "$nap"
+    if kill -0 "$pid" 2>/dev/null; then
+      fired=1
+      kill -TERM -- "-$pid" 2>/dev/null
+      sleep 5 &
+      nap=$!
+      wait "$nap" || wait "$nap"
+      kill -KILL -- "-$pid" 2>/dev/null
+      exit 124
+    fi
+    exit 0
+  ) &
+  dog=$!
+  wait "$pid"
+  rc=$?
+  kill -TERM "$dog" 2>/dev/null
+  wait "$dog"
+  dogrc=$?
+  if [ "$dogrc" = 124 ]; then
+    echo "TIME LIMIT: stopped after ${limit}s of wall-clock time - slow or stalled, it did not finish (FUZZ_LIMIT; GATE_FUZZ_LIMIT overrides it)"
+    return 124
+  fi
+  return "$rc"
+}
+
+# gofmt_clean fails, naming the files, when gofmt would change any Go file in
+# this module outside testdata.
+gofmt_clean() {
+  local files
+  # This module's own files: testdata, and any nested module (a directory with
+  # a go.mod of its own), are left to themselves.
+  files="$(find . \( -type d \( -name testdata -o -name vendor \) -prune \) -o \( -type d ! -path . -exec test -e '{}/go.mod' \; -prune \) -o \( -name '*.go' -print \))" || return 1
+  [ -n "$files" ] || return 0
+  local unformatted
+  unformatted="$(printf '%s\n' "$files" | xargs gofmt -l)" || return 1
+  if [ -n "$unformatted" ]; then
+    echo "gofmt would change these files; run gofmt -w on them:"
+    printf '%s\n' "$unformatted"
+    return 1
+  fi
+}
+
+# leg NAME COMMAND... runs one leg and records the outcome. The output of a
+# failing leg is shown; a passing leg is one line.
+# EVERY LEG IS TIMED, and the duration is printed beside it. A fuzz leg is
+# budgeted in runs rather than seconds, so its duration is the only place a
+# target that has grown slower - or a machine that has - becomes visible.
+leg() {
+  local name="$1"; shift
+  local out started elapsed
+  started=$SECONDS
+  if out="$("$@" 2>&1)"; then
+    elapsed=$((SECONDS - started))
+    pass "$name [${elapsed}s]"
+  else
+    elapsed=$((SECONDS - started))
+    fail "$name [${elapsed}s]"
+    printf '%s\n' "$out" | sed 's/^/          /'
+  fi
+}
+
+echo "gate: $root"
+echo "gate: toolchain $FLOOR_TOOLCHAIN (the floor, from go.mod), read-only modules$([ "$quick" = 1 ] && echo ', quick legs only')"
+
+# --- the workspace file is never tracked -------------------------------------
+if git -C "$root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  tracked="$(git -C "$root" ls-files -- go.work go.work.sum)"
+  if [ -n "$tracked" ]; then
+    fail "go.work is tracked: $(echo $tracked). Remove it from the index (git rm --cached) - the gate writes its own"
+  fi
+fi
+
+
+# --- M4's hour (D-61; plan task L10.8) ---------------------------------------
+# The library alone: the loop's cost over an empty map, then an hour of play
+# with the heap held within ±5 %. Its own mode, because an hour is not a leg.
+if [ "$soak" = 1 ]; then
+  echo "gate: soak - M4, a 12-frame loop played for an hour"
+  soak_out="$(env TUIMAPS_M4_SOAK=1h go test -run '^TestALoopsHeapCostAndHold$' -count=1 -v -timeout 90m . 2>&1)"
+  soak_rc=$?
+  printf '%s\n' "$soak_out" | grep -E 'M4|FAIL|panic' | sed 's/^ *//; s/^/  /'
+  if [ "$soak_rc" != 0 ] || ! printf '%s\n' "$soak_out" | grep -q 'held within'; then
+    echo "gate: soak FAILED (the hour did not run to its end, or the heap moved)"
+    exit 1
+  fi
+  echo "gate: soak green"
+  exit 0
+fi
+
 # --- the throw-away workspace file ------------------------------------------
-made_work=0
 if [ -z "${tracked:-}" ]; then
   rm -f go.work go.work.sum
   if GOFLAGS= go work init $modules >/dev/null 2>&1; then
     made_work=1
     # A workspace alone does not resolve a version that was never published:
-    # once the library imports third-party code, a separate module that
+    # because the library imports third-party code, a separate module that
     # requires the library at v0.0.0 sends the toolchain looking for that
     # version. A replace for exactly that version, in this throw-away file,
     # points it at the tree. Tracked module files still carry no replace.
@@ -94,11 +640,20 @@ if [ -z "${tracked:-}" ]; then
     fail "could not write the workspace file"
   fi
 fi
-cleanup() { [ "$made_work" = 1 ] && rm -f "$root/go.work" "$root/go.work.sum"; }
-trap cleanup EXIT
-
+# THE FULL GATE SCANS WITH THE PINNED SCANNER, as the release check does
+# (L-5.5): another version's "clean" is not the one the checklist records.
+scanner="pinned"
+if [ "$quick" = 0 ] && [ "$fuzzonly" = 0 ]; then
+  if ! command -v govulncheck >/dev/null 2>&1; then
+    scanner="govulncheck is not installed: go install golang.org/x/vuln/cmd/govulncheck@$GOVULNCHECK_PIN"
+  elif ! scanner_is_pinned; then
+    scanner="govulncheck is not the pinned $GOVULNCHECK_PIN: go install golang.org/x/vuln/cmd/govulncheck@$GOVULNCHECK_PIN"
+  fi
+fi
+local_version="$(GOTOOLCHAIN=local go env GOVERSION 2>/dev/null)"
 for dir in $modules; do
   path="$(cd "$dir" && GOWORK=off go list -m 2>/dev/null)"
+  where="${dir#./}"; [ "$dir" = . ] && where=""
   echo
   echo "module ${path:-$dir}"
   (
@@ -106,52 +661,146 @@ for dir in $modules; do
     failures=""
     # A module whose packages arrive with a later work package has nothing
     # to check yet. It is named and said to be empty - not failed, not hidden.
-    if [ -z "$(go list ./... 2>/dev/null)" ]; then
+    # A MODULE GO CANNOT LIST IS BROKEN, NOT EMPTY (D-31): its failure is
+    # read, never mistaken for an absence of packages.
+    if ! pkgs="$(go list ./... 2>/dev/null)"; then
+      fail "its packages cannot be listed"
+      go list ./... 2>&1 | sed 's/^/          /'
+      exit 1
+    fi
+    if [ -z "$pkgs" ]; then
       echo "  empty   no Go packages yet"
       exit 0
     fi
-    leg "vet" go vet ./...
-    leg "tests, race detector on" go test -race ./...
-    leg "tests, race detector off (allocation counts live here)" go test ./...
+    if [ "$docs" = 1 ]; then
+      leg "tests (docs lane)" go test -count=1 ./...
+      [ -z "$failures" ]
+      exit
+    fi
+    if [ "$fuzzonly" = 0 ]; then
+      # FORMATTING IS CHECKED (D-46): every file, test files included, or an
+      # unformatted one passes green runs with no leg asking.
+      leg "gofmt" gofmt_clean
+      leg "vet" go vet ./...
+      leg "tests, race detector on" go test -race ./...
+      leg "tests, race detector off (allocation counts live here)" go test ./...
+      # A licence file for every module this module's packages and their tests
+      # are built from: the modules that provide a package of `go list -deps
+      # -test`, each with its directory. A module of this repository is covered
+      # by the repository's own licence file. A GRAPH THAT CANNOT BE LISTED
+      # FAILS (D-40): otherwise the check is a loop over nothing, which passes,
+      # in every module that requires the library. A MODULE WITH NO DIRECTORY
+      # FAILS: its licence cannot be read, so it is never passed over.
+      if ! graph="$(go list -m all 2>&1)"; then
+        fail "the licence check cannot list this module's graph"
+        printf '%s\n' "$graph" | sed 's/^/          /'
+      elif ! built="$(go list -deps -test -f '{{with .Module}}{{.Path}} {{.Dir}}{{end}}' ./... 2>&1)"; then
+        fail "the licence check cannot list the modules this module's packages are built from"
+        printf '%s\n' "$built" | sed 's/^/          /'
+      elif [ -z "$(printf '%s\n' "$built" | grep -v '^$')" ]; then
+        fail "the licence check found no module this module's packages are built from"
+      else
+        while read -r mpath mdir; do
+          [ -n "$mpath" ] || continue
+          if [ -z "$mdir" ]; then
+            fail "the licence check has no directory for $mpath (not downloaded), so its licence cannot be read"
+            continue
+          fi
+          case "$mdir" in "$root"|"$root"/*) mdir="$root" ;; esac
+          if ! ls "$mdir"/LICEN[SC]E* >/dev/null 2>&1; then
+            fail "no licence file in $mdir"
+          fi
+        done <<< "$(printf '%s\n' "$built" | grep -v '^$' | sort -u)"
+      fi
+    fi
     if [ "$quick" = 0 ]; then
-      for pkg in $(go list ./... 2>/dev/null); do
-        for target in $(go test -list '^Fuzz' "$pkg" 2>/dev/null | grep '^Fuzz'); do
-          leg "fuzz $target, $FUZZ_TIME" go test -run '^$' -fuzz "^${target}\$" -fuzztime "$FUZZ_TIME" "$pkg"
+      for pkg in $pkgs; do
+        # TESTS THAT CANNOT BE LISTED ARE A FAILURE, not an absence of fuzz
+        # targets (D-40).
+        if ! listing="$(go test -list '^Fuzz' "$pkg" 2>&1)"; then
+          fail "the tests of $pkg cannot be listed, so its fuzz targets cannot be found"
+          printf '%s\n' "$listing" | sed 's/^/          /'
+          continue
+        fi
+        for target in $(printf '%s\n' "$listing" | grep '^Fuzz'); do
+          echo "$target" >> "$fuzz_legs"
+          execs="$(fuzz_execs "$target")"
+          if [ -z "$execs" ]; then
+            execs="$FUZZ_EXECS_DEFAULT"
+            echo "  note    fuzz $target has no calibrated count; running the default $execs"
+          fi
+          name="fuzz $target, $execs"
+          if [ "$FUZZ_SCALE" != 1 ]; then
+            name="fuzz $target, $(scaled_execs "$execs") ($execs / GATE_FUZZ_SCALE $FUZZ_SCALE)"
+            execs="$(scaled_execs "$execs")"
+          fi
+          leg "$name" limited "$FUZZ_LIMIT" go test -run '^$' -fuzz "^${target}\$" -fuzztime "$execs" "$pkg"
         done
       done
-      if command -v govulncheck >/dev/null 2>&1; then
-        # The floor toolchain keeps a newer API out; it is not what a release
-        # is built with, and its standard library carries every vulnerability
-        # fixed since. The scan runs on this machine's own toolchain, named here.
-        leg "vulnerability scan, module and standard library at $(GOTOOLCHAIN=local go env GOVERSION)" env GOTOOLCHAIN=local govulncheck ./...
+    fi
+    if [ "$quick" = 0 ] && [ "$fuzzonly" = 0 ]; then
+      # BENCHMARKS RUN ONCE EACH, so one that no longer compiles or panics is
+      # found; their numbers are not judged here.
+      leg "benchmarks, one run each" go test -run '^$' -bench . -benchtime 1x ./...
+      if [ "$scanner" = pinned ]; then
+        # TWO SCANS (D-133): this machine's own toolchain, and the floor - the
+        # oldest standard library a host may build this module with, whose
+        # vulnerabilities a host at the floor carries.
+        leg "vulnerability scan, govulncheck $GOVULNCHECK_PIN, module and standard library at ${local_version:-the local toolchain}" env GOTOOLCHAIN=local govulncheck ./...
+        leg "vulnerability scan, govulncheck $GOVULNCHECK_PIN, module and standard library at the floor, $FLOOR_TOOLCHAIN" env GOTOOLCHAIN="$FLOOR_TOOLCHAIN" govulncheck ./...
       else
-        fail "govulncheck is not installed: go install golang.org/x/vuln/cmd/govulncheck@latest"
+        fail "$scanner"
       fi
-      # A licence file for every module in this module's graph. A module
-      # of this repository is covered by the repository's own licence file.
-      for mdir in $(GOWORK=off go list -m -f '{{.Dir}}' all 2>/dev/null); do
-        case "$mdir" in "$root"|"$root"/*) mdir="$root" ;; esac
-        if ! ls "$mdir"/LICEN[SC]E* >/dev/null 2>&1; then
-          fail "no licence file in $mdir"
-        fi
-      done
     fi
     [ -z "$failures" ]
   ) || failures="${failures}  FAILED  module ${path:-$dir}"$'\n'
 done
+where=""
+
+# --- P10, where the harness is set up (D-136) -------------------------------
+# `a2dh p10 check` runs when a2dh is on PATH and the tree carries the harness's
+# .a2dh.yml; a live finding fails the gate. Elsewhere the check is named among
+# NOT RUN. It judges the root module on its own, as the harness does, on this
+# machine's toolchain.
+p10_not_run=""
+if [ "$fuzzonly" = 0 ] && [ "$docs" = 0 ]; then
+  echo
+  echo "repository"
+  if ! command -v a2dh >/dev/null 2>&1; then
+    p10_not_run="the P10 check (a2dh p10 check; a2dh is not on PATH)"
+    echo "  note    P10: NOT RUN, a2dh is not on PATH"
+  elif [ ! -f "$root/.a2dh.yml" ]; then
+    p10_not_run="the P10 check (a2dh p10 check; this tree has no .a2dh.yml)"
+    echo "  note    P10: NOT RUN, this tree has no .a2dh.yml"
+  else
+    leg "P10, a2dh p10 check" env -u GOFLAGS GOWORK=off GOTOOLCHAIN=local NO_COLOR=1 a2dh p10 check "$root"
+  fi
+fi
+
+# A FUZZ RUN THAT RAN NO FUZZ LEG CHECKED NOTHING (D-40).
+if [ "$fuzzonly" = 1 ] && [ ! -s "$fuzz_legs" ]; then
+  fail "no fuzz leg ran: no module has a fuzz target that could be listed"
+fi
 
 # --- the library only ---------------------------------------------------------
-if [ "$quick" = 0 ]; then
+if [ "$quick" = 0 ] && [ "$fuzzonly" = 0 ]; then
   echo
   echo "library"
   for target in $TARGETS; do
     leg "cross-compile $target, C toolchain off" env CGO_ENABLED=0 GOOS="${target%/*}" GOARCH="${target#*/}" go build ./...
   done
+  # M4 (D-61): the loop's heap held while it plays, five minutes of the
+  # soak's hour (scripts/gate --soak).
+  leg "M4, a loop's heap held over five minutes" env TUIMAPS_M4_SOAK=5m go test -run '^TestALoopsHeapCostAndHold$' -count=1 -timeout 20m .
   # Reference frames must be byte-identical on a second architecture. This
   # leg FAILS - never skips - when the second architecture cannot be run.
   host_arch="$(go env GOARCH)"
   other_arch="amd64"; [ "$host_arch" = "amd64" ] && other_arch="arm64"
-  leg "tests on $other_arch (emulated here; real hardware is NOT RUN)" env GOARCH="$other_arch" go test ./...
+  if [ "${GATE_ARCH_LEG:-}" = "sibling" ]; then
+    echo "  note    tests on $other_arch: run natively by the sibling CI job (GATE_ARCH_LEG=sibling); the workflow fails unless it ran green"
+  else
+    leg "tests on $other_arch (emulated here; real hardware is NOT RUN)" env GOARCH="$other_arch" go test ./...
+  fi
 fi
 
 echo
@@ -161,5 +810,33 @@ if [ -n "$failures" ]; then
   echo "What to do: fix each FAILED leg above and run the gate again. Nothing merges until it is green."
   exit 1
 fi
+if [ "$docs" = 1 ]; then
+  echo "gate: green (docs lane)"
+  echo "NOT RUN, by the docs lane's design: every leg but the tests. A change with any file that is not Markdown needs scripts/gate."
+  exit 0
+fi
 echo "gate: green"
-echo "NOT RUN on this machine, and not assumed: Linux and Windows test runs; real amd64 hardware; the nightly one-hour soak; the contract check against the last tag (none exists yet)."
+# THE LAST RELEASE TAG IS NEVER IN A WORK BRANCH'S HISTORY: releases are
+# squash-merged (D-1), so `git describe` finds nothing; the tags are listed
+# instead (D-40).
+case "$mode" in
+  quick) echo "NOT RUN in this mode (--quick): fuzzing, the benchmarks, the vulnerability scans, the cross-compiles, the five-minute M4 leg and the second architecture." ;;
+  fuzz) echo "NOT RUN in this mode (--fuzz): vet, the tests, licences, the benchmarks, the vulnerability scans, the cross-compiles, the second architecture and the P10 check." ;;
+esac
+here_os="$(go env GOOS 2>/dev/null)"
+case "$here_os" in
+  linux) others="macOS and Windows test runs" ;;
+  windows) others="macOS and Linux test runs" ;;
+  *) others="Linux and Windows test runs" ;;
+esac
+# THE HARDWARE NOT RUN IS THE OTHER ARCHITECTURE'S, decided from the machine
+# itself (uname -m), not from the toolchain.
+case "$(uname -m 2>/dev/null)" in
+  x86_64|amd64) here_hw="amd64" ;;
+  arm64|aarch64) here_hw="arm64" ;;
+  *) here_hw="$(go env GOHOSTARCH 2>/dev/null)" ;;
+esac
+other_hw="amd64"; [ "$here_hw" = "amd64" ] && other_hw="arm64"
+hardware="real $other_hw hardware"
+[ "${GATE_ARCH_LEG:-}" = "sibling" ] && hardware="real $other_hw hardware here (GATE_ARCH_LEG=sibling: run elsewhere)"
+echo "NOT RUN on this machine, and not assumed: $others; $hardware; the one-hour soak (scripts/gate --soak); ${p10_not_run:+$p10_not_run; }the test over a real archive, which needs TUIMAPS_REAL_ARCHIVE."

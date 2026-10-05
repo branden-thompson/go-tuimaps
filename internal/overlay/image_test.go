@@ -10,6 +10,7 @@ import (
 	"image/color"
 	"image/png"
 	"math"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -247,16 +248,19 @@ func TestUnmatchedCountedAndSampled(t *testing.T) {
 	if report.Unmatched != 10 || len(report.Samples) != 10 {
 		t.Errorf("%d unmatched, %d samples; the transparent pixels are not counted", report.Unmatched, len(report.Samples))
 	}
-	w := s.TakeWarnings()
-	if len(w) != 1 || w[0].Kind != fault.UnmatchedImageColours || w[0].Count != 10 {
-		t.Errorf("warnings %+v", w)
+	if report.Near != 10 {
+		t.Errorf("%d near; the ten near-green pixels on the host's table are counted (L-2.2, D-104)", report.Near)
 	}
-	// With no tolerance the near colour is unmatched too.
+	w := s.TakeWarnings()
+	if len(w) != 2 || w[0].Kind != fault.UnmatchedImageColours || w[0].Count != 10 || w[1].Kind != fault.NearImageColours || w[1].Count != 10 {
+		t.Errorf("warnings %+v; want ten unmatched, then ten near", w)
+	}
+	// With no tolerance the near colour is unmatched too, and nothing is near.
 	o.Image.Exact = true
 	s.HandIn(o)
 	s.PrepareJob("radar", 6).Run(context.Background())
-	if _, exact, _ := s.Raster("radar"); exact.Unmatched != 20 || len(exact.Samples) != 11 {
-		t.Errorf("exact: %d unmatched, %d distinct samples", exact.Unmatched, len(exact.Samples))
+	if _, exact, _ := s.Raster("radar"); exact.Unmatched != 20 || len(exact.Samples) != 11 || exact.Near != 0 {
+		t.Errorf("exact: %d unmatched, %d distinct samples, %d near", exact.Unmatched, len(exact.Samples), exact.Near)
 	}
 	// At most sixteen samples, however many colours there are.
 	many := picturePNG(t, 64, 1, func(x, _ int) color.Color { return color.NRGBA{R: uint8(4 * x), B: 255, A: 255} })
@@ -303,7 +307,7 @@ func TestClassifiedSharesOneReading(t *testing.T) {
 	if _, _, held := shared.Read(key); held {
 		t.Error("an empty set already holds the picture")
 	}
-	raster, report, err := rasterise(img, kind)
+	raster, report, err := rasterise(img, img.PNG, kind, defaultImageBytes)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -347,5 +351,83 @@ func TestClassifiedSharesOneReading(t *testing.T) {
 	small.Keep(key, raster, report)
 	if bytes, _ := small.Bytes(); bytes != 0 {
 		t.Errorf("a reading of %d bytes was kept in a set of 16", bytes)
+	}
+}
+
+// TestAnOversizedFrameIsRefusedBeforeItIsCopied (L-1.15; BUILD-exit red
+// team): a frame over 8 MiB is refused at the hand-in, as a lone picture is,
+// and nothing of it is copied.
+func TestAnOversizedFrameIsRefusedBeforeItIsCopied(t *testing.T) {
+	big := make([]byte, maxPNGBytes+1)
+	img := &Image{Frames: []LoopFrame{{Valid: noon, PNG: big}}, West: -90, South: 30, East: -80, North: 40, Projection: PlateCarree,
+		Table: []TableEntry{{Colour: colour.RGB{R: 200}, Value: 25}}, Exact: true, Type: Type{Preset: "radar", Unit: "dBZ"}}
+	if _, err := copied(img); !isKind(err, fault.OverImageCap) {
+		t.Errorf("a 9 MiB frame: %v; want over-image-cap before any copy", err)
+	}
+}
+
+// BenchmarkAPictureOfEveryColour is the matcher's worst case (BUILD-exit red
+// team, InfoSec S-1): a 500x500 picture whose every pixel is a colour of its
+// own, read with a 256-entry table and the default tolerance - every pixel a
+// fresh search. A host passing pictures through from a source it does not
+// control pays this, so its cost is measured, not asserted.
+func BenchmarkAPictureOfEveryColour(b *testing.B) {
+	pic := picturePNG(b, 500, 500, func(x, y int) color.Color {
+		n := y*500 + x
+		return color.NRGBA{R: uint8(n), G: uint8(n >> 8), B: uint8(n >> 16), A: 255}
+	})
+	var table []TableEntry
+	for i := range 256 {
+		table = append(table, TableEntry{Colour: colour.RGB{R: uint8(i), G: uint8(255 - i), B: 128}, Value: float64(i) / 4})
+	}
+	img := &Image{PNG: pic, West: -90, South: 30, East: -80, North: 40, Projection: PlateCarree, Table: table, Type: Type{Preset: "radar", Unit: "dBZ"}}
+	kind := mustKind(b)
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, _, err := rasterise(img, img.PNG, kind, defaultImageBytes); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// TestAPictureReadThroughItsProviderIsKeptApart (BUILD-exit red team,
+// InfoSec S-2): the same picture read with a provider's table and with the
+// host's own copy of that table reads differently - the provider brings its
+// gradient - so the shared set keeps the two apart.
+func TestAPictureReadThroughItsProviderIsKeptApart(t *testing.T) {
+	pic := picturePNG(t, 4, 4, func(int, int) color.Color { return color.NRGBA{R: 200, A: 255} })
+	viaProvider, err := copied(&Image{PNG: pic, West: -90, South: 30, East: -80, North: 40, Projection: PlateCarree, Provider: ProviderMRMS})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ownTable, err := copied(&Image{PNG: pic, West: -90, South: 30, East: -80, North: 40, Projection: PlateCarree, Table: viaProvider.Table})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if keyOf(viaProvider, pic, nil) == keyOf(ownTable, pic, nil) {
+		t.Error("a picture read through MRMS and through a copy of its table share one key")
+	}
+}
+
+// TestAnOverBudgetLoopIsRefusedBeforeItIsCopied (REVIEW, perf F13, QA 4):
+// a loop whose files alone are over the image budget is refused before the
+// store copies a byte of it - 72 frames of 8 MiB would be a 576 MiB copy,
+// made while the store is locked.
+func TestAnOverBudgetLoopIsRefusedBeforeItIsCopied(t *testing.T) {
+	s := store(t)
+	big := make([]byte, 8<<20)
+	frames := make([]LoopFrame, MaxFrames)
+	for i := range frames {
+		frames[i] = LoopFrame{Valid: time.Unix(int64(i)*300, 0), PNG: big}
+	}
+	var before, after runtime.MemStats
+	runtime.ReadMemStats(&before)
+	_, err := s.HandIn(Overlay{ID: "loop", Valid: time.Unix(int64(MaxFrames)*300, 0), Image: &Image{Frames: frames, West: -90, South: 30, East: -80, North: 40, Type: Type{Preset: "radar"}}})
+	runtime.ReadMemStats(&after)
+	if err == nil {
+		t.Fatal("a 576 MiB loop was taken")
+	}
+	if grew := after.TotalAlloc - before.TotalAlloc; grew > 32<<20 {
+		t.Errorf("refusing the loop allocated %d MiB; it must be refused before it is copied", grew>>20)
 	}
 }

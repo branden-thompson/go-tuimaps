@@ -1,0 +1,90 @@
+package tuimaps_test
+
+// m6_test.go — v0.2.0 plan task L10.10 (M6): five consecutive clean full runs
+// of the gate before SHIP, counted from 06_docs/gate-runs.md. Only full runs
+// count: the docs lane, the fuzz mode and the release check are not the gate,
+// and a green run with an override of the gate's settings (a hosted CI leg
+// handing its second architecture to its sibling, a scaled fuzz budget) is
+// not a whole run of it. Any full run that failed resets the count.
+
+import (
+	"os"
+	"strconv"
+	"strings"
+	"testing"
+)
+
+// m6Floor is the fewest seconds a full run can take and have run every leg:
+// the fuzz legs alone take about sixteen minutes. A shorter green "full" run
+// was stopped short whatever its result says, and is not counted.
+const m6Floor = 900
+
+// m6Streak is the number of consecutive green full runs at the end of the
+// log, and the full runs it read. Rows of the log's seven-column table are
+// read. A full run that did not end green - failed or interrupted, with any
+// override and of any length - resets the streak. A green run counts only
+// with no override and at least m6Floor seconds; any other green run is
+// passed over.
+func m6Streak(log string) (streak, full int) {
+	for _, line := range strings.Split(log, "\n") {
+		cells := strings.Split(line, "|")
+		if len(cells) < 9 || strings.TrimSpace(cells[4]) != "full" {
+			continue
+		}
+		if strings.TrimSpace(cells[5]) != "green" {
+			full++
+			streak = 0
+			continue
+		}
+		seconds, err := strconv.Atoi(strings.TrimSpace(cells[6]))
+		if err != nil || seconds < m6Floor || strings.TrimSpace(cells[7]) != "-" {
+			continue
+		}
+		full++
+		streak++
+	}
+	return streak, full
+}
+
+// TestM6CountsOnlyFullRunsAndResetsOnAFailure: the counter itself, on a
+// planted log. A green run counts only whole and long enough; a full run
+// that did not end green resets the streak whatever its overrides or length.
+func TestM6CountsOnlyFullRunsAndResetsOnAFailure(t *testing.T) {
+	log := strings.Join([]string{
+		"| t | a | x | full | green | 1800 | - |",
+		"| t | a | x | full | FAILED | 1800 | - |",
+		"| t | b | x | full | green | 1800 | - |",
+		"| t | b | x | docs | FAILED | 40 | - |",
+		"| t | b | x | release | FAILED | 5 | - |",
+		"| t | c | x | full | green | 1800 | - |",
+		"| t | c | x | full | INTERRUPTED | 1800 | - |",
+		"| t | d | x | full | green | 1800 | - |",
+		"| t | d | x | full | green | 1800 | GATE_ARCH_LEG=sibling |",
+		"| t | d | x | full | green | 25 | - |",
+		"| t | e | x | full | green | 1800 | - |",
+		"| t | e | x | full | FAILED | 40 | GATE_ARCH_LEG=sibling GATE_FUZZ_SCALE=4 |",
+		"| t | f | x | full | green | 1800 | - |",
+		"| t | f | x | full | green | 1800 | - |",
+	}, "\n")
+	if streak, full := m6Streak(log); streak != 2 || full != 10 {
+		t.Errorf("streak %d over %d full runs; want 2 over 10 (an interrupted run is not clean, and a short failure with an override still resets)", streak, full)
+	}
+	if streak, _ := m6Streak("| t | a | x | full | green | 1800 | - |\n| t | b | x | full | FAILED | 12 | - |"); streak != 0 {
+		t.Errorf("a failed full run of 12 s left a streak of %d; any failed full run resets it", streak)
+	}
+}
+
+// TestM6ReportsTheCurrentRunOfGreen reports M6 as the log stands. It fails
+// only when the log cannot be read as one: the count is evidence for the
+// release checklist's row, not a gate of its own until SHIP.
+func TestM6ReportsTheCurrentRunOfGreen(t *testing.T) {
+	body, err := os.ReadFile("06_docs/gate-runs.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	streak, full := m6Streak(string(body))
+	if full == 0 {
+		t.Fatal("no full run read from the gate log: its table no longer reads as one")
+	}
+	t.Logf("M6: %d consecutive clean full run(s) of the gate; five are needed before SHIP", streak)
+}

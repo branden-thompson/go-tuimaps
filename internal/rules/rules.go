@@ -64,6 +64,9 @@ func Check(root, module string) ([]Finding, error) {
 	if err != nil {
 		return nil, err
 	}
+	if c.files == 0 {
+		return nil, fmt.Errorf("rules: no Go file under %s; a walk that checked nothing has passed nothing", root)
+	}
 	for dir := range c.tested {
 		if !c.hooked[dir] {
 			c.found = append(c.found, Finding{File: dir, Line: c.tested[dir], Rule: RuleDialHook, Detail: "this test package has no TestMain that calls testkit.Main, so its tests are not held to loopback"})
@@ -106,7 +109,7 @@ func (c *checker) visit(full string, d fs.DirEntry, err error) error {
 	}
 	rel = filepath.ToSlash(rel)
 	if d.IsDir() {
-		if rel == "." || rel == "internal" || strings.HasPrefix(rel, "internal/") && path.Base(rel) != "testdata" {
+		if rel == "." || rel == "assets" || rel == "internal" || strings.HasPrefix(rel, "internal/") && path.Base(rel) != "testdata" {
 			return nil
 		}
 		return filepath.SkipDir
@@ -382,6 +385,9 @@ func judgeSelector(pkg, sel string) (rule, detail string, err error) {
 	case "time":
 		if slices.Contains([]string{"NewTimer", "NewTicker", "After", "AfterFunc", "Tick", "Sleep"}, sel) {
 			return RuleTimer, "time." + sel + "; the library owns no clock", nil
+		}
+		if slices.Contains([]string{"Now", "Since", "Until"}, sel) {
+			return RuleTimer, "time." + sel + " reads the wall clock; the host passes the time in", nil
 		}
 	case "fmt":
 		if slices.Contains([]string{"Print", "Printf", "Println"}, sel) {
