@@ -3,7 +3,7 @@ module github.com/branden-thompson/go-tuimaps/tools/oracle
 go 1.25.13
 
 require (
-	github.com/branden-thompson/go-tuimaps v0.0.0
+	github.com/branden-thompson/go-tuimaps v0.2.0
 	github.com/paulmach/orb v0.13.0
 )
 
@@ -12,4 +12,5 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/mattn/go-runewidth v0.0.24 // indirect
 	github.com/paulmach/protoscan v0.2.1 // indirect
+	go.mongodb.org/mongo-driver/v2 v2.5.0 // indirect
 )
