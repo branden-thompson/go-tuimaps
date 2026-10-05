@@ -139,9 +139,9 @@ func TestALicenceIsNeededForEveryModuleBuiltIn(t *testing.T) {
 	}
 	root := plantTree(t, true)
 	dep := t.TempDir()
-	writeFile(t, dep, "go.mod", "module example.com/dep\n\ngo 1.25.0\n")
+	writeFile(t, dep, "go.mod", "module example.com/dep\n\ngo "+goFloor+"\n")
 	writeFile(t, dep, "dep.go", "// Package dep is planted.\npackage dep\n\n// Six is planted.\nfunc Six() int { return 6 }\n")
-	writeFile(t, root, "tools/t/go.mod", "module example.com/lib/tools/t\n\ngo 1.25.0\n\nrequire (\n\texample.com/lib v0.0.0\n\texample.com/dep v0.0.0\n)\n\nreplace example.com/dep => "+dep+"\n")
+	writeFile(t, root, "tools/t/go.mod", "module example.com/lib/tools/t\n\ngo "+goFloor+"\n\nrequire (\n\texample.com/lib v0.0.0\n\texample.com/dep v0.0.0\n)\n\nreplace example.com/dep => "+dep+"\n")
 	writeFile(t, root, "tools/t/t.go", "// Package t is planted.\npackage t\n\nimport \"example.com/dep\"\n\n// Seven is planted.\nfunc Seven() int { return dep.Six() + 1 }\n")
 	out, err := runGate(t, root)
 	if err == nil || !strings.Contains(out, "no licence file in "+dep) {

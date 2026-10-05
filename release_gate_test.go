@@ -249,7 +249,7 @@ func TestTheReleaseScansEveryModuleAtBothToolchains(t *testing.T) {
 		scans[dir+" "+f[1]] = true
 	}
 	nested := filepath.Join(real, "tools", "t")
-	for _, want := range []string{real + " local", real + " go1.25.0", nested + " local", nested + " go1.25.0"} {
+	for _, want := range []string{real + " local", real + " go" + goFloor, nested + " local", nested + " go" + goFloor} {
 		if !scans[want] {
 			t.Errorf("no scan %q; the scans were:\n%s", want, body)
 		}

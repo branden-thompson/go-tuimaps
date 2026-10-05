@@ -24,15 +24,15 @@ func plantTree(t *testing.T, nestedPasses bool) string {
 		body = "t.Fatal(\"planted failure\", lib.Answer())"
 	}
 	files := map[string]string{
-		"go.mod":               "module example.com/lib\n\ngo 1.25.0\n",
+		"go.mod":               "module example.com/lib\n\ngo " + goFloor + "\n",
 		"LICENSE":              "Planted licence.\n",
 		"lib.go":               "// Package lib is planted.\npackage lib\n\n// Answer is planted.\nfunc Answer() int { return 42 }\n",
 		"lib_test.go":          "package lib\n\nimport \"testing\"\n\nfunc TestRoot(t *testing.T) { t.Log(\"ok\") }\n",
-		"tools/t/go.mod":       "module example.com/lib/tools/t\n\ngo 1.25.0\n\nrequire example.com/lib v0.0.0\n",
+		"tools/t/go.mod":       "module example.com/lib/tools/t\n\ngo " + goFloor + "\n\nrequire example.com/lib v0.0.0\n",
 		"tools/t/t.go":         "// Package t is planted.\npackage t\n",
 		"tools/t/t_test.go":    "package t\n\nimport (\n\t\"testing\"\n\n\t\"example.com/lib\"\n)\n\nfunc TestNested(t *testing.T) {\n\t" + body + "\n}\n",
-		"cmd/later/go.mod":     "module example.com/lib/cmd/later\n\ngo 1.25.0\n",
-		"testdata/x/go.mod":    "module example.com/ignored\n\ngo 1.25.0\n",
+		"cmd/later/go.mod":     "module example.com/lib/cmd/later\n\ngo " + goFloor + "\n",
+		"testdata/x/go.mod":    "module example.com/ignored\n\ngo " + goFloor + "\n",
 		"testdata/x/x_test.go": "package x\n\nimport \"testing\"\n\nfunc TestIgnored(t *testing.T) { t.Fatal(\"test data is not a module of the repository\") }\n",
 	}
 	for rel, src := range files {
@@ -93,7 +93,7 @@ func TestGateFailsWhenTheWorkspaceFileIsTracked(t *testing.T) {
 		t.Skip("runs the gate; skipped with -short")
 	}
 	root := plantTree(t, true)
-	if err := os.WriteFile(filepath.Join(root, "go.work"), []byte("go 1.25.0\n\nuse .\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(root, "go.work"), []byte("go "+goFloor+"\n\nuse .\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	for _, args := range [][]string{{"init", "-q"}, {"add", "go.work"}} {
@@ -532,7 +532,7 @@ func TestLicenceCheckFailsWhenTheGraphCannotBeListed(t *testing.T) {
 		t.Skip("runs the gate; skipped with -short")
 	}
 	root := plantTree(t, true)
-	writeFile(t, root, "tools/t/go.mod", "module example.com/lib/tools/t\n\ngo 1.25.0\n\nrequire (\n\texample.com/lib v0.0.0\n\texample.com/nowhere v1.2.3\n)\n")
+	writeFile(t, root, "tools/t/go.mod", "module example.com/lib/tools/t\n\ngo "+goFloor+"\n\nrequire (\n\texample.com/lib v0.0.0\n\texample.com/nowhere v1.2.3\n)\n")
 	out, err := runGate(t, root)
 	if err == nil || !strings.Contains(out, "licence") {
 		t.Fatalf("a module graph that cannot be listed must fail the licence check:\n%s", out)
