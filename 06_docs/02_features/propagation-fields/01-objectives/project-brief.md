@@ -8,7 +8,7 @@ sev: SEV-0
 authority: HUM LEAD
 directives: FULL GIT; FULL DOCS; FULL REPORTS; FULL DIAGRAMS; FULL RCC; FULL PLAN; FULL TDD; FULL INST
 branch: feature/propagation-fields
-paired_release: "watchpost 0.19.0 — Propagation overlays (branden-thompson/watchpost#25), with go-giro-data; this release's candidates are pinned in watchpost's BUILD and it ships first (watchpost D-3)"
+paired_release: "watchpost 0.19.0 — Propagation overlays (branden-thompson/watchpost#25), with go-ionomaps; this release's candidates are pinned in watchpost's BUILD and it ships first (watchpost D-3)"
 status: "APPROVED by the HUM LEAD 2026-10-06 (D-8). Problem statement LOCKED (D-6). Metrics ADOPTED (D-7, M4 narrowed to this release's rows). Host requirements ruled (watchpost D-32 to D-36; this log's D-1 to D-5)."
 ---
 
@@ -119,7 +119,7 @@ Measured at `origin/main` `d1c4d5e` by the host's wave 1, and spot-checked.
 ```
 PROJECT BRIEF — COMPLETENESS CHECK
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  [✓] Header              — library release; paired with watchpost 0.19.0 and go-giro-data
+  [✓] Header              — library release; paired with watchpost 0.19.0 and go-ionomaps
   [✓] Directives          — inherited (watchpost D-1, D-3)
   [✓] Summary / Intent    — what, why now, cost of not building
   [✓] Problem statement   — LOCKED (D-6)
