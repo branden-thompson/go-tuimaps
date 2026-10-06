@@ -56,9 +56,9 @@ as it is done, at SHIP.
 | # | Check | Evidence | Done |
 |---|---|---|---|
 | 3.1 | `release/v0.2.0` squash-merged to `main` from `feature/radar-loops` (D-1) | PR #3 squash-merged to `main` as `3cacdfc` on a fully green run - the hosted full gate on both architectures (run 37259603864) and the quick gates - the release check green on that commit; issue #2 closed | [x] |
-| 3.2 | `v0.2.0` at the root, then the nested modules' tags against it | — | [ ] |
+| 3.2 | `v0.2.0` at the root, then the nested modules' tags against it | `v0.2.0` on `3cacdfc`; `cmd/tuimaps/v0.2.0`, `examples/v0.2.0`, `tools/answer-key/v0.2.0`, `tools/atlas/v0.2.0`, `tools/gen-assets/v0.2.0` and `tools/oracle/v0.2.0` on `d1c4d5e` (PR #4, the nested modules requiring the published `v0.2.0`); the GitHub Release v0.2.0 published from `release-notes.md`, marked Latest; `go install github.com/branden-thompson/go-tuimaps/cmd/tuimaps@v0.2.0` verified on a clean module cache | [x] |
 | 3.3 | Every nested module is tidy against the tagged library: `GOWORK=off go mod tidy -diff` clean in `cmd/tuimaps`, `examples` and `tools/*`, so `go install .../cmd/tuimaps@v0.2.0` works | `cmd/tuimaps`, `examples`, `tools/gen-assets` and `tools/oracle` require the published `v0.2.0`; every nested module `GOWORK=off go mod tidy -diff` clean (2026-10-05) | [x] |
-| 3.4 | Watchpost 0.18.0 pins `v0.2.0` (its W8.1) and its gate is green on it | — | [ ] |
+| 3.4 | Watchpost 0.18.0 pins `v0.2.0` (its W8.1) and its gate is green on it | watchpost's `go.mod` requires `v0.2.0` from its batch 135 (its D-243); its full gate green locally and on the hosted gate, macOS and ubuntu, on every batch since; watchpost 0.18.0 released on it - its PR #26, `31038ebf`, tag `v0.18.0` | [x] |
 
 ## Ruled exceptions to the vulnerability scan
 
