@@ -9,6 +9,15 @@ status: "DRAFT — for approval at the DISCOVER gate; once approved it wins over
 
 # Requirements
 
+## What this gives the host (watchpost D-82)
+
+- **Fields that read:** a host's own field (MUF, foF2, or anything else) can continue over the sea, has colours and a legend, carries units on its labels and in its words, and is labelled where its lines run either way.
+- **Day and night:** a terminator and a night tint, said in words too.
+- **Fixes owed:** `SafeRamps` honoured for every scale, a shade key at 16 colours and below, a non-colour mark for colour-only roles, the default depth from the terminal, and a checked dialer.
+
+watchpost uses L-2.2's generic ramp for one more thing: "your frequency"'s reach area, a two-class field
+(reached or not) that go-ionomaps returns (its R-2.9). No new row is needed for it.
+
 Each row traces to the brief's L-n and to the ruling that makes it necessary. **What, never how.** PLAN
 carries signatures only (watchpost 0.18.0 D-13).
 

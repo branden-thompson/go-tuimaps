@@ -27,7 +27,7 @@ D-21, D-24). go-tuiMaps v0.2.0 can hold a whole-globe grid, but it cannot draw o
 - colour and a legend for a field of the host's own kind: named `muf` and `fof2` presets, and the generic host ramp the library promised in FR-15 (L-2, HR-2);
 - contour labels and words that carry their unit, with labels where lines run east-west (L-3, HR-3);
 - a terminator and a night tint (L-4, HR-4);
-- station points coloured by value (L-5, HR-5);
+- the library's owed rows OW-17, OW-19, OW-24 and OW-25 (L-7; watchpost D-65). Station points coloured by value (L-5) were cut by watchpost D-50;
 - `SafeRamps` honoured for every scale (L-6).
 
 **Why now.** The host's DISCOVER found every gap at `file:line`
@@ -94,7 +94,7 @@ Measured at `origin/main` `d1c4d5e` by the host's wave 1, and spot-checked.
 - **C-4 — `FitWorld` frames 84°N to 56°S** (`internal/project/fit.go:158-162`). Whether a propagation view needs the far south is the host's question; the library states the frame.
 - **C-5 — No test renders a whole-globe grid or a host-type grid.** "Works today" rests on reading the code. Both need specimens before any change.
 - **C-6 — Two changes are not additive** (L-3.2, L-6.1). Each is ruled (watchpost D-34, D-36) and gets a contract row and a changelog entry naming it.
-- **C-7 — Owed work touching the same code.** OW-24 (a shade key on `Class`) shares L-2's legend `Class`; OW-17 is L-5's constraint.
+- **C-7 — Owed work touching the same code.** OW-24 (a shade key on `Class`) shares L-2's legend `Class`; OW-17 (a non-colour mark for quake, fire and buoy roles) is carried as L-7.3. Both are v0.3.0 rows (watchpost D-65).
 
 ## Metrics of Success — ADOPTED (D-7)
 

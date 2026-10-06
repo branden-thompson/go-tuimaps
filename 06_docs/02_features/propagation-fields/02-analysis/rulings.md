@@ -11,7 +11,7 @@ status: "LIVE — every ruling is written here the moment it is made."
 
 Recorded verbatim. A correction to a ruling is a new row, never an edit of an old one.
 
-v0.3.0 is paired with watchpost 0.19.0 and go-giro-data (watchpost D-3). A decision that binds more than
+v0.3.0 is paired with watchpost 0.19.0 and go-ionomaps, named go-giro-data until watchpost D-56 (watchpost D-3). A decision that binds more than
 one project is written in watchpost's log
 (`watchpost/06_docs/02_features/propagation-overlays/02-analysis/rulings.md`, cited "watchpost D-n") and
 restated here; this log holds the library's own. v0.2.0's log is `../radar-loops/02-analysis/rulings.md`.
