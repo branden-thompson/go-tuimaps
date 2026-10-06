@@ -29,3 +29,5 @@ restated here; this log holds the library's own. v0.2.0's log is `../radar-loops
 | D-8 | 2026-10-06 | Approve the brief as presented | "Approve" | **APPROVED.** Intake closed for v0.3.0; its `requirements.md` follows in DISCOVER. No issue of record opened (not asked for). |
 | D-9 | 2026-10-06 | Restates watchpost D-49 | see watchpost D-49 | M5's target is set from PLAN's dry run by its own ruling, before PLAN exits. |
 | D-10 | 2026-10-06 | Restates watchpost D-50 | see watchpost D-50 | **L-5 (station points by value) leaves v0.3.0**, amending D-4's HR-5 half; carried as a watchpost follow-up with the station dots. |
+| D-11 | 2026-10-06 | Restates watchpost D-65 | see watchpost D-65 | OW-17, OW-19, OW-24 and OW-25 are v0.3.0 requirements (L-7); OW-14, OW-15, OW-16, OW-18, OW-20 and OW-26 are re-targeted to v0.4.0. |
+| D-12 | 2026-10-06 | Restates watchpost D-66 | see watchpost D-66 | `feature/radar-loops` and `feature/go-tuimaps` bundled to `~/` and deleted. |
