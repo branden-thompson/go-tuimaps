@@ -4,7 +4,7 @@ date: 2026-10-06
 phase: DISCOVER
 sev: SEV-0
 authority: HUM LEAD
-status: "DRAFT — for approval at the DISCOVER gate; once approved it wins over the brief on any conflict, and every change is a row in 02-analysis/rulings.md."
+status: "APPROVED at the DISCOVER gate (watchpost D-84), normative; once approved it wins over the brief on any conflict, and every change is a row in 02-analysis/rulings.md."
 ---
 
 # Requirements
