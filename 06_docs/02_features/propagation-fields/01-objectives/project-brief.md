@@ -103,15 +103,15 @@ Measured at `origin/main` `d1c4d5e` by the host's wave 1, and spot-checked.
 | M1 | Field read | Primary | From the map alone, a reader states the MUF band at N places and where it rises, by scripted UAT over recorded fields, **plus a non-visual arm from `Report`'s words alone** | a pretty map with wrong or missing classes; words without units |
 | M2 | No silent blank | Primary | Zero host-type or preset grids that draw nothing without a refusal or warning, across every depth × ground × lines on/off, by a test matrix | refusing everything: a grid that can draw must draw |
 | M3 | Units everywhere | Primary | Every field label and every field `Answer` carries its unit, for every preset and a host type, by a test | a unit on MUF only |
-| M4 | Promise truth | Primary | Every v0.3.0 requirement the release's documents say is delivered has a test that would fail without it, by a check over this release's requirements table (D-7: this release's rows only; FR-12 and FR-15 are covered through L-1 and L-2) | the v0.1.0 shape: a promise and a build-log claim with no test |
+| M4 | Promise truth | Primary | Every v0.3.0 requirement the release's documents say is delivered has a test that would fail without it, each anchored to a mutant the gate kills (D-7: this release's rows only; FR-12 and FR-15 are covered through L-1 and L-2) | the v0.1.0 shape: a promise and a build-log claim with no test |
 | M5 | Globe cost | Secondary | Render time and memory for a 2° whole-globe field with labels and terminator, at a PLAN-set target, measured | a coarse grid: measured at 2° |
 | M6 | Gate trust | Secondary | Zero unattributable gate failures across a stated number of consecutive full runs (carried from v0.2.0) | dropping legs |
 
 ## Other Considerations
 
 - **Ships first.** watchpost pins this release's candidates in its BUILD and ships on its final tag (watchpost D-3), as with v0.2.0.
-- **Standing principles** (watchpost D-23): P-1, P-2 (the host chooses), P-3. L-2.2 is P-3's reason for building the generic ramp beside the presets.
-- **Issue of record.** As with v0.2.0, the approved brief becomes the body of an `enhancement` issue on `branden-thompson/go-tuimaps`, cross-linked to watchpost#25. Opening the issue is outward, so it is asked first.
+- **Standing principles** (watchpost 0.18.0 D-23): P-1, P-2 (the host chooses), P-3. L-2.2 is P-3's reason for building the generic ramp beside the presets.
+- **No issue of record.** D-8 approved the brief without one; none is opened.
 - **Minor rulings** follow watchpost D-13 (A-n rows, batched for veto).
 
 ## Completeness Check
@@ -126,7 +126,7 @@ PROJECT BRIEF — COMPLETENESS CHECK
   [✓] Requirements        — L-1..L-6 from HR-1..HR-5 and D-36, ruled
   [✓] Metrics of Success  — ADOPTED (D-7)
   [✓] Tech Constraints    — C-1..C-7, measured at d1c4d5e
-  [✓] Considerations      — ships first, principles, issue of record, minor rulings
+  [✓] Considerations      — ships first, principles, no issue of record (D-8), minor rulings
   [✓] Rulings             — D-0..D-8 (D-0..D-5 restate watchpost D-3, D-32..D-36)
   [✓] Approval            — APPROVED as presented (D-8).  INTAKE CLOSED.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

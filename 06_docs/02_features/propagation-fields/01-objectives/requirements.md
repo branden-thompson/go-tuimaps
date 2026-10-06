@@ -4,7 +4,7 @@ date: 2026-10-06
 phase: DISCOVER
 sev: SEV-0
 authority: HUM LEAD
-status: "DRAFT — approved at the DISCOVER gate; once approved it wins over the brief on any conflict, and every change is a row in 02-analysis/rulings.md."
+status: "DRAFT — for approval at the DISCOVER gate; once approved it wins over the brief on any conflict, and every change is a row in 02-analysis/rulings.md."
 ---
 
 # Requirements
@@ -51,8 +51,9 @@ every depth on both grounds, so each change below is seen against what v0.2.0 dr
 | # | Requirement | Instrument |
 |---|---|---|
 | L-4.1 | A `terminator` line token and a `night` area-tint token, with defaults on both grounds and in sixteen colours, passing the palette checks | `TestTheTerminatorAndNightTokensHaveDefaults`, `TestNightTintKeepsTheFieldReadable` |
-| L-4.2 | Helpers that return the terminator line and the night side for a time, correct against a published solar ephemeris to within a stated tolerance | `TestTheTerminatorMatchesTheEphemeris`, `TestNightSideIsTheComplement` |
+| L-4.2 | Helpers that return the terminator line and the night side for a time, within 0.5° of latitude of the terminator computed from NOAA's published solar-position algorithm, at every longitude, across a year of test times | `TestTheTerminatorMatchesTheEphemeris`, `TestNightSideIsTheComplement` |
 | L-4.3 | Only alert roles fill an area today (`render/basemap.go:206-208`); the night tint fills without severity words, digits or a legend entry | `TestTheNightTintCarriesNoAlertWords` |
+| L-4.4 | **Day and night without colour or a picture (AX-E):** `Report` answers whether a place is in day or night and when the terminator next passes it; the terminator line carries a mark that does not depend on colour, so it never reads as one more contour; the night tint keeps every field ramp readable, checked by `CheckRamp`'s luminance-order and colour-vision rules against the tinted ground, with `SafeRamps` on | watchpost D-9; AX-E | `TestReportSaysDayOrNight`, `TestTheTerminatorIsMarkedWithoutColour`, `TestNightTintKeepsTheFieldReadable` (with the colour-vision rules) |
 
 ## L-5 — Station points by value (watchpost D-35; D-4) — **OUT of v0.3.0 (watchpost D-50, this log's D-10)**; kept for the follow-up
 
@@ -83,7 +84,7 @@ OW-14, OW-15, OW-16, OW-18, OW-20 and OW-26 are re-targeted to v0.4.0 (watchpost
 | # | Requirement | Instrument |
 |---|---|---|
 | NFR-1 | M5: a 2° whole-globe field with labels and terminator renders within a PLAN-set time and memory | a benchmark, recorded |
-| NFR-2 | M4: every row above has a test that would fail without it (this release's rows, D-7) | a check over this table |
+| NFR-2 | M4: every row above has a test that would fail without it (this release's rows, D-7): each row is anchored to a mutant the gate kills, so a test that exists but cannot fail is caught (CQ-V1) | the mutant anchors, checked in the gate |
 | NFR-3 | Gates green: `scripts/gate` full lane, P10 clean, mutants anchored | the gate |
 
 ## Risk register
