@@ -78,7 +78,7 @@ from these in DISCOVER and wins on any conflict once approved.
 - **L-4.1** `terminator` (a line) and `night` (an area tint) tokens, with defaults on both grounds and in sixteen colours.
 - **L-4.2** Helpers that return the terminator and the night side for a time.
 
-### L-5 — Station points by value (HR-5; watchpost D-35)
+### L-5 — Station points by value (HR-5; watchpost D-35) — OUT of v0.3.0 (watchpost D-50)
 - **L-5.1** A generic role for a value of a type, on L-2's ramp, with the value always in the point's label (OW-17: never colour alone).
 
 ### L-6 — `SafeRamps` for every scale (watchpost D-36)

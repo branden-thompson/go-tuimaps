@@ -54,7 +54,7 @@ every depth on both grounds, so each change below is seen against what v0.2.0 dr
 | L-4.2 | Helpers that return the terminator line and the night side for a time, correct against a published solar ephemeris to within a stated tolerance | `TestTheTerminatorMatchesTheEphemeris`, `TestNightSideIsTheComplement` |
 | L-4.3 | Only alert roles fill an area today (`render/basemap.go:206-208`); the night tint fills without severity words, digits or a legend entry | `TestTheNightTintCarriesNoAlertWords` |
 
-## L-5 — Station points by value (watchpost D-35; D-4)
+## L-5 — Station points by value (watchpost D-35; D-4) — **OUT of v0.3.0 (watchpost D-50, this log's D-10)**; kept for the follow-up
 
 | # | Requirement | Instrument |
 |---|---|---|

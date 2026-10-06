@@ -28,3 +28,4 @@ restated here; this log holds the library's own. v0.2.0's log is `../radar-loops
 | D-7 | 2026-10-06 | Adopt the metrics M1 to M6 as drafted | "Adopt; M4 for v0.3.0's rows only" | **ADOPTED:** M1 field read, M2 no silent blank, M3 units everywhere, M4 promise truth (this release's rows only), M5 globe cost, M6 gate trust; targets set in PLAN. |
 | D-8 | 2026-10-06 | Approve the brief as presented | "Approve" | **APPROVED.** Intake closed for v0.3.0; its `requirements.md` follows in DISCOVER. No issue of record opened (not asked for). |
 | D-9 | 2026-10-06 | Restates watchpost D-49 | see watchpost D-49 | M5's target is set from PLAN's dry run by its own ruling, before PLAN exits. |
+| D-10 | 2026-10-06 | Restates watchpost D-50 | see watchpost D-50 | **L-5 (station points by value) leaves v0.3.0**, amending D-4's HR-5 half; carried as a watchpost follow-up with the station dots. |
