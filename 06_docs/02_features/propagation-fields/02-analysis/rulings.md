@@ -33,3 +33,5 @@ restated here; this log holds the library's own. v0.2.0's log is `../radar-loops
 | D-12 | 2026-10-06 | Restates watchpost D-66 | see watchpost D-66 | `feature/radar-loops` and `feature/go-tuimaps` bundled to `~/` and deleted. |
 | D-13 | 2026-10-06 | Restates watchpost D-84 | see watchpost D-84 | DISCOVER exits; v0.3.0's requirements are APPROVED; PLAN opens. |
 | D-14 | 2026-10-07 | Restates watchpost D-96 | see watchpost D-96 | M5's target: after a pan, a whole-globe 2° field with fill, labelled contours, terminator and night in at most 16 ms at 400 × 110 and 8 ms at 200 × 56 (Apple M5 Pro); the profiled hotspots (per-cell contrast with `math.Pow`, blending, one allocation per cell) are fixed in P7. |
+| D-15 | 2026-10-07 | Restates watchpost D-117 | see watchpost D-117 | M1: 10 places, 8 of 10 from the picture and from `Report`'s words, graded by the HUM LEAD (P8); M6: 5 consecutive clean full runs. |
+| D-16 | 2026-10-07 | Restates watchpost D-119 | see watchpost D-119 | Gates assert machine-independent proxies; wall-clock targets are a release step on the reference machine, failing when the record is missing. |

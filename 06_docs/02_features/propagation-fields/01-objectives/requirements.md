@@ -92,7 +92,7 @@ OW-14, OW-15, OW-16, OW-18, OW-20 and OW-26 are re-targeted to v0.4.0 (watchpost
 
 | # | Requirement | Instrument |
 |---|---|---|
-| NFR-1 | M5: after a pan, a 2° whole-globe field with fill, labelled contours, terminator and night renders in at most 16 ms at 400 × 110 and 8 ms at 200 × 56 (watchpost D-96; v0.2.0 measured 22.2 and 5.7 ms without terminator or night); its memory is recorded | a benchmark, recorded, failing above the target |
+| NFR-1 | M5: after a pan, a 2° whole-globe field with fill, labelled contours, terminator and night renders in at most 16 ms at 400 × 110 and 8 ms at 200 × 56 (watchpost D-96; v0.2.0 measured 22.2 and 5.7 ms without terminator or night); its memory is recorded | the gate asserts allocations and work per cell; the timing is a release step on the reference machine, failing when its record is missing (watchpost D-119) |
 | NFR-2 | M4: every row above has a test that would fail without it (this release's rows, D-7): each row is anchored to a mutant the gate kills, so a test that exists but cannot fail is caught (CQ-V1) | the mutant anchors, checked in the gate |
 | NFR-3 | Gates green: `scripts/gate` full lane, P10 clean, mutants anchored | the gate |
 
@@ -108,4 +108,4 @@ OW-14, OW-15, OW-16, OW-18, OW-20 and OW-26 are re-targeted to v0.4.0 (watchpost
 
 ## Metrics
 
-M1 to M6 as adopted (D-7) in `project-brief.md`. Targets are set in PLAN.
+M1 to M6 as adopted (D-7) in `project-brief.md`. Targets, set in PLAN: M1 10 places, 8 of 10 from the picture and 8 of 10 from `Report`'s words alone, graded by the HUM LEAD (watchpost D-117); M5 at most 16 ms at 400 × 110 and 8 ms at 200 × 56 (watchpost D-96); M6 5 consecutive full runs with no unattributable failure (watchpost D-117); M2 to M4 as their definitions (zero, every, every).
