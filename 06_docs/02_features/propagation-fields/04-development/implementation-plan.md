@@ -32,7 +32,7 @@ A new public name gets a `contract.md` §10 row, which `contract_test.go` holds 
 | P4 | Day and night: tokens, helpers, the night fill, the words, a non-colour terminator | L-4.1 to L-4.4 | P2 |
 | P5 | `SafeRamps` for every scale | L-6.1 | P2 |
 | P6 | Owed rows: shade key, default depth, colour-only marks, checked dialer | L-7.1 to L-7.4 | P2 |
-| P7 | The globe's cost (M5) and gate trust (M6) | NFR-1, NFR-3 | P1 to P6 |
+| P7 | The globe's cost (M5, target D-96: the profiled per-cell contrast, blending and allocations fixed) and gate trust (M6) | NFR-1, NFR-3 | P1 to P6 |
 
 ## Shapes (signatures only)
 
@@ -78,7 +78,7 @@ func NightSide(at time.Time) [][]LonLat
 | P4.3 | Day or night in `Report`; a non-colour terminator mark; the night tint readable under `CheckRamp`'s colour-vision rules with `SafeRamps` on | `TestReportSaysDayOrNight`, `TestTheTerminatorIsMarkedWithoutColour`, `TestNightTintKeepsTheFieldReadable` |
 | P5.1 | `ScaleClass` decides `SafeRamps` and `Warnings` (behaviour change, changelog) | `TestSafeRampsCoversEveryScaleToken`, `TestWarningsReportEveryScaleToken` |
 | P6.1 | OW-24, OW-25, OW-17, OW-19 | `TestEveryClassHasAShadeKey`, `TestTheDefaultDepthFollowsTheTerminal`, `TestNoRoleRestsOnColourAlone`, `TestTheCheckedDialerExemptsOnlyTheNamedProxy` |
-| P7.1 | M5: a 2° whole-globe frame with labels and terminator, measured at 200×56 and 400×110. watchpost's dry run measured v0.2.0 after a pan, with fill and labelled contours: 5.7 ms and 22.2 ms (fill alone 2.4 and 9.1 ms; most of the cost in per-cell colour contrast and blending, about one allocation per cell). Target set from the dry run (watchpost D-49) | a benchmark, recorded |
+| P7.1 | M5: a 2° whole-globe frame with labels and terminator, measured at 200×56 and 400×110. watchpost's dry run measured v0.2.0 after a pan, with fill and labelled contours: 5.7 ms and 22.2 ms (fill alone 2.4 and 9.1 ms; most of the cost in per-cell colour contrast and blending, about one allocation per cell). **Target (watchpost D-96): at most 16 ms at 400×110 and 8 ms at 200×56**, after a pan, with fill, labelled contours, terminator and night | a benchmark, recorded, failing above the target |
 
 ## Release
 

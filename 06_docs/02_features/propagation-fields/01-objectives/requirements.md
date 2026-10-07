@@ -92,7 +92,7 @@ OW-14, OW-15, OW-16, OW-18, OW-20 and OW-26 are re-targeted to v0.4.0 (watchpost
 
 | # | Requirement | Instrument |
 |---|---|---|
-| NFR-1 | M5: a 2° whole-globe field with labels and terminator renders within a PLAN-set time and memory | a benchmark, recorded |
+| NFR-1 | M5: after a pan, a 2° whole-globe field with fill, labelled contours, terminator and night renders in at most 16 ms at 400 × 110 and 8 ms at 200 × 56 (watchpost D-96; v0.2.0 measured 22.2 and 5.7 ms without terminator or night); its memory is recorded | a benchmark, recorded, failing above the target |
 | NFR-2 | M4: every row above has a test that would fail without it (this release's rows, D-7): each row is anchored to a mutant the gate kills, so a test that exists but cannot fail is caught (CQ-V1) | the mutant anchors, checked in the gate |
 | NFR-3 | Gates green: `scripts/gate` full lane, P10 clean, mutants anchored | the gate |
 

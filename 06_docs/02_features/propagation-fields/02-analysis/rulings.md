@@ -32,3 +32,4 @@ restated here; this log holds the library's own. v0.2.0's log is `../radar-loops
 | D-11 | 2026-10-06 | Restates watchpost D-65 | see watchpost D-65 | OW-17, OW-19, OW-24 and OW-25 are v0.3.0 requirements (L-7); OW-14, OW-15, OW-16, OW-18, OW-20 and OW-26 are re-targeted to v0.4.0. |
 | D-12 | 2026-10-06 | Restates watchpost D-66 | see watchpost D-66 | `feature/radar-loops` and `feature/go-tuimaps` bundled to `~/` and deleted. |
 | D-13 | 2026-10-06 | Restates watchpost D-84 | see watchpost D-84 | DISCOVER exits; v0.3.0's requirements are APPROVED; PLAN opens. |
+| D-14 | 2026-10-07 | Restates watchpost D-96 | see watchpost D-96 | M5's target: after a pan, a whole-globe 2° field with fill, labelled contours, terminator and night in at most 16 ms at 400 × 110 and 8 ms at 200 × 56 (Apple M5 Pro); the profiled hotspots (per-cell contrast with `math.Pow`, blending, one allocation per cell) are fixed in P7. |
