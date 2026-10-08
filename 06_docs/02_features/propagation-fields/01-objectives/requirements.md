@@ -42,7 +42,7 @@ every depth on both grounds, so each change below is seen against what v0.2.0 dr
 | # | Requirement | Instrument |
 |---|---|---|
 | L-2.1 | `muf` and `fof2` presets, in MHz, with their breaks, tokens, ramps on both grounds at truecolor, 256 and 16 colours, legend words and `Describe` names | `TestTheMUFAndFoF2RampsPassCheckOnBothGrounds`, `TestEveryPresetHasLegendWordsAndAUnit`, specimens |
-| L-2.2 | A host's own type gets a fill across its classes from the `low`, `middle` and `high` tokens, with library defaults, as FR-15 promised; a host may set the three colours | `TestAHostTypeIsFilledFromLowMiddleHigh`, `TestTheHostRampDefaultsWhenUnset`, `TestAHostRampIsHeldToCheckRamp` |
+| L-2.2 | A host's own type gets a fill across its classes from the `low`, `middle` and `high` tokens, with library defaults, as FR-15 promised; a host may set its own colours, one per class (C-S) | `TestAHostTypeIsFilledFromLowMiddleHigh`, `TestTheHostRampDefaultsWhenUnset`, `TestAHostRampIsHeldToCheckRamp` |
 | L-2.3 | A host's ramp that fails `CheckRamp` is reported through `Warnings()`, never silently drawn | `TestABadHostRampIsWarned` |
 | L-2.4 | A grid that would draw nothing (any depth × ground × lines on or off) is refused at hand-in or warned; never a silent blank | `TestNoGridDrawsNothingSilently` (M2's matrix) |
 | L-2.5 | The legend of a host type carries colours and its unit | `TestAHostTypesLegendHasColoursAndUnit` |

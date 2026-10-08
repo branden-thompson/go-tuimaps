@@ -35,6 +35,8 @@ A new public name gets a `contract.md` §10 row, which `contract_test.go` holds 
 | P7 | The globe's cost (M5, target D-96: the profiled per-cell contrast, blending and allocations fixed) and gate trust (M6) | NFR-1, NFR-3 | P1 to P6 |
 | P8 | M1's sitting: the script, a recorded globe field, the answer key for 10 places, both arms (watchpost D-117) | M1 | P1 to P6 |
 
+Size (estimates, L-F14): P0 to P8, about 9 batches. The agent's estimate, not a measurement.
+
 ## Shapes (signatures only)
 
 ```go
@@ -68,7 +70,7 @@ func NightSide(at time.Time) [][]LonLat
 | # | Task | Test first |
 |---|---|---|
 | P0.1 | Whole-globe 2° grid specimen and host-type grid specimen, every depth, both grounds | the specimens' golden files; a host-type grid without lines draws nothing today, recorded as the defect L-2.4 closes |
-| P1.1 | `Grid.OverWater` and `Image.MaskedByWater` carried to the scene; `Input` flags go | `TestHostCanFlipEither`, `TestAFieldStopsAtTheShoreByDefault`, `TestContoursFollowTheirFieldOverWater`, `TestAChangedWaterChoiceRedraws` |
+| P1.1 | `Grid.OverWater` and `Image.MaskedByWater` carried to the scene; `Input` flags go | `TestHostCanFlipEither`, `TestAFieldStopsAtTheShoreByDefault`, `TestContoursFollowTheirFieldOverWater`, `TestAChangedWaterChoiceRedraws`, `TestWaterNeverMasksImage` |
 | P2.1 | `muf`/`fof2` presets, breaks in MHz, tokens, ramps passing `Check` on both grounds at truecolor, 256 and 16 | `TestTheMUFAndFoF2RampsPassCheckOnBothGrounds`, `TestEveryPresetHasLegendWordsAndAUnit` |
 | P2.2 | The generic host ramp (`Type.Colours`, or `low`/`middle`/`high` with defaults); the cell ink for interpolated colours chosen from P0's specimens (C-2) | `TestAHostTypeIsFilledFromLowMiddleHigh`, `TestTheHostRampDefaultsWhenUnset`, `TestAHostRampIsHeldToCheckRamp`, `TestABadHostRampIsWarned` |
 | P2.3 | No grid draws nothing silently | `TestNoGridDrawsNothingSilently` (M2's matrix) |
@@ -80,7 +82,8 @@ func NightSide(at time.Time) [][]LonLat
 | P4.3 | Day or night in `Report`; a non-colour terminator mark; the night tint readable under `CheckRamp`'s colour-vision rules with `SafeRamps` on | `TestReportSaysDayOrNight`, `TestTheTerminatorIsMarkedWithoutColour`, `TestNightTintKeepsTheFieldReadable` |
 | P5.1 | `ScaleClass` decides `SafeRamps` and `Warnings` (behaviour change, changelog) | `TestSafeRampsCoversEveryScaleToken`, `TestWarningsReportEveryScaleToken` |
 | P6.1 | OW-24, OW-25, OW-17, OW-19 | `TestEveryClassHasAShadeKey`, `TestTheDefaultDepthFollowsTheTerminal`, `TestNoRoleRestsOnColourAlone`, `TestTheCheckedDialerExemptsOnlyTheNamedProxy` |
-| P7.1 | M5: a 2° whole-globe frame with labels and terminator, measured at 200×56 and 400×110. watchpost's dry run measured v0.2.0 after a pan, with fill and labelled contours: 5.7 ms and 22.2 ms (fill alone 2.4 and 9.1 ms; most of the cost in per-cell colour contrast and blending, about one allocation per cell). **Target (watchpost D-96): at most 16 ms at 400×110 and 8 ms at 200×56**, after a pan, with fill, labelled contours, terminator and night | the gate asserts allocations and work per cell (D-119); the wall-clock target is a release step on the reference machine, failing when its record is missing; a linux/amd64 run recorded |
+| P7.0 | **Before P7's optimisation (A-7):** a test over P0's whole-globe specimen, with the night tint and labels, at every colour depth on both grounds, asserts every cell's contrast (`internal/colour/contrast.go`'s rule: 3:1 for lines, 4.5:1 for text); watched passing before the optimisation and kept after | `TestEveryGlobeCellKeepsItsContrast` |
+| P7.1 | M5: a 2° whole-globe frame with labels, terminator, night and the reach overlay (P-7), measured at 200×56 and 400×110. watchpost's dry run measured v0.2.0 after a pan, with fill and labelled contours: 5.7 ms and 22.2 ms (fill alone 2.4 and 9.1 ms; most of the cost in per-cell colour contrast and blending, about one allocation per cell). **Target (watchpost D-96): at most 16 ms at 400×110 and 8 ms at 200×56**, after a pan, with fill, labelled contours, terminator and night | the gate asserts allocations and work per cell (D-119); the wall-clock target is a release step on the reference machine, failing when its record is missing; a linux/amd64 run recorded |
 | P8.1 | M1: a recorded 2° MUF field (from go-ionomaps' output or the dry run's week, kept outside the tree), 10 places with the key fixed before the sitting; the picture arm and the `Report` arm; 8 of 10 each (D-117) | the key's own check: `Report` at each place names the keyed band |
 
 ## Release
