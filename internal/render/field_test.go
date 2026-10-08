@@ -73,8 +73,8 @@ func testField(t *testing.T) {
 	if west < uint8(colour.Temperature1) || east > uint8(colour.Temperature17) {
 		t.Errorf("inks %d and %d are not temperature tokens", west, east)
 	}
-	// A host can flip it: the field over water as well.
-	in.FieldsOverWater = true
+	// A host can flip it: the field over water as well (L-1.1).
+	in.Fields[0].OverWater = true
 	in.OverlaysVersion = 2
 	flipped, _ := drawn(t, in)
 	over := 0
@@ -109,6 +109,28 @@ func rain() scene.Raster {
 // heaviest class wins, so a storm's core one pixel wide is not averaged away.
 func TestWaterNeverMasksImage(t *testing.T) { testImage(t) }
 func TestHeaviestInCell(t *testing.T)       { testImage(t) }
+
+// TestAMaskedImageStaysOffTheSea is L-1.2's flip: rain(), which falls on the
+// sea, colours the sea's cells unmasked and none once its host masks it by
+// water.
+func TestAMaskedImageStaysOffTheSea(t *testing.T) {
+	v := gulfView()
+	sea := func(masked bool) int {
+		ra := rain()
+		ra.MaskedByWater = masked
+		r, _ := drawn(t, Input{View: v, Tiles: embedded(t, v), Style: style.BuiltIn(), Rasters: []scene.Raster{ra}, OverlaysVersion: 1})
+		n := 0
+		for i, c := range r.grid.cells {
+			if c.under != 0 && r.painter.Water(i%120, i/120) {
+				n++
+			}
+		}
+		return n
+	}
+	if unmasked, masked := sea(false), sea(true); unmasked == 0 || masked != 0 {
+		t.Errorf("the image coloured %d cells of sea unmasked and %d masked; want some, then none", unmasked, masked)
+	}
+}
 
 func testImage(t *testing.T) {
 	v := gulfView()

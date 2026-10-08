@@ -87,13 +87,9 @@ type Input struct {
 	Fields          []scene.Field  // prepared scalar grids, sampled into cells here, at draw time
 	Rasters         []scene.Raster // prepared images, resampled here, at draw time
 	OverlaysVersion uint64
-	// FieldsOverWater and ImagesMaskedByWater flip the two defaults: a field
-	// stops at the shore (D-32), and an image never does (D-87).
-	FieldsOverWater bool
 	// ImageHeld is an image on the map, drawn in this frame or on a gap of
 	// its loop: a field sharing the map with one is drawn as its lines (L-15.3).
-	ImageHeld           bool
-	ImagesMaskedByWater bool
+	ImageHeld bool
 	// Markers are the host's places, drawn over everything beneath them
 	// (FR-26); MarkerPhase is which half of the blink this frame draws, and
 	// Motion works it out from the host's clock.
@@ -367,7 +363,7 @@ func (r *Renderer) sameOverlays(in Input) bool {
 		return false
 	}
 	l := r.last
-	if in.FieldsOverWater != l.FieldsOverWater || in.ImagesMaskedByWater != l.ImagesMaskedByWater || in.ImageHeld != l.ImageHeld {
+	if in.ImageHeld != l.ImageHeld {
 		return false
 	}
 	if len(in.Markers) != len(l.Markers) {

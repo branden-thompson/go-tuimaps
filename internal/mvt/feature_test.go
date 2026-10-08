@@ -173,6 +173,22 @@ func TestParityP26_SortKey(t *testing.T) {
 	}
 }
 
+// TestANegativeRankIsNoRank is the fifth disagreement the oracle's fuzzer
+// found (v0.3.0, A-4). A rank is a whole number from zero. A negative int64
+// is already passed over, its encoding being past 32 bits; a negative
+// zig-zag (sint64) one was kept, so a damaged value ranked a feature -27
+// where the proven decoder's reading has none.
+func TestANegativeRankIsNoRank(t *testing.T) {
+	keys := []string{"localrank"}
+	values := [][]byte{putUint(nil, 6, 53), putUint(nil, 6, 10), intValue(1<<63 + 5)} // sint -27, sint 5, int64 negative
+	pt := []uint32{moveTo(1), zz(1), zz(1)}
+	tile := decodeOne(t, testLayer("l", 4096, keys, values, testFeature(1, []uint32{0, 0}, pt), testFeature(1, []uint32{0, 1}, pt), testFeature(1, []uint32{0, 2}, pt)))
+	fs := tile.Layers[0].Features
+	if fs[0].Rank != 0 || fs[1].Rank != 5 || fs[2].Rank != 0 {
+		t.Errorf("ranks %d %d %d; want 0 for a negative sint, 5, and 0 for a negative int64", fs[0].Rank, fs[1].Rank, fs[2].Rank)
+	}
+}
+
 // TestFeatureLimit and TestGeometryIntegerLimit are plan task 03.7.
 func TestFeatureLimit(t *testing.T) {
 	pt := testFeature(1, nil, []uint32{moveTo(1), zz(1), zz(1)})
@@ -335,6 +351,42 @@ func TestAPointDoesNotAcceptALine(t *testing.T) {
 	kept, err := Decode(tile, Want{Layers: []string{"water"}}, DefaultLimits())
 	if err != nil || len(kept.Layers) != 1 || len(kept.Layers[0].Features) != 1 {
 		t.Fatalf("a line of three positions was refused: %v %+v", err, kept)
+	}
+}
+
+// TestAPolygonRingIsClosedByClosePath holds the next disagreements the
+// oracle's fuzzer found (v0.3.0, A-3). Each ring of a polygon is one MoveTo,
+// one LineTo and a ClosePath (MVT 2.1, 4.3.4.4); a ring left open - by the
+// next ring's MoveTo, or by the end of the geometry - or run by a second
+// LineTo is a damaged stream. This decoder kept such rings as they were. The
+// proven decoder reads the one command after a ring's LineTo as its
+// ClosePath, so it took a MoveTo or a second LineTo for one and read its
+// numbers as commands: the two disagreed about rings neither should have
+// accepted.
+func TestAPolygonRingIsClosedByClosePath(t *testing.T) {
+	tile := func(geom []byte) []byte {
+		feature := append([]byte{0x18, 0x03, 0x22, byte(len(geom))}, geom...)
+		layer := append([]byte{0x78, 0x02, 0x0a, 0x05, 'w', 'a', 't', 'e', 'r', 0x12, byte(len(feature))}, feature...)
+		return append([]byte{0x1a, byte(len(layer))}, layer...)
+	}
+	ring := []byte{0x09, 0x00, 0x00, 0x12, 0x14, 0x00, 0x00, 0x14} // MoveTo (0,0), LineTo (10,0) and (10,10)
+	closed := append(append([]byte(nil), ring...), 0x0f)
+	for _, c := range []struct {
+		what string
+		geom []byte
+	}{
+		{"a ring left open by the next ring's MoveTo", append(append(append([]byte(nil), ring...), 0x09, 0x02, 0x02, 0x12, 0x14, 0x00, 0x00, 0x14), 0x0f)},
+		{"a ring left open at the end of the geometry", append(append([]byte(nil), closed...), ring...)},
+		{"a ring of two LineTo commands", append(append(append([]byte(nil), ring...), 0x0a, 0x13, 0x00), 0x0f)},
+	} {
+		if _, err := Decode(tile(c.geom), Want{Layers: []string{"water"}}, DefaultLimits()); err == nil {
+			t.Errorf("%s was accepted", c.what)
+		}
+	}
+	// Two rings, each closed, are kept.
+	kept, err := Decode(tile(append(append([]byte(nil), closed...), closed...)), Want{Layers: []string{"water"}}, DefaultLimits())
+	if err != nil || len(kept.Layers) != 1 || len(kept.Layers[0].Features) == 0 {
+		t.Fatalf("two closed rings were refused: %v %+v", err, kept)
 	}
 }
 

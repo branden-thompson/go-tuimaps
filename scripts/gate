@@ -558,6 +558,19 @@ limited() {
   return "$rc"
 }
 
+# mutants_killed runs NFR-2's check (v0.3.0 M4, D-7): every mutant in
+# 06_docs/mutants/mutants.json, applied to a copy of the tree, is caught by
+# its test (mutants_kill_test.go). A run that selects no test fails: a table
+# nobody checked would pass as quietly as one that holds.
+mutants_killed() {
+  local out
+  if ! out="$(go test -tags mutants -run '^TestEveryMutantIsKilled$' -count=1 -v -timeout 30m . 2>&1)"; then
+    printf '%s\n' "$out" | grep -E 'SURVIVED|INVALID|FAIL|panic' | head -40
+    return 1
+  fi
+  printf '%s\n' "$out" | grep -q -- '--- PASS: TestEveryMutantIsKilled ' || { echo "no mutant was run: TestEveryMutantIsKilled was not selected"; return 1; }
+}
+
 # gofmt_clean fails, naming the files, when gofmt would change any Go file in
 # this module outside testdata.
 gofmt_clean() {
@@ -792,6 +805,7 @@ if [ "$quick" = 0 ] && [ "$fuzzonly" = 0 ]; then
   # M4 (D-61): the loop's heap held while it plays, five minutes of the
   # soak's hour (scripts/gate --soak).
   leg "M4, a loop's heap held over five minutes" env TUIMAPS_M4_SOAK=5m go test -run '^TestALoopsHeapCostAndHold$' -count=1 -timeout 20m .
+  leg "NFR-2, every mutant killed by its test" mutants_killed
   # Reference frames must be byte-identical on a second architecture. This
   # leg FAILS - never skips - when the second architecture cannot be run.
   host_arch="$(go env GOARCH)"

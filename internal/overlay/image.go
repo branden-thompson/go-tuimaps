@@ -72,6 +72,9 @@ type Image struct {
 	Tolerance                float64 // a colour difference from 0 to 25; zero means the default, 10
 	Exact                    bool    // match the table's colours exactly, with no tolerance at all
 	Type                     Type
+	// MaskedByWater keeps the image off the sea; by default it is drawn over
+	// water as over land, because rain falls on the sea (L-1.2, D-87).
+	MaskedByWater bool
 }
 
 // LoopFrame is one frame of a loop: when its picture was valid, and the

@@ -152,7 +152,7 @@ func (r *Renderer) underlays(in Input) {
 		}
 		for row := range g.rows {
 			for col := range g.cols {
-				if offItsGround(f, in, r.painter.Water(col, row)) {
+				if offItsGround(f, r.painter.Water(col, row)) {
 					continue
 				}
 				lon, lat := (r.lons[2*col]+r.lons[2*col+1])/2, (r.lats[4*row+1]+r.lats[4*row+2])/2
@@ -164,7 +164,7 @@ func (r *Renderer) underlays(in Input) {
 	}
 	for i := range in.Fields {
 		if f := &in.Fields[i]; isRain(f) {
-			r.rain(in, f.Preset, f.ClassCount, func(col, row int) int8 { return r.heaviestOf(f, col, row) })
+			r.rain(in, f.Preset, f.ClassCount, false, func(col, row int) int8 { return r.heaviestOf(f, col, row) }) // rain falls on the sea (D-87)
 		}
 	}
 	for i := range in.Rasters {
@@ -173,13 +173,13 @@ func (r *Renderer) underlays(in Input) {
 }
 
 // offItsGround reports whether a field is not drawn over a cell: a field
-// stops at the shore (D-32) unless the host says otherwise; waves are the
-// sea's alone (L-20.1), whatever the host says.
-func offItsGround(f *scene.Field, in Input, water bool) bool {
+// stops at the shore (D-32) unless its host continues it over water (L-1.1);
+// waves are the sea's alone (L-20.1), whatever the host says.
+func offItsGround(f *scene.Field, water bool) bool {
 	if colour.Preset(f.Preset) == colour.Waves {
 		return !water
 	}
-	return water && !in.FieldsOverWater
+	return water && !f.OverWater
 }
 
 // isRain reports whether a field is in radar's scale: A GRID OF RAIN IS
@@ -267,17 +267,17 @@ func (r *Renderer) heaviest(ra *scene.Raster, col, row int) int8 {
 
 // image colours the cells an image covers.
 func (r *Renderer) image(in Input, ra *scene.Raster) {
-	r.rain(in, ra.Preset, ra.ClassCount, func(col, row int) int8 { return r.heaviest(ra, col, row) })
+	r.rain(in, ra.Preset, ra.ClassCount, ra.MaskedByWater, func(col, row int) int8 { return r.heaviest(ra, col, row) })
 }
 
 // rain colours the cells an image or a grid of rain covers - over water as
-// over land, because rain falls on the sea (D-87) - or with no ramp shades
-// them; class is a cell's heaviest.
-func (r *Renderer) rain(in Input, preset uint8, classCount int, class func(col, row int) int8) {
+// over land, because rain falls on the sea (D-87), unless masked keeps it off
+// the sea (L-1.2) - or with no ramp shades them; class is a cell's heaviest.
+func (r *Renderer) rain(in Input, preset uint8, classCount int, masked bool, class func(col, row int) int8) {
 	g := r.grid
 	for row := range g.rows {
 		for col := range g.cols {
-			if in.ImagesMaskedByWater && r.painter.Water(col, row) {
+			if masked && r.painter.Water(col, row) {
 				continue
 			}
 			k := class(col, row)
@@ -311,7 +311,7 @@ func (r *Renderer) contours(in Input, f *scene.Field) {
 	for y := range h - 1 {
 		for x := range w - 1 {
 			here := fieldClass(f, r.lons[x], r.lats[y])
-			if here < 0 || offItsGround(f, in, r.painter.Water(x/2, y/4)) {
+			if here < 0 || offItsGround(f, r.painter.Water(x/2, y/4)) {
 				continue
 			}
 			east, south := fieldClass(f, r.lons[x+1], r.lats[y]), fieldClass(f, r.lons[x], r.lats[y+1])

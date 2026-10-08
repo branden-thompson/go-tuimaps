@@ -195,3 +195,6 @@ A commit made from exactly that has the same tree less this file, so the two can
 | 2026-10-08T03:16:51Z | 0784649 | e123620504ec | docs | green | 381 | - |
 | 2026-10-08T04:39:02Z | 2ed608e | 99bf822fb623 | docs | green | 389 | - |
 | 2026-10-08T17:37:38Z | 56b087d | ee2261a09c74 | full | green | 2979 | - |
+| 2026-10-08T18:44:53Z | 788fcce | 533676ae655d | full | FAILED: tools/oracle: fuzz FuzzAgree, 5700000x | 2817 | - |
+| 2026-10-08T19:44:26Z | 788fcce | 0268540ee8b9 | full | FAILED: tools/oracle: fuzz FuzzAgree, 5700000x | 3157 | - |
+| 2026-10-08T20:49:27Z | 788fcce | 2c2b59a3f1af | full | green | 2958 | - |

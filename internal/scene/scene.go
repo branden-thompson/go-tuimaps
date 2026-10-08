@@ -153,6 +153,9 @@ type Field struct {
 	// Lines is the host's ask for the field's lines over faint bands, with
 	// or without an image on the map (L-15.4).
 	Lines bool
+	// OverWater is the host's ask for the field over the sea as well as the
+	// land (L-1.1).
+	OverWater bool
 	// From and Speeds make it a vector field (FR-8): each cell's direction,
 	// where the wind blows from, and its speed. Nil for a scalar field.
 	From, Speeds []float64
@@ -175,4 +178,7 @@ type Raster struct {
 	Classes                  []int8
 	Preset                   uint8
 	ClassCount               int
+	// MaskedByWater is the host's ask for the image off the sea (L-1.2): set
+	// as the picture is drawn, never kept with a picture shared between maps.
+	MaskedByWater bool
 }

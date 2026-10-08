@@ -16,7 +16,8 @@ const (
 // cursor is where the geometry's pen is, and the part being drawn.
 type cursor struct {
 	x, y      int64
-	partStart int // index in the tile's Coords where the open part began; -1 when none is open
+	partStart int  // index in the tile's Coords where the open part began; -1 when none is open
+	lined     bool // the open part has had its LineTo
 }
 
 // readGeometry decodes a feature's commands into the layer's slabs and adds
@@ -44,7 +45,8 @@ func (d *layerDecoder) readGeometry(geometry []byte, feature scene.Feature) erro
 // runCommands executes MoveTo, LineTo and ClosePath. A malformed stream is
 // an error, not a guess: a count beyond the integers left, LineTo or
 // ClosePath with no part open, a ClosePath count other than one, a count of
-// zero, an unknown command, or a pen that leaves the 16-bit range.
+// zero, an unknown command, a pen that leaves the 16-bit range, or a
+// polygon's ring left open or run by a second LineTo.
 func (d *layerDecoder) runCommands(geometry []byte, kind scene.GeomKind) error {
 	if kind < scene.GeomPoint || kind > scene.GeomPolygon {
 		return malformed() // only the three kinds have commands to run
@@ -74,6 +76,13 @@ func (d *layerDecoder) runCommands(geometry []byte, kind scene.GeomKind) error {
 			// decoder never reads, and the two would disagree (L11.12). A
 			// damaged stream is refused (D-75).
 			err = malformed()
+		case id == cmdMoveTo && kind == scene.GeomPolygon && c.partStart >= 0:
+			// **A polygon's ring ends with its ClosePath** (MVT 2.1,
+			// 4.3.4.4). The proven decoder takes whatever command follows a
+			// ring for its ClosePath, so a MoveTo here would be read as one,
+			// and its numbers as commands: the two would disagree about
+			// rings. A damaged stream is refused (D-75).
+			err = malformed()
 		case id == cmdMoveTo:
 			rest, err = d.moveTo(&c, rest, int(count), kind)
 		case kind == scene.GeomPoint:
@@ -81,6 +90,11 @@ func (d *layerDecoder) runCommands(geometry []byte, kind scene.GeomKind) error {
 			// grow a single point into a run of positions, which the proven
 			// decoder does not do, and the two would disagree (D-126). A
 			// damaged stream is refused (D-75).
+			err = malformed()
+		case id == cmdLineTo && kind == scene.GeomPolygon && c.lined:
+			// **A polygon's ring has one LineTo** (MVT 2.1, 4.3.4.4), for
+			// the same reason as its ClosePath above: the proven decoder
+			// would read a second one as the ring's ClosePath (D-75).
 			err = malformed()
 		case id == cmdLineTo:
 			rest, err = d.lineTo(&c, rest, int(count))
@@ -92,6 +106,9 @@ func (d *layerDecoder) runCommands(geometry []byte, kind scene.GeomKind) error {
 		if err != nil {
 			return err
 		}
+	}
+	if kind == scene.GeomPolygon && c.partStart >= 0 {
+		return malformed() // the last ring left open, with no ClosePath (MVT 2.1, 4.3.4.4)
 	}
 	d.endPart(&c)
 	return nil
@@ -143,6 +160,7 @@ func (d *layerDecoder) lineTo(c *cursor, rest []byte, count int) ([]byte, error)
 	if c.partStart < 0 {
 		return nil, malformed() // LineTo before MoveTo
 	}
+	c.lined = true
 	for range count {
 		next, err := d.step(c, rest)
 		if err != nil {
@@ -182,7 +200,7 @@ func (d *layerDecoder) endPart(c *cursor) {
 		return
 	}
 	d.layer.Parts = append(d.layer.Parts, uint32(len(d.layer.Coords)))
-	c.partStart = -1
+	c.partStart, c.lined = -1, false
 }
 
 // groupRings splits a polygon feature (P-39, D-106): a ring whose signed area

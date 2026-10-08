@@ -1,0 +1,102 @@
+[
+  {
+    "id": "m001",
+    "row": "L-1.1",
+    "what": "a field is drawn over the sea whatever its host says",
+    "file": "internal/render/field.go",
+    "old": "\treturn water && !f.OverWater\n",
+    "new": "\treturn water\n",
+    "package": ".",
+    "test": "TestAFieldStopsAtTheShoreByDefault"
+  },
+  {
+    "id": "m002",
+    "row": "L-1.1",
+    "what": "the host's water choice is not carried to the prepared field",
+    "file": "internal/overlay/field.go",
+    "old": "Lines: g.Lines, OverWater: g.OverWater}",
+    "new": "Lines: g.Lines}",
+    "package": ".",
+    "test": "TestAFieldStopsAtTheShoreByDefault"
+  },
+  {
+    "id": "m003",
+    "row": "L-1.2",
+    "what": "an image's mask by water is not carried to the picture drawn",
+    "file": "internal/overlay/timeline.go",
+    "old": "\traster.MaskedByWater = h.overlay.Image.MaskedByWater // the overlay's own choice, never a shared picture's\n",
+    "new": "",
+    "package": ".",
+    "test": "TestHostCanFlipEither"
+  },
+  {
+    "id": "m004",
+    "row": "L-1.2",
+    "what": "an image masked by water is drawn over the sea",
+    "file": "internal/render/field.go",
+    "old": "\t\t\tif masked && r.painter.Water(col, row) {\n",
+    "new": "\t\t\tif masked && r.painter.Water(col, row) && false {\n",
+    "package": "./internal/render",
+    "test": "TestAMaskedImageStaysOffTheSea"
+  },
+  {
+    "id": "m005",
+    "row": "L-1.3",
+    "what": "a field's lines are drawn over the sea whatever its host says",
+    "file": "internal/render/field.go",
+    "old": "\t\t\tif here < 0 || offItsGround(f, r.painter.Water(x/2, y/4)) {\n",
+    "new": "\t\t\tif here < 0 {\n",
+    "package": ".",
+    "test": "TestContoursFollowTheirFieldOverWater"
+  },
+  {
+    "id": "m006",
+    "row": "L-1.4",
+    "what": "frame reuse ignores the overlays' version, so a changed water choice keeps the old frame",
+    "file": "internal/render/frame.go",
+    "old": "\treturn in.OverlaysVersion == l.OverlaysVersion && len(in.Shapes) == len(l.Shapes)",
+    "new": "\treturn len(in.Shapes) == len(l.Shapes)",
+    "package": ".",
+    "test": "TestAChangedWaterChoiceRedraws"
+  },
+  {
+    "id": "m007",
+    "row": "A-3 (D-75)",
+    "what": "a polygon ring left open by the next ring's MoveTo is read as it is",
+    "file": "internal/mvt/geometry.go",
+    "old": "\t\tcase id == cmdMoveTo && kind == scene.GeomPolygon && c.partStart >= 0:\n",
+    "new": "\t\tcase id == cmdMoveTo && kind == scene.GeomPolygon && c.partStart >= 0 && false:\n",
+    "package": "./internal/mvt",
+    "test": "TestAPolygonRingIsClosedByClosePath"
+  },
+  {
+    "id": "m008",
+    "row": "A-3 (D-75)",
+    "what": "a polygon's last ring left open at the end of the geometry is read as it is",
+    "file": "internal/mvt/geometry.go",
+    "old": "\tif kind == scene.GeomPolygon && c.partStart >= 0 {\n\t\treturn malformed() // the last ring left open",
+    "new": "\tif kind == scene.GeomPolygon && c.partStart >= 0 && false {\n\t\treturn malformed() // the last ring left open",
+    "package": "./internal/mvt",
+    "test": "TestAPolygonRingIsClosedByClosePath"
+  },
+  {
+    "id": "m009",
+    "row": "A-3 (D-75)",
+    "what": "a polygon ring run by a second LineTo is read as it is",
+    "file": "internal/mvt/geometry.go",
+    "old": "\t\tcase id == cmdLineTo && kind == scene.GeomPolygon && c.lined:\n",
+    "new": "\t\tcase id == cmdLineTo && kind == scene.GeomPolygon && c.lined && false:\n",
+    "package": "./internal/mvt",
+    "test": "TestAPolygonRingIsClosedByClosePath"
+  },
+  {
+    "id": "m010",
+    "row": "A-4 (D-75)",
+    "what": "a negative zig-zag rank is kept",
+    "file": "internal/mvt/feature.go",
+    "old": "\treturn max(intOf(value), 0) // a rank is a whole number from zero",
+    "new": "\treturn intOf(value) // a rank is a whole number from zero",
+    "package": "./internal/mvt",
+    "test": "TestANegativeRankIsNoRank"
+  }
+]

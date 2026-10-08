@@ -25,6 +25,10 @@ type Grid struct {
 	// faint, whatever shares the map - the look it takes anyway with an image
 	// on the map (L-15.3, L-15.4).
 	Lines bool
+	// OverWater continues the field over the sea; by default it stops at the
+	// shore (L-1.1, D-32). Waves are the sea's alone and rain falls on the
+	// sea, whatever it says.
+	OverWater bool
 	// From makes the grid a vector grid (FR-8): the direction each value's
 	// wind blows FROM, meteorological degrees clockwise from north, one a
 	// value; NaN where there is none. The values are the speeds. It is drawn
@@ -131,7 +135,7 @@ func implausible(g *Grid) bool {
 func classify(g *Grid, kind Kind) scene.Field {
 	field := scene.Field{West: g.West, South: g.South, East: g.East, North: g.North, Cols: g.Cols, Rows: g.Rows,
 		Classes: make([]int8, len(g.Values)), Preset: uint8(kind.Preset), ClassCount: len(kind.Breaks) + 1,
-		Labels: bandLabels(kind.Breaks), Lines: g.Lines}
+		Labels: bandLabels(kind.Breaks), Lines: g.Lines, OverWater: g.OverWater}
 	if g.From != nil { // a vector grid keeps its speeds and directions: its arrows are drawn from them (L-16)
 		field.From, field.Speeds = append([]float64(nil), g.From...), append([]float64(nil), g.Values...)
 		field.Gusts = append([]float64(nil), g.Gusts...) // L-24: said beside the speed

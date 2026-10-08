@@ -319,6 +319,10 @@ the sentence says what v0.2.0 will do, not what v0.1.0 does.
 | L-29.1 | A frame is redrawn for the blink phase only when a marker on it blinks: with every marker steady, the phase flipping is no change (watchpost W14 P-10) | TestAPhaseFlipRedrawsOnlyWhatBlinks |
 | L-28.1 | An alert outside the moment is not drawn, but its word and severity digits hold their room from the basemap's names, and a field or image outside it holds the name budget: the names stand still as a loop plays (watchpost D-200) | TestNamesHoldStillAsALoopPlays |
 | L-17.4 | The legend keys radar's classes, an image's or a grid's, in the colours the frame draws them: the class below the first floor not drawn, and a grid of rain never keyed faint (D-91) | TestTheRainLegendKeysTheColoursDrawn |
+| v0.3.0 L-1.1 | `Grid.OverWater` continues a field over the sea; by default a field stops at the shore (D-32). A wave grid stays on the sea and a rain grid is drawn over the sea, whatever it says | TestAFieldStopsAtTheShoreByDefault, TestHostCanFlipEither |
+| v0.3.0 L-1.2 | `Image.MaskedByWater` keeps an image off the sea; by default an image is drawn over water as over land (D-87). Each overlay's choice is its own: a picture shared between maps never carries another map's | TestHostCanFlipEither, TestWaterNeverMasksImage |
+| v0.3.0 L-1.3 | A field's contour lines follow its water choice | TestContoursFollowTheirFieldOverWater |
+| v0.3.0 L-1.4 | Setting an overlay again with the other choice draws a new frame | TestAChangedWaterChoiceRedraws |
 
 ## 12 · Changelog: what v0.2.0 breaks (D-58)
 
