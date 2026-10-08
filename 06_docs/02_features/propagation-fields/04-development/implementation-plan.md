@@ -72,6 +72,7 @@ func NightSide(at time.Time) [][]LonLat
 | P2.1 | `muf`/`fof2` presets, breaks in MHz, tokens, ramps passing `Check` on both grounds at truecolor, 256 and 16 | `TestTheMUFAndFoF2RampsPassCheckOnBothGrounds`, `TestEveryPresetHasLegendWordsAndAUnit` |
 | P2.2 | The generic host ramp (`Type.Colours`, or `low`/`middle`/`high` with defaults); the cell ink for interpolated colours chosen from P0's specimens (C-2) | `TestAHostTypeIsFilledFromLowMiddleHigh`, `TestTheHostRampDefaultsWhenUnset`, `TestAHostRampIsHeldToCheckRamp`, `TestABadHostRampIsWarned` |
 | P2.3 | No grid draws nothing silently | `TestNoGridDrawsNothingSilently` (M2's matrix) |
+| P2.4 | L-2.5 and L-2.6: a host type's legend carries colours and unit; the reach edge's non-colour mark, never a contour, its combination with a fill stated (watchpost D-127) | `TestAHostTypesLegendHasColoursAndUnit`, `TestTheReachIsMarkedWithoutColour` (every depth, both grounds) |
 | P3.1 | Units on labels; labels on both crossings (behaviour change, changelog) | `TestContourLabelsCarryTheirUnit`, `TestAFieldBandedEitherWayIsLabelled` |
 | P3.2 | `Answer.ValueUnit` for every field | `TestEveryFieldAnswerCarriesItsUnit` (M3) |
 | P4.1 | `terminator` and `night` tokens; the night fill without alert words | `TestTheTerminatorAndNightTokensHaveDefaults`, `TestTheNightTintCarriesNoAlertWords` |

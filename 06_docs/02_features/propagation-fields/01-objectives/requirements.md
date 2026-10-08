@@ -16,7 +16,7 @@ status: "APPROVED at the DISCOVER gate (watchpost D-84), normative; once approve
 - **Fixes owed:** `SafeRamps` honoured for every scale, a shade key at 16 colours and below, a non-colour mark for colour-only roles, the default depth from the terminal, and a checked dialer.
 
 watchpost uses L-2.2's generic ramp for one more thing: "your frequency"'s reach area, a two-class field
-(reached or not) that go-ionomaps returns (its R-2.9). No new row is needed for it.
+(reached or not) that go-ionomaps returns (its R-2.9). Its edge gets a row of its own, L-2.6 (watchpost D-127).
 
 Each row traces to the brief's L-n and to the ruling that makes it necessary. **What, never how.** PLAN
 carries signatures only (watchpost 0.18.0 D-13).
@@ -46,6 +46,7 @@ every depth on both grounds, so each change below is seen against what v0.2.0 dr
 | L-2.3 | A host's ramp that fails `CheckRamp` is reported through `Warnings()`, never silently drawn | `TestABadHostRampIsWarned` |
 | L-2.4 | A grid that would draw nothing (any depth × ground × lines on or off) is refused at hand-in or warned; never a silent blank | `TestNoGridDrawsNothingSilently` (M2's matrix) |
 | L-2.5 | The legend of a host type carries colours and its unit | `TestAHostTypesLegendHasColoursAndUnit` |
+| L-2.6 | **The reach area without colour (watchpost D-127):** the edge of a two-class host field such as watchpost's reach area carries a mark that does not depend on colour, is never drawn as a contour (as L-4.4 requires of the terminator), and how it combines with a filled field beneath it is stated | `TestTheReachIsMarkedWithoutColour` (every depth, both grounds), a P0 specimen |
 
 ## L-3 — Units and labels (watchpost D-34; D-3)
 
