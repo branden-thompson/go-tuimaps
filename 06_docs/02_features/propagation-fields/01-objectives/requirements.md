@@ -1,7 +1,7 @@
 ---
 title: "go-tuiMaps v0.3.0 — Propagation fields — REQUIREMENTS"
 date: 2026-10-06
-phase: PLAN
+phase: BUILD
 sev: SEV-0
 authority: HUM LEAD
 status: "APPROVED at the DISCOVER gate (watchpost D-84), normative; once approved it wins over the brief on any conflict, and every change is a row in 02-analysis/rulings.md."

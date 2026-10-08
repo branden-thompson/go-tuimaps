@@ -37,3 +37,4 @@ restated here; this log holds the library's own. v0.2.0's log is `../radar-loops
 | D-16 | 2026-10-07 | Restates watchpost D-119 | see watchpost D-119 | Gates assert machine-independent proxies; wall-clock targets are a release step on the reference machine, failing when the record is missing. |
 | D-17 | 2026-10-07 | Restates watchpost D-127 | see watchpost D-127 | L-2.6: a two-class host field's edge (the reach area) carries a non-colour mark, is never a contour, and its combination with a fill beneath is stated. |
 | D-18 | 2026-10-07 | Restates watchpost D-137 | see watchpost D-137 | M5's targets apply to the full frame including the reach overlay and its non-colour edge (L-2.6). |
+| D-19 | 2026-10-07 | Restates watchpost D-139 | see watchpost D-139 | PLAN exit approved for v0.3.0 with watchpost 0.19.0 and go-ionomaps; BUILD opens. |
