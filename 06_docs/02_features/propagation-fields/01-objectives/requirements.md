@@ -1,7 +1,7 @@
 ---
 title: "go-tuiMaps v0.3.0 — Propagation fields — REQUIREMENTS"
 date: 2026-10-06
-phase: DISCOVER
+phase: PLAN
 sev: SEV-0
 authority: HUM LEAD
 status: "APPROVED at the DISCOVER gate (watchpost D-84), normative; once approved it wins over the brief on any conflict, and every change is a row in 02-analysis/rulings.md."
@@ -93,7 +93,7 @@ OW-14, OW-15, OW-16, OW-18, OW-20 and OW-26 are re-targeted to v0.4.0 (watchpost
 
 | # | Requirement | Instrument |
 |---|---|---|
-| NFR-1 | M5: after a pan, a 2° whole-globe field with fill, labelled contours, terminator and night renders in at most 16 ms at 400 × 110 and 8 ms at 200 × 56 (watchpost D-96; v0.2.0 measured 22.2 and 5.7 ms without terminator or night); its memory is recorded | the gate asserts allocations and work per cell; the timing is a release step on the reference machine, failing when its record is missing (watchpost D-119) |
+| NFR-1 | M5: after a pan, a 2° whole-globe field with fill, labelled contours, terminator and night renders, with the reach overlay and its non-colour edge (watchpost D-137), in at most 16 ms at 400 × 110 and 8 ms at 200 × 56 (watchpost D-96; v0.2.0 measured 22.2 and 5.7 ms without terminator or night); its memory is recorded | the gate asserts allocations and work per cell; the timing is a release step on the reference machine, failing when its record is missing (watchpost D-119) |
 | NFR-2 | M4: every row above has a test that would fail without it (this release's rows, D-7): each row is anchored to a mutant the gate kills, so a test that exists but cannot fail is caught (CQ-V1) | the mutant anchors, checked in the gate |
 | NFR-3 | Gates green: `scripts/gate` full lane, P10 clean, mutants anchored | the gate |
 
