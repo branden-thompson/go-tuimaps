@@ -202,6 +202,10 @@ func rampToken(preset colour.Preset) (Token, bool) {
 		return colour.AQI1, true
 	case colour.QPF:
 		return colour.QPF1, true
+	case colour.MUF:
+		return colour.MUF1, true
+	case colour.FoF2:
+		return colour.FoF21, true
 	}
 	return 0, false
 }

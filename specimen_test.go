@@ -64,6 +64,12 @@ var specimens = []struct {
 	{"globe-temperature", func() tuimaps.Overlay {
 		return tuimaps.TemperatureGrid("globe", globeGrid(1.4), tuimaps.Celsius, noon)
 	}},
+	{"globe-muf", func() tuimaps.Overlay {
+		return tuimaps.MUFGrid("globe", globeGrid(1), noon)
+	}},
+	{"globe-fof2", func() tuimaps.Overlay {
+		return tuimaps.FoF2Grid("globe", globeGrid(0.4), noon)
+	}},
 	{"host-type", func() tuimaps.Overlay {
 		g := globeGrid(1)
 		g.Type = tuimaps.Type{Unit: "MHz", Breaks: hostBreaks}

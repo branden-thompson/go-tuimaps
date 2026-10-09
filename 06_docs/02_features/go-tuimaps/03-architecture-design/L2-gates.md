@@ -12,7 +12,7 @@ flowchart TB
       direction LR
       M0["library"] --- M1["cmd/tuimaps"] --- M2["examples"] --- M3["tools/gen-assets"] --- M4["tools/answer-key"] --- M5["tools/oracle"] --- M6["tools/atlas"]
     end
-    GATE["The gate script<br/>writes a throw-away workspace file so the nested modules resolve the library from this tree —<br/>with a replace for the library at exactly v0.0.0 inside that throw-away file —<br/>the tracked module files carry no replace line · one mode a run: full, --quick, --docs, --fuzz, --soak or --release TAG<br/>every leg on the floor toolchain, read from the root module's go directive (go 1.25.13, D-133)"] --> MODS
+    GATE["The gate script<br/>writes a throw-away workspace file so the nested modules resolve the library from this tree —<br/>with a replace for the library at exactly v0.0.0 inside that throw-away file —<br/>the tracked module files carry no replace line · one mode a run: full, --quick, --docs, --fuzz, --soak or --release TAG<br/>every leg on the floor toolchain, read from the root module's go directive (go 1.26.9, D-28)"] --> MODS
     GATE --> LOG["Every run logged to 06_docs/gate-runs.md: time · commit · tree checked · mode · result · duration · any override (GATE_FUZZ_SCALE, GATE_ARCH_LEG)"]
     GATE -- "--docs" --> DOCS["The docs lane: a STAGED change of Markdown alone (and the generated atlas page) —<br/>every module's tests run, and no other leg; anything else staged is refused (v0.2.0 D-15, D-41, D-53)"]
     GATE -- "--soak" --> SOAK["M4's hour: a 12-frame loop played for an hour while the heap is watched (L10.8);<br/>run by hand before SHIP and recorded — the full gate runs the same test for five minutes"]

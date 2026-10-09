@@ -218,8 +218,9 @@ a test of its own beyond those named.
   gives each its own.
 - **A place's id is held to the overlay id rule:** at most 256 bytes of plain text, or the place is refused
   as `invalid-id`. A place's name is cleaned but not capped; the frame cuts what does not fit.
-- **The module floor is go 1.25.13 (D-133).** At go 1.25.0 the code reaches standard-library
-  vulnerabilities that 1.25.13 fixes; the gate scans at the floor and at the local toolchain.
+- **The module floor is go 1.26.9 (D-28, after v0.2.0 D-133).** Below it the code reaches standard-library
+  vulnerabilities, GO-2026-6617 the latest, which the go1.25 line does not fix; the gate scans at the floor
+  and at the local toolchain.
 
 ## 9 · The deferred shapes, and where each lands (D-44, D-47, PL-PM-6)
 
@@ -249,7 +250,7 @@ its doc comment and in the sections above.
 | Playback (v0.2.0 WP-L4) | `Playback` (`PlaybackOff`, `PlaybackOn`), `Map.SetPlayback`, `Map.SetPlaybackStep`, `Map.Play`, `Map.Stop`, `Map.Reset`, `Map.Step`, `Map.ShowMoment`, `Map.Loop`, `LoopState`, `OffReason` (`OffReduceMotion`, `OffByHost`, `OffByDefault`) |
 | The view | `Map.Centre`, `Map.Zoom`, `Map.ZoomBy`, `Map.PanCells`, `Map.Recentre`, `Map.FitWorld`, `Map.FitTo`, `Map.DeepestZoom` |
 | Places and markers | `Place`, `Positioned`, `LonLat`, `MarkerStyle` (`MarkerDot`, `MarkerCross`, `MarkerDiamond`, `MarkerRing`, `MarkerDisc`, `MarkerGlyph`), `Map.SetPlaces`, `Map.AddPlace`, `Map.RemovePlace`, `Map.Places` |
-| Overlays | `Overlay`, `Feature`, `FeatureKind` (`Point`, `Line`, `Polygon`, `Circle`), `Grid`, `Image`, `LoopFrame`, `Span`, `MaxFrames`, `Provider` (`ProviderIEM`, `ProviderMRMS`), `Severity` (`SeverityUnknown`, `SeverityMinor`, `SeverityModerate`, `SeveritySevere`, `SeverityExtreme`), `Map.SetImageBudget`, `Projection` (`PlateCarree`, `WebMercator`), `TableEntry`, `Type`, `Ring`, `Rings`, `RadarImage`, `TemperatureGrid`, `WindGrid`, `SpeedUnit` (`MilesPerHour`, `KilometresPerHour`, `MetresPerSecond`, `Knots`), `WaveGrid`, `WaveUnit` (`Feet`, `Metres`), `UVGrid`, `AirQualityGrid`, `AirQualityRole`, `UVRole`, `QPFGrid`, `SetResult`, `RemoveResult`, `Map.Set`, `Map.Remove`, `Map.InUse`, `Map.Overlays` |
+| Overlays | `Overlay`, `Feature`, `FeatureKind` (`Point`, `Line`, `Polygon`, `Circle`), `Grid`, `Image`, `LoopFrame`, `Span`, `MaxFrames`, `Provider` (`ProviderIEM`, `ProviderMRMS`), `Severity` (`SeverityUnknown`, `SeverityMinor`, `SeverityModerate`, `SeveritySevere`, `SeverityExtreme`), `Map.SetImageBudget`, `Projection` (`PlateCarree`, `WebMercator`), `TableEntry`, `Type`, `Ring`, `Rings`, `RadarImage`, `TemperatureGrid`, `WindGrid`, `SpeedUnit` (`MilesPerHour`, `KilometresPerHour`, `MetresPerSecond`, `Knots`), `WaveGrid`, `WaveUnit` (`Feet`, `Metres`), `UVGrid`, `AirQualityGrid`, `AirQualityRole`, `UVRole`, `QPFGrid`, `MUFGrid`, `FoF2Grid`, `SetResult`, `RemoveResult`, `Map.Set`, `Map.Remove`, `Map.InUse`, `Map.Overlays` |
 | Roles and colours | `Token`, `TokenNames`, the alert roles (`AlertExtreme`, `AlertSevere`, `AlertModerate`, `AlertMinor`, `AlertUnknown`), `Track`, the fire roles (`Fire`, `FireFaint`), the quake roles (`QuakeHour`, `QuakeDay`, `QuakeOlder`), the sea's stations (`Buoy`, `Tide`), the field roles (`Low`, `Middle`, `High`), `RGB`, `Unit` (`Celsius`, `Fahrenheit`), `Depth` (`Truecolor`, `Colours256`, `Colours16`, `NoColour`) |
 | The look | `Map.SetPalette`, `Map.SafeRamps`, `Map.Ground`, `Map.PaintGround`, `Map.ColourDepth`, `Map.ReduceMotion`, `Map.Units`, `Map.LabelLanguage`, `Map.SetStyle`, `Map.ShowFooter`, `Map.ShowStamp`, `Layer` (`RoadLayer`, `RailLayer`, `ParkLayer`, `BorderLayer`, `RiverLayer`, `WaterLayer`, `LabelLayer`, `MinorRoadLayer`), `Map.Layers`, `Detail` (`DetailEssential`, `DetailWeather`, `DetailStandard`, `DetailFull`), `Map.SetDetail` |
 | Tiles and caches | `Map.Source`, `Map.SourceCredit`, `Map.CacheRoot`, `Map.SetFetchOptions`, `FetchOptions`, `Dialer`, `CheckedDialer`, `Map.SetCacheMaxAge`, `Map.Purge`, `PurgeReport`, `Map.Verify`, `Map.CacheUse`, `Caches`, `CacheUse` |
@@ -323,6 +324,7 @@ the sentence says what v0.2.0 will do, not what v0.1.0 does.
 | v0.3.0 L-1.2 | `Image.MaskedByWater` keeps an image off the sea; by default an image is drawn over water as over land (D-87). Each overlay's choice is its own: a picture shared between maps never carries another map's | TestHostCanFlipEither, TestWaterNeverMasksImage |
 | v0.3.0 L-1.3 | A field's contour lines follow its water choice | TestContoursFollowTheirFieldOverWater |
 | v0.3.0 L-1.4 | Setting an overlay again with the other choice draws a new frame | TestAChangedWaterChoiceRedraws |
+| v0.3.0 L-2.1 | `MUFGrid` and `FoF2Grid` are fields in MHz with their presets, "muf" and "fof2", in "MHz" alone: MUF in ten classes broken at the amateur band edges 3.5, 5.3, 7, 10.1, 14, 18.068, 21, 24.89 and 28 MHz (watchpost D-144); foF2 floored at 1.8, 3.5, 5.3, 7, 10.1 and 14 MHz, nothing drawn below 1.8, each class in the MUF colour of the same frequencies (watchpost D-145, D-149); tokens `muf.1`-`muf.10` and `fof2.1`-`fof2.6`, lowest frequency first; each class keyed in words with its unit, the first foF2 class as not drawn | TestTheMUFAndFoF2RampsPassCheckOnBothGrounds, TestEveryPresetHasLegendWordsAndAUnit |
 
 ## 12 · Changelog: what v0.2.0 breaks (D-58)
 

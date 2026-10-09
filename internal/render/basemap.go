@@ -13,8 +13,11 @@ import (
 
 const (
 	// firstLiteral is the first ink that stands for a user's style's literal
-	// colour. The inks below it are the tokens' own numbers.
-	firstLiteral = 96
+	// colour. The inks below it are the tokens' own numbers, which must all
+	// lie below it: a token at or past it is read as a literal and drawn in
+	// no colour (A-5; TestEveryTokenIsAnInkBelowTheLiterals). It leaves room
+	// for tokens to come, and 96 literal colours.
+	firstLiteral = 160
 	// maxLabels bounds the label candidates kept for one frame.
 	maxLabels = 4096
 )

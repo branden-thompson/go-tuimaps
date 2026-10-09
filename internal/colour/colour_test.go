@@ -29,7 +29,7 @@ func documentedTokens(t *testing.T) []string {
 	}
 	section, _, _ := strings.Cut(after, "\nThe sixteen-colour depth")
 	tick := regexp.MustCompile("`([^`]+)`")
-	span := regexp.MustCompile("`([a-z]+)\\.1` to `[a-z]+\\.(\\d+)`")
+	span := regexp.MustCompile("`([a-z][a-z0-9]*)\\.1` to `[a-z][a-z0-9]*\\.(\\d+)`")
 	var out []string
 	for _, line := range strings.Split(section, "\n") {
 		cells := strings.Split(line, "|")
@@ -67,8 +67,8 @@ func flatten(m [][]string) []string {
 // TestTokensMatchTheDocumentedList is plan task 08.1 (D-63).
 func TestTokensMatchTheDocumentedList(t *testing.T) {
 	want := documentedTokens(t)
-	if len(want) != 97 {
-		t.Fatalf("read %d tokens from the document, want 97: %v", len(want), want)
+	if len(want) != 113 {
+		t.Fatalf("read %d tokens from the document, want 113: %v", len(want), want)
 	}
 	var got []string
 	for _, tok := range Tokens() {

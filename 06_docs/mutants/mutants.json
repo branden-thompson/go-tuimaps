@@ -98,5 +98,65 @@
     "new": "\treturn intOf(value) // a rank is a whole number from zero",
     "package": "./internal/mvt",
     "test": "TestANegativeRankIsNoRank"
+  },
+  {
+    "id": "m011",
+    "row": "L-2.1",
+    "what": "the muf preset is not defined in MHz",
+    "file": "internal/overlay/grid.go",
+    "old": "\tcase preset == \"muf\" && unit == \"MHz\":\n",
+    "new": "\tcase preset == \"muf\" && unit == \"kHz\":\n",
+    "package": ".",
+    "test": "TestEveryPresetHasLegendWordsAndAUnit"
+  },
+  {
+    "id": "m012",
+    "row": "L-2.1",
+    "what": "two MUF classes share a colour",
+    "file": "internal/colour/preset.go",
+    "old": "return []RGB{{38, 1, 95}, {83, 15, 94},",
+    "new": "return []RGB{{83, 15, 94}, {83, 15, 94},",
+    "package": "./internal/colour",
+    "test": "TestTheMUFAndFoF2RampsPassCheckOnBothGrounds"
+  },
+  {
+    "id": "m013",
+    "row": "L-2.1",
+    "what": "a foF2 field is drawn in one colour whatever its class",
+    "file": "internal/render/field.go",
+    "old": "\t\treturn uint8(colour.FoF21) + uint8(min(int(class), 6)) - 1\n",
+    "new": "\t\treturn uint8(colour.FoF21)\n",
+    "package": ".",
+    "test": "TestTheSpecimensAreWhatTheLibraryDraws"
+  },
+  {
+    "id": "m014",
+    "row": "L-2.1",
+    "what": "the MUF breaks are not the band edges D-144 rules",
+    "file": "internal/colour/preset.go",
+    "old": "func MUFBreaks() []float64 { return []float64{3.5, 5.3, 7, 10.1, 14, 18.068, 21, 24.89, 28} }",
+    "new": "func MUFBreaks() []float64 { return []float64{3.5, 5.3, 7, 10, 14, 18, 21, 24.89, 28} }",
+    "package": "./internal/colour",
+    "test": "TestTheMUFAndFoF2RampsPassCheckOnBothGrounds"
+  },
+  {
+    "id": "m015",
+    "row": "A-5",
+    "what": "the literal inks start where the tokens still run, so the last tokens draw in no colour",
+    "file": "internal/render/basemap.go",
+    "old": "\tfirstLiteral = 160\n",
+    "new": "\tfirstLiteral = 96\n",
+    "package": ".",
+    "test": "TestEveryClassOfEveryPresetIsDrawn"
+  },
+  {
+    "id": "m016",
+    "row": "L-2.1 (D-149)",
+    "what": "foF2 below 1.8 MHz is drawn",
+    "file": "internal/colour/preset.go",
+    "old": "func FloorsFirst(p Preset) bool { return p == Radar || p == QPF || p == FoF2 }",
+    "new": "func FloorsFirst(p Preset) bool { return p == Radar || p == QPF }",
+    "package": "./internal/colour",
+    "test": "TestTheMUFAndFoF2RampsPassCheckOnBothGrounds"
   }
 ]

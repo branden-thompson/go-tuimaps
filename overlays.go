@@ -204,6 +204,23 @@ func AirQualityGrid(id string, grid Grid, validAt time.Time) Overlay {
 	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &grid}
 }
 
+// MUFGrid is a field of the maximum usable frequency, in MHz, in one call
+// (v0.3.0 L-2.1): the preset supplies its ten classes, broken at the amateur
+// band edges, and their colours.
+func MUFGrid(id string, grid Grid, validAt time.Time) Overlay {
+	grid.Type = Type{Preset: "muf", Unit: "MHz"}
+	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &grid}
+}
+
+// FoF2Grid is a field of the F2 layer's critical frequency, in MHz, in one
+// call (v0.3.0 L-2.1): the preset supplies its classes, floored at the band
+// edges below 15 MHz - nothing is drawn below 1.8 MHz - in the MUF colours of
+// the same frequencies.
+func FoF2Grid(id string, grid Grid, validAt time.Time) Overlay {
+	grid.Type = Type{Preset: "fof2", Unit: "MHz"}
+	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &grid}
+}
+
 // QPFGrid is a field of rain and snow totals, liquid-equivalent, in mm, in
 // one call (L-26): the preset supplies WPC's seven classes and their
 // colours, and draws nothing under a trace.

@@ -129,8 +129,10 @@ func AirQualityRole(float64) Token
 func CheckRamp([]RGB, RampCheck) []Finding
 func CheckedDialer() Dialer
 func Embed(func(z uint8, x, y uint32) ([]byte, bool), uint8) Option
+func FoF2Grid(string, Grid, time.Time) Overlay
 func KindOf(error) (Kind, bool)
 func Kinds() []Kind
+func MUFGrid(string, Grid, time.Time) Overlay
 func New(...Option) (*Map, error)
 func NewShared(int64) (*Shared, error)
 func QPFGrid(string, Grid, time.Time) Overlay

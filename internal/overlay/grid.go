@@ -47,7 +47,7 @@ func badBreaks(why textsafe.Text) error {
 
 func unknownPreset(why textsafe.Text) error {
 	return fault.Make(fault.UnknownPreset, textsafe.Const("the overlay's type was refused"), why,
-		textsafe.Const("the presets are \"temperature\", in C or F; \"radar\", in dBZ; \"wind\"; \"waves\", in ft or m; \"uv\", in index; \"aqi\", in AQI; and \"qpf\", in mm"))
+		textsafe.Const("the presets are \"temperature\", in C or F; \"radar\", in dBZ; \"wind\"; \"waves\", in ft or m; \"uv\", in index; \"aqi\", in AQI; \"qpf\", in mm; and \"muf\" and \"fof2\", in MHz"))
 }
 
 // checkBreaks holds a host's breaks to: numbers, rising, no repeats, and no
@@ -92,12 +92,16 @@ func presetBreaks(preset, unit string) (colour.Preset, []float64, error) {
 		return colour.AirQuality, colour.AirQualityBreaks(), nil
 	case preset == "qpf" && unit == "mm":
 		return colour.QPF, colour.QPFFloors(), nil
+	case preset == "muf" && unit == "MHz":
+		return colour.MUF, colour.MUFBreaks(), nil
+	case preset == "fof2" && unit == "MHz":
+		return colour.FoF2, colour.FoF2Breaks(), nil
 	case preset == "wind":
 		if u, ok := speedUnits[unit]; ok {
 			return colour.Wind, colour.WindBreaks(u), nil
 		}
 		return 0, nil, unknownPreset(textsafe.Const("the preset is not defined in that unit"))
-	case preset == "temperature" || preset == "radar" || preset == "waves" || preset == "uv" || preset == "aqi" || preset == "qpf":
+	case preset == "temperature" || preset == "radar" || preset == "waves" || preset == "uv" || preset == "aqi" || preset == "qpf" || preset == "muf" || preset == "fof2":
 		return 0, nil, unknownPreset(textsafe.Const("the preset is not defined in that unit"))
 	}
 	return 0, nil, unknownPreset(textsafe.Const("there is no preset of that name"))

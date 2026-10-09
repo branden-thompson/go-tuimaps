@@ -198,3 +198,6 @@ A commit made from exactly that has the same tree less this file, so the two can
 | 2026-10-08T18:44:53Z | 788fcce | 533676ae655d | full | FAILED: tools/oracle: fuzz FuzzAgree, 5700000x | 2817 | - |
 | 2026-10-08T19:44:26Z | 788fcce | 0268540ee8b9 | full | FAILED: tools/oracle: fuzz FuzzAgree, 5700000x | 3157 | - |
 | 2026-10-08T20:49:27Z | 788fcce | 2c2b59a3f1af | full | green | 2958 | - |
+| 2026-10-08T20:50:11Z | 6a94d57 | 2c2b59a3f1af | release v0.3.0-rc.1 | FAILED: the library says it is 0.2.0 (internal/fetch/fetch.go) and the tag is v0.3.0-rc.1;  set Version to 0. | 26 | - |
+| 2026-10-09T00:06:07Z | 6a94d57 | 51140c5323ff | full | FAILED: vulnerability scan, govulncheck v1.8.0, module and standard library at go1.27.1; vulnerability scan, govulncheck v1.8.0, module and standard library at the floor, go1.25.13; cmd/tuimaps: vulnerability scan, govulncheck v1.8.0, module and standard library at go1.27.1; cmd/tuimaps: vulnerability scan, govulncheck v1.8.0, module and standard library at the floor, go1.25.13; tools/gen-assets: vulnerability scan, govulncheck v1.8.0, module and standard library at go1.27.1; tools/gen-assets: vulnerability scan, govulncheck v1.8.0, module and standard library at the floor, go1.25.13 | 2957 | - |
+| 2026-10-09T01:09:46Z | 6a94d57 | 3d9d00620fec | full | green | 3107 | - |
