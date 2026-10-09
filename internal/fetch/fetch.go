@@ -23,7 +23,7 @@ import (
 const (
 	// Version names the library in the User-Agent: the release this tree is
 	// (L-13.1). The release check refuses a tag it does not equal.
-	Version = "0.2.0"
+	Version = "0.2.1"
 	// DefaultTimeout bounds a whole request (constants, section 5).
 	DefaultTimeout = 20 * time.Second
 	// firstByteTimeout bounds the wait for a connection and for the first
