@@ -1,6 +1,6 @@
 module github.com/branden-thompson/go-tuimaps
 
-go 1.25.13
+go 1.26.9
 
 require (
 	github.com/clipperhouse/uax29/v2 v2.7.0

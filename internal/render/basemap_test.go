@@ -188,3 +188,15 @@ func TestPainterRefusals(t *testing.T) {
 		t.Error("a tile whose parts run past its coordinates must be an error")
 	}
 }
+
+// TestEveryTokenIsAnInkBelowTheLiterals: every token's number is an ink below
+// the first literal one, so each is drawn in its own colour. v0.2.0 numbered
+// the rain totals' two heaviest classes 96 and 97, past the literals' start
+// at 96, and drew them in no colour (v0.2.1).
+func TestEveryTokenIsAnInkBelowTheLiterals(t *testing.T) {
+	for _, tok := range colour.Tokens() {
+		if int(tok) >= firstLiteral {
+			t.Errorf("token %s is ink %d, at or past the first literal ink %d: it would be read as a style's literal colour", tok.Name(), tok, firstLiteral)
+		}
+	}
+}

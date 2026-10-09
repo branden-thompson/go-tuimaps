@@ -218,8 +218,9 @@ a test of its own beyond those named.
   gives each its own.
 - **A place's id is held to the overlay id rule:** at most 256 bytes of plain text, or the place is refused
   as `invalid-id`. A place's name is cleaned but not capped; the frame cuts what does not fit.
-- **The module floor is go 1.25.13 (D-133).** At go 1.25.0 the code reaches standard-library
-  vulnerabilities that 1.25.13 fixes; the gate scans at the floor and at the local toolchain.
+- **The module floor is go 1.26.9 (v0.2.1, after D-133).** Below it the code reaches standard-library
+  vulnerabilities, GO-2026-6617 the latest, which the go1.25 line does not fix; the gate scans at the floor
+  and at the local toolchain.
 
 ## 9 · The deferred shapes, and where each lands (D-44, D-47, PL-PM-6)
 

@@ -1,3 +1,3 @@
 module github.com/branden-thompson/go-tuimaps/tools/atlas
 
-go 1.25.13
+go 1.26.9
