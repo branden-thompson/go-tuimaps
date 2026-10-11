@@ -69,7 +69,7 @@ func (p Palette) ResolveAt(t Token, ground GroundKind, depth Depth) (RGB, bool) 
 	if t < Ground || t > lastToken {
 		return RGB{}, false
 	}
-	ramp := t >= AlertExtremeOutline && t <= High
+	ramp := (t >= AlertExtremeOutline && t <= AlertUnknownTint) || ScaleClass(t) // an alert's colours, or any preset's class (D-5, D-29)
 	if c, ok := p.set[t]; ok && !(ramp && p.safe) {
 		return c, true
 	}

@@ -47,6 +47,7 @@ restated here; this log holds the library's own. v0.2.0's log is `../radar-loops
 | D-26 | 2026-10-08 | Restates watchpost D-150 | see watchpost D-150 | A-5 is hotfixed: go-tuiMaps v0.2.1 (the fix alone, from `main`) and watchpost 0.18.1 pinning it, each through its full gate and CI, with a GitHub issue. |
 | D-27 | 2026-10-08 | Restates watchpost D-151 | see watchpost D-151 | UAT-1, the early slice, needs this library's P0, P1 and P2.1 and `v0.3.0-rc.1`. |
 | D-28 | 2026-10-08 | Restates watchpost D-152 | see watchpost D-152 | GO-2026-6617: every module's `go` directive is 1.26.9; the gate, CI and builds run on go1.27.2. Supersedes v0.2.0 D-133's floor of 1.25.13. |
+| D-29 | 2026-10-11 | The quality pass (watchpost batch 13 to 14) found `Map.SafeRamps(true)` keeps only the alert, radar and temperature ramps the library's own (`internal/colour/palette.go:72`): a host colour for a MUF, foF2, UV, AQI, QPF, wind or wave class is still drawn, and `Warnings` says nothing. Fix it in v0.3.0? | "Fix: protect every ramp (Rec.)" | **`SafeRamps` keeps every preset's classes the library's own**, as D-5 (watchpost D-36) already ruled and was not built: decided by `ScaleClass`, with a test over every scale token. |
 
 ## Agent decisions (A-n, watchpost D-13)
 

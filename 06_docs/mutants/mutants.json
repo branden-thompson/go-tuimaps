@@ -188,5 +188,15 @@
     "new": "",
     "package": "./internal/render",
     "test": "TestTheWaterAskedOnceAFrameIsThePaintersAnswer"
+  },
+  {
+    "id": "m021",
+    "row": "L-2.1 (D-29)",
+    "what": "safe ramps keep only the alert, radar and temperature ramps: a host's MUF colour is drawn",
+    "file": "internal/colour/palette.go",
+    "old": "\tramp := (t >= AlertExtremeOutline && t <= AlertUnknownTint) || ScaleClass(t) // an alert's colours, or any preset's class (D-5, D-29)\n",
+    "new": "\tramp := t >= AlertExtremeOutline && t <= High\n",
+    "package": "./internal/colour",
+    "test": "TestSafeRampsKeepEveryScaleTheLibrarysOwn"
   }
 ]
