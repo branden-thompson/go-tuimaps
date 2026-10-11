@@ -329,6 +329,7 @@ type Renderer struct {
 	drops   []Drop    // this frame's dropped alert labels, the backing kept from frame to frame
 	lons    []float64 // the longitude of each dot column's centre, for this frame
 	lats    []float64 // the latitude of each dot row's
+	water   []uint8   // each cell's water, asked once a frame (waterAt); the backing kept from frame to frame
 	line    strings.Builder
 
 	drawn     bool  // a frame has been drawn, and last describes it

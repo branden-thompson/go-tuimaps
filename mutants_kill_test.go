@@ -4,8 +4,9 @@ package tuimaps_test
 
 // mutants_kill_test.go — the costly half of M4 (NFR-2), run by scripts/gate's
 // full lane: each mutant applied to a copy of the tree, never to the tree
-// itself, so a run touches nothing a person is editing. A mutant counts only
-// when the copy still compiles; its test must then fail.
+// itself, so a run touches nothing a person is editing; one copy for every
+// mutant, each file put back from its saved bytes after its mutant. A mutant
+// counts only when the copy still compiles; its test must then fail.
 
 import (
 	"bytes"
@@ -74,19 +75,20 @@ func goIn(dir string, args ...string) (string, bool) {
 	return buf.String(), ok
 }
 
-// TestEveryMutantIsKilled applies each mutant to its own copy of the tree.
-// The copy must build and vet with the mutant in place - a mutant that does
-// not compile is no evidence either way - and the mutant's test must then
-// fail in its package.
+// TestEveryMutantIsKilled applies each mutant to the copy of the tree in
+// turn. The copy must build and vet with the mutant in place - a mutant that
+// does not compile is no evidence either way - and the mutant's test must
+// then fail in its package. A file that cannot be put back ends the run: the
+// copy would no longer be the tree.
 func TestEveryMutantIsKilled(t *testing.T) {
+	dir := treeCopy(t)
 	for _, m := range loadMutants(t) {
+		path := filepath.Join(dir, m.File)
+		b, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
 		t.Run(m.ID, func(t *testing.T) {
-			dir := treeCopy(t)
-			path := filepath.Join(dir, m.File)
-			b, err := os.ReadFile(path)
-			if err != nil {
-				t.Fatal(err)
-			}
 			if strings.Count(string(b), m.Old) != 1 {
 				t.Fatalf("its text is not in %s once", m.File)
 			}
@@ -101,5 +103,11 @@ func TestEveryMutantIsKilled(t *testing.T) {
 				t.Errorf("SURVIVED: %s (%s, %s) - %s still passes with it in place:\n%s", m.ID, m.Row, m.What, m.Test, out)
 			}
 		})
+		if err := os.WriteFile(path, b, 0o644); err != nil {
+			t.Fatalf("%s's file was not put back: %v", m.ID, err)
+		}
+		if back, err := os.ReadFile(path); err != nil || !bytes.Equal(back, b) {
+			t.Fatalf("%s's file is not as it was after putting it back", m.ID)
+		}
 	}
 }

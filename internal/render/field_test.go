@@ -262,3 +262,39 @@ func TestImageBlockShadesNoColour(t *testing.T) {
 		}
 	}
 }
+
+// TestTheWaterAskedOnceAFrameIsThePaintersAnswer: every cell's water a frame
+// reads is the painter's answer for that frame - after the view moves too,
+// where the last frame's answers would be wrong.
+func TestTheWaterAskedOnceAFrameIsThePaintersAnswer(t *testing.T) {
+	f := bands(40, 30)
+	f.Lines = true
+	in := Input{View: gulfView(), Style: style.BuiltIn(), Fields: []scene.Field{f}, OverlaysVersion: 1}
+	in.Tiles = embedded(t, in.View)
+	r, _ := drawn(t, in)
+	moved := in
+	moved.View.Centre = project.LonLat{Lon: -80, Lat: 25}
+	moved.Tiles, moved.OverlaysVersion = embedded(t, moved.View), 2
+	for _, next := range []Input{in, moved} {
+		if _, err := r.Draw(next); err != nil {
+			t.Fatal(err)
+		}
+		asked, sea := 0, 0
+		for i, known := range r.water {
+			if known == waterUnknown {
+				continue
+			}
+			asked++
+			owns := r.painter.Water(i%r.grid.cols, i/r.grid.cols)
+			if owns != (known == waterOwns) {
+				t.Fatalf("centre %v: cell %d held as water %v; the painter says %v", next.View.Centre, i, known == waterOwns, owns)
+			}
+			if owns {
+				sea++
+			}
+		}
+		if asked == 0 || sea == 0 {
+			t.Errorf("centre %v: %d cells asked, %d of sea: this measures nothing", next.View.Centre, asked, sea)
+		}
+	}
+}

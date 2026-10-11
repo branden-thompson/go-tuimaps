@@ -1,5 +1,10 @@
 package colour
 
+import (
+	"slices"
+	"sync"
+)
+
 // Preset is one of the library's own types of overlay colouring (D-69).
 type Preset uint8
 
@@ -187,10 +192,47 @@ func Midpoint(p Preset, ground GroundKind, depth Depth) int {
 // has the library's own ramp: the 256-colour one is chosen from that palette
 // and checked there, never a conversion of the truecolor one (S10-1). With
 // no colour, or sixteen, there is none: the no-colour form is drawn (D-59).
+//
+// Each call hands back a ramp of its own: a caller's changes never reach the
+// library's.
 func Ramp(p Preset, ground GroundKind, depth Depth) ([]RGB, bool) {
+	r, ok := builtRamp(p, ground, depth)
+	return slices.Clone(r), ok
+}
+
+// builtRamp is a preset's ramp as the library keeps it, built once and read
+// in place, never handed to a caller: a frame reads a ramp for every cell
+// it colours.
+func builtRamp(p Preset, ground GroundKind, depth Depth) ([]RGB, bool) {
 	if depth != Truecolor && depth != Colours256 {
 		return nil, false
 	}
+	if p < Temperature || p > FoF2 {
+		return nil, false
+	}
+	g := Dark
+	if ground == Light {
+		g = Light
+	}
+	return builtRamps()[p][g][depth], true
+}
+
+// builtRamps are every preset's ramps for each ground and each depth with a
+// ramp (Truecolor, Colours256), built the first time one is asked.
+var builtRamps = sync.OnceValue(func() *[FoF2 + 1][Light + 1][Colours256 + 1][]RGB {
+	var t [FoF2 + 1][Light + 1][Colours256 + 1][]RGB
+	for p := Temperature; p <= FoF2; p++ {
+		for _, g := range []GroundKind{Dark, Light} {
+			for _, d := range []Depth{Truecolor, Colours256} {
+				t[p][g][d], _ = buildRamp(p, g, d)
+			}
+		}
+	}
+	return &t
+})
+
+// buildRamp makes a preset's ramp for a ground and a depth with a ramp.
+func buildRamp(p Preset, ground GroundKind, depth Depth) ([]RGB, bool) {
 	switch p {
 	case Temperature:
 		return temperatureRamp(ground, depth), true
@@ -294,31 +336,31 @@ func rampDefault(t Token, ground GroundKind, depth Depth) (RGB, bool) {
 		}
 		return tints[i/2], true
 	case t >= Radar1 && t <= Radar6:
-		ramp, ok := Ramp(Radar, ground, depth)
+		ramp, ok := builtRamp(Radar, ground, depth)
 		return pick(ramp, int(t-Radar1), ok)
 	case t >= Temperature1 && t <= Temperature17:
-		ramp, ok := Ramp(Temperature, ground, depth)
+		ramp, ok := builtRamp(Temperature, ground, depth)
 		return pick(ramp, int(t-Temperature1), ok)
 	case t >= Wind1 && t <= Wind6:
-		ramp, ok := Ramp(Wind, ground, depth)
+		ramp, ok := builtRamp(Wind, ground, depth)
 		return pick(ramp, int(t-Wind1), ok)
 	case t >= Wave1 && t <= Wave6:
-		ramp, ok := Ramp(Waves, ground, depth)
+		ramp, ok := builtRamp(Waves, ground, depth)
 		return pick(ramp, int(t-Wave1), ok)
 	case t >= UV1 && t <= UV5:
-		ramp, ok := Ramp(UV, ground, depth)
+		ramp, ok := builtRamp(UV, ground, depth)
 		return pick(ramp, int(t-UV1), ok)
 	case t >= AQI1 && t <= AQI6:
-		ramp, ok := Ramp(AirQuality, ground, depth)
+		ramp, ok := builtRamp(AirQuality, ground, depth)
 		return pick(ramp, int(t-AQI1), ok)
 	case t >= QPF1 && t <= QPF7:
-		ramp, ok := Ramp(QPF, ground, depth)
+		ramp, ok := builtRamp(QPF, ground, depth)
 		return pick(ramp, int(t-QPF1), ok)
 	case t >= MUF1 && t <= MUF10:
-		ramp, ok := Ramp(MUF, ground, depth)
+		ramp, ok := builtRamp(MUF, ground, depth)
 		return pick(ramp, int(t-MUF1), ok)
 	case t >= FoF21 && t <= FoF26:
-		ramp, ok := Ramp(FoF2, ground, depth)
+		ramp, ok := builtRamp(FoF2, ground, depth)
 		return pick(ramp, int(t-FoF21), ok)
 	}
 	return RGB{}, false

@@ -193,23 +193,20 @@ func WaveGrid(id string, grid Grid, unit WaveUnit, validAt time.Time) Overlay {
 // UVGrid is a UV index field in one call (L-25): the preset supplies its
 // five categories and their colours.
 func UVGrid(id string, grid Grid, validAt time.Time) Overlay {
-	grid.Type = Type{Preset: "uv", Unit: "index"}
-	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &grid}
+	return presetGrid(id, grid, Type{Preset: "uv", Unit: "index"}, validAt)
 }
 
 // AirQualityGrid is a US AQI field in one call (L-25): the preset supplies
 // its six categories and their colours.
 func AirQualityGrid(id string, grid Grid, validAt time.Time) Overlay {
-	grid.Type = Type{Preset: "aqi", Unit: "AQI"}
-	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &grid}
+	return presetGrid(id, grid, Type{Preset: "aqi", Unit: "AQI"}, validAt)
 }
 
 // MUFGrid is a field of the maximum usable frequency, in MHz, in one call
 // (v0.3.0 L-2.1): the preset supplies its ten classes, broken at the amateur
 // band edges, and their colours.
 func MUFGrid(id string, grid Grid, validAt time.Time) Overlay {
-	grid.Type = Type{Preset: "muf", Unit: "MHz"}
-	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &grid}
+	return presetGrid(id, grid, Type{Preset: "muf", Unit: "MHz"}, validAt)
 }
 
 // FoF2Grid is a field of the F2 layer's critical frequency, in MHz, in one
@@ -217,15 +214,20 @@ func MUFGrid(id string, grid Grid, validAt time.Time) Overlay {
 // edges below 15 MHz - nothing is drawn below 1.8 MHz - in the MUF colours of
 // the same frequencies.
 func FoF2Grid(id string, grid Grid, validAt time.Time) Overlay {
-	grid.Type = Type{Preset: "fof2", Unit: "MHz"}
-	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &grid}
+	return presetGrid(id, grid, Type{Preset: "fof2", Unit: "MHz"}, validAt)
 }
 
 // QPFGrid is a field of rain and snow totals, liquid-equivalent, in mm, in
 // one call (L-26): the preset supplies WPC's seven classes and their
 // colours, and draws nothing under a trace.
 func QPFGrid(id string, grid Grid, validAt time.Time) Overlay {
-	grid.Type = Type{Preset: "qpf", Unit: "mm"}
+	return presetGrid(id, grid, Type{Preset: "qpf", Unit: "mm"}, validAt)
+}
+
+// presetGrid is a grid in one of the library's presets, kept an hour: the
+// preset supplies its classes and their colours.
+func presetGrid(id string, grid Grid, t Type, validAt time.Time) Overlay {
+	grid.Type = t
 	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &grid}
 }
 

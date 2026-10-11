@@ -159,8 +159,10 @@ func (t Token) Name() string {
 		return "muf." + strconv.Itoa(int(t-MUF1)+1)
 	case t >= FoF21 && t <= FoF26:
 		return "fof2." + strconv.Itoa(int(t-FoF21)+1)
+	case t >= Wind1 && t <= Wind6:
+		return "wind." + strconv.Itoa(int(t-Wind1)+1)
 	}
-	return "wind." + strconv.Itoa(int(t-Wind1)+1)
+	return "" // a token no case names: TestTokensMatchTheDocumentedList fails on it
 }
 
 // ScaleClass reports whether a token is one of a preset's classes: drawn in

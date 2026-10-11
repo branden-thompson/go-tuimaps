@@ -133,6 +133,8 @@ func (r *Renderer) underlays(in Input) {
 		return
 	}
 	g := r.grid
+	r.water = slices.Grow(r.water[:0], g.cols*g.rows)[:g.cols*g.rows]
+	clear(r.water) // the areas are whole: what water owns is asked again this frame
 	// WHERE AN IMAGE SHARES THE MAP, A FIELD IS ITS LINES (L-15.3, D-88):
 	// both ramps run blue to red, so a band under an echo would read as
 	// rain. The field is its labelled contours, over its bands drawn faintly
@@ -159,9 +161,10 @@ func (r *Renderer) underlays(in Input) {
 		if rampless(in.Depth) {
 			continue
 		}
+		matters := groundMatters(f)
 		for row := range g.rows {
 			for col := range g.cols {
-				if offItsGround(f, r.painter.Water(col, row)) {
+				if matters && offItsGround(f, r.waterAt(col, row)) {
 					continue
 				}
 				lon, lat := (r.lons[2*col]+r.lons[2*col+1])/2, (r.lats[4*row+1]+r.lats[4*row+2])/2
@@ -181,14 +184,45 @@ func (r *Renderer) underlays(in Input) {
 	}
 }
 
-// offItsGround reports whether a field is not drawn over a cell: a field
-// stops at the shore (D-32) unless its host continues it over water (L-1.1);
-// waves are the sea's alone (L-20.1), whatever the host says.
+// offItsGround reports whether a field whose ground matters (groundMatters)
+// is not drawn over a cell: waves are the sea's alone (L-20.1), whatever the
+// host says; any other such field stops at the shore (D-32).
 func offItsGround(f *scene.Field, water bool) bool {
 	if colour.Preset(f.Preset) == colour.Waves {
 		return !water
 	}
-	return water && !f.OverWater
+	return water
+}
+
+// waterAt reports whether water owns a cell: the painter's answer, asked
+// once a frame for a cell, since it counts the cell's dots and fields and
+// images ask it of every dot. The areas are whole before any field is drawn.
+func (r *Renderer) waterAt(col, row int) bool {
+	i := row*r.grid.cols + col
+	if known := r.water[i]; known != waterUnknown {
+		return known == waterOwns
+	}
+	owns := r.painter.Water(col, row)
+	r.water[i] = waterNot
+	if owns {
+		r.water[i] = waterOwns
+	}
+	return owns
+}
+
+// A cell's water, as waterAt holds it: not asked yet this frame, or the
+// answer.
+const (
+	waterUnknown uint8 = iota
+	waterNot
+	waterOwns
+)
+
+// groundMatters reports whether water decides any of a field's cells: for
+// waves, and for a field its host has not continued over water (L-1.1); a
+// field continued over it never asks (the test counts a cell's dots).
+func groundMatters(f *scene.Field) bool {
+	return colour.Preset(f.Preset) == colour.Waves || !f.OverWater
 }
 
 // isRain reports whether a field is in radar's scale: A GRID OF RAIN IS
@@ -286,7 +320,7 @@ func (r *Renderer) rain(in Input, preset uint8, classCount int, masked bool, cla
 	g := r.grid
 	for row := range g.rows {
 		for col := range g.cols {
-			if masked && r.painter.Water(col, row) {
+			if masked && r.waterAt(col, row) {
 				continue
 			}
 			k := class(col, row)
@@ -317,10 +351,11 @@ func (r *Renderer) rain(in Input, preset uint8, classCount int, masked bool, cla
 func (r *Renderer) contours(in Input, f *scene.Field) {
 	w, h := r.painter.lines.Dots()
 	ink := uint8(colour.LabelRegion)
+	matters := groundMatters(f)
 	for y := range h - 1 {
 		for x := range w - 1 {
 			here := fieldClass(f, r.lons[x], r.lats[y])
-			if here < 0 || offItsGround(f, r.painter.Water(x/2, y/4)) {
+			if here < 0 || (matters && offItsGround(f, r.waterAt(x/2, y/4))) {
 				continue
 			}
 			east, south := fieldClass(f, r.lons[x+1], r.lats[y]), fieldClass(f, r.lons[x], r.lats[y+1])

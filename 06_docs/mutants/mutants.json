@@ -4,8 +4,8 @@
     "row": "L-1.1",
     "what": "a field is drawn over the sea whatever its host says",
     "file": "internal/render/field.go",
-    "old": "\treturn water && !f.OverWater\n",
-    "new": "\treturn water\n",
+    "old": "\treturn colour.Preset(f.Preset) == colour.Waves || !f.OverWater\n",
+    "new": "\treturn colour.Preset(f.Preset) == colour.Waves\n",
     "package": ".",
     "test": "TestAFieldStopsAtTheShoreByDefault"
   },
@@ -34,8 +34,8 @@
     "row": "L-1.2",
     "what": "an image masked by water is drawn over the sea",
     "file": "internal/render/field.go",
-    "old": "\t\t\tif masked && r.painter.Water(col, row) {\n",
-    "new": "\t\t\tif masked && r.painter.Water(col, row) && false {\n",
+    "old": "\t\t\tif masked && r.waterAt(col, row) {\n",
+    "new": "\t\t\tif masked && r.waterAt(col, row) && false {\n",
     "package": "./internal/render",
     "test": "TestAMaskedImageStaysOffTheSea"
   },
@@ -44,8 +44,8 @@
     "row": "L-1.3",
     "what": "a field's lines are drawn over the sea whatever its host says",
     "file": "internal/render/field.go",
-    "old": "\t\t\tif here < 0 || offItsGround(f, r.painter.Water(x/2, y/4)) {\n",
-    "new": "\t\t\tif here < 0 {\n",
+    "old": "\t\t\tif here < 0 || (matters && offItsGround(f, r.waterAt(x/2, y/4))) {\n",
+    "new": "\t\t\tif here < 0 || (matters && false) {\n",
     "package": ".",
     "test": "TestContoursFollowTheirFieldOverWater"
   },
@@ -158,5 +158,35 @@
     "new": "func FloorsFirst(p Preset) bool { return p == Radar || p == QPF }",
     "package": "./internal/colour",
     "test": "TestTheMUFAndFoF2RampsPassCheckOnBothGrounds"
+  },
+  {
+    "id": "m017",
+    "row": "L-2.1",
+    "what": "a caller's ramp is the library's own, so its changes reach every frame",
+    "file": "internal/colour/preset.go",
+    "old": "\treturn slices.Clone(r), ok\n",
+    "new": "\treturn slices.Clip(r), ok\n",
+    "package": "./internal/colour",
+    "test": "TestTheKeptRampsAreTheBuiltOnes"
+  },
+  {
+    "id": "m018",
+    "row": "L-2.1",
+    "what": "a light ground's ramp is kept as the dark one's",
+    "file": "internal/colour/preset.go",
+    "old": "\tif ground == Light {\n\t\tg = Light\n\t}\n",
+    "new": "",
+    "package": "./internal/colour",
+    "test": "TestTheKeptRampsAreTheBuiltOnes"
+  },
+  {
+    "id": "m020",
+    "row": "NFR-1",
+    "what": "a frame reads the last frame's water: its answers are kept past the frame",
+    "file": "internal/render/field.go",
+    "old": "\tclear(r.water) // the areas are whole: what water owns is asked again this frame\n",
+    "new": "",
+    "package": "./internal/render",
+    "test": "TestTheWaterAskedOnceAFrameIsThePaintersAnswer"
   }
 ]
