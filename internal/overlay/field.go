@@ -136,6 +136,9 @@ func classify(g *Grid, kind Kind) scene.Field {
 	field := scene.Field{West: g.West, South: g.South, East: g.East, North: g.North, Cols: g.Cols, Rows: g.Rows,
 		Classes: make([]int8, len(g.Values)), Preset: uint8(kind.Preset), ClassCount: len(kind.Breaks) + 1,
 		Labels: bandLabels(kind.Breaks, g.Type.Unit), Lines: g.Lines, OverWater: g.OverWater}
+	for _, c := range kind.Colours {
+		field.Colours = append(field.Colours, [3]uint8{c.R, c.G, c.B})
+	}
 	if g.From != nil { // a vector grid keeps its speeds and directions: its arrows are drawn from them (L-16)
 		field.From, field.Speeds = append([]float64(nil), g.From...), append([]float64(nil), g.Values...)
 		field.Gusts = append([]float64(nil), g.Gusts...) // L-24: said beside the speed

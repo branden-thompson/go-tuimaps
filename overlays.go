@@ -9,6 +9,7 @@ import (
 	"github.com/branden-thompson/go-tuimaps/internal/overlay"
 	"github.com/branden-thompson/go-tuimaps/internal/render"
 	"github.com/branden-thompson/go-tuimaps/internal/scene"
+	"github.com/branden-thompson/go-tuimaps/internal/textsafe"
 )
 
 // Overlay is what a host hands in: an id, when its data was valid and how
@@ -301,10 +302,31 @@ func (m *Map) Set(o Overlay) (res SetResult, err error) {
 	}
 	m.overlays++
 	m.reported = nil
+	m.checkHostRampLocked(o)
 	delete(m.tracked, o.ID)       // its old pictures are not held for motion
 	m.play.seen = m.shownLocked() // a refresh that moves the moment is an input, not an advance
 	m.changed++
 	return res, nil
+}
+
+// checkHostRampLocked reports a host type's colours that break the checker
+// on the ground and at the depth in effect (L-2.3): drawn all the same, and
+// never silently (D-53).
+func (m *Map) checkHostRampLocked(o Overlay) {
+	if o.Grid == nil || o.Grid.Type.Preset != "" {
+		return
+	}
+	kind, err := overlay.ResolveType(o.Grid.Type)
+	if err != nil {
+		return
+	}
+	depth := m.depthInEffect()
+	ground, _ := m.look.ground.InEffect(m.look.palette)
+	ramp := colour.HostRamp(kind.Colours, len(kind.Breaks)+1, m.look.palette, m.look.ground.Kind(m.look.palette), depth)
+	breaches := len(colour.Check(ramp, colour.RampCheck{Ground: ground, Depth: depth, Midpoint: -1}))
+	if breaches > 0 && len(m.own) < 64 {
+		m.own = append(m.own, fault.Warning{Kind: fault.RampRuleBroken, Count: breaches, Subject: textsafe.Quote(o.ID)})
+	}
 }
 
 // Remove takes an overlay away, and says whether it was there and whether

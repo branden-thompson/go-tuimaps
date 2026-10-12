@@ -136,3 +136,27 @@ func TestClassCap(t *testing.T) {
 		t.Errorf("20 breaks make 21 classes: %v", err)
 	}
 }
+
+// TestAHostTypesColoursAreOneAClass is L-2.2's hand-in: a host type's own
+// colours are one a class or none; a preset takes none of the host's.
+func TestAHostTypesColoursAreOneAClass(t *testing.T) {
+	two := []colour.RGB{{R: 1}, {R: 2}}
+	for _, c := range []struct {
+		name string
+		t    Type
+		ok   bool
+	}{
+		{"none", Type{Breaks: []float64{5}}, true},
+		{"one a class", Type{Breaks: []float64{5}, Colours: two}, true},
+		{"one short", Type{Breaks: []float64{5, 6}, Colours: two}, false},
+		{"a preset's", Type{Preset: "muf", Unit: "MHz", Colours: two}, false},
+	} {
+		k, err := ResolveType(c.t)
+		if (err == nil) != c.ok {
+			t.Errorf("%s: %v; want accepted %v", c.name, err, c.ok)
+		}
+		if err == nil && len(k.Colours) != len(c.t.Colours) {
+			t.Errorf("%s: %d colours resolved of %d given", c.name, len(k.Colours), len(c.t.Colours))
+		}
+	}
+}

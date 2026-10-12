@@ -145,6 +145,7 @@ func (r *Renderer) underlays(in Input) {
 			r.gridMarks(in, f) // before any value the fields write: a day's total takes the place of a speed or an isotherm's value beside it (L-17.2)
 		}
 	}
+	filled := false // a field before this one filled its bands
 	for i := range in.Fields {
 		f := &in.Fields[i]
 		if f.From != nil {
@@ -155,24 +156,19 @@ func (r *Renderer) underlays(in Input) {
 			continue // drawn as an image is, after every field (L-17.1)
 		}
 		lined := shared || f.Lines // L-15.4: the host may ask for the look alone
-		if rampless(in.Depth) || lined {
+		if twoClassHost(f) {
+			r.edgeMark(in, f) // L-2.6: its edge broken at every depth, never a contour
+			if rampless(in.Depth) || filled {
+				continue // over a filled field, its edge alone (A-10)
+			}
+		} else if rampless(in.Depth) || lined {
 			r.contours(in, f)
 		}
 		if rampless(in.Depth) {
 			continue
 		}
-		matters := groundMatters(f)
-		for row := range g.rows {
-			for col := range g.cols {
-				if matters && offItsGround(f, r.waterAt(col, row)) {
-					continue
-				}
-				lon, lat := (r.lons[2*col]+r.lons[2*col+1])/2, (r.lats[4*row+1]+r.lats[4*row+2])/2
-				if ink := classInk(f.Preset, fieldClass(f, lon, lat)); ink != 0 {
-					g.cells[row*g.cols+col].under, g.cells[row*g.cols+col].faint = ink, lined
-				}
-			}
-		}
+		r.fill(in, f, lined)
+		filled = true
 	}
 	for i := range in.Fields {
 		if f := &in.Fields[i]; isRain(f) {
@@ -183,6 +179,74 @@ func (r *Renderer) underlays(in Input) {
 		r.image(in, &in.Rasters[i])
 	}
 }
+
+// fill colours the cells under a scalar field's bands, faintly when its
+// lines are drawn over them.
+func (r *Renderer) fill(in Input, f *scene.Field, lined bool) {
+	g, inks := r.grid, r.fieldInks(in, f)
+	matters := groundMatters(f)
+	for row := range g.rows {
+		for col := range g.cols {
+			if matters && offItsGround(f, r.waterAt(col, row)) {
+				continue
+			}
+			lon, lat := (r.lons[2*col]+r.lons[2*col+1])/2, (r.lats[4*row+1]+r.lats[4*row+2])/2
+			if class := fieldClass(f, lon, lat); class >= 0 && int(class) < len(inks) && inks[class] != 0 {
+				g.cells[row*g.cols+col].under, g.cells[row*g.cols+col].faint = inks[class], lined
+			}
+		}
+	}
+}
+
+// fieldInks are a scalar field's ink a class: a preset's tokens, or a host
+// type's colours as literal inks (L-2.2); 0 for a class not drawn.
+func (r *Renderer) fieldInks(in Input, f *scene.Field) []uint8 {
+	inks := make([]uint8, f.ClassCount)
+	if f.Preset != 0 {
+		for c := range inks {
+			inks[c] = classInk(f.Preset, int8(c))
+		}
+		return inks
+	}
+	own := make([]colour.RGB, len(f.Colours))
+	for i, c := range f.Colours {
+		own[i] = colour.RGB{R: c[0], G: c[1], B: c[2]}
+	}
+	for c, rgb := range colour.HostRamp(own, f.ClassCount, in.Palette, in.Ground.Kind(in.Palette), in.Depth) {
+		inks[c] = r.painter.literalInk(rgb)
+	}
+	return inks
+}
+
+// twoClassHost reports whether a field is a host type of two classes, such
+// as a reach area (watchpost D-127): its edge is marked, not contoured.
+func twoClassHost(f *scene.Field) bool { return f.Preset == 0 && f.ClassCount == 2 }
+
+// edgeMark marks the edge between a two-class host field's classes with a
+// broken line that does not depend on colour (L-2.6): about every other dot
+// of the edge, picked by a hash of its place so the line is broken whichever
+// way it runs, in the contours' ink and with no label - never a contour.
+func (r *Renderer) edgeMark(in Input, f *scene.Field) {
+	w, h := r.painter.lines.Dots()
+	ink := uint8(colour.LabelRegion)
+	matters := groundMatters(f)
+	for y := range h - 1 {
+		for x := range w - 1 {
+			here, east, south, ok := r.edgeAt(f, matters, x, y)
+			if !ok {
+				continue
+			}
+			edge := (east >= 0 && east != here) || (south >= 0 && south != here)
+			if edge && brokenAt(x, y) {
+				r.painter.lines.Set(x, y, ink)
+			}
+		}
+	}
+}
+
+// brokenAt reports whether a dot of a broken edge is lit: about half of
+// them, by a hash of the dot's place, the same in every frame (NFR-6).
+func brokenAt(x, y int) bool { return (uint32(x)*73856093^uint32(y)*19349663)>>7&1 == 0 }
 
 // offItsGround reports whether a field whose ground matters (groundMatters)
 // is not drawn over a cell: waves are the sea's alone (L-20.1), whatever the
@@ -354,11 +418,10 @@ func (r *Renderer) contours(in Input, f *scene.Field) {
 	matters := groundMatters(f)
 	for y := range h - 1 {
 		for x := range w - 1 {
-			here := fieldClass(f, r.lons[x], r.lats[y])
-			if here < 0 || (matters && offItsGround(f, r.waterAt(x/2, y/4))) {
+			here, east, south, ok := r.edgeAt(f, matters, x, y)
+			if !ok {
 				continue
 			}
-			east, south := fieldClass(f, r.lons[x+1], r.lats[y]), fieldClass(f, r.lons[x], r.lats[y+1])
 			if (east >= 0 && east != here) || (south >= 0 && south != here) {
 				r.painter.lines.Set(x, y, ink)
 			}
@@ -370,6 +433,17 @@ func (r *Renderer) contours(in Input, f *scene.Field) {
 			}
 		}
 	}
+}
+
+// edgeAt is a field's class at a dot and its neighbours' to the east and
+// the south, -1 where they have none; false for a dot with no class, or off
+// the field's ground.
+func (r *Renderer) edgeAt(f *scene.Field, matters bool, x, y int) (here, east, south int8, ok bool) {
+	here = fieldClass(f, r.lons[x], r.lats[y])
+	if here < 0 || (matters && offItsGround(f, r.waterAt(x/2, y/4))) {
+		return here, -1, -1, false
+	}
+	return here, fieldClass(f, r.lons[x+1], r.lats[y]), fieldClass(f, r.lons[x], r.lats[y+1]), true
 }
 
 // valueLabel offers a contour's value as a label at a dot.

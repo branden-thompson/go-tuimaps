@@ -44,8 +44,8 @@
     "row": "L-1.3",
     "what": "a field's lines are drawn over the sea whatever its host says",
     "file": "internal/render/field.go",
-    "old": "\t\t\tif here < 0 || (matters && offItsGround(f, r.waterAt(x/2, y/4))) {\n",
-    "new": "\t\t\tif here < 0 || (matters && false) {\n",
+    "old": "\tif here < 0 || (matters && offItsGround(f, r.waterAt(x/2, y/4))) {\n",
+    "new": "\tif here < 0 || (matters && false) {\n",
     "package": ".",
     "test": "TestContoursFollowTheirFieldOverWater"
   },
@@ -318,5 +318,85 @@
     "new": "\treturn 0.0\n",
     "package": "./internal/colour",
     "test": "TestNightTintKeepsTheFieldReadable"
+  },
+  {
+    "id": "m034",
+    "row": "L-2.2",
+    "what": "a host type's own colours are passed over for the spread",
+    "file": "internal/colour/hostramp.go",
+    "old": "\tif len(own) == n {\n",
+    "new": "\tif false {\n",
+    "package": ".",
+    "test": "TestAHostTypeIsFilledFromLowMiddleHigh"
+  },
+  {
+    "id": "m035",
+    "row": "L-2.2",
+    "what": "the spread runs low to middle the whole way, never reaching high",
+    "file": "internal/colour/hostramp.go",
+    "old": "\t\tif t > 0.5 {\n",
+    "new": "\t\tif false {\n",
+    "package": ".",
+    "test": "TestAHostTypeIsFilledFromLowMiddleHigh"
+  },
+  {
+    "id": "m036",
+    "row": "L-2.3",
+    "what": "a host type's broken ramp is drawn silently",
+    "file": "overlays.go",
+    "old": "\tif breaches > 0 && len(m.own) < 64 {\n",
+    "new": "\tif false {\n",
+    "package": ".",
+    "test": "TestABadHostRampIsWarned"
+  },
+  {
+    "id": "m037",
+    "row": "L-2.5",
+    "what": "a host type's legend keys no colour",
+    "file": "facts.go",
+    "old": "\t\t\tone.Colour, one.Drawn = host[i], true\n",
+    "new": "\t\t\tone.Drawn = false\n",
+    "package": ".",
+    "test": "TestAHostTypesLegendHasColoursAndUnit"
+  },
+  {
+    "id": "m038",
+    "row": "L-2.6",
+    "what": "the reach's edge is an unbroken line, as a contour is",
+    "file": "internal/render/field.go",
+    "old": "\t\t\tif edge && brokenAt(x, y) {\n",
+    "new": "\t\t\tif edge {\n",
+    "package": "./internal/render",
+    "test": "TestTheReachIsMarkedWithoutColour"
+  },
+  {
+    "id": "m039",
+    "row": "L-2.6",
+    "what": "a reach over a filled field fills over it",
+    "file": "internal/render/field.go",
+    "old": "\t\tfilled = true\n",
+    "new": "\t\tfilled = false\n",
+    "package": "./internal/render",
+    "test": "TestTheReachIsMarkedWithoutColour"
+  },
+  {
+    "id": "m040",
+    "row": "L-2.2",
+    "what": "a host type's colours are taken whatever their number",
+    "file": "internal/overlay/grid.go",
+    "old": "\t\tif len(t.Colours) != 0 && len(t.Colours) != len(t.Breaks)+1 {\n",
+    "new": "\t\tif false {\n",
+    "package": "./internal/overlay",
+    "test": "TestAHostTypesColoursAreOneAClass"
+  },
+  {
+    "id": "m041",
+    "row": "L-2.4",
+    "what": "a host type's bands are never filled",
+    "file": "internal/render/field.go",
+    "old": "\t\tr.fill(in, f, lined)\n",
+    "new": "\t\t_ = lined\n",
+    "package": ".",
+    "test": "TestNoGridDrawsNothingSilently"
   }
 ]

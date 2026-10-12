@@ -145,6 +145,9 @@ type Field struct {
 	Classes                  []int8
 	Preset                   uint8 // the colour preset, or 0 for a host's own type
 	ClassCount               int
+	// Colours are a host type's own colours, one a class, as red, green and
+	// blue; empty for the low, middle and high tokens spread (L-2.2).
+	Colours [][3]uint8
 	// Labels are the values the field's bands are divided at, as text, by
 	// class: what a contour line carries when there is no colour to carry it
 	// (D-35). Labels[c] is the value of the boundary below class c, so class

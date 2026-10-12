@@ -169,9 +169,13 @@ func (m *Map) classesOf(kind overlay.Kind) []Class {
 	depth := m.depthInEffect()
 	ground := m.look.ground.Kind(m.look.palette)
 	first, ramped := rampToken(kind.Preset)
+	host := colour.HostRamp(kind.Colours, len(kind.Breaks)+1, m.look.palette, ground, depth) // nil for a preset, or at a depth with no ramp
 	out := make([]Class, 0, len(kind.Breaks)+1)
 	for i := range len(kind.Breaks) + 1 {
 		one := Class{Label: classLabel(kind.Breaks, i)}
+		if kind.Preset == 0 && i < len(host) { // a host type keyed in its spread or its own colours (L-2.5)
+			one.Colour, one.Drawn = host[i], true
+		}
 		tok := first + Token(i)
 		if colour.FloorsFirst(kind.Preset) { // below radar's first floor is no rain, below a total's a trace, and nothing is drawn (L-17.1, L-26)
 			tok--
@@ -185,7 +189,7 @@ func (m *Map) classesOf(kind overlay.Kind) []Class {
 }
 
 // rampToken is the token of a preset's first class; the classes after it
-// follow in order. A host's own type has no ramp of its own yet.
+// follow in order. A host's own type has none: HostRamp colours it.
 func rampToken(preset colour.Preset) (Token, bool) {
 	switch preset {
 	case colour.Temperature:

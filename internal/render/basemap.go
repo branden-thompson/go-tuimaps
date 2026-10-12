@@ -517,6 +517,13 @@ func (p *Painter) inkFor(r *style.Rule, zoom float64) uint8 {
 	if !isLiteral {
 		return uint8(r.Token)
 	}
+	return p.literalInk(literal)
+}
+
+// literalInk is the ink a colour of its own is drawn in this frame: one
+// already given it, or the next; a frame with more colours than inks
+// shares the first.
+func (p *Painter) literalInk(literal colour.RGB) uint8 {
 	for i, c := range p.literals {
 		if c == literal {
 			return uint8(firstLiteral + i)

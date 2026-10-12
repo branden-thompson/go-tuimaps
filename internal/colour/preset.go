@@ -362,8 +362,19 @@ func rampDefault(t Token, ground GroundKind, depth Depth) (RGB, bool) {
 	case t >= FoF21 && t <= FoF26:
 		ramp, ok := builtRamp(FoF2, ground, depth)
 		return pick(ramp, int(t-FoF21), ok)
+	case t >= Low && t <= High:
+		return hostDefaults()[t-Low], true
 	}
 	return RGB{}, false
+}
+
+// hostDefaults are the low, middle and high tokens' colours on either
+// ground (L-2.2, A-9): the MUF preset's first, sixth and last classes. Spread
+// by HostRamp they pass the checker to 9 classes at truecolor and to 7 at
+// 256 colours on both grounds; a host type with more is reported (L-2.3).
+func hostDefaults() [3]RGB {
+	m := mufRamp()
+	return [3]RGB{m[0], m[5], m[9]}
 }
 
 func pick(ramp []RGB, i int, ok bool) (RGB, bool) {

@@ -106,7 +106,7 @@ Stable names; adding one is a minor version. A host sets any subset; the rest ke
 | Alert areas | `alert.extreme.outline` · `alert.extreme.tint` · and the same pair for `severe`, `moderate`, `minor`, `unknown` |
 | Radar and precipitation | `radar.1` to `radar.6` — numbered by position, lightest rain first; the floors are 10, 20, 30, 40, 50, 60 dBZ. One set of names: the library's defaults for them differ by ground, and a host that sets them has set them for its own ground |
 | Temperature | `temperature.1` to `temperature.17` — numbered by position, coldest first |
-| A host's own type | `low` · `middle` · `high` — interpolated across its classes |
+| A host's own type | `low` · `middle` · `high` — spread evenly in Lab across its classes, the first class low, the middle one middle, the last high; by default the MUF preset's first, sixth and last classes, (38, 1, 95), (183, 129, 52), (217, 253, 213), on either ground (A-9); or the type's own Colours, one a class |
 | Line features | `track` · `track.label` |
 | Wind (FR-8, v0.2.0) | `wind.1` to `wind.6` |
 | Fire (v0.2.0, L-18) | `fire` · `fire.faint` — a fire's perimeter, its incident and a strong hotspot; a weaker hotspot. Never an alert |
