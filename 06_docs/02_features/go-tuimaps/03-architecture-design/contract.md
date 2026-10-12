@@ -345,3 +345,13 @@ plan task that makes the break; until then, v0.1.0's shape still holds.
 | `Fetcher` | Removed: `Fetcher` and `Map.Fetcher`, with the fetch package's checked wrapper, which nothing used | A host's transport, user-agent and timeout go through fetch options instead. A tile source that is not HTTP would need a later ruling (D-62) | Pass a transport, user-agent and timeout with `SetFetchOptions` | landed (D-62) |
 | `RoadLayer` | Switches the major roads only; `MinorRoadLayer` switches the minor roads apart (v0.2.0 D-82) | A weather map keeps the roads a listener takes bearings from and drops the rest, which one switch for both could not say | Switch `MinorRoadLayer` too where every road should go | landed |
 | New names' shapes | Setters only, with no paired options. The cache's maximum age is its own setter, and `CacheRoot` is unchanged. A provider is a typed constant. "Unverified" is a flag on a legend entry. No "not off" reason: the zero value serves | Fewer names for one host (D-70, 2-4, 6-7) | Nothing to change: these names are new in v0.2.0 | lands with each name |
+
+### What v0.3.0 changes in behaviour (propagation-fields D-3, D-5)
+
+Each is ruled before it lands (propagation-fields brief, C-6) and named in v0.3.0's release notes.
+
+| Break | What changes | Why | What a host does instead | State |
+|---|---|---|---|---|
+| Contour labels (L-3.1, L-3.2) | A contour's value carries its type's unit (`10°C`, `14MHz`; none on the UV index or the AQI), and labels are placed where a line runs east-west as well as north-south, so every field is labelled whichever way it bands | A label without a unit, and a field whose lines ran east-west carrying none at all, could not be read (watchpost D-34; HUM LEAD approved the redrawn reference frame, D-30) | Nothing: its specimens and reference frames, if it keeps any, are redrawn | landed |
+| `Answer.ValueUnit` (L-3.3) | A field's answer carries the unit the host declared, where only a temperature's had one | A value said without its unit is a number without meaning (M3) | Read `ValueUnit` for every field | landed |
+| `SafeRamps` (L-6.1) | Keeps every preset's classes the library's own - wind, waves, UV, AQI, QPF, MUF and foF2 as well as radar, temperature and the alerts | It promised every ramp and kept three (D-5, D-29) | Nothing, unless it set a class colour under safe ramps and expected it drawn | landed |

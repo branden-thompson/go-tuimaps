@@ -182,7 +182,7 @@ func (m *Map) fieldAnswer(place Place, id string, o Overlay) Answer {
 		dir := describe.Grid{West: grid.West, South: grid.South, East: grid.East, North: grid.North, Cols: grid.Cols, Rows: grid.Rows, Values: o.Grid.From}
 		return describe.OfWind(nameOf(place), id, reading, dir.At(place.At, nil).Value, o.Grid.Type.Unit)
 	}
-	return describe.OfField(nameOf(place), id, reading, o.Grid.Type.Preset == "temperature", m.units)
+	return describe.OfField(nameOf(place), id, reading, o.Grid.Type.Preset == "temperature", o.Grid.Type.Unit, m.units)
 }
 
 // imageAnswer is the answer for an image: the class here, and where the

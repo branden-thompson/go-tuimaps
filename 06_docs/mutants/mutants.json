@@ -198,5 +198,35 @@
     "new": "\tramp := t >= AlertExtremeOutline && t <= High\n",
     "package": "./internal/colour",
     "test": "TestSafeRampsKeepEveryScaleTheLibrarysOwn"
+  },
+  {
+    "id": "m022",
+    "row": "L-3.1",
+    "what": "a contour's label carries no unit",
+    "file": "internal/overlay/field.go",
+    "old": "\t\tout[i+1] = strconv.FormatFloat(b, 'f', -1, 64) + suffix\n",
+    "new": "\t\tout[i+1] = strconv.FormatFloat(b, 'f', -1, 64) + suffix[:0]\n",
+    "package": ".",
+    "test": "TestContourLabelsCarryTheirUnit"
+  },
+  {
+    "id": "m023",
+    "row": "L-3.2",
+    "what": "a line running east-west is never labelled",
+    "file": "internal/render/field.go",
+    "old": "\t\t\tif x%labelEvery == labelEvery/2 && south >= 0 && south != here { // a line running east-west is labelled too (L-3.2)\n",
+    "new": "\t\t\tif false && x%labelEvery == labelEvery/2 && south >= 0 && south != here { // a line running east-west is labelled too (L-3.2)\n",
+    "package": ".",
+    "test": "TestAFieldBandedEitherWayIsLabelled"
+  },
+  {
+    "id": "m024",
+    "row": "L-3.3",
+    "what": "a field's answer drops the unit the host declared",
+    "file": "internal/describe/answer.go",
+    "old": "\tout.Value, out.ValueUnit = reading.Value, unit\n",
+    "new": "\tout.Value, out.ValueUnit = reading.Value, unit[:0]\n",
+    "package": ".",
+    "test": "TestEveryFieldAnswerCarriesItsUnit"
   }
 ]

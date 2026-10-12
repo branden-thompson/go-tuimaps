@@ -365,6 +365,9 @@ func (r *Renderer) contours(in Input, f *scene.Field) {
 			if y%labelEvery == labelEvery/2 && east >= 0 && east != here {
 				r.painter.valueLabel(x, y, f.Labels, max(here, east), ink)
 			}
+			if x%labelEvery == labelEvery/2 && south >= 0 && south != here { // a line running east-west is labelled too (L-3.2)
+				r.painter.valueLabel(x, y, f.Labels, max(here, south), ink)
+			}
 		}
 	}
 }

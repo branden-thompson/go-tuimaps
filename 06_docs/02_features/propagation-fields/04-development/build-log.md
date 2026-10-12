@@ -45,3 +45,12 @@ Mutants: m001, m004 and m005 re-pointed to the lines their rules now live on (m0
 **Safe ramps keep every preset's classes (D-29, D-5).** `TestSafeRampsKeepEveryScaleTheLibrarysOwn` (`internal/colour`), written first: over every token, a host's colour is passed over with safe ramps on exactly for an alert's colours and a preset's classes. On the old code it failed on 46 tokens, every wind, wave, UV, AQI, QPF, MUF and foF2 class. `ResolveAt` decided "ramp" by a range that ended at temperature's `high`, from before the newer presets; it now asks `ScaleClass`, as D-5 ruled at PLAN and was not built. With safe ramps on, `Warnings` reports no host ramp, which is now true of all of them. Mutant m021.
 
 **Not done here, and why:** finding T3 (one table of the presets in place of about ten parallel switches) is a wide edit with its own mutants to re-point, best done with the next preset; finding T4, a behaviour change, went to the HUM LEAD and is fixed above (D-29).
+
+## P3 — Units and labels (L-3.1 to L-3.3), for UAT-2 (watchpost D-174)
+
+| Task | Commit | The test first | Learned |
+|---|---|---|---|
+| P3.1 Units on labels; P3.2 labels on both crossings | this commit | `TestContourLabelsCarryTheirUnit` (a temperature's `°C`, MUF's `MHz`), `TestAFieldBandedEitherWayIsLabelled` (a field banded west to east and one banded south to north, both labelled): written first, each failed on the old code | **A field banded south to north - MUF, which falls from the equator to the poles, among them - was never labelled:** labels were offered only where a line crossed a row. They are now offered where a line crosses a column too, as often. A label writes its unit beside its number (A-6). The specimens and reference frame scenario 4 are redrawn, approved by the HUM LEAD (D-30); the change is in the contract's section 12 and v0.3.0's release notes, begun here |
+| P3.3 `Answer.ValueUnit` for every field | this commit | `TestEveryFieldAnswerCarriesItsUnit` (MUF, foF2, UV, QPF, temperature): written first, failed for all but temperature | The answer carries the unit as declared; words for speech are the host's. `TestFieldAnswerCarriesItsUnits` had held that a field the library "knows no units for" answers with none: it now holds that a declared unit is carried and an undeclared one is not |
+
+Mutants m022 to m024, each killed by the harness.

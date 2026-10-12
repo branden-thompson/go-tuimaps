@@ -85,7 +85,7 @@ func TestNoDataSaidPlainly(t *testing.T) {
 		t.Errorf("no points at all answered %+v", got)
 	}
 	// A field that has no value here.
-	if got := OfField("home", "temperature", Reading{NoData: true}, true, Units{}); !got.NoData {
+	if got := OfField("home", "temperature", Reading{NoData: true}, true, "C", Units{}); !got.NoData {
 		t.Errorf("a field with no data answered %+v", got)
 	}
 	// An image with no data here still says where the rain is.
@@ -104,16 +104,19 @@ func TestNoDataSaidPlainly(t *testing.T) {
 // and says nothing about units it does not know.
 func TestFieldAnswerCarriesItsUnits(t *testing.T) {
 	reading := Reading{Value: 20, Band: 2, Rises: 90, Rising: true}
-	warm := OfField("home", "temperature", reading, true, Units{Fahrenheit: true})
+	warm := OfField("home", "temperature", reading, true, "C", Units{Fahrenheit: true})
 	if math.Abs(warm.Value-68) > 0.001 || warm.ValueUnit != "degrees Fahrenheit" {
 		t.Errorf("%v %q", warm.Value, warm.ValueUnit)
 	}
 	if warm.Rises != "east" {
 		t.Errorf("it rises %q", warm.Rises)
 	}
-	other := OfField("home", "pressure", reading, false, Units{Fahrenheit: true})
-	if other.Value != 20 || other.ValueUnit != "" {
-		t.Errorf("a field the library knows no units for answered %v %q", other.Value, other.ValueUnit)
+	other := OfField("home", "pressure", reading, false, "hPa", Units{Fahrenheit: true})
+	if other.Value != 20 || other.ValueUnit != "hPa" {
+		t.Errorf("a field in the host's own unit answered %v %q; want 20 hPa (L-3.3)", other.Value, other.ValueUnit)
+	}
+	if bare := OfField("home", "count", reading, false, "", Units{}); bare.ValueUnit != "" {
+		t.Errorf("a field with no unit declared answered in %q", bare.ValueUnit)
 	}
 }
 

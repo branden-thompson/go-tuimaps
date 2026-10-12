@@ -128,14 +128,15 @@ func OfNear(place, overlay string, form Form, near Near, ok bool, u Units) Answe
 	return out
 }
 
-// OfField is the answer for one place against a scalar field.
-func OfField(place, overlay string, reading Reading, temperature bool, u Units) Answer {
+// OfField is the answer for one place against a scalar field, its value in
+// the unit the host declared (L-3.3), a temperature's in words.
+func OfField(place, overlay string, reading Reading, temperature bool, unit string, u Units) Answer {
 	out := Answer{Place: place, Overlay: overlay, Form: FieldForm, Band: reading.Band}
 	if reading.NoData {
 		out.NoData = true
 		return out
 	}
-	out.Value, out.ValueUnit = reading.Value, ""
+	out.Value, out.ValueUnit = reading.Value, unit
 	if temperature {
 		out.Value, out.ValueUnit = u.Temperature(reading.Value)
 	}
