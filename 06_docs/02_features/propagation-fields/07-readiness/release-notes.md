@@ -16,3 +16,4 @@ Ruled before each landed (the brief's C-6), and listed with what a host does in 
 
 - **Fields over water, per overlay** (L-1): `Grid.OverWater`, `Image.MaskedByWater`.
 - **The `muf` and `fof2` presets** (L-2.1), in MHz, broken at the amateur band edges.
+- **Day and night** (L-4): `Terminator(at)` and `NightSide(at)`, within 0.011° of NOAA's solar position; a `NightTint` polygon shades the ground and sea beneath it, never a field's colours, with no words or legend entry; a `TerminatorLine` is dotted at every depth; `PlaceReport.Daylight` says day or night and when it next turns.

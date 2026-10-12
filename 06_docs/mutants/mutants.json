@@ -258,5 +258,65 @@
     "new": "\t\treturn RGB{25, 20, 6}, true // amber: no ramp's, no alert's\n",
     "package": "./internal/colour",
     "test": "TestTheTerminatorAndNightTokensHaveDefaults"
+  },
+  {
+    "id": "m028",
+    "row": "L-4.3",
+    "what": "the night side's ground is not shaded",
+    "file": "internal/render/frame.go",
+    "old": "\t\tbg = colour.Blend(bg, night, colour.NightShade(kind)) // the ground and the sea, never a field's own colours (L-4.4)\n",
+    "new": "\t\tbg = colour.Blend(bg, night, 0) // the ground and the sea, never a field's own colours (L-4.4)\n",
+    "package": ".",
+    "test": "TestTheNightIsShadedAndUnlisted"
+  },
+  {
+    "id": "m029",
+    "row": "L-4.3",
+    "what": "the night fills the areas the water test reads, and keeps an alert's words",
+    "file": "internal/render/basemap.go",
+    "old": "\t\tp.night.Fill(p.rings, s.Role) // its own canvas: the areas' water is left as it is\n\t\treturn nil                    // no outline, no words, no digits: the night is no alert (L-4.3)\n",
+    "new": "\t\tp.areas.Fill(p.rings, s.Role) // its own canvas: the areas' water is left as it is\n",
+    "package": "./internal/render",
+    "test": "TestTheNightTintCarriesNoAlertWords"
+  },
+  {
+    "id": "m030",
+    "row": "L-4.4",
+    "what": "the terminator is drawn unbroken, as a contour is",
+    "file": "internal/render/basemap.go",
+    "old": "\tif s.Kind == scene.ShapeLine && colour.Token(s.Role) == colour.Terminator {\n",
+    "new": "\tif false && s.Kind == scene.ShapeLine && colour.Token(s.Role) == colour.Terminator {\n",
+    "package": "./internal/render",
+    "test": "TestTheTerminatorIsMarkedWithoutColour"
+  },
+  {
+    "id": "m031",
+    "row": "L-4.4",
+    "what": "a place's report says nothing of day or night",
+    "file": "report.go",
+    "old": "Answers: []Answer{}, Daylight: m.daylight(place.At)}",
+    "new": "Answers: []Answer{}}",
+    "package": ".",
+    "test": "TestReportSaysDayOrNight"
+  },
+  {
+    "id": "m032",
+    "row": "L-4.4",
+    "what": "the kept report is not worked out again when a place's day turns",
+    "file": "describe.go",
+    "old": "landed: m.store.Landed(), daylight: m.daylightKey(asked)}",
+    "new": "landed: m.store.Landed(), daylight: m.daylightKey(asked) & 0}",
+    "package": ".",
+    "test": "TestReportSaysDayOrNight"
+  },
+  {
+    "id": "m033",
+    "row": "L-4.4",
+    "what": "the night shades a ramp past its checks",
+    "file": "internal/colour/night.go",
+    "old": "\treturn 0.8\n",
+    "new": "\treturn 0.0\n",
+    "package": "./internal/colour",
+    "test": "TestNightTintKeepsTheFieldReadable"
   }
 ]

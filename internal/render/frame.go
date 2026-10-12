@@ -159,6 +159,7 @@ type cell struct {
 	strict bool   // the cell holds text, held to the text contrast
 	shade  string // with no ramp, an image's shade: laid last, only where nothing else claimed the cell (L-8.3)
 	faint  bool   // under is a field's band drawn faintly, where an image shares the map and has no echo (L-15.3)
+	night  bool   // the night side owns the cell: its ground and sea are shaded (L-4.3)
 }
 
 type box struct{ left, right, top, bottom int }
@@ -595,6 +596,7 @@ func (r *Renderer) canvas() {
 			if ink, owned := r.painter.Area(col, row); owned {
 				c.area = ink
 			}
+			c.night = r.painter.InNight(col, row)
 		}
 	}
 }
@@ -905,6 +907,9 @@ func (r *Renderer) colours(c cell, in Input, groundColour colour.RGB, kind colou
 	if area, ok := r.painter.Colour(c.area, in.Palette, kind, in.Depth); ok {
 		bg = area
 	}
+	if night, ok := r.painter.Colour(uint8(colour.Night), in.Palette, kind, in.Depth); ok && c.night {
+		bg = colour.Blend(bg, night, colour.NightShade(kind)) // the ground and the sea, never a field's own colours (L-4.4)
+	}
 	if under, ok := r.painter.Colour(c.under, in.Palette, kind, in.Depth); ok {
 		switch s, blended := in.Blends.Strength(presetOf(c.under), int(colour.Token(c.area)-colour.AlertExtremeOutline)/2); {
 		case c.faint:
@@ -1023,6 +1028,9 @@ func (g *grid) rowSum(row int, sum uint64) uint64 {
 		}
 		if c.faint {
 			flags |= 4
+		}
+		if c.night {
+			flags |= 8
 		}
 		sum = mix(sum, uint64(c.glyph)<<32|uint64(c.under)<<24|uint64(c.ink)<<16|uint64(c.area)<<8|flags)
 		for i := range len(c.text) {

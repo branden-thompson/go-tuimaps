@@ -101,22 +101,24 @@ type Token = colour.Token
 // The roles a feature overlay may carry. An alert's area is filled with the
 // tint that belongs to its outline.
 const (
-	AlertExtreme  = colour.AlertExtremeOutline
-	AlertSevere   = colour.AlertSevereOutline
-	AlertModerate = colour.AlertModerateOutline
-	AlertMinor    = colour.AlertMinorOutline
-	AlertUnknown  = colour.AlertUnknownOutline
-	Track         = colour.Track
-	Fire          = colour.Fire       // a fire's perimeter, its incident, a strong hotspot (L-18)
-	FireFaint     = colour.FireFaint  // a weaker hotspot
-	QuakeHour     = colour.QuakeHour  // a quake of the past hour (L-19)
-	QuakeDay      = colour.QuakeDay   // of the past day
-	QuakeOlder    = colour.QuakeOlder // older
-	Buoy          = colour.Buoy       // a buoy's marker and words (L-21)
-	Tide          = colour.Tide       // a tide station's
-	Low           = colour.Low
-	Middle        = colour.Middle
-	High          = colour.High
+	AlertExtreme   = colour.AlertExtremeOutline
+	AlertSevere    = colour.AlertSevereOutline
+	AlertModerate  = colour.AlertModerateOutline
+	AlertMinor     = colour.AlertMinorOutline
+	AlertUnknown   = colour.AlertUnknownOutline
+	Track          = colour.Track
+	Fire           = colour.Fire       // a fire's perimeter, its incident, a strong hotspot (L-18)
+	FireFaint      = colour.FireFaint  // a weaker hotspot
+	QuakeHour      = colour.QuakeHour  // a quake of the past hour (L-19)
+	QuakeDay       = colour.QuakeDay   // of the past day
+	QuakeOlder     = colour.QuakeOlder // older
+	Buoy           = colour.Buoy       // a buoy's marker and words (L-21)
+	Tide           = colour.Tide       // a tide station's
+	TerminatorLine = colour.Terminator // the line between day and night, dotted at every depth (L-4.1, L-4.4): a Line feature along Terminator(at)
+	NightTint      = colour.Night      // the night side's shade (L-4.3): a Polygon feature over NightSide(at), no words, no digits, no legend entry
+	Low            = colour.Low
+	Middle         = colour.Middle
+	High           = colour.High
 )
 
 // SetResult is what Set says at once (D-74, D-86).

@@ -70,6 +70,7 @@ const MotionTooFewFrames
 const NearDuplicateID
 const NearImageColours
 const Nearby
+const NightTint
 const NoColour
 const NoSize
 const NoTiles
@@ -111,6 +112,7 @@ const Sharpening
 const SizeMismatch
 const StaleOverlay
 const TableFallback
+const TerminatorLine
 const Tide
 const TileFailed
 const Track
@@ -224,6 +226,7 @@ type Bound struct{ MinZoom float64; W float64; S float64; E float64; N float64 }
 type CacheUse struct{ Need int64; Held int64; Limit int64 }
 type Caches struct{ Tiles CacheUse; Shapes CacheUse; Disk CacheUse }
 type Class struct{ Label string; Colour RGB; Drawn bool; Mark string }
+type Daylight struct{ Known bool; Day bool; Turns time.Time }
 type Depth = colour.Depth
 type Detail = style.Detail
 type Dialer = fetch.Dialer
@@ -251,7 +254,7 @@ type Option func(*config) error
 type Overlay = overlay.Overlay
 type Place struct{ ID string; Name string; At LonLat; Marker MarkerStyle; Radius int; Glyph string; Blink bool }
 type PlaceAlert struct{ Overlay string; Feature string; Label string; Severity Severity; Where Where; Distance float64; Unit string; Bearing float64; Compass string; Valid time.Time; Stale bool; UnderOneCell bool }
-type PlaceReport struct{ Place string; Alerts []PlaceAlert; Answers []Answer }
+type PlaceReport struct{ Place string; Alerts []PlaceAlert; Answers []Answer; Daylight Daylight }
 type Playback uint8
 type Positioned interface{ LonLat() (float64, float64) }
 type Projection = overlay.Projection

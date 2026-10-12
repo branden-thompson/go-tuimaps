@@ -122,3 +122,28 @@ func TestAPlaceOffTheGlobeHasNoElevation(t *testing.T) {
 		}
 	}
 }
+
+// TestTheNextTurnIsWhereTheSunCrossesTheHorizon is L-4.4: the moment the
+// terminator next passes a place is within a minute of where NOAA's sun
+// crosses its horizon, and none is given where it does not within two days.
+func TestTheNextTurnIsWhereTheSunCrossesTheHorizon(t *testing.T) {
+	for _, at := range yearOfTimes() {
+		for _, p := range [][2]float64{{37.7, -97.3}, {-33.9, 151.2}, {0, 0}} {
+			turn := Turn(p[0], p[1], at)
+			if turn.IsZero() || !turn.After(at) || turn.Sub(at) > 24*time.Hour {
+				t.Fatalf("%v at %v: the next turn is %v", p, at, turn)
+			}
+			before, after := noaaElevation(p[0], p[1], turn.Add(-time.Minute)), noaaElevation(p[0], p[1], turn.Add(time.Minute))
+			if (before > 0) == (after > 0) {
+				t.Errorf("%v at %v: the sun does not cross the horizon within a minute of %v (%.2f°, %.2f°)", p, at, turn, before, after)
+			}
+		}
+	}
+	polar := time.Date(2026, 6, 21, 12, 0, 0, 0, time.UTC)
+	if turn := Turn(85, 0, polar); !turn.IsZero() {
+		t.Errorf("at 85°N in June the sun never sets, yet it turns at %v", turn)
+	}
+	if turn := Turn(95, 0, polar); !turn.IsZero() {
+		t.Errorf("a place past the pole turns at %v", turn)
+	}
+}

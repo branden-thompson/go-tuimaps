@@ -78,3 +78,33 @@ func Night(at time.Time) [][2]float64 {
 	ring = append(ring, [2]float64{180, pole}, [2]float64{-180, pole}, ring[0])
 	return ring
 }
+
+// Turn is when the terminator next passes a place - the sun's next rising or
+// setting there - to the second; the zero time where it does not within two
+// days (a polar day or night) or the place is off the globe.
+//
+// Source: Elevation, stepped ten minutes at a time and halved to a second.
+func Turn(lat, lon float64, at time.Time) time.Time {
+	up := Elevation(lat, lon, at) > 0
+	if lat != lat || lat < -90 || lat > 90 {
+		return time.Time{}
+	}
+	const step = 10 * time.Minute
+	for i := 1; i <= 2*24*6; i++ { // two days, ten minutes at a time (P10-02)
+		t := at.Add(time.Duration(i) * step)
+		if (Elevation(lat, lon, t) > 0) == up {
+			continue
+		}
+		lo, hi := t.Add(-step), t
+		for range 10 { // ten halvings take ten minutes under a second (P10-02)
+			mid := lo.Add(hi.Sub(lo) / 2)
+			if (Elevation(lat, lon, mid) > 0) == up {
+				lo = mid
+			} else {
+				hi = mid
+			}
+		}
+		return hi
+	}
+	return time.Time{}
+}

@@ -43,6 +43,7 @@ type Label struct {
 type Painter struct {
 	lines         *Canvas
 	areas         *Canvas
+	night         *Canvas // the night side (L-4.3), apart from the areas the water test reads
 	literals      []colour.RGB
 	labels        []Label
 	overlayLabels []Label
@@ -80,7 +81,11 @@ func NewPainter(cols, rows int) (*Painter, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Painter{lines: lines, areas: areas}, nil
+	night, err := NewCanvas(cols, rows)
+	if err != nil {
+		return nil, err
+	}
+	return &Painter{lines: lines, areas: areas, night: night}, nil
 }
 
 // Reset clears the painter for another frame, keeping its buffers.
@@ -90,6 +95,7 @@ func (p *Painter) Reset() {
 	}
 	p.lines.Wipe()
 	p.areas.Wipe()
+	p.night.Wipe()
 	p.literals, p.labels, p.labelPts = p.literals[:0], p.labels[:0], p.labelPts[:0]
 	p.overlayLabels = p.overlayLabels[:0]
 	p.outlines, p.outlineCells = p.outlines[:0], p.outlineCells[:0]
@@ -206,6 +212,10 @@ func (p *Painter) Shape(v project.View, s scene.Shape) error {
 		p.culled++
 		return nil
 	}
+	if s.Kind == scene.ShapeArea && colour.Token(s.Role) == colour.Night {
+		p.night.Fill(p.rings, s.Role) // its own canvas: the areas' water is left as it is
+		return nil                    // no outline, no words, no digits: the night is no alert (L-4.3)
+	}
 	if s.Kind == scene.ShapeArea && alertRole(s.Role) {
 		p.areas.Fill(p.rings, s.Role+1) // an alert's tint is the token after its outline's
 	}
@@ -321,8 +331,12 @@ func (p *Painter) mark(ring []Point, s scene.Shape) {
 		}
 		return
 	}
+	if s.Kind == scene.ShapeLine && colour.Token(s.Role) == colour.Terminator {
+		p.dash(ring, s.Role, dotStroke) // at every depth: never one more contour (L-4.4)
+		return
+	}
 	if s.Kind == scene.ShapeLine && colourless(p.depth) {
-		p.dash(ring, s.Role) // five dots on, four off, two thick (D-77)
+		p.dash(ring, s.Role, dashStroke) // five dots on, four off, two thick (D-77)
 		return
 	}
 	for i := 0; i+1 < len(ring); i++ {
@@ -461,6 +475,19 @@ func (p *Painter) Area(col, row int) (uint8, bool) {
 		lit++
 	}
 	return ink, lit >= 4
+}
+
+// InNight reports whether the night side owns a cell: half its dots or more.
+func (p *Painter) InNight(col, row int) bool {
+	if p == nil {
+		return false
+	}
+	glyph, _ := p.night.Cell(col, row)
+	lit := 0
+	for mask := uint8(glyph - blank); mask != 0; mask &= mask - 1 {
+		lit++
+	}
+	return lit >= 4
 }
 
 // Water reports whether water owns a cell.

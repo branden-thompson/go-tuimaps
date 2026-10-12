@@ -66,7 +66,7 @@ func darkFurniture(t Token) (RGB, bool) {
 	case Terminator:
 		return RGB{255, 200, 60}, true // amber: no ramp's, no alert's
 	case Night:
-		return RGB{6, 10, 34}, true // a deep blue the night side is shaded toward
+		return RGB{0, 0, 50}, true // the navy the night side's ground is shaded toward (NightShade)
 	}
 	return RGB{}, false
 }
@@ -139,7 +139,7 @@ func lightFurniture(t Token) (RGB, bool) {
 	case Terminator:
 		return RGB{140, 90, 0}, true
 	case Night:
-		return RGB{30, 40, 80}, true
+		return RGB{225, 215, 208}, true // a warm grey: a blue upsets the ramps made for this ground
 	}
 	return RGB{}, false
 }

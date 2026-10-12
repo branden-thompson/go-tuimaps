@@ -9,6 +9,7 @@ import (
 	"github.com/branden-thompson/go-tuimaps/internal/fault"
 	"github.com/branden-thompson/go-tuimaps/internal/overlay"
 	"github.com/branden-thompson/go-tuimaps/internal/project"
+	"github.com/branden-thompson/go-tuimaps/internal/sun"
 	"github.com/branden-thompson/go-tuimaps/internal/textsafe"
 )
 
@@ -112,9 +113,20 @@ type AlertShown struct {
 // own, and every other overlay's answer - an image's class, a field's
 // value, the nearest point or line, an area that is no alert.
 type PlaceReport struct {
-	Place   string
-	Alerts  []PlaceAlert
-	Answers []Answer
+	Place    string
+	Alerts   []PlaceAlert
+	Answers  []Answer
+	Daylight Daylight // day or night there, and when that turns (L-4.4)
+}
+
+// Daylight is whether a place is in day or night at the map's clock - the
+// time the last frame was drawn at - and when the terminator next passes it
+// (L-4.4). Known is false until a frame gives the map a clock, as the map
+// says nothing of time before (D-114); Turns is the zero time in a polar day
+// or night, the sun not crossing the horizon there within two days.
+type Daylight struct {
+	Known, Day bool
+	Turns      time.Time
 }
 
 // PlaceAlert is one alert against one place (L-13.6): inside, nearby or
@@ -346,9 +358,17 @@ func heavierClass(kind overlay.Kind) int {
 	return (2*(len(kind.Breaks)+1) + 2) / 3
 }
 
+// daylight is a place's day or night at the map's clock (L-4.4).
+func (m *Map) daylight(at LonLat) Daylight {
+	if m.wallClock.IsZero() {
+		return Daylight{}
+	}
+	return Daylight{Known: true, Day: sun.Elevation(at.Lat, at.Lon, m.wallClock) > 0, Turns: sun.Turn(at.Lat, at.Lon, m.wallClock)}
+}
+
 // placeReport is one place's part of the report.
 func (m *Map) placeReport(place Place) PlaceReport {
-	out := PlaceReport{Place: clean(nameOf(place)), Alerts: []PlaceAlert{}, Answers: []Answer{}}
+	out := PlaceReport{Place: clean(nameOf(place)), Alerts: []PlaceAlert{}, Answers: []Answer{}, Daylight: m.daylight(place.At)}
 	nearby := m.nearby
 	if nearby == 0 {
 		nearby = defaultNearby

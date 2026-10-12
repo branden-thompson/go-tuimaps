@@ -97,8 +97,8 @@ func TestDashedLineNoColour(t *testing.T) {
 	if gaps(dashed) < 4 {
 		t.Errorf("a line with no colour has %d gaps along it; five dots on and four off leaves many", gaps(dashed))
 	}
-	if dashOn != 5 || dashOff != 4 || dashThick != 2 {
-		t.Errorf("the dash is %d dots on, %d off, %d thick; the constants document fixes five, four and two", dashOn, dashOff, dashThick)
+	if dashStroke != (stroke{on: 5, off: 4, thick: 2}) {
+		t.Errorf("the dash is %d dots on, %d off, %d thick; the constants document fixes five, four and two", dashStroke.on, dashStroke.off, dashStroke.thick)
 	}
 	// An area's outline is not dashed: it is closed, and its hatch tells it
 	// from the basemap.

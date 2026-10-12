@@ -9,6 +9,7 @@ import (
 	"github.com/branden-thompson/go-tuimaps/internal/describe"
 	"github.com/branden-thompson/go-tuimaps/internal/overlay"
 	"github.com/branden-thompson/go-tuimaps/internal/project"
+	"github.com/branden-thompson/go-tuimaps/internal/sun"
 )
 
 // Answer is what the map says about one place and one overlay: data to
@@ -58,12 +59,32 @@ type describeKey struct {
 	nearby     float64      // what "nearby" means (L-13.6)
 	view       project.View // which alerts are in view, and the view's centre, for motion with no place
 	landed     uint64       // what work has landed: a picture decoded is a frame motion can read
+	daylight   uint64       // which asked places are in day: the clock's other part in an answer (L-4.4)
 }
 
 // describeKey is the key for this call.
 func (m *Map) describeKey(asked []Place) describeKey {
 	return describeKey{overlays: m.overlays, places: m.placesVersion, units: m.units, stale: m.staleNow, staleWhich: m.staleWhich, asked: askedFingerprint(asked),
-		nearby: m.nearby, view: m.view, landed: m.store.Landed()}
+		nearby: m.nearby, view: m.view, landed: m.store.Landed(), daylight: m.daylightKey(asked)}
+}
+
+// daylightKey is which asked places are in day at the map's clock, as a
+// fingerprint: the day-or-night answer changes only when one turns, its
+// time of turning fixed until then, so the clock alone leaves the report
+// kept (FR-29) until a place's day ends or begins.
+func (m *Map) daylightKey(asked []Place) uint64 {
+	if m.wallClock.IsZero() {
+		return 0
+	}
+	h := fnv.New64a()
+	for _, p := range asked {
+		day := byte('n')
+		if sun.Elevation(p.At.Lat, p.At.Lon, m.wallClock) > 0 {
+			day = 'd'
+		}
+		_, _ = h.Write([]byte{day})
+	}
+	return h.Sum64() | 1 // never 0, the key of no clock
 }
 
 // askedFingerprint is what was asked about, not how much of it.

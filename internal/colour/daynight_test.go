@@ -37,3 +37,28 @@ func TestTheTerminatorAndNightTokensHaveDefaults(t *testing.T) {
 		}
 	}
 }
+
+// TestNightTintKeepsTheFieldReadable is L-4.4: every preset's ramp passes
+// the checks - order by lightness, colour-vision safety, reading on its
+// ground - against the ground the night shades, on both grounds, as it
+// passes against the ground itself.
+func TestNightTintKeepsTheFieldReadable(t *testing.T) {
+	for _, g := range []GroundKind{Dark, Light} {
+		ground, _ := (Palette{}).Resolve(Ground, g)
+		night, _ := (Palette{}).Resolve(Night, g)
+		shaded := Blend(ground, night, NightShade(g))
+		if shaded == ground {
+			t.Errorf("the night shades nothing on the %v ground", g)
+		}
+		for p := Temperature; p <= FoF2; p++ {
+			ramp, _ := Ramp(p, g, Truecolor)
+			rc := RampCheck{Ground: shaded, Depth: Truecolor, Midpoint: -1, Lines: p == Wind}
+			if p == Temperature {
+				rc.Midpoint = Midpoint(Temperature, g, Truecolor)
+			}
+			if f := Check(ramp, rc); len(f) != 0 {
+				t.Errorf("preset %d on the %v ground at night: %v", p, g, f)
+			}
+		}
+	}
+}
