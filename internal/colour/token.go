@@ -97,8 +97,12 @@ const (
 	MUF10 = MUF1 + 9
 	FoF21 = MUF10 + 1
 	FoF26 = FoF21 + 5
+	// Terminator is the line between day and night, Night the night side's
+	// tint (v0.3.0 L-4.1, watchpost D-35): neither an alert nor a class.
+	Terminator = FoF26 + 1
+	Night      = Terminator + 1
 	// lastToken is the last token there is.
-	lastToken = FoF26
+	lastToken = Night
 )
 
 // fixedNames are the names of the tokens before the numbered ramps.
@@ -161,6 +165,10 @@ func (t Token) Name() string {
 		return "fof2." + strconv.Itoa(int(t-FoF21)+1)
 	case t >= Wind1 && t <= Wind6:
 		return "wind." + strconv.Itoa(int(t-Wind1)+1)
+	case t == Terminator:
+		return "terminator"
+	case t == Night:
+		return "night"
 	}
 	return "" // a token no case names: TestTokensMatchTheDocumentedList fails on it
 }

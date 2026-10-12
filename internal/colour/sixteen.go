@@ -81,6 +81,10 @@ func sixteenDark(t Token) uint8 {
 		return 13
 	case Tide:
 		return 10
+	case Terminator:
+		return 11
+	case Night:
+		return 4
 	case UV1, AQI1: // L-25: an AQI marker's category at this depth, green to maroon
 		return 10
 	case UV1 + 1, AQI1 + 1:
@@ -113,6 +117,10 @@ func sixteenLight(t Token) uint8 {
 		return 5
 	case Tide, UV1, AQI1:
 		return 2
+	case Terminator:
+		return 3
+	case Night:
+		return 4
 	case UV1 + 1, AQI1 + 1, UV1 + 2, AQI1 + 2:
 		return 3
 	case UV1 + 3, AQI1 + 3, AQI6:

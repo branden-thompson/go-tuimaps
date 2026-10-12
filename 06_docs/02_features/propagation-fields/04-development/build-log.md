@@ -54,3 +54,12 @@ Mutants: m001, m004 and m005 re-pointed to the lines their rules now live on (m0
 | P3.3 `Answer.ValueUnit` for every field | this commit | `TestEveryFieldAnswerCarriesItsUnit` (MUF, foF2, UV, QPF, temperature): written first, failed for all but temperature | The answer carries the unit as declared; words for speech are the host's. `TestFieldAnswerCarriesItsUnits` had held that a field the library "knows no units for" answers with none: it now holds that a declared unit is carried and an undeclared one is not |
 
 Mutants m022 to m024, each killed by the harness.
+
+## P4 — Day and night (L-4.1 to L-4.4), for UAT-2 (watchpost D-174)
+
+| Task | Commit | The test first | Learned |
+|---|---|---|---|
+| P4.2 `Terminator`, `NightSide` | this commit | `TestTheTerminatorMatchesTheEphemeris`, `TestNightSideIsTheComplement`, `TestADaysPlaceIsInDayOrNight` (`internal/sun`, against NOAA's solar-position spreadsheet written into the test): failed to compile on the missing helpers | **0.5° of latitude cannot hold near an equinox**, where the line runs north-south: it is measured as the sun's height from the horizon at the line (A-7). NOAA's fractional-year equations came within 0.457° of the spreadsheet, too near the bound to trust across years; the Astronomical Almanac's low-precision formulas are within **0.011° over 2020 to 2035** (126 moments). At an equinox the line's formula divides by the declination's tangent, so it is kept off zero. The night side is the line closed through the pole the sun does not reach. Named in the contract and the public surface. **The first gate failed on P10:** the public `Terminator` calling `sun.Terminator` read as recursion by its bare name (the inner ones are `Line` and `Night` now), and `internal/sun`'s density, a numerical kernel with nothing to check but a place off the globe, took a package row the HUM LEAD ratified (D-31), its two real checks added with `TestAPlaceOffTheGlobeHasNoElevation` |
+| P4.1 `terminator` and `night` tokens | this commit | `TestTheTerminatorAndNightTokensHaveDefaults`: failed to compile on the missing tokens | Amber for the line (no ramp's or alert's hue), reading at line contrast on both grounds; a deep blue for the night, toward which what is drawn under it will be shaded (P4.3). 115 tokens, the constants document first |
+
+Mutants m025 to m027, each killed.

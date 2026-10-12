@@ -228,5 +228,35 @@
     "new": "\tout.Value, out.ValueUnit = reading.Value, unit[:0]\n",
     "package": ".",
     "test": "TestEveryFieldAnswerCarriesItsUnit"
+  },
+  {
+    "id": "m025",
+    "row": "L-4.2",
+    "what": "the night side is closed through the sunlit pole",
+    "file": "internal/sun/sun.go",
+    "old": "\tpole := -90.0 // the sun north of the equator: the south pole is in night\n",
+    "new": "\tpole := 90.0 // the sun north of the equator: the south pole is in night\n",
+    "package": "./internal/sun",
+    "test": "TestNightSideIsTheComplement"
+  },
+  {
+    "id": "m026",
+    "row": "L-4.2",
+    "what": "the terminator is drawn on the wrong side of the subsolar point's meridian",
+    "file": "internal/sun/sun.go",
+    "old": "lat := math.Atan(-math.Cos((float64(lon)-slon)*r)/math.Tan(slat*r)) / r",
+    "new": "lat := math.Atan(math.Cos((float64(lon)-slon)*r)/math.Tan(slat*r)) / r",
+    "package": "./internal/sun",
+    "test": "TestTheTerminatorMatchesTheEphemeris"
+  },
+  {
+    "id": "m027",
+    "row": "L-4.1",
+    "what": "the terminator's line does not read on a dark ground",
+    "file": "internal/colour/defaults.go",
+    "old": "\t\treturn RGB{255, 200, 60}, true // amber: no ramp's, no alert's\n",
+    "new": "\t\treturn RGB{25, 20, 6}, true // amber: no ramp's, no alert's\n",
+    "package": "./internal/colour",
+    "test": "TestTheTerminatorAndNightTokensHaveDefaults"
   }
 ]
