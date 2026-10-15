@@ -85,6 +85,8 @@ func sixteenDark(t Token) uint8 {
 		return 11
 	case Night:
 		return 4
+	case Zone, ZoneTint: // L-8.1: the outline alone is drawn at this depth; the tint's entry is never shown
+		return 9
 	case UV1, AQI1: // L-25: an AQI marker's category at this depth, green to maroon
 		return 10
 	case UV1 + 1, AQI1 + 1:
@@ -121,6 +123,8 @@ func sixteenLight(t Token) uint8 {
 		return 3
 	case Night:
 		return 4
+	case Zone, ZoneTint: // L-8.1: the outline alone is drawn at this depth
+		return 1
 	case UV1 + 1, AQI1 + 1, UV1 + 2, AQI1 + 2:
 		return 3
 	case UV1 + 3, AQI1 + 3, AQI6:

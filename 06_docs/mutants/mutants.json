@@ -398,5 +398,135 @@
     "new": "\t\t_ = lined\n",
     "package": ".",
     "test": "TestNoGridDrawsNothingSilently"
+  },
+  {
+    "id": "m042",
+    "row": "L-8.1",
+    "what": "a zone's inside is never filled",
+    "file": "internal/render/basemap.go",
+    "old": "\t\tp.zone.Fill(p.rings, uint8(colour.ZoneTint)) // its own canvas, so an alert's tint is over it whatever the order (L-8.1)\n",
+    "new": "\t\t_ = p.rings\n",
+    "package": ".",
+    "test": "TestAZoneIsOutlinedAndFilledWithoutAlertWords"
+  },
+  {
+    "id": "m043",
+    "row": "L-8.1",
+    "what": "a zone fills the alerts' canvas, so the later of the two covers the other",
+    "file": "internal/render/basemap.go",
+    "old": "\t\tp.zone.Fill(p.rings, uint8(colour.ZoneTint)) // its own canvas",
+    "new": "\t\tp.areas.Fill(p.rings, uint8(colour.ZoneTint)) // its own canvas",
+    "package": ".",
+    "test": "TestAnAlertsTintIsOverAZones"
+  },
+  {
+    "id": "m044",
+    "row": "L-8.1",
+    "what": "a zone's tint is laid over an alert's",
+    "file": "internal/render/frame.go",
+    "old": "ok && c.zone && !tinted && !rampless(in.Depth) {",
+    "new": "ok && c.zone && !rampless(in.Depth) {",
+    "package": ".",
+    "test": "TestAnAlertsTintIsOverAZones"
+  },
+  {
+    "id": "m045",
+    "row": "L-8.1",
+    "what": "a zone's tint is painted at sixteen colours",
+    "file": "internal/render/frame.go",
+    "old": "ok && c.zone && !tinted && !rampless(in.Depth) {",
+    "new": "ok && c.zone && !tinted {",
+    "package": ".",
+    "test": "TestAZoneAtSixteenColoursIsItsOutlineAlone"
+  },
+  {
+    "id": "m046",
+    "row": "L-8.1",
+    "what": "the zone's outline does not read on the dark ground",
+    "file": "internal/colour/defaults.go",
+    "old": "\t\treturn RGB{255, 70, 45}, true // a host's zone's red",
+    "new": "\t\treturn RGB{40, 10, 8}, true // a host's zone's red",
+    "package": "./internal/colour",
+    "test": "TestTheZoneTokensHaveDefaults"
+  },
+  {
+    "id": "m047",
+    "row": "L-8.1",
+    "what": "a zone is read from the night's canvas",
+    "file": "internal/render/basemap.go",
+    "old": "\treturn owns(p.zone, col, row)\n",
+    "new": "\treturn owns(p.night, col, row)\n",
+    "package": ".",
+    "test": "TestAZoneIsOutlinedAndFilledWithoutAlertWords"
+  },
+  {
+    "id": "m048",
+    "row": "L-8.1",
+    "what": "a row whose cells gained a zone is kept from the frame before",
+    "file": "internal/render/frame.go",
+    "old": "\t\tif c.zone {\n\t\t\tflags |= 16\n\t\t}\n",
+    "new": "",
+    "package": ".",
+    "test": "TestAZoneSetLaterIsDrawn"
+  },
+  {
+    "id": "m049",
+    "row": "L-8.2",
+    "what": "a zone's tint is laid over a field it cannot blend with, hiding it",
+    "file": "internal/render/frame.go",
+    "old": "\t\t\ts, blended = in.Blends.ZoneStrength(presetOf(c.under)) // where it does not blend, stipple marks the zone (L-8.2)\n",
+    "new": "\t\t\ts, blended = 1, true\n",
+    "package": ".",
+    "test": "TestAZoneOverAFieldItCannotTintIsStippled"
+  },
+  {
+    "id": "m050",
+    "row": "L-8.2",
+    "what": "a zone over a field it cannot tint is not stippled",
+    "file": "internal/render/frame.go",
+    "old": "\tr.stipple(in)   // before the cells are read too: the dots are line work\n",
+    "new": "",
+    "package": ".",
+    "test": "TestAZoneOverAFieldItCannotTintIsStippled"
+  },
+  {
+    "id": "m051",
+    "row": "L-8.2",
+    "what": "a zone is stippled where its tint blends",
+    "file": "internal/render/field.go",
+    "old": "\t\t\tif _, blends := in.Blends.ZoneStrength(presetOf(c.under)); blends {\n",
+    "new": "\t\t\tif false {\n",
+    "package": ".",
+    "test": "TestAZoneBlendsWhereItCanAndIsNotStippledThere"
+  },
+  {
+    "id": "m052",
+    "row": "L-8.2",
+    "what": "the zone's tint is never searched",
+    "file": "internal/colour/blend.go",
+    "old": "\t\tb.zone[preset] = strongest(ramp, plain[:len(ramp)], under, zone, depth)\n",
+    "new": "\t\tb.zone[preset] = strongest(ramp, plain[:len(ramp)], under, zone, depth) * 0\n",
+    "package": "./internal/colour",
+    "test": "TestTheZoneTintBlendsWhereTheSearchAllows"
+  },
+  {
+    "id": "m053",
+    "row": "L-8.2",
+    "what": "a blend no class shows is kept (D-114)",
+    "file": "internal/colour/blend.go",
+    "old": "\t\tif shows(ramp, plain, tint, s, depth) {\n",
+    "new": "\t\tif true {\n",
+    "package": "./internal/colour",
+    "test": "TestTheZoneTintBlendsWhereTheSearchAllows"
+  },
+  {
+    "id": "m054",
+    "row": "L-8.3",
+    "what": "Report reads a kilometre circle as an empty area",
+    "file": "describe.go",
+    "old": "\t\t\tareas = append(areas, overlay.AreaRings(f)) // a circle in kilometres is its ring, as drawn (L-8.3)\n",
+    "new": "\t\t\tareas = append(areas, f.Rings)\n",
+    "package": ".",
+    "test": "TestReportAnswersAKilometreCircle"
   }
 ]

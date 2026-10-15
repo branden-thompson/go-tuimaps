@@ -89,6 +89,18 @@ every depth on both grounds, so each change below is seen against what v0.2.0 dr
 
 OW-14, OW-15, OW-16, OW-18, OW-20 and OW-26 are re-targeted to v0.4.0 (watchpost D-65).
 
+## L-8 — A host's zone (watchpost D-195; D-32)
+
+watchpost's Broadcaster draws its service area on the map: a red outline of the service radius, always shown, and the area
+inside it tinted as an alert's area is, in every mode, over the propagation fields as well. Only alert roles fill an
+area and blend with a field today (`internal/render/basemap.go:219`, `internal/colour/blend.go:75`).
+
+| # | Requirement | Instrument |
+|---|---|---|
+| L-8.1 | **A `Zone` role:** a Polygon or a Circle feature in it is outlined in the `zone` token and filled with the `zone.tint` token, beneath any alert's tint where they meet, with no severity words, digits or legend entry; its label as any feature's. Defaults on both grounds at truecolor and 256 colours: the outline reads at 3:1 on its ground and on its own tint, and the outline and the tint are each at least 10 apart from every alert outline and tint under every kind of vision (D-88's rule). At sixteen colours and none the outline alone is drawn, never a hatch, which is an alert's | `TestTheZoneTokensHaveDefaults`, `TestAZoneIsOutlinedAndFilledWithoutAlertWords`, `TestAnAlertsTintIsOverAZones` |
+| L-8.2 | **The zone over a field (watchpost D-196):** its tint is blended over a preset's colours at the strongest of the blend search's strengths that keeps every class separated and shows the tint (L-11.2), every preset searched; where none does, the field is drawn exact and the zone's inside is stippled in the zone's ink - sparse dots in the cells' free space - so the area is still seen and the field's legend still holds. Measured: no tint passes over the MUF or foF2 ramp at any strength. Alerts' blends are unchanged | `TestAZoneOverAFieldItCannotTintIsStippled`, `TestTheZoneTintBlendsWhereTheSearchAllows`, `TestAlertBlendsAreUnchanged` |
+| L-8.3 | **`Report` answers a circle given in kilometres** as it answers a polygon: whether the place is inside. Found while writing L-8: a circle's ring was made only when drawn, so `Report` read it as an empty area | `TestReportAnswersAKilometreCircle` |
+
 ## Non-functional requirements
 
 | # | Requirement | Instrument |

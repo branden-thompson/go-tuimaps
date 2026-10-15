@@ -43,7 +43,8 @@ type Label struct {
 type Painter struct {
 	lines         *Canvas
 	areas         *Canvas
-	night         *Canvas // the night side (L-4.3), apart from the areas the water test reads
+	night         *Canvas // the night side (L-4.3), apart from the areas the water test reads; made at the first night shape (NFR-3)
+	zone          *Canvas // a host's zone (v0.3.0 L-8.1), apart from the areas: an alert's tint is over it; made at the first zone, most maps having none (NFR-3)
 	literals      []colour.RGB
 	labels        []Label
 	overlayLabels []Label
@@ -81,11 +82,7 @@ func NewPainter(cols, rows int) (*Painter, error) {
 	if err != nil {
 		return nil, err
 	}
-	night, err := NewCanvas(cols, rows)
-	if err != nil {
-		return nil, err
-	}
-	return &Painter{lines: lines, areas: areas, night: night}, nil
+	return &Painter{lines: lines, areas: areas}, nil
 }
 
 // Reset clears the painter for another frame, keeping its buffers.
@@ -96,6 +93,7 @@ func (p *Painter) Reset() {
 	p.lines.Wipe()
 	p.areas.Wipe()
 	p.night.Wipe()
+	p.zone.Wipe()
 	p.literals, p.labels, p.labelPts = p.literals[:0], p.labels[:0], p.labelPts[:0]
 	p.overlayLabels = p.overlayLabels[:0]
 	p.outlines, p.outlineCells = p.outlines[:0], p.outlineCells[:0]
@@ -213,11 +211,16 @@ func (p *Painter) Shape(v project.View, s scene.Shape) error {
 		return nil
 	}
 	if s.Kind == scene.ShapeArea && colour.Token(s.Role) == colour.Night {
+		p.night = p.ownCanvas(p.night)
 		p.night.Fill(p.rings, s.Role) // its own canvas: the areas' water is left as it is
 		return nil                    // no outline, no words, no digits: the night is no alert (L-4.3)
 	}
 	if s.Kind == scene.ShapeArea && alertRole(s.Role) {
 		p.areas.Fill(p.rings, s.Role+1) // an alert's tint is the token after its outline's
+	}
+	if s.Kind == scene.ShapeArea && colour.Token(s.Role) == colour.Zone {
+		p.zone = p.ownCanvas(p.zone)
+		p.zone.Fill(p.rings, uint8(colour.ZoneTint)) // its own canvas, so an alert's tint is over it whatever the order (L-8.1)
 	}
 	p.keepOutline(s, false)
 	p.lines.Forcing(true)
@@ -477,12 +480,37 @@ func (p *Painter) Area(col, row int) (uint8, bool) {
 	return ink, lit >= 4
 }
 
+// ownCanvas is a canvas of the painter's own, made the first time a shape
+// needs it: every map would pay for one made with the painter, and most draw
+// no night and no zone (NFR-3).
+func (p *Painter) ownCanvas(c *Canvas) *Canvas {
+	if c != nil {
+		return c
+	}
+	made, _ := NewCanvas(p.lines.cols, p.lines.rows) // the lines' size, already accepted
+	return made
+}
+
 // InNight reports whether the night side owns a cell: half its dots or more.
 func (p *Painter) InNight(col, row int) bool {
 	if p == nil {
 		return false
 	}
-	glyph, _ := p.night.Cell(col, row)
+	return owns(p.night, col, row)
+}
+
+// InZone reports whether a host's zone owns a cell: half its dots or more
+// (L-8.1).
+func (p *Painter) InZone(col, row int) bool {
+	if p == nil {
+		return false
+	}
+	return owns(p.zone, col, row)
+}
+
+// owns reports whether a canvas's fill covers half a cell's dots or more.
+func owns(c *Canvas, col, row int) bool {
+	glyph, _ := c.Cell(col, row)
 	lit := 0
 	for mask := uint8(glyph - blank); mask != 0; mask &= mask - 1 {
 		lit++

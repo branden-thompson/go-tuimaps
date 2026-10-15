@@ -117,6 +117,7 @@ const (
 	Tide           = colour.Tide       // a tide station's
 	TerminatorLine = colour.Terminator // the line between day and night, dotted at every depth (L-4.1, L-4.4): a Line feature along Terminator(at)
 	NightTint      = colour.Night      // the night side's shade (L-4.3): a Polygon feature over NightSide(at), no words, no digits, no legend entry
+	Zone           = colour.Zone       // a host's zone (L-8): a Polygon or Circle outlined in red, its inside tinted - or stippled over a field its tint cannot blend with - beneath any alert's, no severity, no legend entry
 	Low            = colour.Low
 	Middle         = colour.Middle
 	High           = colour.High

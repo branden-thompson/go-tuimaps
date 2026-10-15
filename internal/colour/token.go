@@ -101,8 +101,13 @@ const (
 	// tint (v0.3.0 L-4.1, watchpost D-35): neither an alert nor a class.
 	Terminator = FoF26 + 1
 	Night      = Terminator + 1
+	// Zone is a host's zone's outline, ZoneTint its inside (v0.3.0 L-8.1,
+	// watchpost D-195): a host's area such as a station's service radius,
+	// drawn as an alert's area is and never read as one.
+	Zone     = Night + 1
+	ZoneTint = Zone + 1
 	// lastToken is the last token there is.
-	lastToken = Night
+	lastToken = ZoneTint
 )
 
 // fixedNames are the names of the tokens before the numbered ramps.
@@ -169,6 +174,10 @@ func (t Token) Name() string {
 		return "terminator"
 	case t == Night:
 		return "night"
+	case t == Zone:
+		return "zone"
+	case t == ZoneTint:
+		return "zone.tint"
 	}
 	return "" // a token no case names: TestTokensMatchTheDocumentedList fails on it
 }

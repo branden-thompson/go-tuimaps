@@ -218,6 +218,32 @@ func (r *Renderer) fieldInks(in Input, f *scene.Field) []uint8 {
 	return inks
 }
 
+// stipple marks a host's zone over a field or an image its tint cannot blend
+// with (L-8.2, watchpost D-196): every fourth cell, rows staggered, carries
+// one dot in the zone's ink, where the cell has no line work of its own, so
+// the field's colours stay exact and its legend holds inside the zone.
+func (r *Renderer) stipple(in Input) {
+	if rampless(in.Depth) {
+		return // the outline alone at sixteen colours and none (L-8.1)
+	}
+	g := r.grid
+	for row := range g.rows {
+		for col := range g.cols {
+			c := g.cells[row*g.cols+col]
+			if c.under == 0 || c.faint || row%2 != 0 || (col+row/2)%2 != 0 || !r.painter.InZone(col, row) {
+				continue
+			}
+			if _, blends := in.Blends.ZoneStrength(presetOf(c.under)); blends {
+				continue // the tint is blended into the field there instead
+			}
+			if glyph, _ := r.painter.lines.Cell(col, row); glyph != blank {
+				continue // the cell's own line work keeps it
+			}
+			r.painter.lines.Set(2*col, 4*row+1, uint8(colour.Zone))
+		}
+	}
+}
+
 // twoClassHost reports whether a field is a host type of two classes, such
 // as a reach area (watchpost D-127): its edge is marked, not contoured.
 func twoClassHost(f *scene.Field) bool { return f.Preset == 0 && f.ClassCount == 2 }

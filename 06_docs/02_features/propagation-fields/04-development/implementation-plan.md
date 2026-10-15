@@ -34,6 +34,7 @@ A new public name gets a `contract.md` §10 row, which `contract_test.go` holds 
 | P6 | Owed rows: shade key, default depth, colour-only marks, checked dialer | L-7.1 to L-7.4 | P2 |
 | P7 | The globe's cost (M5, target D-96: the profiled per-cell contrast, blending and allocations fixed) and gate trust (M6) | NFR-1, NFR-3 | P1 to P6 |
 | P8 | M1's sitting: the script, a recorded globe field, the answer key for 10 places, both arms (watchpost D-117) | M1 | P1 to P6 |
+| P9 | A host's zone (watchpost D-195, D-196): the `Zone` role, its tokens and defaults, its own canvas beneath alerts, its tint blended where the search allows and stippled where not; `Report` for a kilometre circle | L-8.1 to L-8.3 | P2, P4 |
 
 Size (estimates, L-F14): P0 to P8, about 9 batches. The agent's estimate, not a measurement.
 
@@ -86,6 +87,9 @@ func NightSide(at time.Time) [][]LonLat
 | P7.1 | M5: a 2° whole-globe frame with labels, terminator, night and the reach overlay (P-7), measured at 200×56 and 400×110. watchpost's dry run measured v0.2.0 after a pan, with fill and labelled contours: 5.7 ms and 22.2 ms (fill alone 2.4 and 9.1 ms; most of the cost in per-cell colour contrast and blending, about one allocation per cell). **Target (watchpost D-96): at most 16 ms at 400×110 and 8 ms at 200×56**, after a pan, with fill, labelled contours, terminator and night | the gate asserts allocations and work per cell (D-119); the wall-clock target is a release step on the reference machine, failing when its record is missing; a linux/amd64 run recorded |
 | P7.2 | M6 and the release record (watchpost D-117, D-119): 5 consecutive full gate runs with no unattributable failure, logged in `06_docs/gate-runs.md`; the release step's record of M5 holds the machine model (`sysctl -n machdep.cpu.brand_string`), the Go version, the commit and the figures, and the release check fails when it is missing or names another commit (Code N12, N14) | the release check fails on a planted record for another commit |
 | P8.1 | M1: a recorded 2° MUF field (from go-ionomaps' output or the dry run's week, kept outside the tree), 10 places with the key fixed before the sitting; the picture arm and the `Report` arm; 8 of 10 each (D-117) | the key's own check: `Report` at each place names the keyed band |
+| P9.1 | `zone` and `zone.tint` tokens after `night` (no token moves), defaults on both grounds at every depth; the `Zone` role; a zone area on its own canvas, read beneath an alert's tint; outline alone at sixteen colours and none | `TestTheZoneTokensHaveDefaults`, `TestAZoneIsOutlinedAndFilledWithoutAlertWords`, `TestAnAlertsTintIsOverAZones` |
+| P9.2 | The blend search gains the zone's tint over every preset; alerts' strengths untouched; a zone over a field it cannot tint stippled in its ink (watchpost D-196) | `TestTheZoneTintBlendsWhereTheSearchAllows`, `TestAZoneOverAFieldItCannotTintIsStippled`, `TestAlertBlendsAreUnchanged` |
+| P9.3 | `Report` reads a kilometre circle's ring as the frame does | `TestReportAnswersAKilometreCircle` |
 
 ## Release
 

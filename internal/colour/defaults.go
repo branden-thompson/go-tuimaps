@@ -67,6 +67,10 @@ func darkFurniture(t Token) (RGB, bool) {
 		return RGB{255, 200, 60}, true // amber: no ramp's, no alert's
 	case Night:
 		return RGB{0, 0, 50}, true // the navy the night side's ground is shaded toward (NightShade)
+	case Zone:
+		return RGB{255, 70, 45}, true // a host's zone's red (L-8.1): 3:1 on the ground and its tint, 10 apart from every alert colour
+	case ZoneTint:
+		return RGB{130, 10, 50}, true
 	}
 	return RGB{}, false
 }
@@ -140,6 +144,10 @@ func lightFurniture(t Token) (RGB, bool) {
 		return RGB{140, 90, 0}, true
 	case Night:
 		return RGB{225, 215, 208}, true // a warm grey: a blue upsets the ramps made for this ground
+	case Zone:
+		return RGB{120, 0, 0}, true // the paler pinks fall within 10 of the alerts' severe and extreme tints (L-8.1)
+	case ZoneTint:
+		return RGB{210, 160, 150}, true
 	}
 	return RGB{}, false
 }

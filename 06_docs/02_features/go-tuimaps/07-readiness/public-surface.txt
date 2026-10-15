@@ -126,6 +126,7 @@ const UnsupportedTile
 const VisionSafe
 const WaterLayer
 const WebMercator
+const Zone
 func AirQualityGrid(string, Grid, time.Time) Overlay
 func AirQualityRole(float64) Token
 func CheckRamp([]RGB, RampCheck) []Finding

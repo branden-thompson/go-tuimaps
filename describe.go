@@ -167,7 +167,7 @@ func (m *Map) featureAnswer(place Place, id string, o Overlay) Answer {
 	for _, f := range o.Features {
 		switch f.Kind {
 		case Polygon, Circle:
-			areas = append(areas, f.Rings)
+			areas = append(areas, overlay.AreaRings(f)) // a circle in kilometres is its ring, as drawn (L-8.3)
 		case Point:
 			for _, run := range f.Rings {
 				points = append(points, describe.Labelled{Run: run, Label: f.Label})
