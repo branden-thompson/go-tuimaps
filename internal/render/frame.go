@@ -341,6 +341,15 @@ type Renderer struct {
 	rowSums   []uint64 // what each held row was built from
 	redraws   int
 	rowsBuilt int
+	memo      map[colourKey][2]colour.RGB // this frame's colours by what they are worked out from (watchpost D-209)
+}
+
+// colourKey is what a cell's colours are worked out from beyond the frame's
+// own input and ground, which do not change within a frame: two cells with
+// one key have one foreground and one background, worked out once.
+type colourKey struct {
+	area, under, ink           uint8
+	zone, night, faint, strict bool
 }
 
 // Redraws is how many frames were drawn and not reused.
@@ -1065,6 +1074,10 @@ func (r *Renderer) emit(in Input) []string {
 	under := ground{kind: in.Ground.Kind(in.Palette)}
 	under.colour, under.painted = in.Ground.InEffect(in.Palette)
 	salt := r.salt(in, under)
+	if r.memo == nil {
+		r.memo = map[colourKey][2]colour.RGB{}
+	}
+	clear(r.memo) // a new frame: its input and ground may differ from the last's
 	if len(r.held.Lines) != g.rows {
 		r.held.Lines, r.rowSums = make([]string, g.rows), make([]uint64, g.rows)
 	}
@@ -1105,7 +1118,15 @@ func (r *Renderer) colourCell(c cell, in Input, under ground, p *pen) {
 	if p == nil {
 		return
 	}
-	fg, bg := r.colours(c, in, under.colour, under.kind)
+	key := colourKey{area: c.area, under: c.under, ink: c.ink, zone: c.zone, night: c.night, faint: c.faint, strict: c.strict}
+	pair, held := r.memo[key]
+	if !held {
+		pair[0], pair[1] = r.colours(c, in, under.colour, under.kind)
+		if r.memo != nil {
+			r.memo[key] = pair
+		}
+	}
+	fg, bg := pair[0], pair[1]
 	if c.ink == 0 && !p.fresh {
 		fg = p.fg // an empty cell shows no foreground: nothing to change
 	}

@@ -175,7 +175,7 @@ func (r *Renderer) underlays(in Input) {
 			continue // drawn as an image is, after every field (L-17.1)
 		}
 		lined := shared || f.Lines // L-15.4: the host may ask for the look alone
-		if twoClassHost(f) {
+		if f.Edge {
 			r.edgeMark(in, f) // L-2.6: its edge broken at every depth, never a contour
 			if rampless(in.Depth) || filled {
 				continue // over a filled field, its edge alone (A-10)
@@ -263,29 +263,41 @@ func (r *Renderer) stipple(in Input) {
 	}
 }
 
-// twoClassHost reports whether a field is a host type of two classes, such
-// as a reach area (watchpost D-127): its edge is marked, not contoured.
-func twoClassHost(f *scene.Field) bool { return f.Preset == 0 && f.ClassCount == 2 }
-
 // edgeMark marks the edge between a two-class host field's classes with a
 // broken line that does not depend on colour (L-2.6): about every other dot
 // of the edge, picked by a hash of its place so the line is broken whichever
 // way it runs, in the contours' ink and with no label - never a contour.
+//
+// Each dot is classified once: two rows of classes are held, this one and
+// the next, and each dot's east and south neighbours read from them
+// (watchpost D-209).
 func (r *Renderer) edgeMark(in Input, f *scene.Field) {
 	w, h := r.painter.lines.Dots()
+	if w < 2 || h < 2 {
+		return
+	}
 	ink := uint8(colour.LabelRegion)
 	matters := groundMatters(f)
+	row, next := make([]int8, w), make([]int8, w)
+	for x := range w {
+		row[x] = fieldClass(f, r.lons[x], r.lats[0])
+	}
 	for y := range h - 1 {
+		for x := range w {
+			next[x] = fieldClass(f, r.lons[x], r.lats[y+1])
+		}
 		for x := range w - 1 {
-			here, east, south, ok := r.edgeAt(f, matters, x, y)
-			if !ok {
+			here := row[x]
+			if here < 0 || (matters && offItsGround(f, r.waterAt(x/2, y/4))) {
 				continue
 			}
+			east, south := row[x+1], next[x]
 			edge := (east >= 0 && east != here) || (south >= 0 && south != here)
 			if edge && brokenAt(x, y) {
 				r.painter.lines.Set(x, y, ink)
 			}
 		}
+		row, next = next, row
 	}
 }
 

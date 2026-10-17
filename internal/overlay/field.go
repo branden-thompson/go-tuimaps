@@ -134,7 +134,7 @@ func implausible(g *Grid) bool {
 // classify makes a grid's prepared form: each value's class, once.
 func classify(g *Grid, kind Kind) scene.Field {
 	field := scene.Field{West: g.West, South: g.South, East: g.East, North: g.North, Cols: g.Cols, Rows: g.Rows,
-		Classes: make([]int8, len(g.Values)), Preset: uint8(kind.Preset), ClassCount: len(kind.Breaks) + 1,
+		Classes: make([]int8, len(g.Values)), Preset: uint8(kind.Preset), ClassCount: len(kind.Breaks) + 1, Edge: kind.Edge,
 		Labels: bandLabels(kind.Breaks, g.Type.Unit), Lines: g.Lines, OverWater: g.OverWater}
 	for _, c := range kind.Colours {
 		field.Colours = append(field.Colours, [3]uint8{c.R, c.G, c.B})

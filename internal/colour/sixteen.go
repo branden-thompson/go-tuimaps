@@ -163,7 +163,7 @@ func ChooseDepth(hint Depth, hinted bool, getenv func(string) string) Depth {
 // terminalDepth is the depth a terminal says it has (L-7.2, OW-25):
 // COLORTERM "truecolor" or "24bit", or a TERM naming direct colour, is
 // truecolor; a TERM naming 256 colours is 256; "dumb" is none; any other
-// TERM is sixteen; with neither set, truecolor, as before.
+// TERM is sixteen; with neither set, truecolor.
 func terminalDepth(colorterm, term string) Depth {
 	ct, tm := strings.ToLower(colorterm), strings.ToLower(term)
 	direct := ct == "truecolor" || ct == "24bit" || strings.Contains(tm, "direct") || strings.Contains(tm, "truecolor")

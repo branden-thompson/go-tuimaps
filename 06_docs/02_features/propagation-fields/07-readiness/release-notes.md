@@ -15,6 +15,9 @@ Ruled before each landed (the brief's C-6), and listed with what a host does in 
 - **`Warnings` reports every preset's classes, the host ramp's anchors with them** (L-6.1): a host's colour for `low`, `middle` or `high` that breaks the checker, spread as a host type would be at the most classes the defaults pass, is reported up front as `RampRuleBroken` ("host ramp"), not only once a host type is drawn.
 - **The default depth follows the terminal** (L-7.2): with no hint and `NO_COLOR` unset, `COLORTERM` and `TERM` choose truecolor, 256, sixteen or no colour, where it was always truecolor; a host that wants one depth hints it.
 - **Roles no longer rest on colour alone** (L-7.3): a weaker hotspot, a tide station and a quake's age each draw a dot shape of their own.
+- **The edge mark is asked for** (watchpost D-216, C-18): a host type of two classes is drawn as its edge alone only with `Type.Edge`; before, every two-class host type was.
+- **A wrong colour count is a malformed ramp** (watchpost D-216, C-17): refused as `MalformedRamp`, where it was `UnsortedBreaks`.
+- **One ramp warning an overlay** (C-26): a host type set again with the same broken colours is one warning, replaced on each `Set` and gone once a `Set` passes.
 
 ## What it adds
 
@@ -24,4 +27,7 @@ Ruled before each landed (the brief's C-6), and listed with what a host does in 
 - **Day and night** (L-4): `Terminator(at)` and `NightSide(at)`, within 0.011° of NOAA's solar position; a `NightTint` polygon shades the ground and sea beneath it, never a field's colours, with no words or legend entry; a `TerminatorLine` is dotted at every depth; `PlaceReport.Daylight` says day or night and when it next turns.
 - **A shade key** (L-7.1, D-35): `Class.Shade`, the block shade an image's or rain's class is drawn in at sixteen colours and none.
 - **`CheckedDialerFor`** (L-7.4): the checked dialer for a host behind a proxy at a private address, with the proxy function to set beside it.
+- **`NightOverlay(id, at)`** (watchpost D-216): the night side and its terminator, each in its role, as one overlay in one call.
+- **`Type.Edge`** (watchpost D-216, L-2.6): a host type of two classes drawn as the edge between them alone, a broken line at every depth.
+- **`socks5h` proxies** take port 1080 when none is given, as `socks5` does (I-7).
 - **A host's zone** (L-8, watchpost D-195, D-196): a `Zone` Polygon or Circle is outlined in red and its inside tinted, beneath any alert's tint, with no severity or legend entry; over a field its tint cannot blend with (the MUF and foF2 among them) the field is drawn exact and the zone stippled; at sixteen colours and none, the outline alone. `Report` now answers a circle given in kilometres.

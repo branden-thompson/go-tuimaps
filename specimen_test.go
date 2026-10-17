@@ -52,8 +52,8 @@ func globeGrid(scale float64) tuimaps.Grid {
 	return g
 }
 
-// hostBreaks are a host's own classes for the globe grid: MHz, as watchpost
-// gives them before the library has a MUF preset.
+// hostBreaks are a host's own classes for the globe grid: MHz, a type of the
+// host's own rather than the MUF preset.
 var hostBreaks = []float64{8, 12, 16, 20, 24, 28}
 
 // The specimens: each an overlay over the whole world.

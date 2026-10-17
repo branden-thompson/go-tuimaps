@@ -145,6 +145,7 @@ type Field struct {
 	Classes                  []int8
 	Preset                   uint8 // the colour preset, or 0 for a host's own type
 	ClassCount               int
+	Edge                     bool // the host asked for the edge between its two classes alone (L-2.6)
 	// Colours are a host type's own colours, one a class, as red, green and
 	// blue; empty for the low, middle and high tokens spread (L-2.2).
 	Colours [][3]uint8

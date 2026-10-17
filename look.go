@@ -358,10 +358,8 @@ func (m *Map) searchBlendsLocked(depth Depth) {
 		return // the library's own colours: where they fall back is documented, not a warning
 	}
 	for _, f := range m.look.blends.Fallbacks() {
-		if len(m.own) < 64 {
-			m.own = append(m.own, fault.Warning{Kind: fault.RampRuleBroken, Count: 1,
-				Subject: textsafe.Clean(presetNames[colour.Preset(f[0])] + " under the " + alertNames[f[1]] + " tint: drawn over it, not blended")})
-		}
+		m.noteLocked(fault.Warning{Kind: fault.RampRuleBroken, Count: 1,
+			Subject: textsafe.Clean(presetNames[colour.Preset(f[0])] + " under the " + alertNames[f[1]] + " tint: drawn over it, not blended")})
 	}
 }
 

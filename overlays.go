@@ -312,8 +312,11 @@ func (m *Map) Set(o Overlay) (res SetResult, err error) {
 
 // checkHostRampLocked reports a host type's colours that break the checker
 // on the ground and at the depth in effect (L-2.3): drawn all the same, and
-// never silently (D-53).
+// never silently (D-53). One warning an overlay: a Set replaces the last
+// one's, and a Set that breaks nothing clears it (C-26).
 func (m *Map) checkHostRampLocked(o Overlay) {
+	subject := textsafe.Quote(o.ID)
+	m.own = slices.DeleteFunc(m.own, func(w fault.Warning) bool { return w.Kind == fault.RampRuleBroken && w.Subject == subject })
 	if o.Grid == nil || o.Grid.Type.Preset != "" {
 		return
 	}
@@ -325,8 +328,8 @@ func (m *Map) checkHostRampLocked(o Overlay) {
 	ground, _ := m.look.ground.InEffect(m.look.palette)
 	ramp := colour.HostRamp(kind.Colours, len(kind.Breaks)+1, m.look.palette, m.look.ground.Kind(m.look.palette), depth)
 	breaches := len(colour.Check(ramp, colour.RampCheck{Ground: ground, Depth: depth, Midpoint: -1}))
-	if breaches > 0 && len(m.own) < 64 {
-		m.own = append(m.own, fault.Warning{Kind: fault.RampRuleBroken, Count: breaches, Subject: textsafe.Quote(o.ID)})
+	if breaches > 0 {
+		m.noteLocked(fault.Warning{Kind: fault.RampRuleBroken, Count: breaches, Subject: subject})
 	}
 }
 

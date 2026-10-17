@@ -211,7 +211,11 @@ func (p *Painter) Shape(v project.View, s scene.Shape) error {
 		return nil
 	}
 	if s.Kind == scene.ShapeArea && colour.Token(s.Role) == colour.Night {
-		p.night = p.ownCanvas(p.night)
+		night, err := p.ownCanvas(p.night)
+		if err != nil {
+			return err
+		}
+		p.night = night
 		p.night.Fill(p.rings, s.Role) // its own canvas: the areas' water is left as it is
 		return nil                    // no outline, no words, no digits: the night is no alert (L-4.3)
 	}
@@ -219,7 +223,11 @@ func (p *Painter) Shape(v project.View, s scene.Shape) error {
 		p.areas.Fill(p.rings, s.Role+1) // an alert's tint is the token after its outline's
 	}
 	if s.Kind == scene.ShapeArea && colour.Token(s.Role) == colour.Zone {
-		p.zone = p.ownCanvas(p.zone)
+		zone, err := p.ownCanvas(p.zone)
+		if err != nil {
+			return err
+		}
+		p.zone = zone
 		p.zone.Fill(p.rings, uint8(colour.ZoneTint)) // its own canvas, so an alert's tint is over it whatever the order (L-8.1)
 	}
 	p.keepOutline(s, false)
@@ -519,12 +527,11 @@ func (p *Painter) Area(col, row int) (uint8, bool) {
 // ownCanvas is a canvas of the painter's own, made the first time a shape
 // needs it: every map would pay for one made with the painter, and most draw
 // no night and no zone (NFR-3).
-func (p *Painter) ownCanvas(c *Canvas) *Canvas {
+func (p *Painter) ownCanvas(c *Canvas) (*Canvas, error) {
 	if c != nil {
-		return c
+		return c, nil
 	}
-	made, _ := NewCanvas(p.lines.cols, p.lines.rows) // the lines' size, already accepted
-	return made
+	return NewCanvas(p.lines.cols, p.lines.rows) // the lines' size, accepted when they were made
 }
 
 // InNight reports whether the night side owns a cell: half its dots or more.

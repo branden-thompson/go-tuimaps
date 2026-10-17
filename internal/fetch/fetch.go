@@ -303,7 +303,7 @@ func proxyAddress(u *url.URL) string {
 	if u.Port() != "" {
 		return u.Host
 	}
-	port := map[string]string{"http": "80", "https": "443", "socks5": "1080"}[u.Scheme]
+	port := map[string]string{"http": "80", "https": "443", "socks5": "1080", "socks5h": "1080"}[u.Scheme]
 	return net.JoinHostPort(u.Hostname(), port)
 }
 

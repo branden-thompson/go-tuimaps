@@ -23,7 +23,7 @@ func hostBands(n int) scene.Field {
 // reach is a two-class host field over the gulf: 1 inside a box, 0 around
 // it, as a frequency's reach is (watchpost D-127).
 func reach() scene.Field {
-	f := scene.Field{West: -110, South: 15, East: -70, North: 45, Cols: 40, Rows: 30, Classes: make([]int8, 40*30), ClassCount: 2, OverWater: true}
+	f := scene.Field{West: -110, South: 15, East: -70, North: 45, Cols: 40, Rows: 30, Classes: make([]int8, 40*30), ClassCount: 2, Edge: true, OverWater: true}
 	for row := 8; row < 22; row++ {
 		for col := 12; col < 28; col++ {
 			f.Classes[row*40+col] = 1
@@ -88,7 +88,7 @@ func TestTheReachIsMarkedWithoutColour(t *testing.T) {
 			in.Fields, in.OverlaysVersion = []scene.Field{reach()}, 2
 			r, _ := drawn(t, in)
 			f := &in.Fields[0]
-			edge, lit := 0, 0
+			edge, lit, southOnly, southLit := 0, 0, 0, 0
 			w, h := r.painter.lines.Dots()
 			for y := range h - 1 {
 				for x := range w - 1 {
@@ -102,6 +102,12 @@ func TestTheReachIsMarkedWithoutColour(t *testing.T) {
 						if on {
 							lit++
 						}
+						if east < 0 || east == here { // the edge made by the dot below alone: the reach's top and bottom
+							southOnly++
+							if on {
+								southLit++
+							}
+						}
 					case on && here >= 0:
 						t.Fatalf("depth %v on %v: a dot off the reach's edge is lit at %d,%d", d, ground, x, y)
 					}
@@ -109,6 +115,9 @@ func TestTheReachIsMarkedWithoutColour(t *testing.T) {
 			}
 			if edge == 0 || lit < edge/4 || lit > 3*edge/4 {
 				t.Errorf("depth %v on %v: %d of the edge's %d dots lit; a broken line lights about half", d, ground, lit, edge)
+			}
+			if southOnly == 0 || southLit < southOnly/4 {
+				t.Errorf("depth %v on %v: %d of the %d edge dots made by the dot below are lit; the top and bottom edges are marked too", d, ground, southLit, southOnly)
 			}
 			if len(r.painter.bandLabels) != 0 {
 				t.Errorf("depth %v on %v: the reach's edge carries %d labels; it is no contour", d, ground, len(r.painter.bandLabels))
@@ -131,5 +140,37 @@ func TestTheReachIsMarkedWithoutColour(t *testing.T) {
 		if c.under != 0 && (c.under < uint8(colour.Temperature1) || c.under > uint8(colour.Temperature17)) {
 			t.Fatalf("cell %d is drawn in ink %d over the temperature field; a reach over a filled field is its edge alone", i, c.under)
 		}
+	}
+}
+
+// TestOnlyAnEdgeAskedForIsMarked is watchpost D-216 (BUILD red team C-18):
+// a host type of two classes is drawn as its edge alone only when the host
+// asks; without the ask it is a field like any other - filled, with no
+// broken edge of its own.
+func TestOnlyAnEdgeAskedForIsMarked(t *testing.T) {
+	v := gulfView()
+	in := Input{View: v, Tiles: embedded(t, v), Style: style.BuiltIn(), OverlaysVersion: 1, Depth: colour.Truecolor}
+	bare, _ := drawn(t, in)
+	plain := reach()
+	plain.Edge = false
+	in.Fields, in.OverlaysVersion = []scene.Field{plain}, 2
+	r, _ := drawn(t, in)
+	w, h := r.painter.lines.Dots()
+	extra := 0
+	for y := range h {
+		for x := range w {
+			if r.painter.lines.Lit(x, y) && !bare.painter.lines.Lit(x, y) {
+				extra++
+			}
+		}
+	}
+	filled := 0
+	for _, c := range r.grid.cells {
+		if c.under != 0 {
+			filled++
+		}
+	}
+	if extra != 0 || filled == 0 {
+		t.Errorf("a two-class field not asked for its edge: %d dots of a mark, %d cells filled; want no mark and the field filled", extra, filled)
 	}
 }

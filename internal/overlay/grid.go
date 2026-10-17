@@ -26,6 +26,11 @@ type Type struct {
 	// Colours are a host type's own, one a class (L-2.2); empty for the
 	// low, middle and high tokens spread across its classes.
 	Colours []colour.RGB
+	// Edge asks for a host type of two classes - one break - to be drawn as
+	// the edge between them alone: a broken line at every depth, never a
+	// contour, filled or not (L-2.6). A preset, or any other number of
+	// classes, is refused.
+	Edge bool
 }
 
 // Kind is a Type resolved: the breaks in effect, and the preset if there is one.
@@ -33,6 +38,7 @@ type Kind struct {
 	Preset  colour.Preset // zero for the host's own type
 	Breaks  []float64
 	Colours []colour.RGB // a host type's own colours, one a class; empty for the spread tokens
+	Edge    bool         // drawn as the edge between its two classes alone (L-2.6)
 }
 
 // Classify is a value's class: the number of breaks at or below it, from 0
@@ -50,7 +56,7 @@ func badBreaks(why textsafe.Text) error {
 }
 
 func badColours(why textsafe.Text) error {
-	return fault.Make(fault.UnsortedBreaks, textsafe.Const("the overlay's type was refused"), why,
+	return fault.Make(fault.MalformedRamp, textsafe.Const("the overlay's type was refused"), why,
 		textsafe.Const("give a host type one colour a class - one more than its breaks - or none for the library's spread"))
 }
 
@@ -126,7 +132,13 @@ func ResolveType(t Type) (Kind, error) {
 		if len(t.Colours) != 0 && len(t.Colours) != len(t.Breaks)+1 {
 			return Kind{}, badColours(textsafe.Const("it gives a number of colours other than one a class"))
 		}
-		return Kind{Breaks: append([]float64(nil), t.Breaks...), Colours: append([]colour.RGB(nil), t.Colours...)}, nil
+		if t.Edge && len(t.Breaks) != 1 {
+			return Kind{}, badBreaks(textsafe.Const("an edge mark is drawn between two classes, so it takes exactly one break"))
+		}
+		return Kind{Breaks: append([]float64(nil), t.Breaks...), Colours: append([]colour.RGB(nil), t.Colours...), Edge: t.Edge}, nil
+	}
+	if t.Edge {
+		return Kind{}, badBreaks(textsafe.Const("an edge mark is a host's own type of two classes, never a preset"))
 	}
 	if len(t.Colours) != 0 {
 		return Kind{}, badColours(textsafe.Const("it names a preset, whose colours are the library's"))

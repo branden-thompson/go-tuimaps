@@ -19,6 +19,10 @@ const (
 	QPF        // L-26: a period's rain and snow totals, liquid-equivalent (watchpost D-184)
 	MUF        // v0.3.0 L-2.1: the maximum usable frequency, in MHz (watchpost D-144)
 	FoF2       // v0.3.0 L-2.1: the F2 layer's critical frequency, in MHz (watchpost D-145)
+
+	// lastPreset is the last of them: the arrays by preset and the loops
+	// over every preset read it, so a preset added after it is one edit.
+	lastPreset = FoF2
 )
 
 // MUFBreaks are the MUF preset's breaks, in MHz: the amateur band edges -
@@ -219,9 +223,9 @@ func builtRamp(p Preset, ground GroundKind, depth Depth) ([]RGB, bool) {
 
 // builtRamps are every preset's ramps for each ground and each depth with a
 // ramp (Truecolor, Colours256), built the first time one is asked.
-var builtRamps = sync.OnceValue(func() *[FoF2 + 1][Light + 1][Colours256 + 1][]RGB {
-	var t [FoF2 + 1][Light + 1][Colours256 + 1][]RGB
-	for p := Temperature; p <= FoF2; p++ {
+var builtRamps = sync.OnceValue(func() *[lastPreset + 1][Light + 1][Colours256 + 1][]RGB {
+	var t [lastPreset + 1][Light + 1][Colours256 + 1][]RGB
+	for p := Temperature; p <= lastPreset; p++ {
 		for _, g := range []GroundKind{Dark, Light} {
 			for _, d := range []Depth{Truecolor, Colours256} {
 				t[p][g][d], _ = buildRamp(p, g, d)

@@ -17,10 +17,10 @@ Files are named `<specimen>-<depth>-<ground>.ans`:
 
 The grid's values are a smooth rule, highest near the equator on the day side, as a MUF map is: `scale · (10 + 12 · cos(lat) · (1 + 0.6 · cos(lon − 30°)) + 2 · sin(lon · 4))`, with a scale of 1 for the host type and 1.4 for temperature.
 
-## What they show (v0.2.0's drawing)
+## What they show
 
-- **A host-type grid without lines draws nothing at truecolor and at 256 colours, on either ground.** Its frames are the bare world's, byte for byte. This is the silent blank that L-2.4 closes.
-- **At 16 colours, a host-type grid draws its labelled contours with lines on or off.** The two frames are identical.
+- **At truecolor and at 256 colours, a host-type grid is filled in its spread** (L-2.4), on either ground; with lines on, its labelled contours are drawn over the fill.
+- **At 16 colours, where there is no ramp to fill with, a host-type grid draws its labelled contours with lines on or off**, so those two frames are identical.
 - The `globe-temperature` frames draw at every depth on both grounds.
 
 ## Data notice

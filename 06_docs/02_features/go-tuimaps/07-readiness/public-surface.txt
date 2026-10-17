@@ -139,6 +139,7 @@ func Kinds() []Kind
 func MUFGrid(string, Grid, time.Time) Overlay
 func New(...Option) (*Map, error)
 func NewShared(int64) (*Shared, error)
+func NightOverlay(string, time.Time) Overlay
 func NightSide(time.Time) [][]LonLat
 func QPFGrid(string, Grid, time.Time) Overlay
 func RadarImage(string, Image, time.Time) Overlay

@@ -425,8 +425,8 @@ func (m *Map) Render(size Size, now time.Time) (frame Frame, err error) {
 	if err != nil {
 		return Frame{}, err
 	}
-	if m.member.NoteRender() && len(m.own) < 64 { // renders keep finding work no Work call has run (D-131)
-		m.own = append(m.own, fault.Warning{Kind: fault.NoWorkCalled, Count: 1, Subject: textsafe.Const("work is pending and no Work call has run; call Work from a goroutine of the host's own")})
+	if m.member.NoteRender() { // renders keep finding work no Work call has run (D-131)
+		m.noteLocked(fault.Warning{Kind: fault.NoWorkCalled, Count: 1, Subject: textsafe.Const("work is pending and no Work call has run; call Work from a goroutine of the host's own")})
 	}
 	in := render.Input{View: m.view, Style: m.style, Labels: true, Scale: true,
 		Credit: textsafe.Const(basemapCredit), Supplied: m.pipe != nil && m.pipe.Deepest() > 0}

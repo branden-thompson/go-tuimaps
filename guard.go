@@ -44,9 +44,20 @@ func (m *Map) guardQuiet(call string) {
 func (m *Map) keepWarning(w fault.Warning) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if len(m.own) < 64 {
-		m.own = append(m.own, w)
+	m.noteLocked(w)
+}
+
+// maxOwnWarnings is the most warnings the map holds of its own between two
+// Warnings calls: past it, a host that never asks loses the newest, never
+// the memory.
+const maxOwnWarnings = 64
+
+// noteLocked keeps one of the map's own warnings, within maxOwnWarnings.
+func (m *Map) noteLocked(w fault.Warning) {
+	if len(m.own) >= maxOwnWarnings {
+		return
 	}
+	m.own = append(m.own, w)
 }
 
 // panicked is the error a recovered panic becomes. It says nothing of what

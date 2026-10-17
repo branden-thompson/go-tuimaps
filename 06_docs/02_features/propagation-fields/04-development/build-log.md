@@ -90,3 +90,10 @@ Mutants m042 to m054, each killed by the harness (m052 after its first form, whi
 | The release checklist | this commit | `TestEachReleaseIsHeldToItsOwnChecklist` | `scripts/gate --release` read v0.2.0's checklist for any tag; it reads each release's own, and refuses a release with none named |
 
 Mutants m055 to m063.
+
+## The BUILD exit's corrections (watchpost D-203 to D-217)
+
+| Task | Commit | The test first | Learned |
+|---|---|---|---|
+| `main` merged (v0.2.1; watchpost D-206, H-2) | `cd19676` | the gate whole | The same fix stood on both sides with different citations; the feature branch's kept. **The first gate run failed only because the run's path spelled the checkout `go-tuiMaps`**: the directory is `go-tuimaps`, and go.work matches paths case-sensitively while macOS does not |
+| The API corrections and the M5 frame (A-13; watchpost D-209, D-216) | this commit | `TestAnEdgeIsAskedForOnATwoClassType`, `TestOnlyAnEdgeAskedForIsMarked`, `TestAHostRampIsWarnedOnceAnOverlay`, `TestTheNightIsOneOverlayInOneCall`, `TestAProxyTakesItsSchemesPort`, `TestEveryCellGetsItsOwnColoursThroughTheMemo`; `TestAHostTypesColoursAreOneAClass` and `TestTheReachIsMarkedWithoutColour` strengthened | **The M5 frame was 21.7 ms at 400 x 110 against 16**, with the night, its terminator and a reach drawn; the colours worked out once a key a frame and each edge dot classified once brought it to 6.6 ms (4.8 to 1.4 ms at 200 x 56). **C-16 was half right:** the parity suite's v0.0.0 replace was dead, but the gate's serve its own planted trees, which require an unpublished v0.0.0 - five gate tests failed without them, and they are back. Nine mutants, m064 to m072; two survived their first tests (the memo's key without the night, the edge reading its south neighbour from the same row) and are killed by the memo test and a check of the edges made by the dot below |

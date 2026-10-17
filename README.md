@@ -58,8 +58,8 @@ changed.
 | **Nothing is fetched until you say so** | `Source(address)` is the only call that reaches anything. Until then the map draws from the tiles the `assets` package carries, which are the world down to zoom 3 |
 | **You run the work** | `Work(ctx)` does one unit on your goroutine. `Settle(ctx)` runs it until there is none left, for one-shot renders and tests. Nothing happens on its own |
 | **You own the clock** | `Render(size, now)` takes the wall clock. Markers move on it; data going out of date is judged by it. `Animate(at)` takes animation over if you want to drive it yourself |
-| **Colour is yours to set** | `SetPalette` takes your own colours, `SafeRamps(true)` keeps the library's where a scale must stay readable, `ColourDepth` hints at the terminal. With no hint, a non-empty `NO_COLOR` means no colour at all |
-| **Alerts are never told by colour alone** | An alert's label carries its severity word and its outline a severity digit, at every depth; with no colour, alert areas are hatched, overlay lines are dashed, and a scalar field becomes contour lines carrying their values. Quake age, fire strength and buoy against tide are still told by colour alone: carry them in the label (contract, "Limits a host should know") |
+| **Colour is yours to set** | `SetPalette` takes your own colours, `SafeRamps(true)` keeps the library's where a scale must stay readable, `ColourDepth` hints at the terminal. With no hint, a non-empty `NO_COLOR` means no colour at all, and otherwise the terminal's `COLORTERM` and `TERM` choose the depth |
+| **Alerts are never told by colour alone** | An alert's label carries its severity word and its outline a severity digit, at every depth; with no colour, alert areas are hatched, overlay lines are dashed, and a scalar field becomes contour lines carrying their values. Quake age, fire strength and buoy against tide each draw a dot shape of their own as well as their colour; say them in the label for a reader of words (contract, "What a host needs to know") |
 | **The map in words** | `Report(places)` answers beside the picture: each alert in view, each place against each overlay, and a radar loop's observed motion, as data a host words or speaks. `Frame.Lines` is braille; `Report` is its text alternative |
 | **A style is bytes, never a path** | `SetStyle(body)` draws the basemap by a style of your own, in the same JSON format as the library's. The library never opens a style file: you read it, and pass what you read |
 | **Loops do not play until you say so** | An image overlay can carry a loop of frames, and its playback is off by default: the map shows the newest observed frame and holds it. Turn playback on with `SetPlayback(PlaybackOn)`, then call `Play` |
@@ -71,7 +71,7 @@ Nothing, until you name a source. With one named:
 
 - tiles are fetched from that source and from nowhere else, over HTTPS;
 - what is sent is the tile address and a user-agent naming this library and
-  its version, `go-tuimaps/0.2.0` - nothing about your machine. The version
+  its version, `go-tuimaps/0.3.0` - nothing about your machine. The version
   is the release's: `scripts/gate --release` refuses a tag it does not
   match. `SetFetchOptions` adds a name of your own to it, and takes a
   transport of your own for your proxy or trust roots;
@@ -99,6 +99,12 @@ redefined, and the warning kinds renumbered. Each break, and what a host does
 instead, is listed in section 12 of
 `06_docs/02_features/go-tuimaps/03-architecture-design/contract.md`, which is
 the migration note from v0.1.0. Compare kinds by name, never by number.
+
+v0.3.0 changes some behaviour a host may have relied on - contour labels with
+their units, the default colour depth read from the terminal, marks that do
+not rest on colour, the edge mark only where a host type asks for it, and a
+wrong colour count refused as `MalformedRamp`. Each is in the same section 12,
+under "What v0.3.0 changes in behaviour", with what a host does instead.
 
 ## Not built yet
 

@@ -138,7 +138,8 @@ func TestClassCap(t *testing.T) {
 }
 
 // TestAHostTypesColoursAreOneAClass is L-2.2's hand-in: a host type's own
-// colours are one a class or none; a preset takes none of the host's.
+// colours are one a class or none; a preset takes none of the host's; a
+// refusal is a malformed ramp, not unsorted breaks (watchpost D-216, C-17).
 func TestAHostTypesColoursAreOneAClass(t *testing.T) {
 	two := []colour.RGB{{R: 1}, {R: 2}}
 	for _, c := range []struct {
@@ -155,8 +156,40 @@ func TestAHostTypesColoursAreOneAClass(t *testing.T) {
 		if (err == nil) != c.ok {
 			t.Errorf("%s: %v; want accepted %v", c.name, err, c.ok)
 		}
+		var f *fault.Error
+		if err != nil && (!errors.As(err, &f) || f.Kind() != fault.MalformedRamp) {
+			t.Errorf("%s: refused as %v; a wrong number of colours is a malformed ramp", c.name, err)
+		}
 		if err == nil && len(k.Colours) != len(c.t.Colours) {
 			t.Errorf("%s: %d colours resolved of %d given", c.name, len(k.Colours), len(c.t.Colours))
 		}
+	}
+}
+
+// TestAnEdgeIsAskedForOnATwoClassType is watchpost D-216 (C-18, L-2.6): a
+// host asks for the edge mark on its own type of two classes - one break -
+// and it is carried to the field; asked on a preset, or on any other number
+// of classes, it is refused as the breaks', and not asking leaves a field.
+func TestAnEdgeIsAskedForOnATwoClassType(t *testing.T) {
+	for _, c := range []struct {
+		name string
+		t    Type
+		ok   bool
+	}{
+		{"two classes", Type{Breaks: []float64{0.5}, Edge: true}, true},
+		{"three classes", Type{Breaks: []float64{0.5, 1.5}, Edge: true}, false},
+		{"a preset", Type{Preset: "muf", Unit: "MHz", Edge: true}, false},
+	} {
+		k, err := ResolveType(c.t)
+		var f *fault.Error
+		switch {
+		case c.ok && (err != nil || !k.Edge):
+			t.Errorf("%s: %v, edge %v; want the edge carried", c.name, err, k.Edge)
+		case !c.ok && (err == nil || !errors.As(err, &f) || f.Kind() != fault.UnsortedBreaks):
+			t.Errorf("%s: %v; want refused as the breaks'", c.name, err)
+		}
+	}
+	if k, err := ResolveType(Type{Breaks: []float64{0.5}}); err != nil || k.Edge {
+		t.Errorf("a two-class type not asked for its edge: %v, edge %v", err, k.Edge)
 	}
 }

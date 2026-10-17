@@ -30,3 +30,14 @@ func NightSide(at time.Time) [][]LonLat {
 	}
 	return [][]LonLat{out}
 }
+
+// NightOverlay is the night at a moment as one overlay, in one call: the
+// night side shading the ground and the sea, and the terminator dotted at
+// its edge, each in its own role (L-4.2, L-4.3; watchpost D-216). It keeps
+// an hour; a host hands in another as its moment moves.
+func NightOverlay(id string, at time.Time) Overlay {
+	return Overlay{ID: id, Valid: at, Keeps: time.Hour, Features: []Feature{
+		{Kind: Polygon, Rings: NightSide(at), Role: NightTint},
+		{Kind: Line, Rings: [][]LonLat{Terminator(at)}, Role: TerminatorLine},
+	}}
+}

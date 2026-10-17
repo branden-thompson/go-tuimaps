@@ -234,8 +234,7 @@ func workspaceFor(t *testing.T) string {
 		t.Fatal("go.mod states no go version")
 	}
 	path := filepath.Join(t.TempDir(), "go.work")
-	body := "go " + string(floor[1]) + "\n\nuse (\n\t" + root + "\n\t" + filepath.Join(root, "cmd", "tuimaps") + "\n)\n\n" +
-		"replace github.com/branden-thompson/go-tuimaps v0.0.0 => " + root + "\n"
+	body := "go " + string(floor[1]) + "\n\nuse (\n\t" + root + "\n\t" + filepath.Join(root, "cmd", "tuimaps") + "\n)\n"
 	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
 		t.Fatal(err)
 	}

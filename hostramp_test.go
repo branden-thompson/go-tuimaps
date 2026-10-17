@@ -140,6 +140,40 @@ func TestABadHostRampIsWarned(t *testing.T) {
 	}
 }
 
+// TestAHostRampIsWarnedOnceAnOverlay is watchpost D-216 (C-26): a host
+// type set again with the same broken colours is one warning, not one a
+// Set; set with colours that pass, its warning goes.
+func TestAHostRampIsWarnedOnceAnOverlay(t *testing.T) {
+	same := tuimaps.RGB{R: 120, G: 120, B: 120}
+	bad := hostType([]tuimaps.RGB{same, same, same, same, same, same, same})
+	m := world(t, specimenSize.Cols, specimenSize.Rows)
+	must(t, m.FitWorld())
+	m.ColourDepth(tuimaps.Truecolor)
+	must(t, m.Ground(tuimaps.RGB{R: 16, G: 16, B: 16}))
+	count := func() int {
+		n := 0
+		for _, w := range m.Warnings() {
+			if w.Kind == tuimaps.RampRuleBroken && strings.Contains(w.Subject.String(), "host") {
+				n++
+			}
+		}
+		return n
+	}
+	for range 3 {
+		mustSet(t, m, bad)
+	}
+	if n := count(); n != 1 {
+		t.Errorf("a broken host ramp set three times is %d warnings; want one", n)
+	}
+	for range 2 {
+		mustSet(t, m, bad)
+	}
+	mustSet(t, m, hostType(nil))
+	if n := count(); n != 0 {
+		t.Errorf("after the overlay was set with the default spread, %d ramp warnings remain", n)
+	}
+}
+
 // TestAHostTypesLegendHasColoursAndUnit is L-2.5: a host type's legend says
 // its unit and keys each class in the colour it is drawn in; where there is
 // no ramp to draw it in, no class claims a colour.

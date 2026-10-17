@@ -77,8 +77,8 @@ var blendStrengths = []float64{0.50, 0.45, 0.40, 0.35, 0.30, 0.25, 0.20, 0.15, 0
 // A host's zone's tint is searched over every preset (v0.3.0 L-8.2); where it
 // does not blend, the zone is stippled over the field.
 type Blends struct {
-	strength [2][5]float64     // by preset (temperature, radar), then tint (extreme to unknown); zero: not blended
-	zone     [FoF2 + 1]float64 // the zone's tint, by preset; zero: not blended
+	strength [2][5]float64           // by preset (temperature, radar), then tint (extreme to unknown); zero: not blended
+	zone     [lastPreset + 1]float64 // the zone's tint, by preset; zero: not blended
 }
 
 // ZoneStrength is how strongly a zone's tint blends over a preset's colours,
@@ -123,7 +123,7 @@ func SearchBlends(p Palette, ground GroundKind, groundColour RGB, depth Depth) B
 	var b Blends
 	under := seenAs(shownAt(groundColour, depth))
 	zone, _ := p.ResolveAt(ZoneTint, ground, depth)
-	for preset := Temperature; preset <= FoF2; preset++ {
+	for preset := Temperature; preset <= lastPreset; preset++ {
 		ramp := rampOf(p, preset, ground, depth)
 		var plain [17]seen // the largest ramp, temperature's
 		for i := range min(len(ramp), len(plain)) {

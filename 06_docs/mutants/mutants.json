@@ -44,8 +44,8 @@
     "row": "L-1.3",
     "what": "a field's lines are drawn over the sea whatever its host says",
     "file": "internal/render/field.go",
-    "old": "\tif here < 0 || (matters && offItsGround(f, r.waterAt(x/2, y/4))) {\n",
-    "new": "\tif here < 0 || (matters && false) {\n",
+    "old": "\tif here < 0 || (matters && offItsGround(f, r.waterAt(x/2, y/4))) {\n\t\treturn here, -1, -1, false\n",
+    "new": "\tif here < 0 || (matters && false) {\n\t\treturn here, -1, -1, false\n",
     "package": ".",
     "test": "TestContoursFollowTheirFieldOverWater"
   },
@@ -344,7 +344,7 @@
     "row": "L-2.3",
     "what": "a host type's broken ramp is drawn silently",
     "file": "overlays.go",
-    "old": "\tif breaches > 0 && len(m.own) < 64 {\n",
+    "old": "\tif breaches > 0 {\n",
     "new": "\tif false {\n",
     "package": ".",
     "test": "TestABadHostRampIsWarned"
@@ -618,5 +618,95 @@
     "new": "    0.3.*) feature=\"radar-loops\" ;;\n",
     "package": ".",
     "test": "TestEachReleaseIsHeldToItsOwnChecklist"
+  },
+  {
+    "id": "m064",
+    "row": "L-2.6",
+    "what": "a two-class field is edge-marked whether or not its host asks",
+    "file": "internal/render/field.go",
+    "old": "\t\tif f.Edge {\n",
+    "new": "\t\tif f.ClassCount == 2 {\n",
+    "package": "./internal/render",
+    "test": "TestOnlyAnEdgeAskedForIsMarked"
+  },
+  {
+    "id": "m065",
+    "row": "L-2.6",
+    "what": "an edge mark is taken on three classes",
+    "file": "internal/overlay/grid.go",
+    "old": "\t\tif t.Edge && len(t.Breaks) != 1 {\n",
+    "new": "\t\tif t.Edge && len(t.Breaks) > 2 {\n",
+    "package": "./internal/overlay",
+    "test": "TestAnEdgeIsAskedForOnATwoClassType"
+  },
+  {
+    "id": "m066",
+    "row": "L-2.6",
+    "what": "the edge asked for never reaches the field",
+    "file": "internal/overlay/grid.go",
+    "old": ", Colours: append([]colour.RGB(nil), t.Colours...), Edge: t.Edge}, nil\n",
+    "new": ", Colours: append([]colour.RGB(nil), t.Colours...)}, nil\n",
+    "package": "./internal/overlay",
+    "test": "TestAnEdgeIsAskedForOnATwoClassType"
+  },
+  {
+    "id": "m067",
+    "row": "L-2.2",
+    "what": "a wrong colour count is refused as unsorted breaks",
+    "file": "internal/overlay/grid.go",
+    "old": "\treturn fault.Make(fault.MalformedRamp, textsafe.Const(\"the overlay's type was refused\"), why,\n\t\ttextsafe.Const(\"give a host type one colour a class",
+    "new": "\treturn fault.Make(fault.UnsortedBreaks, textsafe.Const(\"the overlay's type was refused\"), why,\n\t\ttextsafe.Const(\"give a host type one colour a class",
+    "package": "./internal/overlay",
+    "test": "TestAHostTypesColoursAreOneAClass"
+  },
+  {
+    "id": "m068",
+    "row": "L-2.3",
+    "what": "a host ramp's warning piles up a Set at a time",
+    "file": "overlays.go",
+    "old": "\tm.own = slices.DeleteFunc(m.own, func(w fault.Warning) bool { return w.Kind == fault.RampRuleBroken && w.Subject == subject })\n",
+    "new": "",
+    "package": ".",
+    "test": "TestAHostRampIsWarnedOnceAnOverlay"
+  },
+  {
+    "id": "m069",
+    "row": "D-209",
+    "what": "a cell's colours are kept across night and day",
+    "file": "internal/render/frame.go",
+    "old": "\tkey := colourKey{area: c.area, under: c.under, ink: c.ink, zone: c.zone, night: c.night, faint: c.faint, strict: c.strict}\n",
+    "new": "\tkey := colourKey{area: c.area, under: c.under, ink: c.ink, zone: c.zone, faint: c.faint, strict: c.strict}\n",
+    "package": "./internal/render",
+    "test": "TestEveryCellGetsItsOwnColoursThroughTheMemo"
+  },
+  {
+    "id": "m070",
+    "row": "L-2.6",
+    "what": "the edge reads its south neighbour from the same row",
+    "file": "internal/render/field.go",
+    "old": "\t\t\teast, south := row[x+1], next[x]\n",
+    "new": "\t\t\teast, south := row[x+1], row[x]\n",
+    "package": "./internal/render",
+    "test": "TestTheReachIsMarkedWithoutColour"
+  },
+  {
+    "id": "m071",
+    "row": "L-4.2",
+    "what": "the night overlay's terminator takes the night's role",
+    "file": "daynight.go",
+    "old": "\t\t{Kind: Line, Rings: [][]LonLat{Terminator(at)}, Role: TerminatorLine},\n",
+    "new": "\t\t{Kind: Line, Rings: [][]LonLat{Terminator(at)}, Role: NightTint},\n",
+    "package": ".",
+    "test": "TestTheNightIsOneOverlayInOneCall"
+  },
+  {
+    "id": "m072",
+    "row": "L-10.3",
+    "what": "a socks5h proxy with no port is dialled at no port",
+    "file": "internal/fetch/fetch.go",
+    "old": "\"socks5\": \"1080\", \"socks5h\": \"1080\"}[u.Scheme]",
+    "new": "\"socks5\": \"1080\"}[u.Scheme]",
+    "package": "./internal/fetch",
+    "test": "TestAProxyTakesItsSchemesPort"
   }
 ]
