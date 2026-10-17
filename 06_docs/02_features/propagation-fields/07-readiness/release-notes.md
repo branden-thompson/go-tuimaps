@@ -30,4 +30,5 @@ Ruled before each landed (the brief's C-6), and listed with what a host does in 
 - **`NightOverlay(id, at)`** (watchpost D-216): the night side and its terminator, each in its role, as one overlay in one call.
 - **`Type.Edge`** (watchpost D-216, L-2.6): a host type of two classes drawn as the edge between them alone, a broken line at every depth.
 - **`socks5h` proxies** take port 1080 when none is given, as `socks5` does (I-7).
+- **`TerminalDepth`** (watchpost D-207, D-216): `ColourDepth(TerminalDepth)` takes a depth hint back, so a host offering "follow the terminal" beside the depths can return to it; the terminal's settings choose again (L-7.2).
 - **A host's zone** (L-8, watchpost D-195, D-196): a `Zone` Polygon or Circle is outlined in red and its inside tinted, beneath any alert's tint, with no severity or legend entry; over a field its tint cannot blend with (the MUF and foF2 among them) the field is drawn exact and the zone stippled; at sixteen colours and none, the outline alone. `Report` now answers a circle given in kilometres.

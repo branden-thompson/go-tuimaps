@@ -708,5 +708,15 @@
     "new": "\"socks5\": \"1080\"}[u.Scheme]",
     "package": "./internal/fetch",
     "test": "TestAProxyTakesItsSchemesPort"
+  },
+  {
+    "id": "m073",
+    "row": "watchpost D-207, D-216",
+    "what": "TerminalDepth takes a depth hint back",
+    "file": "look.go",
+    "old": "\tcase depth == TerminalDepth:\n\t\tm.look.depthHinted = false\n",
+    "new": "\tcase depth == TerminalDepth:\n\t\treturn\n",
+    "package": ".",
+    "test": "TestADepthHintIsTakenBack"
   }
 ]

@@ -112,6 +112,7 @@ const Sharpening
 const SizeMismatch
 const StaleOverlay
 const TableFallback
+const TerminalDepth
 const TerminatorLine
 const Tide
 const TileFailed

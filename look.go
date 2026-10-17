@@ -19,12 +19,15 @@ type Depth = colour.Depth
 
 // The colour depths. A map is drawn at the depth the host hints at; with no
 // hint from the host, a non-empty NO_COLOR in the environment chooses no
-// colour at all, and otherwise the map draws in truecolor (NFR-15).
+// colour at all, and otherwise the terminal's COLORTERM and TERM choose the
+// depth (NFR-15, L-7.2). TerminalDepth is no depth of its own: hinted, it
+// takes a hint back, and the environment chooses again.
 const (
-	Truecolor  = colour.Truecolor
-	Colours256 = colour.Colours256
-	Colours16  = colour.Colours16
-	NoColour   = colour.NoColour
+	Truecolor     = colour.Truecolor
+	Colours256    = colour.Colours256
+	Colours16     = colour.Colours16
+	NoColour      = colour.NoColour
+	TerminalDepth = colour.TerminalDepth
 )
 
 // Layer is a basemap layer a host can switch off and on (FR-36).
@@ -202,7 +205,9 @@ func (m *Map) PaintGround() {
 }
 
 // ColourDepth hints at how much colour the terminal has. With no hint the
-// library chooses from the usual settings of the environment.
+// library chooses from the usual settings of the environment; TerminalDepth
+// takes a hint back, so a host offering "follow the terminal" beside the
+// depths can return to it.
 func (m *Map) ColourDepth(depth Depth) {
 	defer m.guardQuiet("ColourDepth")
 	m.plant("ColourDepth")
@@ -210,15 +215,23 @@ func (m *Map) ColourDepth(depth Depth) {
 	if m == nil {
 		return
 	}
-	if depth > NoColour {
-		return // a depth that is none of the four is no hint at all
+	if depth > TerminalDepth {
+		return // a depth that is none of the five is no hint at all
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if m.shut || (m.look.depthHinted && m.look.depth == depth) {
+	switch {
+	case m.shut:
 		return
+	case depth == TerminalDepth && !m.look.depthHinted:
+		return // no hint to take back
+	case depth == TerminalDepth:
+		m.look.depthHinted = false
+	case m.look.depthHinted && m.look.depth == depth:
+		return
+	default:
+		m.look.depth, m.look.depthHinted = depth, true
 	}
-	m.look.depth, m.look.depthHinted = depth, true
 	m.changed++
 }
 

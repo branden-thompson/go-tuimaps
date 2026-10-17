@@ -16,6 +16,7 @@ and left is said with why.
 | one `RampRuleBroken` warning a `Set` of a host type with bad colours | one an overlay, replaced on each `Set`, cleared once a `Set` passes | a host setting its overlay each refresh saw the same warning pile up (C-26) |
 | the night composed by hand: `NightSide`, `Terminator`, two roles and an `Overlay` | `NightOverlay(id, at)`, as `MUFGrid` is for a field | the one shape every host drawing the night needs, in the library's roles, in one call (watchpost's `mapNight` was that composition) |
 | `socks5h` proxies with no port given none | port 1080, as `socks5` | the remote-resolving form a host names to keep DNS off its own resolver (I-7) |
+| a depth hint, once given, kept for the map's life | `ColourDepth(TerminalDepth)` takes it back | a host offering "follow the terminal" beside the depths (watchpost D-207's "Automatic") had no way back to it but a new map; found reading the API for watchpost's colour-depth Setting, after the first pass of this review |
 
 `CheckedDialerFor(ProxyFunc)` stays as it is and is adopted by watchpost for its tiles (D-216's
 "CheckedDialerFor in use"), retiring watchpost's own proxy exemption.
