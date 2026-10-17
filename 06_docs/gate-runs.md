@@ -215,3 +215,6 @@ A commit made from exactly that has the same tree less this file, so the two can
 | 2026-10-15T20:06:12Z | e97d5ab | c4ee0374c19f | full | FAILED: tests, race detector on | 3771 | - |
 | 2026-10-15T20:55:25Z | e97d5ab | c4ee0374c19f | full | FAILED: tests, race detector on | 2917 | - |
 | 2026-10-15T21:49:40Z | e97d5ab | 572c836396da | full | green | 2952 | - |
+| 2026-10-16T16:45:09Z | 9dc4ff3 | a7ace29de087 | docs | green | 454 | - |
+| 2026-10-17T02:44:34Z | 5899c60 | 24a8ceecb891 | full | FAILED: tests, race detector on; tests, race detector off (allocation counts live here); P10, a2dh p10 check; tests on amd64 (emulated here;  real hardware is NOT RUN) | 3215 | - |
+| 2026-10-17T03:36:40Z | 5899c60 | 0d3cead14655 | full | green | 2925 | - |

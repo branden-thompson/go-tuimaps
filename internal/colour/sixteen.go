@@ -1,5 +1,7 @@
 package colour
 
+import "strings"
+
 // SixteenReference is the table that checks at 16 colours are made against:
 // the colours a common terminal gives the sixteen entries. At this depth the
 // terminal owns the colours and cannot be asked, so every figure against
@@ -139,8 +141,9 @@ func sixteenLight(t Token) uint8 {
 
 // ChooseDepth is the depth a map draws at. A hint from the host wins: the
 // host knows where its output goes. With no hint, a non-empty NO_COLOR in
-// the environment selects no colour (NFR-15); otherwise truecolor. A hint
-// that is no depth gives no colour, the form that is safe anywhere.
+// the environment selects no colour (NFR-15); otherwise the terminal's own
+// word for it (L-7.2), and truecolor where it says none. A hint that is no
+// depth gives no colour, the form that is safe anywhere.
 func ChooseDepth(hint Depth, hinted bool, getenv func(string) string) Depth {
 	if hinted && hint > NoColour {
 		return NoColour
@@ -148,8 +151,31 @@ func ChooseDepth(hint Depth, hinted bool, getenv func(string) string) Depth {
 	if hinted {
 		return hint
 	}
-	if getenv != nil && getenv("NO_COLOR") != "" {
+	if getenv == nil {
+		return Truecolor
+	}
+	if getenv("NO_COLOR") != "" {
 		return NoColour
+	}
+	return terminalDepth(getenv("COLORTERM"), getenv("TERM"))
+}
+
+// terminalDepth is the depth a terminal says it has (L-7.2, OW-25):
+// COLORTERM "truecolor" or "24bit", or a TERM naming direct colour, is
+// truecolor; a TERM naming 256 colours is 256; "dumb" is none; any other
+// TERM is sixteen; with neither set, truecolor, as before.
+func terminalDepth(colorterm, term string) Depth {
+	ct, tm := strings.ToLower(colorterm), strings.ToLower(term)
+	direct := ct == "truecolor" || ct == "24bit" || strings.Contains(tm, "direct") || strings.Contains(tm, "truecolor")
+	switch {
+	case direct:
+		return Truecolor
+	case strings.Contains(tm, "256color"):
+		return Colours256
+	case tm == "dumb":
+		return NoColour
+	case tm != "":
+		return Colours16
 	}
 	return Truecolor
 }

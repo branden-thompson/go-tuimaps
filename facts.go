@@ -19,6 +19,7 @@ type Class struct {
 	Colour RGB
 	Drawn  bool   // false where the depth in use draws no colour at all
 	Mark   string // for an alert, the digit its outline repeats (D-65); empty otherwise
+	Shade  string // at sixteen colours and none, the block shade an image's or rain's class is drawn in (L-7.1, D-35); empty otherwise
 }
 
 // LegendEntry is what one overlay puts on the map, as data (FR-18).
@@ -95,7 +96,7 @@ func (m *Map) legendOf(id string) (LegendEntry, bool) {
 		return LegendEntry{}, false
 	}
 	entry := LegendEntry{ID: id, Unit: kind.Unit, Preset: kind.Preset,
-		Classes: m.classesOf(resolved), Blended: m.blendedUnder(resolved.Preset)}
+		Classes: m.classesOf(resolved, o.Image != nil || resolved.Preset == colour.Radar), Blended: m.blendedUnder(resolved.Preset)}
 	if o.Grid != nil && o.Grid.Lines && resolved.Preset != colour.Radar { // keyed as drawn: faint on the ground (L-15.4); rain never is (L-17.1)
 		ground, _ := m.look.ground.InEffect(m.look.palette)
 		for i, c := range entry.Classes {
@@ -164,8 +165,9 @@ func (m *Map) blendedUnder(preset colour.Preset) []Severity {
 // in the overlay's own unit and coloured as the frame draws it. The colour
 // is asked for the way the renderer asks for it, so the legend and the
 // picture can never disagree - at sixteen colours it is the sixteen-colour
-// approximation, and with no colour there is none.
-func (m *Map) classesOf(kind overlay.Kind) []Class {
+// approximation, and with no colour there is none. A shaded kind - an image,
+// or rain - keys each class's shade as the frame draws it (L-7.1).
+func (m *Map) classesOf(kind overlay.Kind, shaded bool) []Class {
 	depth := m.depthInEffect()
 	ground := m.look.ground.Kind(m.look.palette)
 	first, ramped := rampToken(kind.Preset)
@@ -173,6 +175,9 @@ func (m *Map) classesOf(kind overlay.Kind) []Class {
 	out := make([]Class, 0, len(kind.Breaks)+1)
 	for i := range len(kind.Breaks) + 1 {
 		one := Class{Label: classLabel(kind.Breaks, i)}
+		if shaded {
+			one.Shade = render.ShadeFor(uint8(kind.Preset), int8(i), len(kind.Breaks)+1, depth)
+		}
 		if kind.Preset == 0 && i < len(host) { // a host type keyed in its spread or its own colours (L-2.5)
 			one.Colour, one.Drawn = host[i], true
 		}

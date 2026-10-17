@@ -324,13 +324,12 @@ func (p *Painter) mark(ring []Point, s scene.Shape) {
 	}
 	if s.Kind == scene.ShapePoint && s.Dots > 0 {
 		p.markCircle(ring[0], s.Dots, false, s.Role) // a ring fixed on the screen (L-19)
+		p.markAge(ring[0], s.Dots, colour.Token(s.Role))
 		return
 	}
 	if s.Kind == scene.ShapePoint {
-		for dy := -1; dy <= 1; dy++ {
-			for dx := -1; dx <= 1; dx++ {
-				p.lines.Set(ring[0].X+dx, ring[0].Y+dy, s.Role)
-			}
+		for _, d := range pointDots(colour.Token(s.Role)) {
+			p.lines.Set(ring[0].X+d[0], ring[0].Y+d[1], s.Role)
 		}
 		return
 	}
@@ -344,6 +343,43 @@ func (p *Painter) mark(ring []Point, s scene.Shape) {
 	}
 	for i := 0; i+1 < len(ring); i++ {
 		p.lines.Line(ring[i].X, ring[i].Y, ring[i+1].X, ring[i+1].Y, 1, s.Role)
+	}
+}
+
+// The dots a point is drawn in: a block of three by three, or for a role
+// told from another by more than its colour, a shape of its own (L-7.3): a
+// weaker hotspot a plus against a strong one's block, a quake of the past
+// day a plus and an older one a cross, a tide station a plus against a
+// buoy's block.
+var (
+	blockDots = [][2]int{{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {0, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}}
+	plusDots  = [][2]int{{0, -1}, {-1, 0}, {0, 0}, {1, 0}, {0, 1}}
+	crossDots = [][2]int{{-1, -1}, {1, -1}, {0, 0}, {-1, 1}, {1, 1}}
+)
+
+// pointDots are the dots a point of a role is drawn in.
+func pointDots(role colour.Token) [][2]int {
+	switch role {
+	case colour.FireFaint, colour.QuakeDay, colour.Tide:
+		return plusDots
+	case colour.QuakeOlder:
+		return crossDots
+	}
+	return blockDots
+}
+
+// markAge marks a quake's ring with its age (L-7.3): the past hour's a
+// second ring inside the first, the past day's a plus at its centre, an
+// older one's the ring alone.
+func (p *Painter) markAge(at Point, radius int, role colour.Token) {
+	inner := role == colour.QuakeHour && radius > 3
+	switch {
+	case inner:
+		p.markCircle(at, radius-2, false, uint8(role))
+	case role == colour.QuakeHour, role == colour.QuakeDay:
+		for _, d := range plusDots {
+			p.lines.SetForced(at.X+d[0], at.Y+d[1], uint8(role))
+		}
 	}
 }
 

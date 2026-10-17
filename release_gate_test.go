@@ -282,3 +282,25 @@ func TestTheTagsAreDoneAfterTheCheck(t *testing.T) {
 		t.Errorf("an open row before the release check passed a final tag:\n%s", out)
 	}
 }
+
+// TestEachReleaseIsHeldToItsOwnChecklist: a v0.3 tag reads v0.3's checklist
+// in its own feature folder, not v0.2's - its open row refuses the tag
+// though v0.2's are all ticked - and a release with no checklist named is
+// refused, never read against another's.
+func TestEachReleaseIsHeldToItsOwnChecklist(t *testing.T) {
+	if testing.Short() {
+		t.Skip("runs the gate; skipped with -short")
+	}
+	root, env, _ := releaseTreeWith(t, "# Release checklist\n\n| # | Check | Done |\n|---|---|---|\n"+doneRow, "v1.8.0", "No vulnerabilities found.", "0")
+	writeFile(t, root, "internal/fetch/fetch.go", "package fetch\n\nconst (\n\tVersion = \"0.3.0\"\n)\n")
+	writeFile(t, root, "06_docs/02_features/propagation-fields/07-readiness/release-checklist.md", "# Release checklist\n\n| # | Check | Done |\n|---|---|---|\n| 1 | The host ramp is checked | [ ] |\n")
+	git(t, root, "add", "-A")
+	git(t, root, "commit", "-q", "-m", "v0.3.0's checklist")
+	out, err := runGateWith(t, root, env, "--release", "v0.3.0")
+	if err == nil || !strings.Contains(out, "The host ramp is checked") {
+		t.Errorf("v0.3.0 was not held to its own checklist's open row:\n%s", out)
+	}
+	if out, err := runGateWith(t, root, env, "--release", "v0.9.0"); err == nil || !strings.Contains(out, "no release checklist is named for v0.9.0") {
+		t.Errorf("a release with no checklist named was not refused for it:\n%s", out)
+	}
+}

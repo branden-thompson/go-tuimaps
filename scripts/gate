@@ -370,9 +370,17 @@ if [ "$release" = 1 ]; then
     exit 2
   fi
   mode="release $release_tag"
-  checklist="$root/06_docs/02_features/radar-loops/07-readiness/release-checklist.md"
   refused=""
   refuse() { refused="${refused}  REFUSED $1"$'\n'; note_failure "$(printf '%s' "$1" | head -1 | cut -c1-100)"; }
+  # EACH RELEASE IS HELD TO ITS OWN CHECKLIST, in its feature folder: v0.2's
+  # radar-loops, v0.3's propagation-fields. A release this table does not
+  # name is refused, never read against another release's rows.
+  case "${release_tag#v}" in
+    0.2.*) feature="radar-loops" ;;
+    0.3.*) feature="propagation-fields" ;;
+    *) feature=""; refuse "no release checklist is named for $release_tag; add its feature folder to the release check in scripts/gate" ;;
+  esac
+  checklist="$root/06_docs/02_features/${feature:-unnamed}/07-readiness/release-checklist.md"
   # THE LIBRARY SAYS WHICH RELEASE IT IS (L-13.1): the User-Agent's version
   # must be the tag's, a release candidate's being the release it leads to.
   version_file="$root/internal/fetch/fetch.go"

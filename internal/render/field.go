@@ -117,6 +117,25 @@ func classInk(preset uint8, class int8) uint8 {
 	return 0
 }
 
+// ShadeFor is the block shade an image's or rain's class is drawn in where
+// the depth draws no ramp (FR-18): heavier for heavier classes; empty where
+// the depth draws colour or the class draws nothing. The legend keys it
+// (L-7.1), so the key and the picture are one rule.
+func ShadeFor(preset uint8, class int8, classCount int, depth Depth) string {
+	drawn := rampless(depth) && classInk(preset, class) != 0
+	if !drawn {
+		return ""
+	}
+	heavy, medium := 3*int(class) > 2*(classCount-1), 3*int(class) > classCount-1
+	switch {
+	case heavy:
+		return shadeHeavy
+	case medium:
+		return shadeMedium
+	}
+	return shadeLight
+}
+
 // rampless reports whether ramps cannot be drawn at a depth, so that what
 // needs one is drawn in its no-colour form (D-59).
 func rampless(d Depth) bool {
@@ -423,13 +442,7 @@ func (r *Renderer) rain(in Input, preset uint8, classCount int, masked bool, cla
 				c.under, c.faint = ink, false // the echo in its own colour, over any field (L-15.3)
 				continue
 			}
-			shade := shadeLight
-			if 3*int(k) > 2*(classCount-1) {
-				shade = shadeHeavy
-			} else if 3*int(k) > classCount-1 {
-				shade = shadeMedium
-			}
-			c.shade = max(c.shade, shade) // laid last, by shades: it claims nothing now (L-8.3)
+			c.shade = max(c.shade, ShadeFor(preset, k, classCount, in.Depth)) // laid last, by shades: it claims nothing now (L-8.3)
 		}
 	}
 }

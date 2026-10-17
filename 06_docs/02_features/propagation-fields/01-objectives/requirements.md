@@ -76,13 +76,13 @@ every depth on both grounds, so each change below is seen against what v0.2.0 dr
 
 | # | Requirement | Instrument |
 |---|---|---|
-| L-6.1 | Every scale token (by `ScaleClass`) honours `SafeRamps` and is reported by `Warnings()`; **behaviour change**, named in the changelog | `TestSafeRampsCoversEveryScaleToken`, `TestWarningsReportEveryScaleToken` |
+| L-6.1 | Every scale token (by `ScaleClass`) honours `SafeRamps` and is reported by `Warnings()`; **behaviour change**, named in the changelog | `TestSafeRampsKeepEveryScaleTheLibrarysOwn`, `TestWarningsReportEveryScaleToken` |
 
 ## L-7 — Owed by v0.2.0, carried into v0.3.0 (watchpost D-65; D-11)
 
 | # | Requirement | Instrument |
 |---|---|---|
-| L-7.1 | OW-24: a shade key on `Class`, so a reader at `NoColour` or 16 colours can map ░▒▓ to a range (MUF and foF2 legends included) | `TestEveryClassHasAShadeKey` |
+| L-7.1 | OW-24: a shade key on `Class`, so a reader at `NoColour` or 16 colours can map ░▒▓ to a range: the glyph drawn for the class, empty for a field drawn as contours (D-35) | `TestEveryClassHasAShadeKey` |
 | L-7.2 | OW-25: the default depth from `COLORTERM` and `TERM` when the host hints none and `NO_COLOR` is unset | `TestTheDefaultDepthFollowsTheTerminal` |
 | L-7.3 | OW-17: a library mark (glyph or suffix) for quake age, fire strength and buoy against tide, so those roles do not rest on colour alone | `TestNoRoleRestsOnColourAlone` |
 | L-7.4 | OW-19: `CheckedDialerFor`, a checked dialer that exempts the proxy a host's proxy function names | `TestTheCheckedDialerExemptsOnlyTheNamedProxy` |

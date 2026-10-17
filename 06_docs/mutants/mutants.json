@@ -528,5 +528,95 @@
     "new": "\t\t\tareas = append(areas, f.Rings)\n",
     "package": ".",
     "test": "TestReportAnswersAKilometreCircle"
+  },
+  {
+    "id": "m055",
+    "row": "L-6.1",
+    "what": "a host's low, middle or high colour is never warned of",
+    "file": "internal/colour/palette.go",
+    "old": "\tif p.sets(Low, High) {\n",
+    "new": "\tif false && p.sets(Low, High) {\n",
+    "package": "./internal/colour",
+    "test": "TestWarningsReportEveryScaleToken"
+  },
+  {
+    "id": "m056",
+    "row": "L-7.1",
+    "what": "a class carries no shade",
+    "file": "facts.go",
+    "old": "\t\tif shaded {\n\t\t\tone.Shade =",
+    "new": "\t\tif false {\n\t\t\tone.Shade =",
+    "package": ".",
+    "test": "TestEveryClassHasAShadeKey"
+  },
+  {
+    "id": "m057",
+    "row": "L-7.1, D-35",
+    "what": "a class keys a shade where colour is drawn",
+    "file": "internal/render/field.go",
+    "old": "\tdrawn := rampless(depth) && classInk(preset, class) != 0\n",
+    "new": "\tdrawn := classInk(preset, class) != 0\n",
+    "package": ".",
+    "test": "TestEveryClassHasAShadeKey"
+  },
+  {
+    "id": "m058",
+    "row": "L-7.2",
+    "what": "a TERM naming 256 colours is read as sixteen",
+    "file": "internal/colour/sixteen.go",
+    "old": "\tcase strings.Contains(tm, \"256color\"):\n",
+    "new": "\tcase false:\n",
+    "package": "./internal/colour",
+    "test": "TestTheDefaultDepthFollowsTheTerminal"
+  },
+  {
+    "id": "m059",
+    "row": "L-7.2",
+    "what": "COLORTERM is not read",
+    "file": "internal/colour/sixteen.go",
+    "old": "direct := ct == \"truecolor\" || ct == \"24bit\" || ",
+    "new": "direct := ct == \"-\" || ",
+    "package": "./internal/colour",
+    "test": "TestTheDefaultDepthFollowsTheTerminal"
+  },
+  {
+    "id": "m060",
+    "row": "L-7.3",
+    "what": "a tide station is drawn as a buoy",
+    "file": "internal/render/basemap.go",
+    "old": "\tcase colour.FireFaint, colour.QuakeDay, colour.Tide:\n",
+    "new": "\tcase colour.FireFaint, colour.QuakeDay:\n",
+    "package": ".",
+    "test": "TestNoRoleRestsOnColourAlone"
+  },
+  {
+    "id": "m061",
+    "row": "L-7.3",
+    "what": "a quake's ring carries no age",
+    "file": "internal/render/basemap.go",
+    "old": "\t\tp.markAge(ring[0], s.Dots, colour.Token(s.Role))\n",
+    "new": "",
+    "package": ".",
+    "test": "TestNoRoleRestsOnColourAlone"
+  },
+  {
+    "id": "m062",
+    "row": "L-7.4",
+    "what": "the proxy the host names is never exempted",
+    "file": "internal/fetch/fetch.go",
+    "old": "\tf := &Fetcher{proxyOf: proxyOf}\n\treturn f.dial, f.proxy\n",
+    "new": "\tf := &Fetcher{proxyOf: proxyOf}\n\treturn f.dial, proxyOf\n",
+    "package": ".",
+    "test": "TestTheCheckedDialerExemptsOnlyTheNamedProxy"
+  },
+  {
+    "id": "m063",
+    "row": "the release checklist",
+    "what": "v0.3.0 is held to v0.2.0's checklist",
+    "file": "scripts/gate",
+    "old": "    0.3.*) feature=\"propagation-fields\" ;;\n",
+    "new": "    0.3.*) feature=\"radar-loops\" ;;\n",
+    "package": ".",
+    "test": "TestEachReleaseIsHeldToItsOwnChecklist"
   }
 ]

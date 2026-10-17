@@ -131,6 +131,7 @@ func AirQualityGrid(string, Grid, time.Time) Overlay
 func AirQualityRole(float64) Token
 func CheckRamp([]RGB, RampCheck) []Finding
 func CheckedDialer() Dialer
+func CheckedDialerFor(ProxyFunc) (Dialer, ProxyFunc)
 func Embed(func(z uint8, x, y uint32) ([]byte, bool), uint8) Option
 func FoF2Grid(string, Grid, time.Time) Overlay
 func KindOf(error) (Kind, bool)
@@ -226,7 +227,7 @@ type Answer = describe.Answer
 type Bound struct{ MinZoom float64; W float64; S float64; E float64; N float64 }
 type CacheUse struct{ Need int64; Held int64; Limit int64 }
 type Caches struct{ Tiles CacheUse; Shapes CacheUse; Disk CacheUse }
-type Class struct{ Label string; Colour RGB; Drawn bool; Mark string }
+type Class struct{ Label string; Colour RGB; Drawn bool; Mark string; Shade string }
 type Daylight struct{ Known bool; Day bool; Turns time.Time }
 type Depth = colour.Depth
 type Detail = style.Detail
@@ -260,6 +261,7 @@ type Playback uint8
 type Positioned interface{ LonLat() (float64, float64) }
 type Projection = overlay.Projection
 type Provider = overlay.Provider
+type ProxyFunc = fetch.ProxyFunc
 type PurgeReport struct{ Removed int; Failed int }
 type RGB = colour.RGB
 type RampCheck = colour.RampCheck

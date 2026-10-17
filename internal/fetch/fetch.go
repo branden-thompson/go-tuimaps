@@ -282,6 +282,9 @@ func (f *Fetcher) proxy(r *http.Request) (*url.URL, error) {
 	if err != nil || u == nil {
 		return u, err
 	}
+	if u.Host == "" {
+		return nil, errPolicy // a proxy with no address exempts nothing: refused
+	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if f.proxies == nil {
@@ -350,6 +353,23 @@ type Dialer = func(ctx context.Context, network, address string) (net.Conn, erro
 // wants to keep that refusal (L-10.3, D-55).
 func NewCheckedDialer() Dialer {
 	return (&Fetcher{}).dial
+}
+
+// ProxyFunc is how a transport chooses a proxy: the shape of
+// http.Transport's Proxy.
+type ProxyFunc = func(*http.Request) (*url.URL, error)
+
+// NewCheckedDialerFor is the checked dialer for a host transport behind a
+// proxy (L-7.4, D-117): it refuses a private or reserved address as
+// NewCheckedDialer does, except the proxy the returned proxy function has
+// named - it asks the host's own and remembers what it said - so a proxy at
+// a private address is reached and nothing else private is.
+func NewCheckedDialerFor(proxyOf ProxyFunc) (Dialer, ProxyFunc) {
+	if proxyOf == nil {
+		return NewCheckedDialer(), nil // no proxy: the plain checked dialer, and the transport dials direct
+	}
+	f := &Fetcher{proxyOf: proxyOf}
+	return f.dial, f.proxy
 }
 
 // checkRedirect is the redirect policy: at most three, never from secure to

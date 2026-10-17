@@ -77,3 +77,16 @@ Mutants m025 to m033, each killed by the harness.
 | P9.3 `Report` and a kilometre circle | this commit | `TestReportAnswersAKilometreCircle` | A circle given in kilometres had its ring made only when drawn, so `Report` read it as an empty area: `overlay.AreaRings` is the one place a feature becomes its rings, for the frame and the answer |
 
 Mutants m042 to m054, each killed by the harness (m052 after its first form, which left a variable unused, failed vet).
+
+## P5 and P6 — every scale's warnings, the owed rows, the release checklist (watchpost D-201)
+
+| Task | Commit | The test first | Learned |
+|---|---|---|---|
+| P5.1 `Warnings` covers every scale token | this commit | `TestWarningsReportEveryScaleToken`: failed on `low`, `middle` and `high` | **`SafeRamps` already kept every scale token** (`TestSafeRampsKeepEveryScaleTheLibrarysOwn`, under another name than the plan's); `Warnings` checked nine ramps and not the host ramp's three anchors, which were checked only once a host type was drawn |
+| P6.1 L-7.1 the shade key | this commit | `TestEveryClassHasAShadeKey`: failed to compile on the missing `Class.Shade` | **A field at sixteen colours and none is contours, not shades** (D-35, ruled for it: the key covers only what is shaded). The renderer's shade rule became `render.ShadeFor`, which the legend calls too |
+| P6.1 L-7.2 the terminal's depth | this commit | `TestTheDefaultDepthFollowsTheTerminal` | The host that hints no depth - watchpost among them - now draws 256 colours on a terminal that says `xterm-256color` and no `COLORTERM`, where it drew truecolor it could not show |
+| P6.1 L-7.3 marks without colour | this commit | `TestNoRoleRestsOnColourAlone`: failed on the quake ages and buoy against tide (fire's two passed on the test's first run and failed on every run after, with nothing of theirs changed; the cause was not found, and both did draw the same block, so the failure was the true reading) | **A one-dot mark is lost on a border**: the test's quake sits on Memphis, where three state borders meet, and the past day's centre dot fell on a border dot already set; it is a plus |
+| P6.1 L-7.4 `CheckedDialerFor` | this commit | `TestTheCheckedDialerExemptsOnlyTheNamedProxy`: failed to compile on the missing function | The library's own fetcher already exempted the proxy its proxy function named; the export hands a host the same pair. **The first gate refused it three ways:** `tiles.go` imported `net/http`, which only `internal/fetch` may (a `ProxyFunc` alias now); the contract named `COLORTERM`, `TERM`, `ScaleClass` and a transport's fields in backticks, which it reads as the package's names; and P10 counted no check in the new constructor - it now gives the plain dialer for no proxy function, and the proxy function refuses a proxy named with no address, which had exempted an empty one. L-13.8, the environment the library reads, names COLORTERM and TERM |
+| The release checklist | this commit | `TestEachReleaseIsHeldToItsOwnChecklist` | `scripts/gate --release` read v0.2.0's checklist for any tag; it reads each release's own, and refuses a release with none named |
+
+Mutants m055 to m063.

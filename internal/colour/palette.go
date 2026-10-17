@@ -161,12 +161,26 @@ func (p Palette) Warnings(ground GroundKind, depth Depth) []fault.Warning {
 		mid := Midpoint(Temperature, ground, depth)
 		report(textsafe.Const("temperature"), len(Check(p.effective(Temperature1, Temperature17, 1, ground, depth), RampCheck{Ground: under, Depth: depth, Midpoint: mid})))
 	}
+	if p.sets(Low, High) {
+		ramp := HostRamp(nil, hostClassesAt(depth), p, ground, depth) // the most classes the defaults pass at (L-2.2)
+		report(textsafe.Const("host ramp"), len(Check(ramp, RampCheck{Ground: under, Depth: depth, Midpoint: -1})))
+	}
 	if p.sets(AlertExtremeOutline, AlertUnknownTint) {
 		lines := Check(p.effective(AlertExtremeOutline, AlertUnknownOutline, 2, ground, depth), RampCheck{Ground: under, Depth: depth, Midpoint: -1, Lines: true})
 		areas := Check(p.effective(AlertExtremeTint, AlertUnknownTint, 2, ground, depth), RampCheck{Ground: under, Depth: depth, Midpoint: -1})
 		report(textsafe.Const("alerts"), countUnordered(lines)+countUnordered(areas))
 	}
 	return out
+}
+
+// hostClassesAt is the most classes a host type's spread ramp is drawn in
+// that the defaults pass the checker at: 9 at truecolor, 7 at 256 colours
+// (L-2.2, A-9).
+func hostClassesAt(depth Depth) int {
+	if depth == Truecolor {
+		return 9
+	}
+	return 7
 }
 
 // countUnordered counts breaches other than of order: alert colours are a

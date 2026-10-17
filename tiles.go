@@ -33,6 +33,22 @@ func CheckedDialer() Dialer {
 	return fetch.NewCheckedDialer()
 }
 
+// CheckedDialerFor is CheckedDialer for a host transport behind a proxy
+// (L-7.4): it returns the dialer and a proxy function to set beside it, as
+// the transport's DialContext and Proxy. The proxy function asks the host's
+// own and the dialer reaches the proxy it names, even at a private address
+// (a company's proxy, often); every other private or reserved address is
+// still refused, and a proxy named with no address is refused. With no
+// proxy function it is CheckedDialer, and no proxy function. A transport
+// that sets one without the other keeps no such promise.
+func CheckedDialerFor(proxy ProxyFunc) (Dialer, ProxyFunc) {
+	return fetch.NewCheckedDialerFor(proxy)
+}
+
+// ProxyFunc is how a transport chooses a proxy: the shape of an
+// http.Transport's Proxy.
+type ProxyFunc = fetch.ProxyFunc
+
 // CacheUse is what one cache holds and is allowed to hold (D-90).
 type CacheUse struct {
 	Need  int64 // the bytes the views on hand need
