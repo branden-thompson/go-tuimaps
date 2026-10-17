@@ -202,6 +202,9 @@ A commit made from exactly that has the same tree less this file, so the two can
 | 2026-10-09T00:06:07Z | 6a94d57 | 51140c5323ff | full | FAILED: vulnerability scan, govulncheck v1.8.0, module and standard library at go1.27.1; vulnerability scan, govulncheck v1.8.0, module and standard library at the floor, go1.25.13; cmd/tuimaps: vulnerability scan, govulncheck v1.8.0, module and standard library at go1.27.1; cmd/tuimaps: vulnerability scan, govulncheck v1.8.0, module and standard library at the floor, go1.25.13; tools/gen-assets: vulnerability scan, govulncheck v1.8.0, module and standard library at go1.27.1; tools/gen-assets: vulnerability scan, govulncheck v1.8.0, module and standard library at the floor, go1.25.13 | 2957 | - |
 | 2026-10-09T01:09:46Z | 6a94d57 | 3d9d00620fec | full | green | 3107 | - |
 | 2026-10-09T01:10:24Z | 1c1b963 | 3d9d00620fec | release v0.3.0-rc.1 | green | 23 | - |
+| 2026-10-09T02:06:49Z | d1c4d5e | a33d8ab10e40 | full | green | 2928 | - |
+| 2026-10-09T16:51:59Z | cabbed3 | a33d8ab10e40 | release v0.2.1 | green | 23 | - |
+| 2026-10-10T00:21:03Z | 2313ed7 | eea64cc56e08 | full | green | 3028 | - |
 | 2026-10-11T19:09:14Z | 1c1b963 | 8e7c47f912cb | full | green | 2964 | - |
 | 2026-10-11T21:20:47Z | 69132c8 | eed08aa559d6 | full | green | 2999 | - |
 | 2026-10-12T00:17:51Z | 13270b9 | 911dfe81e0b7 | full | FAILED: tests, race detector on; tests, race detector off (allocation counts live here); tests on amd64 (emulated here;  real hardware is NOT RUN) | 2940 | - |
@@ -218,3 +221,5 @@ A commit made from exactly that has the same tree less this file, so the two can
 | 2026-10-16T16:45:09Z | 9dc4ff3 | a7ace29de087 | docs | green | 454 | - |
 | 2026-10-17T02:44:34Z | 5899c60 | 24a8ceecb891 | full | FAILED: tests, race detector on; tests, race detector off (allocation counts live here); P10, a2dh p10 check; tests on amd64 (emulated here;  real hardware is NOT RUN) | 3215 | - |
 | 2026-10-17T03:36:40Z | 5899c60 | 0d3cead14655 | full | green | 2925 | - |
+| 2026-10-17T15:45:10Z | b50fc86 | 868d76723f3e | full | INTERRUPTED | 659 | - |
+| 2026-10-17T16:37:51Z | b50fc86 | 868d76723f3e | full | green | 3128 | - |

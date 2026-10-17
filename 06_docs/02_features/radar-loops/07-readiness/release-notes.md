@@ -2,6 +2,12 @@
 
 Up: [release checklist](release-checklist.md) · [requirements](../01-objectives/requirements.md)
 
+## v0.2.1, a fix (watchpost D-150, D-152)
+
+- **The rain totals' two heaviest classes are drawn.** v0.2.0 drew nothing for a total of 50.8 mm or more, while the legend keyed both classes: a cell's ink at or above 96 is read as a style's literal colour, and the tokens had grown to 97, so `qpf.6` and `qpf.7` were read as literals that do not exist. The literal inks now start at 160. `TestEveryTokenIsAnInkBelowTheLiterals` and `TestEveryClassOfEveryPresetIsDrawn` hold it; both fail with the old start.
+- **The module floor is go 1.26.9.** GO-2026-6617, an HTTP/2 crash from an HPACK encoder race in `net/http`, is reachable from the fetcher and has no fix on the go1.25 line. Every module's `go` directive is 1.26.9; a host builds with Go 1.26.9 or newer.
+- Nothing else changes: no public name, no other drawing.
+
 **v0.2.0 adds to v0.1.0's contract, and breaks it only where ruled** (D-58): each break is listed
 below, and in section 12 of the contract (`06_docs/02_features/go-tuimaps/03-architecture-design/contract.md`)
 with what a host does instead. It is the library's first reviewed release (L-5.4).

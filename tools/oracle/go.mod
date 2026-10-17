@@ -3,7 +3,7 @@ module github.com/branden-thompson/go-tuimaps/tools/oracle
 go 1.26.9
 
 require (
-	github.com/branden-thompson/go-tuimaps v0.2.0
+	github.com/branden-thompson/go-tuimaps v0.2.1
 	github.com/paulmach/orb v0.13.0
 )
 
