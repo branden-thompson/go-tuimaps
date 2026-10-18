@@ -39,6 +39,7 @@ Up: [plan](../04-development/implementation-plan.md) · [release notes](release-
 | 2.5 | No workspace file is tracked; no address or name that should not leave the tree | | [ ] |
 | 2.6 | `scripts/gate --release v0.3.0` green on the release commit | | [ ] |
 | 2.7 | The library says it is the tag: `fetch.Version` equals the tag's version | | [ ] |
+| 2.8 | M5, the frame (NFR-1, watchpost D-209): `BenchmarkGlobeFieldPan`, its contours drawn, on the reference machine at the release commit, at most 16 ms at 400 × 110 and 8 ms at 200 × 56; the figures and the machine named here (watchpost round 2 CN2-10, CN2-17) | | [ ] |
 
 ## 3 · The tags, in order (after the release check)
 

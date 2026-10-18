@@ -84,7 +84,7 @@ type Blends struct {
 // ZoneStrength is how strongly a zone's tint blends over a preset's colours,
 // and whether it blends at all (L-8.2).
 func (b Blends) ZoneStrength(p Preset) (float64, bool) {
-	if p < Temperature || p > FoF2 {
+	if p < Temperature || p > lastPreset {
 		return 0, false
 	}
 	return b.zone[p], b.zone[p] > 0

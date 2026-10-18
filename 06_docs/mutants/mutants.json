@@ -718,5 +718,25 @@
     "new": "\tcase depth == TerminalDepth:\n\t\treturn\n",
     "package": ".",
     "test": "TestADepthHintIsTakenBack"
+  },
+  {
+    "id": "m074",
+    "row": "watchpost D-229",
+    "what": "a refused edge mark is the breaks' kind again",
+    "file": "internal/overlay/grid.go",
+    "old": "\treturn fault.Make(fault.BadEdge, textsafe.Const(\"the overlay's type was refused\"), why,",
+    "new": "\treturn fault.Make(fault.UnsortedBreaks, textsafe.Const(\"the overlay's type was refused\"), why,",
+    "package": "./internal/overlay",
+    "test": "TestAnEdgeIsAskedForOnATwoClassType"
+  },
+  {
+    "id": "m075",
+    "row": "watchpost D-229",
+    "what": "a refused edge mark's words tell the host to name a preset",
+    "file": "internal/overlay/grid.go",
+    "old": "\t\ttextsafe.Const(\"ask for the edge mark only on a type of your own with two classes - one break - or leave Edge unset\"))",
+    "new": "\t\ttextsafe.Const(\"give the class breaks as numbers in rising order, at most 20 of them, or name a preset\"))",
+    "package": "./internal/overlay",
+    "test": "TestAnEdgeIsAskedForOnATwoClassType"
   }
 ]

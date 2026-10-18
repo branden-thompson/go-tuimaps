@@ -454,8 +454,9 @@ if [ "$release" = 1 ]; then
   elif ! release_work="$(mktemp -d)"; then
     refuse "could not make a directory for the workspace file"
   else
-    # The workspace resolves the separate modules' v0.0.0 requirement of the
-    # library to this tree, as the gate's own workspace does.
+    # The workspace resolves the separate modules' requirement of the library
+    # to this tree; the replace serves the planted trees of the gate's own
+    # tests, which require a v0.0.0 that was never published.
     root_module="$(GOWORK=off GOFLAGS= GOTOOLCHAIN="$FLOOR_TOOLCHAIN" go list -m 2>/dev/null)"
     {
       echo "go $floor"
@@ -649,10 +650,12 @@ if [ -z "${tracked:-}" ]; then
   if GOFLAGS= go work init $modules >/dev/null 2>&1; then
     made_work=1
     # A workspace alone does not resolve a version that was never published:
-    # because the library imports third-party code, a separate module that
-    # requires the library at v0.0.0 sends the toolchain looking for that
-    # version. A replace for exactly that version, in this throw-away file,
-    # points it at the tree. Tracked module files still carry no replace.
+    # the gate's own tests plant modules that require the library at v0.0.0,
+    # and because the library imports third-party code the toolchain goes
+    # looking for that version. A replace for exactly it, in this throw-away
+    # file, points it at the tree; the separate modules, which require the
+    # released version, resolve through the workspace. Tracked module files
+    # still carry no replace.
     if [ -f go.mod ]; then
       root_module="$(GOWORK=off GOFLAGS= go list -m 2>/dev/null)"
       [ -n "$root_module" ] && GOFLAGS= go work edit -replace="${root_module}@v0.0.0=./" >/dev/null 2>&1

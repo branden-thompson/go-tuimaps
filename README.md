@@ -118,7 +118,7 @@ designed and none is promised for a date.
 
 Every change is checked by `scripts/gate`, which is what stands before a merge:
 
-- `scripts/gate` runs every leg, about thirty minutes on an 18-core Apple M-series Mac; every run's
+- `scripts/gate` runs every leg, about fifty minutes on an 18-core Apple M-series Mac; every run's
   seconds are in `06_docs/gate-runs.md`. It runs every leg on the floor toolchain named by
   `go.mod`'s `go` line (go1.26.9, downloaded on first use), and scans for vulnerabilities on that
   toolchain and on the machine's own. It needs the pinned `govulncheck` on `PATH`

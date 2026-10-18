@@ -211,7 +211,7 @@ func builtRamp(p Preset, ground GroundKind, depth Depth) ([]RGB, bool) {
 	if depth != Truecolor && depth != Colours256 {
 		return nil, false
 	}
-	if p < Temperature || p > FoF2 {
+	if p < Temperature || p > lastPreset {
 		return nil, false
 	}
 	g := Dark

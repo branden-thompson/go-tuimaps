@@ -3,6 +3,7 @@ package overlay
 import (
 	"errors"
 	"math"
+	"strings"
 	"testing"
 	"time"
 
@@ -169,7 +170,8 @@ func TestAHostTypesColoursAreOneAClass(t *testing.T) {
 // TestAnEdgeIsAskedForOnATwoClassType is watchpost D-216 (C-18, L-2.6): a
 // host asks for the edge mark on its own type of two classes - one break -
 // and it is carried to the field; asked on a preset, or on any other number
-// of classes, it is refused as the breaks', and not asking leaves a field.
+// of classes, it is refused as a bad edge (watchpost D-229) - its words saying
+// how to ask for one, never to name a preset - and not asking leaves a field.
 func TestAnEdgeIsAskedForOnATwoClassType(t *testing.T) {
 	for _, c := range []struct {
 		name string
@@ -185,8 +187,10 @@ func TestAnEdgeIsAskedForOnATwoClassType(t *testing.T) {
 		switch {
 		case c.ok && (err != nil || !k.Edge):
 			t.Errorf("%s: %v, edge %v; want the edge carried", c.name, err, k.Edge)
-		case !c.ok && (err == nil || !errors.As(err, &f) || f.Kind() != fault.UnsortedBreaks):
-			t.Errorf("%s: %v; want refused as the breaks'", c.name, err)
+		case !c.ok && (err == nil || !errors.As(err, &f) || f.Kind() != fault.BadEdge):
+			t.Errorf("%s: %v; want refused as a bad edge", c.name, err)
+		case !c.ok && (!strings.Contains(err.Error(), "two classes") || strings.Contains(err.Error(), "name a preset")):
+			t.Errorf("%s: the words %q do not say how to ask for an edge, or say to name a preset", c.name, err)
 		}
 	}
 	if k, err := ResolveType(Type{Breaks: []float64{0.5}}); err != nil || k.Edge {

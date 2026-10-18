@@ -155,7 +155,7 @@ One map is used from two kinds of goroutine: the **owner** — the host's interf
 |---|---|---|
 | When | A hand-in or a call is refused | Accepted, but something is off; or something happened during `Work` |
 | Form | A typed error with a **kind from a closed list**, saying what happened, why, and what to do; never a tile address; quoted outside text cleaned and cut to 64 clusters | A list, at most 64, de-duplicated; each with a kind, the overlay or tile it concerns, and a count |
-| Kinds (the list is closed; adding one is a minor version) | invalid-coordinates · size-mismatch · unsorted-breaks · malformed-ramp · missing-table · malformed-table · unknown-preset · malformed-style · invalid-id · over-vertex-cap · over-image-cap · image-refused · ring-too-short · bad-currency · unsupported-schema · unsupported-tile · over-limit · fetch-refused · fetch-failed · cache-refused · no-size · reentrant-call · cancelled · closed · internal | ramp-rule-broken · unmatched-image-colours · stale-overlay · future-valid-time · implausible-unit · near-duplicate-id · unknown-token · set-refused · no-work-called · tile-failed · cache-write-failed · render-failed · cache-under-need · table-fallback · cache-root-readable · near-image-colours |
+| Kinds (the list is closed; adding one is a minor version) | invalid-coordinates · size-mismatch · unsorted-breaks · malformed-ramp · missing-table · malformed-table · unknown-preset · malformed-style · invalid-id · over-vertex-cap · over-image-cap · image-refused · ring-too-short · bad-currency · unsupported-schema · unsupported-tile · over-limit · fetch-refused · fetch-failed · cache-refused · no-size · reentrant-call · cancelled · closed · internal · bad-edge | ramp-rule-broken · unmatched-image-colours · stale-overlay · future-valid-time · implausible-unit · near-duplicate-id · unknown-token · set-refused · no-work-called · tile-failed · cache-write-failed · render-failed · cache-under-need · table-fallback · cache-root-readable · near-image-colours |
 
 Every string in either passes through the one cleaning type that only the text-safety package can construct (PL-IS-5); no foreign error is ever wrapped. **One stated exemption:** the `cancelled` kind answers `errors.Is` for the context package's two errors, so a host's usual check works; it carries none of their text. The typed error and both lists of kinds live in one leaf package, `internal/fault`, which imports only text-safety; the public package re-exports them.
 
@@ -203,7 +203,7 @@ a test of its own beyond those named.
   of words.
 - **The shared set of decoded pictures is 1 MiB (D-116).** Maps that share caches share the pictures they
   have decoded, first in first out within 1 MiB, and each map's image budget counts the whole set; a loop
-  larger than the set - 24 region frames are about 4.8 MB - is shared little. Owed to v0.3.0 (OW-18).
+  larger than the set - 24 region frames are about 4.8 MB - is shared little. Owed to v0.4.0 (OW-18, re-targeted by watchpost D-65).
 - **`CheckedDialer` refuses a proxy at a private address;** `CheckedDialerFor` does not (v0.3.0 L-7.4). It
   returns a dialer and a `ProxyFunc`, set together as a transport's dialer and proxy: the dialer
   reaches the proxy the function has named, even at a private address, and refuses every other private
@@ -258,7 +258,7 @@ its doc comment and in the sections above.
 | The report (v0.2.0 WP-L5) | `Map.Report`, `Report`, `AlertShown`, `PlaceReport`, `Daylight`, `PlaceAlert`, `Where` (`Inside`, `Outside`, `Nearby`), `Map.SetNearby`, `MotionReport`, `MotionMissing` (`MotionNoHeavierRain`, `MotionTooFewFrames`, `MotionDecoding`), `Sighting`, `Trend` (`Held`, `Closer`, `Away`) |
 | The same facts as data | `Map.Legend`, `LegendEntry`, `Class`, `Map.Credits`, `Map.Scale`, `Scaled`, `Map.Footer`, `Answer` |
 | Checking a ramp | `CheckRamp`, `RampCheck`, `Rule` (`Ordered`, `Distinct`, `Readable`, `VisionSafe`), `Finding` |
-| Errors | `Kind`, `Kinds`, `KindOf`, and the kinds: `InvalidCoordinates`, `SizeMismatch`, `UnsortedBreaks`, `MalformedRamp`, `MissingTable`, `MalformedTable`, `UnknownPreset`, `MalformedStyle`, `InvalidID`, `OverVertexCap`, `OverImageCap`, `ImageRefused`, `RingTooShort`, `BadCurrency`, `UnsupportedSchema`, `UnsupportedTile`, `OverLimit`, `FetchRefused`, `FetchFailed`, `CacheRefused`, `NoSize`, `ReentrantCall`, `Cancelled`, `Closed`, `Internal` |
+| Errors | `Kind`, `Kinds`, `KindOf`, and the kinds: `InvalidCoordinates`, `SizeMismatch`, `UnsortedBreaks`, `MalformedRamp`, `MissingTable`, `MalformedTable`, `UnknownPreset`, `MalformedStyle`, `InvalidID`, `OverVertexCap`, `OverImageCap`, `ImageRefused`, `RingTooShort`, `BadCurrency`, `UnsupportedSchema`, `UnsupportedTile`, `OverLimit`, `FetchRefused`, `FetchFailed`, `CacheRefused`, `NoSize`, `ReentrantCall`, `Cancelled`, `Closed`, `Internal`, `BadEdge` |
 | Warnings | `Warning`, `WarningKind`, `WarningKinds`, `Map.Warnings`, and the kinds: `RampRuleBroken`, `UnmatchedImageColours`, `StaleOverlay`, `FutureValidTime`, `ImplausibleUnit`, `NearDuplicateID`, `UnknownToken`, `SetRefused`, `NoWorkCalled`, `TileFailed`, `CacheWriteFailed`, `RenderFailed`, `CacheUnderNeed`, `TableFallback`, `CacheRootReadable`, `NearImageColours` |
 
 ## 11 · What a host needs to know (v0.2.0 L1.6)

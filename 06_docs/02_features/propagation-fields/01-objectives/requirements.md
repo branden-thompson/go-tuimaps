@@ -62,7 +62,7 @@ every depth on both grounds, so each change below is seen against what v0.2.0 dr
 |---|---|---|
 | L-4.1 | A `terminator` line token and a `night` area-tint token, with defaults on both grounds and in sixteen colours, passing the palette checks | `TestTheTerminatorAndNightTokensHaveDefaults`, `TestNightTintKeepsTheFieldReadable` |
 | L-4.2 | Helpers that return the terminator line and the night side for a time, within 0.5° of latitude of the terminator computed from NOAA's published solar-position algorithm, at every longitude, across a year of test times | `TestTheTerminatorMatchesTheEphemeris`, `TestNightSideIsTheComplement` |
-| L-4.3 | Only alert roles fill an area today (`render/basemap.go:206-208`); the night tint fills without severity words, digits or a legend entry | `TestTheNightTintCarriesNoAlertWords` |
+| L-4.3 | Only alert roles filled an area at PLAN (`internal/render/basemap.go`); the night tint fills without severity words, digits or a legend entry | `TestTheNightTintCarriesNoAlertWords` |
 | L-4.4 | **Day and night without colour or a picture (AX-E):** `Report` answers whether a place is in day or night and when the terminator next passes it; the terminator line carries a mark that does not depend on colour, so it never reads as one more contour; the night tint keeps every field ramp readable, checked by `CheckRamp`'s luminance-order and colour-vision rules against the tinted ground, with `SafeRamps` on | watchpost D-9; AX-E | `TestReportSaysDayOrNight`, `TestTheTerminatorIsMarkedWithoutColour`, `TestNightTintKeepsTheFieldReadable` (with the colour-vision rules) |
 
 ## L-5 — Station points by value (watchpost D-35; D-4) — **OUT of v0.3.0 (watchpost D-50, this log's D-10)**; kept for the follow-up

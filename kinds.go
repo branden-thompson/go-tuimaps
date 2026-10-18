@@ -39,6 +39,7 @@ const (
 	Cancelled          = fault.Cancelled
 	Closed             = fault.Closed
 	Internal           = fault.Internal
+	BadEdge            = fault.BadEdge
 )
 
 // WarningKind says what a warning is about. This list is closed too.
@@ -79,8 +80,8 @@ func KindOf(err error) (Kind, bool) {
 // Kinds are every error kind there is, in the contract's order: what a host
 // can switch on, and what a test can walk.
 func Kinds() []Kind {
-	out := make([]Kind, 0, int(Internal))
-	for k := InvalidCoordinates; k <= Internal; k++ {
+	out := make([]Kind, 0, int(BadEdge))
+	for k := InvalidCoordinates; k <= BadEdge; k++ {
 		out = append(out, k)
 	}
 	return out

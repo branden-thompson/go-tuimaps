@@ -227,3 +227,5 @@ A commit made from exactly that has the same tree less this file, so the two can
 | 2026-10-17T19:26:10Z | 718d4c9 | 5ed569787149 | quick | green | 957 | - |
 | 2026-10-17T21:22:22Z | 002eb70 | c6b9604754a4 | full | green | 3138 | - |
 | 2026-10-17T22:10:43Z | dd67d22 | c6b9604754a4 | release v0.3.0-rc.2 | green | 26 | - |
+| 2026-10-18T03:28:56Z | dd67d22 | 15ab786c36c6 | docs | green | 457 | - |
+| 2026-10-18T15:21:48Z | 228d6f7 | 43b856a655c5 | full | green | 3147 | - |

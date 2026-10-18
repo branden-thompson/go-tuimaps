@@ -42,8 +42,8 @@ func reachField() tuimaps.Grid {
 }
 
 // BenchmarkGlobeFieldPan is NFR-1's shape (M5, watchpost D-209): a one-cell
-// pan over the whole world under a 2° field filled in its colours, over the
-// sea and stopping at the shore, with the night shading the ground and its
+// pan over the whole world under a 2° field filled in its colours and drawn
+// with its contour lines, over the sea and stopping at the shore, with the night shading the ground and its
 // terminator, and a reach's edge over it - the frame a host's Propagation
 // map changes, at the two sizes M5 was measured at.
 func BenchmarkGlobeFieldPan(b *testing.B) {
@@ -63,7 +63,6 @@ func BenchmarkGlobeFieldPan(b *testing.B) {
 					b.Fatal(err)
 				}
 				field := globeField(overWater)
-				field.Lines = false
 				reach := reachField()
 				night := tuimaps.Overlay{ID: "night", Valid: noon, Keeps: 3600e9, Features: []tuimaps.Feature{
 					{Kind: tuimaps.Polygon, Rings: tuimaps.NightSide(noon), Role: tuimaps.NightTint},

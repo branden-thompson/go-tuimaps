@@ -5,6 +5,7 @@ const AlertSevere
 const AlertUnknown
 const Away
 const BadCurrency
+const BadEdge
 const BorderLayer
 const Buoy
 const CacheRefused

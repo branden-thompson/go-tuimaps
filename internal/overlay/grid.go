@@ -55,6 +55,11 @@ func badBreaks(why textsafe.Text) error {
 		textsafe.Const("give the class breaks as numbers in rising order, at most 20 of them, or name a preset"))
 }
 
+func badEdge(why textsafe.Text) error {
+	return fault.Make(fault.BadEdge, textsafe.Const("the overlay's type was refused"), why,
+		textsafe.Const("ask for the edge mark only on a type of your own with two classes - one break - or leave Edge unset"))
+}
+
 func badColours(why textsafe.Text) error {
 	return fault.Make(fault.MalformedRamp, textsafe.Const("the overlay's type was refused"), why,
 		textsafe.Const("give a host type one colour a class - one more than its breaks - or none for the library's spread"))
@@ -133,12 +138,12 @@ func ResolveType(t Type) (Kind, error) {
 			return Kind{}, badColours(textsafe.Const("it gives a number of colours other than one a class"))
 		}
 		if t.Edge && len(t.Breaks) != 1 {
-			return Kind{}, badBreaks(textsafe.Const("an edge mark is drawn between two classes, so it takes exactly one break"))
+			return Kind{}, badEdge(textsafe.Const("an edge mark is drawn between two classes, so it takes exactly one break"))
 		}
 		return Kind{Breaks: append([]float64(nil), t.Breaks...), Colours: append([]colour.RGB(nil), t.Colours...), Edge: t.Edge}, nil
 	}
 	if t.Edge {
-		return Kind{}, badBreaks(textsafe.Const("an edge mark is a host's own type of two classes, never a preset"))
+		return Kind{}, badEdge(textsafe.Const("an edge mark is a host's own type of two classes, never a preset"))
 	}
 	if len(t.Colours) != 0 {
 		return Kind{}, badColours(textsafe.Const("it names a preset, whose colours are the library's"))

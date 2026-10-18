@@ -12,6 +12,7 @@ and left is said with why.
 | Before | After | Why |
 |---|---|---|
 | any host type of two classes drawn as its edge alone | `Type.Edge`, asked for on a host type of one break; a preset, or another number of classes, refused | a two-class field meant to be filled was drawn as a line nobody asked for (BUILD red team C-18; D-216's "explicit edge mark") |
+| a refused edge mark reported as `UnsortedBreaks`, its words saying to name a preset | `BadEdge`, a kind of its own, its words saying how to ask for an edge | the breaks were fine; a host switching on the kind was told the wrong fault, and the words gave the wrong remedy (watchpost round 2 CN2-10, D-229; v0.3.0-rc.3) |
 | a wrong number of colours refused as `UnsortedBreaks` | refused as `MalformedRamp`, the kind that already names it | the breaks were fine; a host switching on the kind was told the wrong fault (C-17, D-216's "truthful error kind") |
 | one `RampRuleBroken` warning a `Set` of a host type with bad colours | one an overlay, replaced on each `Set`, cleared once a `Set` passes | a host setting its overlay each refresh saw the same warning pile up (C-26) |
 | the night composed by hand: `NightSide`, `Terminator`, two roles and an `Overlay` | `NightOverlay(id, at)`, as `MUFGrid` is for a field | the one shape every host drawing the night needs, in the library's roles, in one call (watchpost's `mapNight` was that composition) |
