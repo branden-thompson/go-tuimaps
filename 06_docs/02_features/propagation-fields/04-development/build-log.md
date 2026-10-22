@@ -105,3 +105,8 @@ Mutants m055 to m063.
 | Task | Commit | Test, failing first | Notes |
 |---|---|---|---|
 | `BadEdge` and the round's corrections (watchpost D-229, CN2-10, CN2-17, C-16, C-25, DN2-12, DN2-13) | this commit | `TestAnEdgeIsAskedForOnATwoClassType` (the kind, and words that say how to ask for an edge, never to name a preset); `TestErrorKindsClosed` against the contract's list | **The M5 frame with its contours drawn**, which the benchmark had turned off: 10.2 to 11.4 ms at 400 x 110 (16 ms the target), 2.3 to 2.5 ms at 200 x 56 (8 ms), on an Apple M5 Pro; round 2's reviewer measured 10.3. Release row 2.8 holds the release to the reference machine's figure. Mutants m074 and m075. |
+
+## Go 1.27.3 (watchpost A-82; A-17)
+
+- **A new standard-library advisory, GO-2026-6809** (compromised intermediate certificates distrusted in `crypto/x509`, fixed in go1.27.3), fails the gate's vulnerability scans. The hosted gate moves to go1.27.3, as watchpost's CI does under its D-152; `go.mod`'s floor is unchanged.
+- **The module floor moves to go 1.26.10 (watchpost D-244, D-38):** the gate's scan at the floor failed on GO-2026-6809, fixed in go1.26.10. Every module's `go.mod`, `repo_test.go`'s `moduleFloor`, the contract, the README and the gates' diagram carry it.
