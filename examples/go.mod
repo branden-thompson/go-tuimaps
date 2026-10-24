@@ -1,6 +1,6 @@
 module github.com/branden-thompson/go-tuimaps/examples
 
-go 1.26.9
+go 1.26.10
 
 require github.com/branden-thompson/go-tuimaps v0.2.1
 
