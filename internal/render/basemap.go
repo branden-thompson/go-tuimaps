@@ -553,7 +553,7 @@ func (p *Painter) InZone(col, row int) bool {
 
 // owns reports whether a canvas's fill covers half a cell's dots or more.
 func owns(c *Canvas, col, row int) bool {
-	glyph, _ := c.Cell(col, row)
+	glyph := c.Glyph(col, row)
 	lit := 0
 	for mask := uint8(glyph - blank); mask != 0; mask &= mask - 1 {
 		lit++

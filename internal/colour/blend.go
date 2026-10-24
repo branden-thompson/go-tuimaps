@@ -238,9 +238,12 @@ func rampOf(p Palette, preset Preset, ground GroundKind, depth Depth) []RGB {
 	return out
 }
 
-// classTokens are a preset's class tokens: the first, and how many.
+// classTokens are a preset's class tokens: the first, and how many; none
+// for a preset with no case here, never another preset's (watchpost RC-17).
 func classTokens(p Preset) (Token, int) {
 	switch p {
+	case Radar:
+		return Radar1, 6
 	case Temperature:
 		return Temperature1, 17
 	case Wind:
@@ -258,7 +261,7 @@ func classTokens(p Preset) (Token, int) {
 	case FoF2:
 		return FoF21, 6
 	}
-	return Radar1, 6
+	return 0, 0
 }
 
 // tintOf is an alert's tint, extreme (0) to unknown (4), as the palette

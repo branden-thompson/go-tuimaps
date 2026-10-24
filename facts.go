@@ -171,7 +171,7 @@ func (m *Map) classesOf(kind overlay.Kind, shaded bool) []Class {
 	depth := m.depthInEffect()
 	ground := m.look.ground.Kind(m.look.palette)
 	first, ramped := rampToken(kind.Preset)
-	host := colour.HostRamp(kind.Colours, len(kind.Breaks)+1, m.look.palette, ground, depth) // nil for a preset, or at a depth with no ramp
+	host := colour.HostRamp(kind.Colours, len(kind.Breaks)+1, m.look.palette, ground, depth) // nil at a depth with no ramp; read for a host type alone (a preset keys its own tokens)
 	out := make([]Class, 0, len(kind.Breaks)+1)
 	for i := range len(kind.Breaks) + 1 {
 		one := Class{Label: classLabel(kind.Breaks, i)}

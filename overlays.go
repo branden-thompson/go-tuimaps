@@ -36,15 +36,28 @@ const (
 )
 
 // Grid is a scalar field on the host's own regular grid of longitude and
-// latitude, its values rows from the north, each row west to east.
+// latitude, its values rows from the north, each row west to east. Its
+// fields, which go doc does not show through the alias (watchpost RD-6):
+// West, South, East, North, the box in degrees; Cols, Rows; Values; Type;
+// Lines, drawn as its labelled contours over faint bands; OverWater,
+// continued over the sea, which by default it stops at; From, a vector
+// grid's directions, meteorological degrees, the values its speeds; Gusts,
+// a vector grid's gusts; Marks, the host's text, one a value.
 type Grid = overlay.Grid
 
 // Type is how a host says what a grid's values are: a preset by name, or
-// breaks of its own (D-69).
+// breaks of its own (D-69). Its fields, which go doc does not show through
+// the alias (watchpost RD-6): Preset, a preset's name or empty for the
+// host's own; Unit; Breaks; Colours, a host type's own, one a class, empty
+// for the spread (L-2.2); Edge, a two-class host type drawn as the edge
+// between its classes alone (L-2.6).
 type Type = overlay.Type
 
 // Image is a georeferenced image and the table that says what its colours
-// mean (D-45).
+// mean (D-45). Its fields, which go doc does not show through the alias
+// (watchpost RD-6): PNG, or Frames for a loop; Provider; West, South, East,
+// North; Projection; Table; Tolerance; Exact; Type; MaskedByWater, kept off
+// the sea, over which by default it is drawn.
 type Image = overlay.Image
 
 // LoopFrame is one frame of an image's loop: when its picture was valid, and
@@ -308,6 +321,22 @@ func (m *Map) Set(o Overlay) (res SetResult, err error) {
 	m.play.seen = m.shownLocked() // a refresh that moves the moment is an input, not an advance
 	m.changed++
 	return res, nil
+}
+
+// recheckHostRampsLocked checks every overlay's host ramp again after the
+// look changed - the depth, the palette or the ground - so a ramp that
+// breaks the checker at the new look is warned and one that no longer does
+// is cleared (L-2.3, watchpost RC-15).
+func (m *Map) recheckHostRampsLocked() {
+	for _, id := range m.store.IDs() {
+		reader, ok := m.store.Read(id)
+		if !ok {
+			continue
+		}
+		o := reader.Overlay()
+		reader.Done()
+		m.checkHostRampLocked(o)
+	}
 }
 
 // checkHostRampLocked reports a host type's colours that break the checker

@@ -294,3 +294,23 @@ func invisibleAt(ramp []RGB, tint, ground RGB, s float64, depth Depth) bool {
 	}
 	return hidden == len(ramp)
 }
+
+// TestEveryPresetHasItsClassTokens is watchpost RC-17: every preset names
+// its own class tokens, and a value that is no preset names none - never
+// radar's, which an added preset without its case would silently draw in.
+func TestEveryPresetHasItsClassTokens(t *testing.T) {
+	seen := map[Token]Preset{}
+	for p := Temperature; p <= lastPreset; p++ {
+		first, n := classTokens(p)
+		if n == 0 {
+			t.Errorf("preset %d has no class tokens", p)
+		}
+		if q, taken := seen[first]; taken {
+			t.Errorf("presets %d and %d share their first class token", q, p)
+		}
+		seen[first] = p
+	}
+	if _, n := classTokens(lastPreset + 1); n != 0 {
+		t.Errorf("a value past the last preset has %d class tokens; want none", n)
+	}
+}

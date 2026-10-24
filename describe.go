@@ -13,7 +13,12 @@ import (
 )
 
 // Answer is what the map says about one place and one overlay: data to
-// render or speak, never a sentence of the library's own (D-52).
+// render or speak, never a sentence of the library's own (D-52). Its
+// fields, which go doc does not show through the alias (watchpost RD-6):
+// Place, Overlay, Form; for an area, Relation, Distance, Km, Unit, Bearing,
+// Compass and Label; for a field or an image, Value, ValueUnit, Band,
+// Rises, Class, Heavier, HeavierAt, From and NoData; and Valid, Stale and
+// UnderOneCell. `go doc ./internal/describe Answer` shows each one's words.
 type Answer = describe.Answer
 
 // Units sets the units the descriptions come back in: miles rather than
@@ -115,12 +120,28 @@ func askedFingerprint(asked []Place) uint64 {
 
 // rememberedReport is the report already worked out, when nothing it was
 // worked out from has changed. Repeating a call then costs nothing, which is
-// what lets a host ask on every frame (FR-29).
+// what lets a host ask on every frame (FR-29). A turn of the sun it holds
+// that the clock has reached ends it: a night or a day can pass between two
+// asks with each place's day-or-night the same either side, and the report
+// would say a turn already gone (L-4.4, watchpost RC-14).
 func (m *Map) rememberedReport(asked []Place) (Report, bool) {
 	if m.reported == nil || m.reportedKey != m.describeKey(asked) {
 		return Report{}, false
 	}
+	if m.turnPassed(m.reported.Places) {
+		return Report{}, false
+	}
 	return *m.reported, true
+}
+
+// turnPassed is whether the clock has reached any of the places' next turns.
+func (m *Map) turnPassed(places []PlaceReport) bool {
+	for _, p := range places {
+		if !p.Daylight.Turns.IsZero() && !m.wallClock.Before(p.Daylight.Turns) {
+			return true
+		}
+	}
+	return false
 }
 
 // answerFor is one overlay's answer for a place, with its valid time, its

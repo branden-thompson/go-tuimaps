@@ -45,6 +45,22 @@ func TestReportSaysDayOrNight(t *testing.T) {
 	if r, err = m.Report(places); err != nil || !r.Places[1].Daylight.Day || !r.Places[1].Daylight.Turns.After(sydney.Turns) {
 		t.Errorf("a minute past Sydney's sunrise its day is %+v (%v)", r.Places[1].Daylight, err)
 	}
+	// A whole night between two asks (watchpost RC-14): asked about Wichita
+	// alone, day at both, so the report's key is the same either side; its
+	// turn held, the sunset, is past, and the report says the next.
+	wichitaOnly := places[:1]
+	noon, err := m.Report(wichitaOnly)
+	if err != nil || !noon.Places[0].Daylight.Day {
+		t.Fatalf("Wichita alone, a minute past Sydney's sunrise: %+v %v", noon.Places[0].Daylight, err)
+	}
+	next := sydney.Turns.Add(time.Minute + 24*time.Hour)
+	if _, err := m.Render(Size{Cols: 80, Rows: 24}, next); err != nil {
+		t.Fatal(err)
+	}
+	r, err = m.Report(wichitaOnly)
+	if err != nil || !r.Places[0].Daylight.Day || !r.Places[0].Daylight.Turns.After(next) {
+		t.Errorf("Wichita a day on: %+v, its turn %v of a clock at %v (held %v); want a turn still to come", r.Places[0].Daylight, r.Places[0].Daylight.Turns, next, noon.Places[0].Daylight.Turns)
+	}
 }
 
 // TestTheNightIsShadedAndUnlisted is L-4.3 on the map: an overlay of the

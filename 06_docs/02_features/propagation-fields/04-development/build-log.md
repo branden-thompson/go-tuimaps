@@ -110,3 +110,11 @@ Mutants m055 to m063.
 
 - **A new standard-library advisory, GO-2026-6809** (compromised intermediate certificates distrusted in `crypto/x509`, fixed in go1.27.3), fails the gate's vulnerability scans. The hosted gate moves to go1.27.3, as watchpost's CI does under its D-152; `go.mod`'s floor is unchanged.
 - **The module floor moves to go 1.26.10 (watchpost D-244, D-38):** the gate's scan at the floor failed on GO-2026-6809, fixed in go1.26.10. Every module's `go.mod`, `repo_test.go`'s `moduleFloor`, the contract, the README and the gates' diagram carry it.
+
+## REVIEW's red team, round 1: the library's remediation (watchpost D-245 to D-262; D-39 to D-41, A-18)
+
+- **A turn gone said as to come** (RC-14): the kept report was keyed on each place's day or night alone, so a host asking at noon and next at noon the day after got yesterday's sunset. A report now ends when the clock reaches a turn it holds; `TestReportSaysDayOrNight` asks across a night.
+- **A host ramp warned only when set** (RC-15): a ramp that passes at truecolor and breaks at 256 colours was drawn broken unsaid when the depth changed after it was set. Every look change checks every host ramp again; `TestAHostRampIsCheckedAgainWhenTheLookChanges` (a green ramp in steps of 28, measured with `CheckRamp` to pass at truecolor and break at 256).
+- **Smaller:** a preset with no class tokens is no longer drawn in radar's (RC-17), and a stale specimen file is named; the frame writer's row buffer and night ownership (RP-4); the benchmark's field shaped as a recorded one, 800x220 among its sizes (D-40); the release notes' sun figure (RD-11); the aliases' fields (RD-6); comments that said what was, not what is (RC-8, the fork's history comment).
+- **Mutants:** m076 to m079, each killed by its test.
+

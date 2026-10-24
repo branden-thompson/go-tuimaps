@@ -101,16 +101,24 @@ func specimenFrame(t *testing.T, o tuimaps.Overlay, depth tuimaps.Depth, ground 
 }
 
 // TestTheSpecimensAreWhatTheLibraryDraws is C-5: every specimen, at every
-// depth on both grounds, is the frame its golden file holds.
+// depth on both grounds, is the frame its golden file holds, and no golden
+// file is left that no specimen draws (watchpost RC-17).
 func TestTheSpecimensAreWhatTheLibraryDraws(t *testing.T) {
 	dir := filepath.Join("testdata", "specimens")
 	if *updateSpecimens {
 		must(t, os.MkdirAll(dir, 0o755))
 	}
+	drawn := map[string]bool{}
+	defer func() {
+		for _, f := range staleSpecimens(t, dir, drawn) {
+			t.Errorf("%s: no specimen draws it; delete it, or add the specimen", f)
+		}
+	}()
 	for _, s := range specimens {
 		for _, d := range specimenDepths {
 			for _, g := range specimenGrounds {
 				name := s.name + "-" + d.name + "-" + g.name + ".ans"
+				drawn[name] = true
 				got := specimenFrame(t, s.overlay(), d.depth, g.behind)
 				path := filepath.Join(dir, name)
 				if *updateSpecimens {
@@ -126,5 +134,34 @@ func TestTheSpecimensAreWhatTheLibraryDraws(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// staleSpecimens are the golden files in dir no specimen drew (watchpost
+// RC-17): left behind, they would be read by nobody and believed by readers.
+func staleSpecimens(t *testing.T, dir string, drawn map[string]bool) []string {
+	t.Helper()
+	files, err := filepath.Glob(filepath.Join(dir, "*.ans"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out []string
+	for _, f := range files {
+		if !drawn[filepath.Base(f)] {
+			out = append(out, filepath.Base(f))
+		}
+	}
+	return out
+}
+
+// TestAStaleSpecimenIsNamed is watchpost RC-17: a golden file no specimen
+// draws is named; one a specimen draws is not.
+func TestAStaleSpecimenIsNamed(t *testing.T) {
+	dir := t.TempDir()
+	for _, name := range []string{"kept-truecolor-dark.ans", "gone-16-light.ans"} {
+		must(t, os.WriteFile(filepath.Join(dir, name), []byte("x"), 0o600))
+	}
+	if got := staleSpecimens(t, dir, map[string]bool{"kept-truecolor-dark.ans": true}); len(got) != 1 || got[0] != "gone-16-light.ans" {
+		t.Errorf("the stale specimens are %v; want gone-16-light.ans alone", got)
 	}
 }

@@ -21,7 +21,9 @@ const (
 	FoF2       // v0.3.0 L-2.1: the F2 layer's critical frequency, in MHz (watchpost D-145)
 
 	// lastPreset is the last of them: the arrays by preset and the loops
-	// over every preset read it, so a preset added after it is one edit.
+	// over every preset read it. A preset added after it also takes its own
+	// case in each switch over presets - its class tokens among them, which
+	// TestEveryPresetHasItsClassTokens holds.
 	lastPreset = FoF2
 )
 

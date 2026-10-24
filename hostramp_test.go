@@ -228,3 +228,39 @@ func bareWorld(t *testing.T, depth tuimaps.Depth, ground tuimaps.RGB) string {
 	}
 	return strings.Join(f.Lines, "\n") + "\n"
 }
+
+// TestAHostRampIsCheckedAgainWhenTheLookChanges is L-2.3 (watchpost RC-15):
+// a host type whose colours pass at one depth and break the checker at
+// another is warned when the depth changes after it was set, and the
+// warning goes when the depth that passes comes back - never drawn broken
+// unsaid because the check ran only at Set.
+func TestAHostRampIsCheckedAgainWhenTheLookChanges(t *testing.T) {
+	m := world(t, specimenSize.Cols, specimenSize.Rows)
+	must(t, m.FitWorld())
+	m.ColourDepth(tuimaps.Truecolor)
+	must(t, m.Ground(tuimaps.RGB{R: 16, G: 16, B: 16}))
+	var greens []tuimaps.RGB // passes the checker at truecolor; at 256 colours its steps fall together
+	for i := range 7 {
+		greens = append(greens, tuimaps.RGB{G: uint8(40 + 28*i)})
+	}
+	mustSet(t, m, hostType(greens))
+	warned := func() bool {
+		for _, w := range m.Warnings() {
+			if w.Kind == tuimaps.RampRuleBroken && strings.Contains(w.Subject.String(), "host") {
+				return true
+			}
+		}
+		return false
+	}
+	if warned() {
+		t.Fatalf("the greens break the checker at truecolor: %v", m.Warnings())
+	}
+	m.ColourDepth(tuimaps.Colours256)
+	if !warned() {
+		t.Fatal("the depth changed to 256 colours after the Set, and no ramp warning names the overlay")
+	}
+	m.ColourDepth(tuimaps.Truecolor)
+	if warned() {
+		t.Error("back at truecolor, where the ramp passes, its warning stays")
+	}
+}

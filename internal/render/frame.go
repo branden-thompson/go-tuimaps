@@ -1089,7 +1089,8 @@ func (r *Renderer) emit(in Input) []string {
 		}
 		r.rowSums[row] = sum
 		r.rowsBuilt++
-		r.line.Reset()
+		r.line.Reset()                              // the row's last string is kept in lines; a new buffer is built
+		r.line.Grow(max(len(lines[row]), 8*g.cols)) // once, at about the row's size, not by doubling (watchpost RP-4)
 		p := pen{fresh: true}
 		for col := range g.cols {
 			c := g.cells[row*g.cols+col]

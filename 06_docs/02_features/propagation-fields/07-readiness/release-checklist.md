@@ -22,7 +22,7 @@ Up: [plan](../04-development/implementation-plan.md) · [release notes](release-
 
 | # | Check | Evidence | Done |
 |---|---|---|---|
-| 1.1 | BUILD exit: the blind red team, its findings remediated, the report approved | | [ ] |
+| 1.1 | BUILD exit: the blind red team, its findings remediated, the report approved | watchpost D-233: BUILD exited on `e889e72a`, the report approved (watchpost `08-reports/build-report.md`) | [x] |
 | 1.2 | REVIEW: the release reviewed whole, the report approved | | [ ] |
 | 1.3 | VALIDATE: every tier run, no skip path; the full suite with coverage | | [ ] |
 | 1.4 | The README read for content, not only its numbers | | [ ] |

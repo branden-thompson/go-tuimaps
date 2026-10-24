@@ -12,16 +12,18 @@ Files are named `<specimen>-<depth>-<ground>.ans`:
 | Specimen | What is set |
 |---|---|
 | `globe-temperature` | A whole-globe 2° grid (180 × 91 points, 180°W to 180°E, 90°N to 90°S) with the `temperature` preset |
+| `globe-muf` | The same grid with the `muf` preset (L-2.1), a scale of 1 |
+| `globe-fof2` | The same grid with the `fof2` preset (L-2.1), a scale of 0.4 |
 | `host-type` | The same grid in the host's own type: MHz, broken at 8, 12, 16, 20, 24 and 28, lines off |
 | `host-type-lines` | The same, lines on |
 
-The grid's values are a smooth rule, highest near the equator on the day side, as a MUF map is: `scale · (10 + 12 · cos(lat) · (1 + 0.6 · cos(lon − 30°)) + 2 · sin(lon · 4))`, with a scale of 1 for the host type and 1.4 for temperature.
+The grid's values are a smooth rule, highest near the equator on the day side, as a MUF map is: `scale · (10 + 12 · cos(lat) · (1 + 0.6 · cos(lon − 30°)) + 2 · sin(lon · 4))`, with a scale of 1 for the host type and MUF, 0.4 for foF2 and 1.4 for temperature.
 
 ## What they show
 
 - **At truecolor and at 256 colours, a host-type grid is filled in its spread** (L-2.4), on either ground; with lines on, its labelled contours are drawn over the fill.
 - **At 16 colours, where there is no ramp to fill with, a host-type grid draws its labelled contours with lines on or off**, so those two frames are identical.
-- The `globe-temperature` frames draw at every depth on both grounds.
+- The `globe-temperature`, `globe-muf` and `globe-fof2` frames draw at every depth on both grounds.
 
 ## Data notice
 

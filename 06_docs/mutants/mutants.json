@@ -738,5 +738,45 @@
     "new": "\t\ttextsafe.Const(\"give the class breaks as numbers in rising order, at most 20 of them, or name a preset\"))",
     "package": "./internal/overlay",
     "test": "TestAnEdgeIsAskedForOnATwoClassType"
+  },
+  {
+    "id": "m076",
+    "row": "L-4.4",
+    "what": "a kept report says a turn of the sun already past",
+    "file": "describe.go",
+    "old": "\tif m.turnPassed(m.reported.Places) {",
+    "new": "\tif false {",
+    "package": ".",
+    "test": "TestReportSaysDayOrNight"
+  },
+  {
+    "id": "m077",
+    "row": "L-2.3",
+    "what": "a host ramp is checked only when it is set, not when the depth changes",
+    "file": "look.go",
+    "old": "\t\tm.look.depth, m.look.depthHinted = depth, true\n\t}\n\tm.recheckHostRampsLocked()",
+    "new": "\t\tm.look.depth, m.look.depthHinted = depth, true\n\t}",
+    "package": ".",
+    "test": "TestAHostRampIsCheckedAgainWhenTheLookChanges"
+  },
+  {
+    "id": "m078",
+    "row": "L-2.1",
+    "what": "a preset with no case of its own is drawn in radar's colours",
+    "file": "internal/colour/blend.go",
+    "old": "\t}\n\treturn 0, 0\n}",
+    "new": "\t}\n\treturn Radar1, 6\n}",
+    "package": "./internal/colour",
+    "test": "TestEveryPresetHasItsClassTokens"
+  },
+  {
+    "id": "m079",
+    "row": "C-5",
+    "what": "a golden specimen no specimen draws is passed over",
+    "file": "specimen_test.go",
+    "old": "\t\tif !drawn[filepath.Base(f)] {\n\t\t\tout = append(out, filepath.Base(f))",
+    "new": "\t\tif false {\n\t\t\tout = append(out, filepath.Base(f))",
+    "package": ".",
+    "test": "TestAStaleSpecimenIsNamed"
   }
 ]

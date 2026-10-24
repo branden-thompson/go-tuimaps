@@ -175,9 +175,9 @@ func TestParityP26_SortKey(t *testing.T) {
 
 // TestANegativeRankIsNoRank is the fifth disagreement the oracle's fuzzer
 // found (v0.3.0, A-4). A rank is a whole number from zero. A negative int64
-// is already passed over, its encoding being past 32 bits; a negative
-// zig-zag (sint64) one was kept, so a damaged value ranked a feature -27
-// where the proven decoder's reading has none.
+// is passed over, its encoding being past 32 bits, and so is a negative
+// zig-zag (sint64) one: a damaged value ranks no feature, as the proven
+// decoder reads it.
 func TestANegativeRankIsNoRank(t *testing.T) {
 	keys := []string{"localrank"}
 	values := [][]byte{putUint(nil, 6, 53), putUint(nil, 6, 10), intValue(1<<63 + 5)} // sint -27, sint 5, int64 negative
@@ -310,8 +310,8 @@ func TestAFeatureFieldCarryingTheWrongKindIsRefused(t *testing.T) {
 			t.Errorf("a feature with %s was accepted", c.what)
 		}
 	}
-	// A field the format does not define is still passed over, as before: an
-	// encoder may write what it likes there and a reader must not mind.
+	// A field the format does not define is passed over: an encoder may
+	// write what it likes there and a reader must not mind.
 	feature := []byte{0x18, 0x01, 0x30, 0x30, 0x22, 0x03, 0x09, 0x02, 0x02}
 	layer := append([]byte{0x78, 0x02, 0x0a, 0x05, 'w', 'a', 't', 'e', 'r', 0x12, byte(len(feature))}, feature...)
 	tile := append([]byte{0x1a, byte(len(layer))}, layer...)

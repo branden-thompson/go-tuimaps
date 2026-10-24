@@ -131,6 +131,7 @@ func (m *Map) SetPalette(tokens map[string]RGB) (names []string, err error) {
 	palette, unknown := colour.NewPalette(maps.Clone(tokens))
 	m.look.palette = palette.KeepRamps(m.look.safeRamps)
 	m.look.version++
+	m.recheckHostRampsLocked()
 	m.changed++
 	// The names come back cleaned, since everything the library hands back is
 	// (FR-34). They are matched as they were written: a name with an escape in
@@ -160,6 +161,7 @@ func (m *Map) SafeRamps(on bool) {
 	m.look.safeRamps = on
 	m.look.palette = m.look.palette.KeepRamps(on)
 	m.look.version++
+	m.recheckHostRampsLocked()
 	m.changed++
 }
 
@@ -183,6 +185,7 @@ func (m *Map) Ground(behind RGB) (err error) {
 		return closed()
 	}
 	m.look.ground = choice
+	m.recheckHostRampsLocked()
 	m.changed++
 	return nil
 }
@@ -201,6 +204,7 @@ func (m *Map) PaintGround() {
 		return
 	}
 	m.look.ground = colour.GroundChoice{}
+	m.recheckHostRampsLocked()
 	m.changed++
 }
 
@@ -232,6 +236,7 @@ func (m *Map) ColourDepth(depth Depth) {
 	default:
 		m.look.depth, m.look.depthHinted = depth, true
 	}
+	m.recheckHostRampsLocked()
 	m.changed++
 }
 
