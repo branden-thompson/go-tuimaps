@@ -778,5 +778,25 @@
     "new": "\t\tif false {\n\t\t\tout = append(out, filepath.Base(f))",
     "package": ".",
     "test": "TestAStaleSpecimenIsNamed"
+  },
+  {
+    "id": "m080",
+    "row": "D-42",
+    "what": "the day is said at another moment than the one asked",
+    "file": "daynight.go",
+    "old": "Day: sun.Elevation(at.Lat, at.Lon, moment) > 0",
+    "new": "Day: sun.Elevation(at.Lat, at.Lon, moment.Truncate(24*time.Hour)) > 0",
+    "package": ".",
+    "test": "TestDaylightAtIsTheNightDrawn"
+  },
+  {
+    "id": "m081",
+    "row": "D-42",
+    "what": "the zero time is said as known",
+    "file": "daynight.go",
+    "old": "\tif moment.IsZero() {\n\t\treturn Daylight{}",
+    "new": "\tif false {\n\t\treturn Daylight{}",
+    "package": ".",
+    "test": "TestDaylightAtIsTheNightDrawn"
   }
 ]

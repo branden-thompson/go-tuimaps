@@ -31,6 +31,17 @@ func NightSide(at time.Time) [][]LonLat {
 	return [][]LonLat{out}
 }
 
+// DaylightAt is whether a place is in day or night at a moment, and when the
+// terminator next passes it: the sun NightOverlay draws with, at any moment
+// a host shows - an hour ahead as well as now (watchpost D-263). Known is
+// false for the zero time, and Turns the zero time in a polar day or night.
+func DaylightAt(at LonLat, moment time.Time) Daylight {
+	if moment.IsZero() {
+		return Daylight{}
+	}
+	return Daylight{Known: true, Day: sun.Elevation(at.Lat, at.Lon, moment) > 0, Turns: sun.Turn(at.Lat, at.Lon, moment)}
+}
+
 // NightOverlay is the night at a moment as one overlay, in one call: the
 // night side shading the ground and the sea, and the terminator dotted at
 // its edge, each in its own role (L-4.2, L-4.3; watchpost D-216). It keeps

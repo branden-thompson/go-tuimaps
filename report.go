@@ -9,7 +9,6 @@ import (
 	"github.com/branden-thompson/go-tuimaps/internal/fault"
 	"github.com/branden-thompson/go-tuimaps/internal/overlay"
 	"github.com/branden-thompson/go-tuimaps/internal/project"
-	"github.com/branden-thompson/go-tuimaps/internal/sun"
 	"github.com/branden-thompson/go-tuimaps/internal/textsafe"
 )
 
@@ -124,6 +123,7 @@ type PlaceReport struct {
 // (L-4.4). Known is false until a frame gives the map a clock, as the map
 // says nothing of time before (D-114); Turns is the zero time in a polar day
 // or night, the sun not crossing the horizon there within two days.
+// DaylightAt is the same at any other moment.
 type Daylight struct {
 	Known, Day bool
 	Turns      time.Time
@@ -359,12 +359,7 @@ func heavierClass(kind overlay.Kind) int {
 }
 
 // daylight is a place's day or night at the map's clock (L-4.4).
-func (m *Map) daylight(at LonLat) Daylight {
-	if m.wallClock.IsZero() {
-		return Daylight{}
-	}
-	return Daylight{Known: true, Day: sun.Elevation(at.Lat, at.Lon, m.wallClock) > 0, Turns: sun.Turn(at.Lat, at.Lon, m.wallClock)}
-}
+func (m *Map) daylight(at LonLat) Daylight { return DaylightAt(at, m.wallClock) }
 
 // placeReport is one place's part of the report.
 func (m *Map) placeReport(place Place) PlaceReport {

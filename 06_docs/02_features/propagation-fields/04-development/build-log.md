@@ -118,3 +118,8 @@ Mutants m055 to m063.
 - **Smaller:** a preset with no class tokens is no longer drawn in radar's (RC-17), and a stale specimen file is named; the frame writer's row buffer and night ownership (RP-4); the benchmark's field shaped as a recorded one, 800x220 among its sizes (D-40); the release notes' sun figure (RD-11); the aliases' fields (RD-6); comments that said what was, not what is (RC-8, the fork's history comment).
 - **Mutants:** m076 to m079, each killed by its test.
 
+
+## The sun at any moment (watchpost D-263; D-42)
+
+- **`DaylightAt(place, moment)`**: watchpost's words for an hour ahead had only `PlaceReport.Daylight`, at the map's clock, while its night is drawn for the hour shown; a probe drew 03:00 UTC's night and the report said day in Wichita. `DaylightAt` is the sun `NightOverlay` draws with at any moment, and `Report`'s `Daylight` is it at the map's clock. `TestDaylightAtIsTheNightDrawn` checks it against the night drawn at four moments, over three thousand places each away from the edge.
+- **Mutants:** m080 and m081, each killed by its test.

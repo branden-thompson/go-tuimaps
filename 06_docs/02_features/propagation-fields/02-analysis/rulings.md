@@ -60,6 +60,7 @@ restated here; this log holds the library's own. v0.2.0's log is `../radar-loops
 | D-39 | 2026-10-24 | Restates watchpost D-258: one sun (RC-16) | see watchpost D-258 ("go-tuiMaps' sun (Rec.)") | **watchpost's words take day, night and the next turn from `Report`'s `Daylight`, the model that draws the terminator; RC-14 fixed here first.** |
 | D-40 | 2026-10-24 | Restates watchpost D-261: M5's scope (RP-3) | see watchpost D-261 ("400x110 stays, recorded (Rec.)") | **M5 stays at 400x110; 800x220 recorded as a known limit, measured again after RP-4's fixes and a structured benchmark field.** |
 | D-41 | 2026-10-24 | Restates watchpost D-262: `main` red since GO-2026-6809 (RH-7) | see watchpost D-262 ("v0.2.2 + nightly (Rec.)") | **v0.2.2 is cut from `main` on go1.27.3 with the floor 1.26.10: its own release branch, gate, PR and tag.** |
+| D-42 | 2026-10-24 | Restates watchpost D-263 (D-258's follow-up): `PlaceReport.Daylight` is at the map's clock (`report.go`'s `daylight`), and a host drawing the night for an hour ahead cannot say day or night for it by the same sun | see watchpost D-263 ("go-tuiMaps DaylightAt (Rec.)") | **`DaylightAt(place, moment)` is exported, the sun `NightOverlay` draws with; `Report`'s `Daylight` is it at the map's clock. Released as v0.3.0-rc.5.** |
 
 ## Agent decisions (A-n, watchpost D-13)
 

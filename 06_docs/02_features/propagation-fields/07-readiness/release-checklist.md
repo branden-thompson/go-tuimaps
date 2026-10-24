@@ -4,7 +4,7 @@ Up: [plan](../04-development/implementation-plan.md) · [release notes](release-
 
 | Field | Value |
 |---|---|
-| Status | **Open.** v0.3.0 is paired with watchpost 0.19.0 and go-ionomaps (watchpost D-1, D-3); it ships when watchpost 0.19.0 does |
+| Status | **Open.** v0.3.0 is paired with watchpost 0.19.0 and go-ionomaps (watchpost D-1, D-3); it ships when watchpost 0.19.0 does. Its newest release candidate is `v0.3.0-rc.4`, at `c23fd89`, for the REVIEW red team's remediation (watchpost D-245 to D-262) |
 | Who runs it | The coordinator prepares each row and shows its evidence; the HUM LEAD approves the tag |
 | The machine check | `scripts/gate --release v0.3.0` refuses the final tag while any row of sections 0 to 2 ends in `[ ]` (section 3 follows the tag), and runs the pinned `govulncheck`. A release candidate, `v0.3.0-rc.N`, is not held to the rows |
 | How a row is ticked | Its last cell becomes `[x]`, in the commit that holds its evidence, with the evidence named in the row |

@@ -2,6 +2,7 @@ package tuimaps
 
 import (
 	"context"
+	"math"
 	"strings"
 	"testing"
 	"time"
@@ -96,5 +97,55 @@ func TestTheNightIsShadedAndUnlisted(t *testing.T) {
 	}
 	if strings.Contains(night, "NIGHTWORD") || entries != 0 {
 		t.Errorf("the night was drawn with its words (%v) or listed in the legend (%d entries)", strings.Contains(night, "NIGHTWORD"), entries)
+	}
+}
+
+// TestDaylightAtIsTheNightDrawn is watchpost D-263: a place's day or night
+// at a moment is the night NightOverlay draws for that moment - a host
+// showing an hour ahead says what its picture shows, not the frame's clock;
+// at the map's clock it is Report's, and the zero time is not known.
+func TestDaylightAtIsTheNightDrawn(t *testing.T) {
+	now := time.Date(2026, 10, 11, 18, 0, 0, 0, time.UTC) // noon in Wichita
+	for _, at := range []time.Time{now, now.Add(9 * time.Hour), time.Date(2026, 6, 21, 12, 0, 0, 0, time.UTC), time.Date(2026, 12, 21, 0, 0, 0, 0, time.UTC)} {
+		line := Terminator(at)
+		pole := 90.0
+		if NightSide(at)[0][len(line)].Lat < 0 { // the ring closes through the night's pole
+			pole = -90
+		}
+		checked := 0
+		for _, p := range line {
+			for lat := -80.0; lat <= 80; lat += 10 {
+				if math.Abs(lat-p.Lat) < 2 {
+					continue // within the line's own tolerance of the edge
+				}
+				drawnNight := (pole > 0) == (lat > p.Lat)
+				if d := DaylightAt(LonLat{Lon: p.Lon, Lat: lat}, at); !d.Known || d.Day == drawnNight {
+					t.Fatalf("at %v, %.0f°, %.0f°: DaylightAt says %+v; the night drawn says night=%v", at, lat, p.Lon, d, drawnNight)
+				}
+				checked++
+			}
+		}
+		if checked < 3000 {
+			t.Fatalf("at %v only %d places checked: this measures little", at, checked)
+		}
+	}
+	wichita := LonLat{Lon: -97.3, Lat: 37.7}
+	if DaylightAt(wichita, now.Add(9*time.Hour)).Day {
+		t.Error("Wichita at 03:00 UTC is said to be in day")
+	}
+	m, err := New(WithSize(80, 24))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer m.Close()
+	if _, err := m.Render(Size{Cols: 80, Rows: 24}, now); err != nil {
+		t.Fatal(err)
+	}
+	r, err := m.Report([]Place{{Name: "Wichita", At: wichita}})
+	if err != nil || r.Places[0].Daylight != DaylightAt(wichita, now) {
+		t.Errorf("at the map's clock Report says %+v (%v); DaylightAt %+v", r.Places[0].Daylight, err, DaylightAt(wichita, now))
+	}
+	if d := DaylightAt(wichita, time.Time{}); d.Known {
+		t.Errorf("the zero time is known: %+v", d)
 	}
 }
