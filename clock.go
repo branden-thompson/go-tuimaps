@@ -7,7 +7,7 @@ import (
 )
 
 // Animate takes the animation clock over: from then on markers move on the
-// time given here, and not on the wall clock given to Render (D-114). It is
+// time given here, and not on the wall clock given to Render. It is
 // for a host that drives animation itself, or freezes it. A frozen animation
 // clock cannot hide data that is out of date: staleness is the wall clock's.
 func (m *Map) Animate(at time.Time) {

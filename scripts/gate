@@ -44,12 +44,16 @@
 #                           by the sibling job in hosted CI, or on a machine
 #                           that can run them when this one cannot
 #
-# One mode at most a run. EVERY RUN IS LOGGED to 06_docs/gate-runs.md when
+# One mode at most a run. EVERY RUN THAT REACHES A LEG IS LOGGED to
+# 06_docs/gate-runs.md when
 # that file exists - HEAD, the git tree that was tested, the mode (and the tag
 # a release check judged), the result (and on a failure the legs that
 # failed), the seconds it took and any override of the gate's settings
 # (v0.2.0 D-31, D-40) - so "the gate was green" is a line anyone can check and
-# M6's count of consecutive clean runs has something to count.
+# M6's count of consecutive clean runs has something to count. A lane that
+# refuses before any leg runs - the docs lane with nothing staged, or with a
+# file that is not Markdown - says why and logs nothing: a refusal is no run
+# (watchpost D-280).
 #
 # GATE_ROOT names the tree to check; by default, the repository this script
 # is in. Every module in the tree is checked, one by one - not only the
@@ -249,6 +253,7 @@ tested_tree() {
 }
 log_run() {
   local rc="$1" result="FAILED" head tree overrides="" why
+  [ "$logging" = 1 ] || return 0
   [ -f "$root/06_docs/gate-runs.md" ] || return 0
   # A FAILURE STATES ITS CAUSE: the legs that failed, each with its module
   # when it is not the root's, are written beside FAILED.
@@ -267,11 +272,13 @@ log_run() {
   [ "$docs" = 1 ] && [ "${unstaged:-0}" -gt 0 ] && overrides="${overrides:+$overrides }tests saw $unstaged unstaged file(s)"
   printf '| %s | %s | %s | %s | %s | %s | %s |\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$head" "$tree" "$mode" "$result" "$((SECONDS - started_at))" "${overrides:--}" >> "$root/06_docs/gate-runs.md"
 }
+logging=0 # set once the refusals are past: a refusal is no run (D-280)
 fuzz_legs="$(mktemp)" || exit 2
 failed_legs="$(mktemp)" || exit 2
 release_work=""
+work_dir=""
 cleanup() {
-  [ "$made_work" = 1 ] && rm -f "$root/go.work" "$root/go.work.sum"
+  [ -n "$work_dir" ] && rm -rf "$work_dir"
   rm -f "$fuzz_legs"
   [ -n "$release_work" ] && rm -rf "$release_work"
   return 0
@@ -280,8 +287,8 @@ cleanup() {
 # a file, so a module's subshell can record too.
 where=""
 note_failure() { printf '%s%s\n' "${where:+$where: }" "$1" | sed 's/ \[[0-9]*s\]$//' >> "$failed_legs"; }
-# The workspace file is removed before the line is written, so the tested
-# tree never holds it; the failed legs are read by the line, then removed.
+# The workspace is outside the tree, so the tested tree never holds it; the
+# failed legs are read by the line, then removed.
 trap 'rc=$?; cleanup; log_run "$rc"; rm -f "$failed_legs"; exit "$rc"' EXIT
 # A RUN STOPPED BY A SIGNAL IS INTERRUPTED, NEVER GREEN. Stopped with TERM, the
 # shell can reach the EXIT trap with a status of 0, which would log the run
@@ -321,12 +328,10 @@ if [ "$docs" = 1 ]; then
     echo "gate: the docs lane is for a change of Markdown and nothing else. Not Markdown:"
     printf '%s\n' "$others" | sed 's/^/          /'
     echo "What to do: run scripts/gate, every leg (v0.2.0 D-15)."
-    note_failure "docs lane: a staged file is not Markdown"
     exit 1
   fi
   if [ -z "$changed" ]; then
     echo "gate: docs lane - nothing to check: nothing is staged. Stage the change, run the lane, then commit."
-    note_failure "docs lane: nothing staged"
     exit 1
   fi
   echo "gate: docs lane - $(printf '%s\n' "$changed" | wc -l | tr -d ' ') Markdown file(s) staged; every module's tests run, and no other leg (v0.2.0 D-15, D-41)"
@@ -334,6 +339,8 @@ if [ "$docs" = 1 ]; then
     echo "gate: docs lane - $unstaged file(s) not staged were left out of the judgement; the tests still run on the working tree"
   fi
 fi
+
+logging=1
 
 # --- every module, found by its module file ----------------------------------
 modules="$(find . -name go.mod -not -path '*/testdata/*' -not -path '*/.*' -not -path './_*' -not -path './dist/*' | sed 's|/go.mod$||' | sort)"
@@ -645,9 +652,15 @@ if [ "$soak" = 1 ]; then
 fi
 
 # --- the throw-away workspace file ------------------------------------------
+# THE WORKSPACE IS THE RUN'S OWN, in a directory of its own outside the tree:
+# one at the root was shared with any other gate run on the same checkout at
+# once, and one run's removal broke the other's legs (watchpost R2D's note).
 if [ -z "${tracked:-}" ]; then
-  rm -f go.work go.work.sum
-  if GOFLAGS= go work init $modules >/dev/null 2>&1; then
+  work_dir="$(mktemp -d)" || exit 2
+  export GOWORK="$work_dir/go.work"
+  work_use=""
+  for dir in $modules; do work_use="$work_use $root/${dir#./}"; done
+  if GOFLAGS= go work init $work_use >/dev/null 2>&1; then
     made_work=1
     # A workspace alone does not resolve a version that was never published:
     # the gate's own tests plant modules that require the library at v0.0.0,
@@ -658,7 +671,7 @@ if [ -z "${tracked:-}" ]; then
     # still carry no replace.
     if [ -f go.mod ]; then
       root_module="$(GOWORK=off GOFLAGS= go list -m 2>/dev/null)"
-      [ -n "$root_module" ] && GOFLAGS= go work edit -replace="${root_module}@v0.0.0=./" >/dev/null 2>&1
+      [ -n "$root_module" ] && GOFLAGS= go work edit -replace="${root_module}@v0.0.0=$root" >/dev/null 2>&1
     fi
   else
     fail "could not write the workspace file"

@@ -260,7 +260,81 @@ func TestAHostRampIsCheckedAgainWhenTheLookChanges(t *testing.T) {
 		t.Fatal("the depth changed to 256 colours after the Set, and no ramp warning names the overlay")
 	}
 	m.ColourDepth(tuimaps.Truecolor)
+	m.ColourDepth(tuimaps.Colours256) // warned again, untaken: warnings are taken once
+	m.ColourDepth(tuimaps.Truecolor)
 	if warned() {
 		t.Error("back at truecolor, where the ramp passes, its warning stays")
 	}
+}
+
+// TestEveryLookSetterChecksTheRampAgain is A-18 and watchpost R2C-6: each of
+// the five setters that change the look - SetPalette, SafeRamps, Ground,
+// PaintGround and ColourDepth - checks a host ramp again, so its warning
+// follows the look it is drawn at. Warnings are taken once, so a clearing
+// step first breaks the look and puts it back before reading: a setter that
+// skipped the check would leave the breaking look's warning to be read.
+func TestEveryLookSetterChecksTheRampAgain(t *testing.T) {
+	step := func(m *tuimaps.Map, name string, want bool) {
+		t.Helper()
+		if got := rampWarned(m); got != want {
+			t.Errorf("after %s the ramp warning is %v; want %v", name, got, want)
+		}
+	}
+	palette := func(m *tuimaps.Map, tokens map[string]tuimaps.RGB) {
+		t.Helper()
+		if _, err := m.SetPalette(tokens); err != nil {
+			t.Fatal(err)
+		}
+	}
+	filled := world(t, specimenSize.Cols, specimenSize.Rows)
+	must(t, filled.FitWorld())
+	filled.ColourDepth(tuimaps.Truecolor)
+	mustSet(t, filled, hostType(nil)) // filled from low, middle and high
+	step(filled, "the Set, at the library's colours", false)
+	grey := tuimaps.RGB{R: 128, G: 128, B: 128}
+	greys := map[string]tuimaps.RGB{"low": grey, "middle": grey, "high": grey}
+	palette(filled, greys)
+	step(filled, "SetPalette with one grey for low, middle and high", true)
+	palette(filled, greys)
+	palette(filled, nil)
+	step(filled, "SetPalette with nothing, the library's colours back", false)
+	palette(filled, greys)
+	filled.SafeRamps(true)
+	step(filled, "SafeRamps on, the library's own ramp colours", false)
+	filled.SafeRamps(false)
+	step(filled, "SafeRamps off, the grey again", true)
+
+	own := world(t, specimenSize.Cols, specimenSize.Rows)
+	must(t, own.FitWorld())
+	own.ColourDepth(tuimaps.Truecolor)
+	var greens []tuimaps.RGB
+	for i := range 7 {
+		greens = append(greens, tuimaps.RGB{G: uint8(40 + 28*i)})
+	}
+	mustSet(t, own, hostType(greens))
+	step(own, "the Set of the host's greens", false)
+	must(t, own.Ground(greens[3]))
+	step(own, "Ground at a class's own colour", true)
+	must(t, own.Ground(greens[3]))
+	own.PaintGround()
+	step(own, "PaintGround, the library's ground", false)
+	must(t, own.Ground(greens[3]))
+	must(t, own.Ground(tuimaps.RGB{R: 16, G: 16, B: 16}))
+	step(own, "Ground back to a dark one", false)
+	own.ColourDepth(tuimaps.Colours256)
+	own.ColourDepth(tuimaps.Truecolor)
+	step(own, "ColourDepth at 256 colours and back at truecolor", false)
+	own.ColourDepth(tuimaps.Colours256)
+	step(own, "ColourDepth at 256 colours, where the greens fall together", true)
+}
+
+// rampWarned reports whether the warnings, taken, name the host overlay's
+// ramp.
+func rampWarned(m *tuimaps.Map) bool {
+	for _, w := range m.Warnings() {
+		if w.Kind == tuimaps.RampRuleBroken && strings.Contains(w.Subject.String(), "host") {
+			return true
+		}
+	}
+	return false
 }

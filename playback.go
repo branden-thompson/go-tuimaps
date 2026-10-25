@@ -10,7 +10,7 @@ import (
 )
 
 // Playback is whether a map's loops may play. It is one setting for the map,
-// not one a loop, and a refresh Set leaves it as it was (D-67). It is off
+// not one a loop, and a refresh Set leaves it as it was. It is off
 // until the host chooses.
 type Playback uint8
 
@@ -56,7 +56,7 @@ type LoopState struct {
 	// is false while the host holds the animation clock still.
 	Playing, Advancing bool
 	Gap, Forecast      bool // the moment shown is a gap, or a forecast
-	CeilingLifted      bool // the step is faster than the 2.5-a-second ceiling allows (D-76)
+	CeilingLifted      bool // the step is faster than the 2.5-a-second ceiling allows
 	Playback           Playback
 	Step               time.Duration
 	Off                OffReason
@@ -86,7 +86,7 @@ type playback struct {
 }
 
 // FrameTicks counts frame advances as of the last time the map was given an
-// animation time, by Render or Animate (D-66). An advance is not an input:
+// animation time, by Render or Animate. An advance is not an input:
 // it leaves Changed and the report's cache alone (L-1.10e). A control the
 // listener uses is an input, and moves Changed instead.
 func (m *Map) FrameTicks() uint64 {
@@ -128,7 +128,7 @@ func (m *Map) SetPlayback(p Playback) (err error) {
 }
 
 // SetPlaybackStep sets how long each frame shows while a loop plays: from
-// 200 ms to 1000 ms, zero meaning the default, 500 ms (D-76). A step below
+// 200 ms to 1000 ms, zero meaning the default, 500 ms. A step below
 // 400 ms lifts the ceiling of 2.5 changes a second, which is there for people
 // that flashing harms; the state read says so, and a host that offers such a
 // step should say so beside it.
@@ -155,7 +155,7 @@ func (m *Map) SetPlaybackStep(step time.Duration) (err error) {
 }
 
 // Play runs the loops from the oldest frame through "right now" and on
-// through any forecast frames, holds the last frame and repeats (D-67). It
+// through any forecast frames, holds the last frame and repeats. It
 // does nothing while playback is off.
 func (m *Map) Play() (err error) {
 	return m.control("Play", func() {

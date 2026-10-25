@@ -37,7 +37,7 @@ const (
 
 // Grid is a scalar field on the host's own regular grid of longitude and
 // latitude, its values rows from the north, each row west to east. Its
-// fields, which go doc does not show through the alias (watchpost RD-6):
+// fields, which go doc does not show through the alias:
 // West, South, East, North, the box in degrees; Cols, Rows; Values; Type;
 // Lines, drawn as its labelled contours over faint bands; OverWater,
 // continued over the sea, which by default it stops at; From, a vector
@@ -46,16 +46,16 @@ const (
 type Grid = overlay.Grid
 
 // Type is how a host says what a grid's values are: a preset by name, or
-// breaks of its own (D-69). Its fields, which go doc does not show through
-// the alias (watchpost RD-6): Preset, a preset's name or empty for the
+// breaks of its own. Its fields, which go doc does not show through
+// the alias: Preset, a preset's name or empty for the
 // host's own; Unit; Breaks; Colours, a host type's own, one a class, empty
 // for the spread (L-2.2); Edge, a two-class host type drawn as the edge
 // between its classes alone (L-2.6).
 type Type = overlay.Type
 
 // Image is a georeferenced image and the table that says what its colours
-// mean (D-45). Its fields, which go doc does not show through the alias
-// (watchpost RD-6): PNG, or Frames for a loop; Provider; West, South, East,
+// mean. Its fields, which go doc does not show through the alias:
+// PNG, or Frames for a loop; Provider; West, South, East,
 // North; Projection; Table; Tolerance; Exact; Type; MaskedByWater, kept off
 // the sea, over which by default it is drawn.
 type Image = overlay.Image
@@ -136,7 +136,7 @@ const (
 	High           = colour.High
 )
 
-// SetResult is what Set says at once (D-74, D-86).
+// SetResult is what Set says at once.
 type SetResult = overlay.SetResult
 
 // RemoveResult is what Remove says at once.
@@ -147,7 +147,7 @@ type Warning = fault.Warning
 
 // TemperatureGrid is a temperature field in one call: the preset supplies
 // the breaks and the colours, and the host says only which unit its values
-// are in (D-69). Everything it sets can be set by hand instead.
+// are in. Everything it sets can be set by hand instead.
 func TemperatureGrid(id string, grid Grid, unit Unit, validAt time.Time) Overlay {
 	grid.Type = Type{Preset: "temperature", Unit: unitName(unit)}
 	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &grid}
@@ -262,9 +262,8 @@ func AirQualityRole(aqi float64) Token {
 }
 
 // UVRole is the role a feature is drawn in to show a UV index - a city's
-// reading - in its band's colour, as the UV preset draws it (watchpost W18.4,
-// its D-167: EPA's UV index as markers). Its words are drawn in the markers'
-// ink, as AirQualityRole's.
+// reading - in its band's colour, as the UV preset draws it: EPA's UV index
+// as markers. Its words are drawn in the markers' ink, as AirQualityRole's.
 func UVRole(index float64) Token {
 	c := 0
 	for _, b := range colour.UVBreaks() {
@@ -276,7 +275,7 @@ func UVRole(index float64) Token {
 }
 
 // RadarImage is a radar image in one call: the host gives the picture, the
-// table that says what its colours mean, and when it was valid (D-45, D-69).
+// table that says what its colours mean, and when it was valid.
 func RadarImage(id string, image Image, validAt time.Time) Overlay {
 	image.Type = Type{Preset: "radar", Unit: "dBZ"}
 	return Overlay{ID: id, Valid: validAt, Keeps: 15 * time.Minute, Image: &image}
@@ -292,7 +291,7 @@ func unitName(u Unit) string {
 
 // Set hands an overlay to the map, or replaces the one of that id. It never
 // waits: what it answers says whether the geometry the overlay replaced is
-// free for the host to write over again (D-86).
+// free for the host to write over again.
 func (m *Map) Set(o Overlay) (res SetResult, err error) {
 	defer guard("Set", &err)
 	m.plant("Set")
@@ -389,7 +388,7 @@ func (m *Map) Remove(id string) (res RemoveResult, err error) {
 }
 
 // InUse reports whether anything is still reading an overlay's old geometry.
-// While it is true the host must leave that memory alone (FR-11, D-86).
+// While it is true the host must leave that memory alone (FR-11).
 func (m *Map) InUse(id string) bool {
 	defer m.guardQuiet("InUse")
 	m.plant("InUse")

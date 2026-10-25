@@ -148,4 +148,9 @@ func TestDaylightAtIsTheNightDrawn(t *testing.T) {
 	if d := DaylightAt(wichita, time.Time{}); d.Known {
 		t.Errorf("the zero time is known: %+v", d)
 	}
+	for _, off := range []LonLat{{Lon: 0, Lat: math.NaN()}, {Lon: 0, Lat: 1000}, {Lon: 1e300, Lat: 0}, {Lon: math.Inf(1), Lat: 0}} {
+		if d := DaylightAt(off, now); d.Known {
+			t.Errorf("a place off the globe, %+v, is known: %+v", off, d)
+		}
+	}
 }

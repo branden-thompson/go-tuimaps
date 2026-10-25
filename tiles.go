@@ -10,7 +10,7 @@ import (
 	"github.com/branden-thompson/go-tuimaps/internal/tiles"
 )
 
-// FetchOptions is how a host shapes the library's own fetching (L-7.1, D-55):
+// FetchOptions is how a host shapes the library's own fetching (L-7.1):
 // its Transport, its UserAgent, its Timeout, and the hosts it lets be
 // fetched over plain http (AllowHTTP). The library keeps its client: it
 // builds each request, confines it and every redirect to the source's own
@@ -49,7 +49,7 @@ func CheckedDialerFor(proxy ProxyFunc) (Dialer, ProxyFunc) {
 // http.Transport's Proxy.
 type ProxyFunc = fetch.ProxyFunc
 
-// CacheUse is what one cache holds and is allowed to hold (D-90).
+// CacheUse is what one cache holds and is allowed to hold.
 type CacheUse struct {
 	Need  int64 // the bytes the views on hand need
 	Held  int64 // the bytes held now
@@ -66,7 +66,7 @@ type Caches struct {
 
 // Source names where tiles come from, and is the only call that makes the
 // library reach anything at all: until it is called nothing is fetched and
-// no connection is made (D-65). The address is an http or https one, either
+// no connection is made. The address is an http or https one, either
 // a TileJSON document or a directory ending in a slash.
 func (m *Map) Source(address string) (err error) {
 	defer guard("Source", &err)
@@ -181,7 +181,7 @@ func (m *Map) CacheRoot(dir string, capBytes int64) (err error) {
 }
 
 // SetCacheMaxAge sets how long a tile is kept on disk from when it was
-// fetched (L-9.1, D-70). A tile at its age is not served but fetched again,
+// fetched (L-9.1). A tile at its age is not served but fetched again,
 // and its file is removed; a file dated after the host's clock counts as
 // aged. It is kept at once, by the clock of the last frame, and in every job
 // after. Zero, the default, keeps tiles until the cap needs their room; a
@@ -208,7 +208,7 @@ func (m *Map) SetCacheMaxAge(age time.Duration) (err error) {
 	return nil
 }
 
-// CacheUse is what each of the map's caches holds and may hold (D-90). A
+// CacheUse is what each of the map's caches holds and may hold. A
 // host that watches it knows whether its caps are the right size.
 func (m *Map) CacheUse() Caches {
 	defer m.guardQuiet("CacheUse")

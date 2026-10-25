@@ -123,3 +123,16 @@ Mutants m055 to m063.
 
 - **`DaylightAt(place, moment)`**: watchpost's words for an hour ahead had only `PlaceReport.Daylight`, at the map's clock, while its night is drawn for the hour shown; a probe drew 03:00 UTC's night and the report said day in Wichita. `DaylightAt` is the sun `NightOverlay` draws with at any moment, and `Report`'s `Daylight` is it at the map's clock. `TestDaylightAtIsTheNightDrawn` checks it against the night drawn at four moments, over three thousand places each away from the edge.
 - **Mutants:** m080 and m081, each killed by its test.
+
+## REVIEW's red team, round 2: the library's remediation (watchpost D-280, D-281; D-43, D-44, A-19)
+
+- **The gate's test killed other runs' processes** (R2H-1): `TestALegThatIgnoresTermIsStillStopped` looked for and killed `sleep 3607` across the machine, so two gates at once failed each other. Its planted process now carries a marker of its run, and only that is matched.
+- **The gate's workspace** (R2D's note): written at the root, it was shared with any other run on the checkout, and one run's removal broke the other's `tools/oracle` leg. It is now the run's own, outside the tree; `TestTheGatesWorkspaceIsItsOwn` plants a test that fails if `GOWORK` is in the tree.
+- **A refusal is no run** (D-43): the docs lane with nothing staged, or with a file that is not Markdown, says why and logs nothing; `TestEveryRunIsLogged` checks the log is unchanged by both.
+- **Reply headers** (R2I-3): the tile transport caps them at 64 KiB; `TestARepliesHeadersAreBounded`, with a control.
+- **`DaylightAt` off the globe** (R2I-5): not known, as a place is refused elsewhere.
+- **The look setters** (R2C-6): `TestEveryLookSetterChecksTheRampAgain` flips the warning with each of the five; warnings are taken once, so each clearing step breaks the look and puts it back before reading. The depth test's last step read just after a warning had been taken, proving nothing; fixed.
+- **Exported docs** (D-44): 53 comment lines in the public packages lose their ruling and red-team IDs; the aliases' comments no longer point at `go doc ./internal/...`.
+- **Records:** the rc.5 tip's green row, uncommitted since 2026-10-24 (R2H-2), is committed here; the rulings' phase header says REVIEW (R2H-4).
+- **Mutants:** m082 to m090, each killed by its test; m087 first survived, the warnings-taken-once flaw above.
+

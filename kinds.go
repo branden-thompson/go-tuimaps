@@ -96,7 +96,7 @@ func WarningKinds() []WarningKind {
 	return out
 }
 
-// Rule is one of the rules a colour ramp is held to (FR-16, D-88).
+// Rule is one of the rules a colour ramp is held to (FR-16).
 type Rule = colour.Rule
 
 // The rules. A host that themes a ramp can hold its own to the same ones.

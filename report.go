@@ -27,12 +27,12 @@ const (
 // "nearby" until the host says otherwise (L-13.6, D-43).
 const defaultNearby = 10.0
 
-// Report is what the map says beside the picture, as data (D-57): the
+// Report is what the map says beside the picture, as data: the
 // alerts shown, and for each place asked about, each alert on its own and
 // every other overlay's answer. Every section is present, empty rather than
 // nil; every string is cleaned (FR-34); distances are in the units Units
 // set. The library words nothing: a host words it, and never says "you" of a
-// place (D-29).
+// place.
 type Report struct {
 	Alerts []AlertShown
 	Places []PlaceReport
@@ -49,7 +49,7 @@ const (
 	Away   = describe.Away
 )
 
-// MotionReport is observed motion (L-1.12, D-42, D-122) for one loop and
+// MotionReport is observed motion (L-1.12) for one loop and
 // one named place - or, with Place empty, the view's centre: the way the
 // heavier rain near it moves (Heading, towards, not from) and how fast,
 // measured over the pairs of frames that could be measured; where the
@@ -60,7 +60,7 @@ const (
 // HeadingCompass empty, Heading means nothing and Trend is Held. It is data
 // about what was seen: nothing in it can say what will happen.
 //
-// A loop with no motion to tell still has its entry (D-111): Missing says
+// A loop with no motion to tell still has its entry: Missing says
 // why, and every other field but Overlay, Place, Threshold and Stale is zero.
 type MotionReport struct {
 	Overlay, Place string
@@ -72,11 +72,11 @@ type MotionReport struct {
 	HeadingCompass string
 	SpeedKmh       float64
 	Moving         bool
-	Stale          bool // the loop is stale by the map's own rule, as of the clock Render last gave it (D-130)
+	Stale          bool // the loop is stale by the map's own rule, as of the clock Render last gave it
 	Missing        MotionMissing
 }
 
-// MotionMissing is why a loop has no motion to tell (D-111).
+// MotionMissing is why a loop has no motion to tell.
 type MotionMissing = describe.Missing
 
 // The reasons: no heavier rain at the newest frame, fewer than two frames
@@ -121,7 +121,7 @@ type PlaceReport struct {
 // Daylight is whether a place is in day or night at the map's clock - the
 // time the last frame was drawn at - and when the terminator next passes it
 // (L-4.4). Known is false until a frame gives the map a clock, as the map
-// says nothing of time before (D-114); Turns is the zero time in a polar day
+// says nothing of time before; Turns is the zero time in a polar day
 // or night, the sun not crossing the horizon there within two days.
 // DaylightAt is the same at any other moment.
 type Daylight struct {
@@ -133,7 +133,7 @@ type Daylight struct {
 // outside, how far its edge is and which way, with its label and severity;
 // when its data was valid and whether it is stale, by the map's own rule;
 // and whether the distance is under one cell, where the picture cannot
-// settle it and the words must (D-67).
+// settle it and the words must.
 type PlaceAlert struct {
 	Overlay, Feature, Label string
 	Severity                Severity

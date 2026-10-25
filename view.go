@@ -141,7 +141,7 @@ func (m *Map) FitWorld() (err error) {
 // every side, at the largest zoom that holds them all (FR-24). The places
 // are the host's own and any given here; the overlays are named by id, and
 // **it needs no Work to have run**, because where each overlay is was
-// recorded when it was handed in (D-76).
+// recorded when it was handed in.
 func (m *Map) FitTo(places []LonLat, overlays []string, margin int) (err error) {
 	defer guard("FitTo", &err)
 	m.plant("FitTo")

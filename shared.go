@@ -38,7 +38,7 @@ func NewShared(tileBytes int64) (*Shared, error) {
 
 // Use is what the shared caches need, hold and may hold. Need over cap is
 // worth watching: it means the views together want more than they can keep,
-// so tiles are fetched again as the views take turns (D-90).
+// so tiles are fetched again as the views take turns.
 func (s *Shared) Use() CacheUse {
 	if s == nil || s.tiles == nil {
 		return CacheUse{}

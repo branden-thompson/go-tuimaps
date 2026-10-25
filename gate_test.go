@@ -1,6 +1,7 @@
 package tuimaps_test
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -69,7 +70,21 @@ func TestGateIsGreenOnAPassingTree(t *testing.T) {
 		t.Errorf("the gate ran a module under testdata:\n%s", out)
 	}
 	if _, err := os.Stat(filepath.Join(root, "go.work")); err == nil {
-		t.Error("the gate left its workspace file behind")
+		t.Error("the gate wrote its workspace file into the tree, where another run at once would share it")
+	}
+}
+
+// TestTheGatesWorkspaceIsItsOwn is watchpost R2D's note: the workspace the
+// legs build in is outside the tree, the run's own, so two runs on one
+// checkout at once never share or remove each other's.
+func TestTheGatesWorkspaceIsItsOwn(t *testing.T) {
+	if testing.Short() {
+		t.Skip("runs the gate; skipped with -short")
+	}
+	root := plantTree(t, true)
+	writeFile(t, root, "work_test.go", "package lib\n\nimport (\n\t\"os\"\n\t\"path/filepath\"\n\t\"strings\"\n\t\"testing\"\n)\n\nfunc TestWork(t *testing.T) {\n\tw := os.Getenv(\"GOWORK\")\n\twd, _ := os.Getwd()\n\tif w == \"\" || w == \"off\" || strings.HasPrefix(filepath.Clean(w), filepath.Clean(wd)+string(filepath.Separator)) {\n\t\tt.Fatalf(\"GOWORK is %q, in the tree %s\", w, wd)\n\t}\n}\n")
+	if out, err := runGateWith(t, root, nil, "--quick"); err != nil {
+		t.Fatalf("a leg built in a workspace inside the tree, or none:\n%s", out)
 	}
 }
 
@@ -299,7 +314,8 @@ func TestAStalledFuzzLegFails(t *testing.T) {
 }
 
 // TestEveryRunIsLogged: a run leaves a line - commit, mode, result - in the
-// tracked run log, which M6 counts from (v0.2.0 D-31).
+// tracked run log, which M6 counts from (v0.2.0 D-31); a lane that refuses
+// before any leg runs leaves none, a refusal being no run (watchpost D-280).
 func TestEveryRunIsLogged(t *testing.T) {
 	if testing.Short() {
 		t.Skip("runs the gate; skipped with -short")
@@ -344,6 +360,22 @@ func TestEveryRunIsLogged(t *testing.T) {
 	last = last[strings.LastIndex(last, "\n")+1:]
 	if !strings.Contains(last, "FAILED") || strings.Contains(last, "green") {
 		t.Errorf("a failed run must be logged as FAILED: %q", last)
+	}
+	git(t, root, "reset", "-q")
+	if out, err := runDocsLane(t, root); err == nil || !strings.Contains(out, "nothing is staged") {
+		t.Fatalf("the docs lane with nothing staged was not refused:\n%s", out)
+	}
+	writeFile(t, root, "lib.go", "// Package lib is planted.\npackage lib\n\n// Answer is planted.\nfunc Answer() int { return 43 }\n")
+	git(t, root, "add", "lib.go")
+	if out, err := runDocsLane(t, root); err == nil || !strings.Contains(out, "Markdown and nothing else") {
+		t.Fatalf("the docs lane with a source file staged was not refused:\n%s", out)
+	}
+	after, err := os.ReadFile(filepath.Join(root, "06_docs", "gate-runs.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(after) != string(log) {
+		t.Errorf("a refusal before any leg was logged as a run:\n%s", strings.TrimPrefix(string(after), string(log)))
 	}
 }
 
@@ -541,12 +573,16 @@ func TestLicenceCheckFailsWhenTheGraphCannotBeListed(t *testing.T) {
 
 // TestALegThatIgnoresTermIsStillStopped: a process that ignores TERM is
 // killed when the limit runs out, so the limit is a limit (v0.2.0 D-40).
+// The planted process carries a marker of this run alone, and only it is
+// looked for and killed: a machine-wide pattern found, and killed, another
+// gate's run (watchpost R2H-1).
 func TestALegThatIgnoresTermIsStillStopped(t *testing.T) {
 	if testing.Short() {
 		t.Skip("runs the gate; skipped with -short")
 	}
 	root := plantTree(t, true)
-	writeFile(t, root, "stubborn_test.go", "package lib\n\nimport (\n\t\"os/exec\"\n\t\"testing\"\n)\n\nfunc FuzzStubborn(f *testing.F) {\n\tf.Add(1)\n\tf.Fuzz(func(t *testing.T, n int) { _ = exec.Command(\"sh\", \"-c\", \"trap '' TERM; exec sleep 3607\").Run() })\n}\n")
+	marker := fmt.Sprintf("tuimaps-stubborn-%d-%d", os.Getpid(), time.Now().UnixNano())
+	writeFile(t, root, "stubborn_test.go", "package lib\n\nimport (\n\t\"os/exec\"\n\t\"testing\"\n)\n\nfunc FuzzStubborn(f *testing.F) {\n\tf.Add(1)\n\tf.Fuzz(func(t *testing.T, n int) { _ = exec.Command(\"sh\", \"-c\", \"trap '' TERM; while :; do sleep 1; done\", \""+marker+"\").Run() })\n}\n")
 	started := time.Now()
 	out, err := runGateWith(t, root, []string{"GATE_FUZZ_LIMIT=3"}, "--fuzz")
 	if err == nil || !strings.Contains(out, "TIME LIMIT") {
@@ -558,8 +594,8 @@ func TestALegThatIgnoresTermIsStillStopped(t *testing.T) {
 	// Nothing of the leg may outlive it: a survivor would keep running, and
 	// would hold the leg's output open if it wrote to it.
 	time.Sleep(time.Second)
-	if left, _ := exec.Command("pgrep", "-f", "sleep 3607").Output(); len(strings.TrimSpace(string(left))) > 0 {
-		_ = exec.Command("pkill", "-9", "-f", "sleep 3607").Run()
+	if left, _ := exec.Command("pgrep", "-f", marker).Output(); len(strings.TrimSpace(string(left))) > 0 {
+		_ = exec.Command("pkill", "-9", "-f", marker).Run()
 		t.Errorf("a process that ignored TERM outlived the leg: pid %s", strings.TrimSpace(string(left)))
 	}
 }

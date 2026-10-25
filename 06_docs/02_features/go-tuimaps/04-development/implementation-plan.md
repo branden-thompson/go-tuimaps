@@ -39,7 +39,7 @@
 
 ```
 go.mod                         module github.com/branden-thompson/go-tuimaps · go 1.25.0
-go.work                        never tracked: written by the gate script so the separate modules resolve the library from this tree
+go.work                        never in the tree: the gate writes its own outside it, each run's own, so the separate modules resolve the library from this tree
 scripts/gate                   the local gate: every module, both legs, fuzz, scans, static checks, cross-compile
 tuimaps/ (module root)         the public package: map.go · options.go · intents.go · overlay.go · presets.go
                                palette.go · frame.go · legend.go · describe.go · errors.go · doc.go

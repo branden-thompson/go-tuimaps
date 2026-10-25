@@ -43,12 +43,11 @@ const (
 	WaterLayer  = style.WaterLayer // lakes and inland water: the sea and its coast are never switched
 	LabelLayer  = style.LabelLayer
 	// MinorRoadLayer is the minor roads, switched apart from RoadLayer's
-	// motorways, trunks and primaries (v0.2.0 D-82).
+	// motorways, trunks and primaries.
 	MinorRoadLayer = style.MinorRoadLayer
 )
 
-// Detail is how much of the basemap is drawn, by purpose (v0.2.0 D-82,
-// L-14): each level draws what the one below does and more. Only the
+// Detail is how much of the basemap is drawn, by purpose (L-14): each level draws what the one below does and more. Only the
 // library's own style is ranked; a host's own style (SetStyle) draws whole.
 type Detail = style.Detail
 
@@ -145,7 +144,7 @@ func (m *Map) SetPalette(tokens map[string]RGB) (names []string, err error) {
 
 // SafeRamps says whether a ramp's colours are the library's own whatever the
 // host set, which is the setting to reach for when a palette has not been
-// checked (D-63).
+// checked.
 func (m *Map) SafeRamps(on bool) {
 	defer m.guardQuiet("SafeRamps")
 	m.plant("SafeRamps")
@@ -166,7 +165,7 @@ func (m *Map) SafeRamps(on bool) {
 }
 
 // Ground says what colour is behind the map, and that the library is not to
-// paint it (D-64). By default the library paints every cell's background
+// paint it. By default the library paints every cell's background
 // from the ground token, so that the map reads the same on any terminal.
 func (m *Map) Ground(behind RGB) (err error) {
 	defer guard("Ground", &err)
@@ -300,7 +299,7 @@ func (m *Map) Layers(layer Layer, on bool) {
 
 // LabelLanguage sets which language names are kept in. It is the one look
 // setting that reaches the tiles: a language is part of a tile's cache key,
-// so a change of language wants the tiles again (D-82).
+// so a change of language wants the tiles again.
 func (m *Map) LabelLanguage(code string) (err error) {
 	defer guard("LabelLanguage", &err)
 	m.plant("LabelLanguage")
@@ -387,7 +386,7 @@ var presetNames = map[colour.Preset]string{colour.Temperature: "temperature", co
 // alertNames are the alert severities, extreme first, as the tints are ordered.
 var alertNames = [5]string{"extreme", "severe", "moderate", "minor", "unknown"}
 
-// SetDetail sets how much of the basemap is drawn (v0.2.0 D-82, L-14): a
+// SetDetail sets how much of the basemap is drawn (L-14): a
 // level and a switched-off layer both apply. A value outside the four levels
 // is refused and the map keeps the level it had.
 func (m *Map) SetDetail(d Detail) (err error) {

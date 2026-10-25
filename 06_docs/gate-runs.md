@@ -236,3 +236,9 @@ A commit made from exactly that has the same tree less this file, so the two can
 | 2026-10-24T18:46:42Z | 544b889 | 403f2117a7a4 | full | green | 2073 | - |
 | 2026-10-24T20:40:31Z | c23fd89 | fc474f1497a4 | full | green | 2179 | - |
 | 2026-10-24T21:16:16Z | c5c50e7 | fc474f1497a4 | docs | FAILED: docs lane: nothing staged | 0 | tests saw 1 unstaged file(s) |
+| 2026-10-24T21:19:58Z | c5c50e7 | bafce83237ce | docs | green | 155 | - |
+| 2026-10-25T16:19:12Z | 73c602d | bafce83237ce | quick | FAILED: P10, a2dh p10 check | 571 | - |
+| 2026-10-25T16:20:16Z | 73c602d | bafce83237ce | quick | FAILED: P10, a2dh p10 check | 515 | - |
+| 2026-10-25T16:23:15Z | 73c602d | bafce83237ce | quick | FAILED: tools/oracle: tests, race detector on; tools/oracle: tests, race detector off (allocation counts live here); P10, a2dh p10 check | 474 | - |
+| 2026-10-25T17:49:02Z | 73c602d | bafce83237ce | quick | green | 376 | - |
+| 2026-10-25T22:28:22Z | 73c602d | e9846a65eaa3 | full | green | 2315 | - |

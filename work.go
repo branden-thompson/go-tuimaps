@@ -14,7 +14,7 @@ import (
 // that job's, retried and warned of by the map, and a pump goes on. Only the
 // Closed and Cancelled kinds end a pump.
 //
-// **The library starts no goroutine of its own** (D-73): a host that wants
+// **The library starts no goroutine of its own**: a host that wants
 // work done in the background calls this from goroutines of its own, as many
 // as it likes. It is safe beside Render and beside every other call.
 func (m *Map) Work(ctx context.Context) (did bool, err error) {
@@ -82,7 +82,7 @@ func (m *Map) OnPending(hook func()) (err error) {
 }
 
 // InFlight is how many units of work are inside a Work call somewhere else.
-// Settle never waits for them (D-86).
+// Settle never waits for them.
 func (m *Map) InFlight() int {
 	defer m.guardQuiet("InFlight")
 	m.plant("InFlight")

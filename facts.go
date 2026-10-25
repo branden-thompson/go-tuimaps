@@ -18,8 +18,8 @@ type Class struct {
 	Label  string // the range in words, in the overlay's own unit; for an alert, its severity
 	Colour RGB
 	Drawn  bool   // false where the depth in use draws no colour at all
-	Mark   string // for an alert, the digit its outline repeats (D-65); empty otherwise
-	Shade  string // at sixteen colours and none, the block shade an image's or rain's class is drawn in (L-7.1, D-35); empty otherwise
+	Mark   string // for an alert, the digit its outline repeats; empty otherwise
+	Shade  string // at sixteen colours and none, the block shade an image's or rain's class is drawn in (L-7.1); empty otherwise
 }
 
 // LegendEntry is what one overlay puts on the map, as data (FR-18).
@@ -30,10 +30,10 @@ type LegendEntry struct {
 	Classes []Class
 	// Blended is, for an image or a field, the severities whose alert tint
 	// blends over it (L-11.1); under the others it is drawn over the tint,
-	// the warning carried by the outline, label and digit (L-11.4, D-27).
+	// the warning carried by the outline, label and digit (L-11.4).
 	Blended []Severity
 	// Approximate says an image's table was read from a provider's legend
-	// rather than published (L-13.10, D-19); Unverified says part of its
+	// rather than published (L-13.10); Unverified says part of its
 	// range has not yet been seen in data, so its values there are the
 	// library's best reading (L-2.3). Both come from the provider's table the
 	// image is read with; a table of the host's own carries neither.
@@ -347,7 +347,7 @@ func cut(v float64, places int) string {
 
 // ShowStamp draws the top row's stamp - the loop's moment and the stale word
 // - or, off, leaves them to the host, which must then show both itself: a
-// frame's age is never hidden (L-1.9, D-87). It is on by default.
+// frame's age is never hidden (L-1.9). It is on by default.
 func (m *Map) ShowStamp(on bool) {
 	defer m.guardQuiet("ShowStamp")
 	m.plant("ShowStamp")

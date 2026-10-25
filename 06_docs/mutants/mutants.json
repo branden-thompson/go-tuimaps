@@ -798,5 +798,95 @@
     "new": "\tif false {\n\t\treturn Daylight{}",
     "package": ".",
     "test": "TestDaylightAtIsTheNightDrawn"
+  },
+  {
+    "id": "m082",
+    "row": "watchpost R2I-3",
+    "what": "a tile reply's headers are read whatever their size",
+    "file": "internal/fetch/fetch.go",
+    "old": "\t\tMaxResponseHeaderBytes: maxHeaderBytes,\n",
+    "new": "",
+    "package": "./internal/fetch",
+    "test": "TestARepliesHeadersAreBounded"
+  },
+  {
+    "id": "m083",
+    "row": "watchpost R2I-5",
+    "what": "a place off the globe is said to be in day or night",
+    "file": "daynight.go",
+    "old": "\tif !onGlobe {\n\t\treturn Daylight{}",
+    "new": "\tif false && !onGlobe {\n\t\treturn Daylight{}",
+    "package": ".",
+    "test": "TestDaylightAtIsTheNightDrawn"
+  },
+  {
+    "id": "m084",
+    "row": "A-18 (watchpost R2C-6)",
+    "what": "SetPalette leaves a host ramp's warning as it was",
+    "file": "look.go",
+    "old": "\tm.look.palette = palette.KeepRamps(m.look.safeRamps)\n\tm.look.version++\n\tm.recheckHostRampsLocked()\n",
+    "new": "\tm.look.palette = palette.KeepRamps(m.look.safeRamps)\n\tm.look.version++\n",
+    "package": ".",
+    "test": "TestEveryLookSetterChecksTheRampAgain"
+  },
+  {
+    "id": "m085",
+    "row": "A-18 (watchpost R2C-6)",
+    "what": "SafeRamps leaves a host ramp's warning as it was",
+    "file": "look.go",
+    "old": "\tm.look.palette = m.look.palette.KeepRamps(on)\n\tm.look.version++\n\tm.recheckHostRampsLocked()\n",
+    "new": "\tm.look.palette = m.look.palette.KeepRamps(on)\n\tm.look.version++\n",
+    "package": ".",
+    "test": "TestEveryLookSetterChecksTheRampAgain"
+  },
+  {
+    "id": "m086",
+    "row": "A-18 (watchpost R2C-6)",
+    "what": "Ground leaves a host ramp's warning as it was",
+    "file": "look.go",
+    "old": "\tm.look.ground = choice\n\tm.recheckHostRampsLocked()\n",
+    "new": "\tm.look.ground = choice\n",
+    "package": ".",
+    "test": "TestEveryLookSetterChecksTheRampAgain"
+  },
+  {
+    "id": "m087",
+    "row": "A-18 (watchpost R2C-6)",
+    "what": "PaintGround leaves a host ramp's warning as it was",
+    "file": "look.go",
+    "old": "\tm.look.ground = colour.GroundChoice{}\n\tm.recheckHostRampsLocked()\n",
+    "new": "\tm.look.ground = colour.GroundChoice{}\n",
+    "package": ".",
+    "test": "TestEveryLookSetterChecksTheRampAgain"
+  },
+  {
+    "id": "m088",
+    "row": "A-18 (watchpost R2C-6)",
+    "what": "ColourDepth leaves a host ramp's warning as it was",
+    "file": "look.go",
+    "old": "\tm.recheckHostRampsLocked()\n\tm.changed++\n}\n\n// depthInEffect",
+    "new": "\tm.changed++\n}\n\n// depthInEffect",
+    "package": ".",
+    "test": "TestEveryLookSetterChecksTheRampAgain"
+  },
+  {
+    "id": "m089",
+    "row": "watchpost D-280",
+    "what": "a refusal before any leg is logged as a run",
+    "file": "scripts/gate",
+    "old": "  [ \"$logging\" = 1 ] || return 0\n",
+    "new": "",
+    "package": ".",
+    "test": "TestEveryRunIsLogged"
+  },
+  {
+    "id": "m090",
+    "row": "watchpost R2D's note",
+    "what": "the gate's workspace is written into the tree",
+    "file": "scripts/gate",
+    "old": "  export GOWORK=\"$work_dir/go.work\"\n",
+    "new": "  export GOWORK=\"$root/go.work\"\n",
+    "package": ".",
+    "test": "TestTheGatesWorkspaceIsItsOwn"
   }
 ]

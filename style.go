@@ -11,7 +11,7 @@ import (
 // the library reads.
 //
 // **The library is handed the bytes and never reads a file.** A host that
-// keeps its style on disk reads it itself, as the app's --style does (D-94).
+// keeps its style on disk reads it itself, as the app's --style does.
 // Passing no bytes at all puts the library's own style back, as passing no
 // names does to the palette.
 //

@@ -13,12 +13,12 @@ import (
 )
 
 // Answer is what the map says about one place and one overlay: data to
-// render or speak, never a sentence of the library's own (D-52). Its
-// fields, which go doc does not show through the alias (watchpost RD-6):
+// render or speak, never a sentence of the library's own. Its
+// fields, which go doc does not show through the alias:
 // Place, Overlay, Form; for an area, Relation, Distance, Km, Unit, Bearing,
 // Compass and Label; for a field or an image, Value, ValueUnit, Band,
 // Rises, Class, Heavier, HeavierAt, From and NoData; and Valid, Stale and
-// UnderOneCell. `go doc ./internal/describe Answer` shows each one's words.
+// UnderOneCell.
 type Answer = describe.Answer
 
 // Units sets the units the descriptions come back in: miles rather than
