@@ -126,14 +126,17 @@ Every change is checked by `scripts/gate`, which is what stands before a merge:
   architecture's tests (an Apple silicon Mac runs amd64 under emulation). On a machine that cannot,
   `GATE_ARCH_LEG=sibling scripts/gate` leaves that leg to a machine that can, which then runs it.
   Where the a2dh harness is set up (`a2dh` on `PATH` and a `.a2dh.yml` in the tree) the gate also
-  runs `a2dh p10 check`; elsewhere it lists that check as not run.
+  runs `a2dh p10 check`; elsewhere it lists that check as not run. The check reads its ratified
+  exemptions from `.a2dh-p10-exemptions.yml`, which stays local to the harness; `06_docs/p10-ledger.md`
+  is its tracked mirror, row for row.
 - `GATE_FUZZ_SCALE=N scripts/gate` divides every fuzz leg's run count by `N`, for a machine slower
   than the one the counts were set on; the hosted full gate runs with `GATE_FUZZ_SCALE=8`.
   `GATE_ARCH_LEG` and `GATE_FUZZ_SCALE` are written on the run's line in `06_docs/gate-runs.md`, and
   a run with either does not count towards the five clean full runs a release needs.
 - `scripts/gate --quick` skips fuzzing, the benchmarks, the vulnerability scans, the cross-compiles,
-  the five-minute loop-memory leg and the second architecture. Formatting, vet, the tests, the
-  licence check and the P10 check still run.
+  the five-minute loop-memory leg and the second architecture. Formatting, vet, the tests and the
+  licence check still run, and the P10 check where the harness is set up; elsewhere the run lists it
+  as not run.
 - `scripts/gate --docs` is for a staged change of Markdown and nothing else: stage, run it, commit.
   It refuses any other staged file.
 - `scripts/gate --fuzz` runs the fuzz legs alone.
