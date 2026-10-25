@@ -2,6 +2,11 @@
 
 Up: [release checklist](release-checklist.md) · [requirements](../01-objectives/requirements.md)
 
+## v0.2.2, the toolchain (watchpost D-262, D-244)
+
+- **The module floor is go 1.26.10.** GO-2026-6809, in `crypto/x509`, is reachable from the fetcher and is fixed in go1.26.10 and go1.27.3. Every module's `go` directive is 1.26.10; a host builds with Go 1.26.10 or newer. The gate runs on go1.27.3.
+- Nothing else changes: no public name, no drawing.
+
 ## v0.2.1, a fix (watchpost D-150, D-152)
 
 - **The rain totals' two heaviest classes are drawn.** v0.2.0 drew nothing for a total of 50.8 mm or more, while the legend keyed both classes: a cell's ink at or above 96 is read as a style's literal colour, and the tokens had grown to 97, so `qpf.6` and `qpf.7` were read as literals that do not exist. The literal inks now start at 160. `TestEveryTokenIsAnInkBelowTheLiterals` and `TestEveryClassOfEveryPresetIsDrawn` hold it; both fail with the old start.
