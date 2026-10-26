@@ -142,3 +142,9 @@ Mutants m055 to m063.
 - **The aliases' fields** (A-20 (2)): `TestEveryAliasNamesItsFields` (m092).
 - **Smaller:** the README says a refusal leaves no run line (R3D-6); the release notes carry rc.6's header cap, every look setter's ramp re-check and `DaylightAt`'s place off the globe (R3D-7); `made_work` deleted (R3C-10); two ragged comments re-wrapped.
 
+## REVIEW's red team, round 4: the library's remediation (watchpost D-288; A-21)
+
+- **No IDs in public docs** (R4C-2): the parity rows P-54 to P-61, "task 14.19" and "v0.2.0 L3.11, L3.13" stripped from what `go doc` shows (`view.go`, `facts.go`, `places.go`, `look.go`, `map.go`); `TestNoExportedDocCarriesAnID`'s pattern is general, with four names of published work allowed.
+- **Every alias's fields** (R4C-9): `TestEveryAliasNamesItsFields` type-checks the package and finds seventeen struct aliases, not four; `Overlay`, `Feature`, `LoopFrame`, `Span`, `TableEntry`, `SetResult`, `RemoveResult`, `Warning`, `Finding` and `RampCheck` now name their fields (m093).
+- **The gate:** the first full run failed on `TestFixtureMemory`, a peak of 8.76 MB against NFR-3's 8 MB, while the agent built watchpost beside it; run alone three times its median peaks were 7.09 to 7.25 MB, and the second full run, with nothing beside it, is green (the failed row kept in `gate-runs.md`).
+

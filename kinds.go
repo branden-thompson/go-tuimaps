@@ -107,11 +107,15 @@ const (
 	VisionSafe = colour.VisionSafe // every pair, and every class against the ground, far enough apart
 )
 
-// Finding is one way a ramp breaks a rule: which rule, which classes, and
-// by how much.
+// Finding is one way a ramp breaks a rule: which rule (Rule), which classes
+// (A and B), and by how much (Value).
 type Finding = colour.Finding
 
-// RampCheck says how a ramp is used, which decides what is asked of it.
+// RampCheck says how a ramp is used, which decides what is asked of it: the
+// Ground it is drawn on; the Depth in use; Midpoint, the class a diverging
+// ramp is lightest or darkest at, -1 for one that runs one way; and Lines,
+// whether it colours line work on the ground rather than areas text is
+// drawn over.
 type RampCheck = colour.RampCheck
 
 // CheckRamp holds a ramp of colours to the library's own rules and answers

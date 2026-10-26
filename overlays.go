@@ -14,14 +14,20 @@ import (
 
 // Overlay is what a host hands in: an id, when its data was valid and how
 // long it stays current, a credit, and its shapes - features, or a grid, or
-// an image, and one only.
+// an image, and one only. Its fields, which go doc does not show through the
+// alias: ID; Valid; Keeps, how long after Valid it stays current; During,
+// the Span it is drawn in, always when zero; Credit; and one of Features,
+// Grid or Image.
 type Overlay = overlay.Overlay
 
 // Feature is ONE AREA of a feature overlay: an outline first, then any holes
 // in it. Ground that is separate is a separate feature, because every ring
 // after the first is read as a hole. Its rings are read where they are and not
 // copied again; a host holding its own point type converts once with
-// Rings.
+// Rings. Its fields, which go doc does not show through the alias: Kind;
+// Rings; Centre with RadiusKm, or RadiusDots for a ring fixed on the screen,
+// for a circle; Role, the token it is drawn in; Label; and an alert's
+// Severity, Valid and Expires, with ID, the host's name for it.
 type Feature = overlay.Feature
 
 // FeatureKind is what a feature is.
@@ -62,12 +68,14 @@ type Image = overlay.Image
 
 // LoopFrame is one frame of an image's loop: when its picture was valid, and
 // the picture. A gap is a missing frame, stated as missing, with no bytes; a
-// forecast frame is one the provider forecast rather than observed.
+// forecast frame is one the provider forecast rather than observed. Its
+// fields, which go doc does not show through the alias: Valid, PNG, Gap and
+// Forecast.
 type LoopFrame = overlay.LoopFrame
 
 // Span is when an overlay is drawn: while the map's moment meets it - the
-// loop's frame, or the host's moment (ShowMoment), or the frame's clock. A
-// zero end is open.
+// loop's frame, or the host's moment (ShowMoment), or the frame's clock,
+// From to Until, both included. A zero end is open.
 type Span = overlay.Span
 
 // MaxFrames is the most frames a loop may have, gaps included.
@@ -86,8 +94,9 @@ const (
 	SeverityExtreme  = overlay.SeverityExtreme
 )
 
-// TableEntry is one row of that table: a colour of the provider's, the
-// value it stands for, and whether it means "no data".
+// TableEntry is one row of that table: a colour of the provider's (Colour),
+// the value it stands for (Value), and whether it means "no data"
+// (Missing).
 type TableEntry = overlay.TableEntry
 
 // Projection is how an image's pixels are laid on the world.
@@ -136,13 +145,17 @@ const (
 	High           = colour.High
 )
 
-// SetResult is what Set says at once.
+// SetResult is what Set says at once: Created, false when an overlay of that
+// id was replaced; and Released, the old geometry no longer read by
+// anything.
 type SetResult = overlay.SetResult
 
-// RemoveResult is what Remove says at once.
+// RemoveResult is what Remove says at once: Found, whether an overlay had
+// that id; and Released, its geometry no longer read by anything.
 type RemoveResult = overlay.RemoveResult
 
-// Warning is something the library noticed and did not refuse.
+// Warning is something the library noticed and did not refuse: its Kind,
+// its Subject - the overlay or tile it concerns - and Count, how often.
 type Warning = fault.Warning
 
 // TemperatureGrid is a temperature field in one call: the preset supplies

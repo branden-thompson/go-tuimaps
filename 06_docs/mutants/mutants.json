@@ -908,5 +908,15 @@
     "new": "drawn as its labelled contours over faint bands;",
     "package": ".",
     "test": "TestEveryAliasNamesItsFields"
+  },
+  {
+    "id": "m093",
+    "row": "watchpost R4C-9",
+    "what": "an alias the hand list left out names no longer all its fields",
+    "file": "overlays.go",
+    "old": "// alias: ID; Valid; Keeps, how long after Valid it stays current; During,\n",
+    "new": "// alias: ID; Valid; Keeps, how long after Valid it stays current; its span,\n",
+    "package": ".",
+    "test": "TestEveryAliasNamesItsFields"
   }
 ]

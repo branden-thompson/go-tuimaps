@@ -70,7 +70,7 @@ type Frame struct {
 // DropKind is what a frame left out.
 type DropKind uint8
 
-// The things a frame may leave out (v0.2.0 L3.11, L3.13).
+// The things a frame may leave out.
 const (
 	DropAlertLabel DropKind = iota + 1 // an alert's label did not fit; Shown is its severity word if that fitted, else empty
 	DropPlaceName                      // a place's name did not fit; Shown is what stood in for it, if anything

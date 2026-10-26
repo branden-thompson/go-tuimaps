@@ -308,7 +308,7 @@ func (m *Map) Scale() (Scaled, bool) {
 }
 
 // Footer is the centre and the zoom in upstream's own wording, cut with
-// floor as upstream cuts them (P-57). It is drawn inside the map only when
+// floor as upstream cuts them. It is drawn inside the map only when
 // the host turns it on, and it is off by default.
 func (m *Map) Footer() string {
 	defer m.guardQuiet("Footer")
@@ -338,7 +338,7 @@ func footerOf(lat, lon, zoom float64) string {
 }
 
 // cut writes a number to a number of decimal places, cutting what is left
-// rather than rounding it, as upstream does (P-57).
+// rather than rounding it, as upstream does.
 func cut(v float64, places int) string {
 	scale := math.Pow(10, float64(places))
 	whole := math.Trunc(v*scale) / scale
@@ -365,7 +365,7 @@ func (m *Map) ShowStamp(on bool) {
 }
 
 // ShowFooter draws the footer inside the map, or takes it off again. It is
-// off by default (P-57).
+// off by default.
 func (m *Map) ShowFooter(on bool) {
 	defer m.guardQuiet("ShowFooter")
 	m.plant("ShowFooter")
