@@ -151,7 +151,7 @@ Every change is checked by `scripts/gate`, which is what stands before a merge:
   pinned `govulncheck` must find nothing reachable in any module, on the floor toolchain or the
   machine's own, that the checklist does not carry as a ruled exception.
 
-Give one mode at most. Every run leaves a line in `06_docs/gate-runs.md`. The gate also needs `perl`
+Give one mode at most. Every run that reaches a leg leaves a line in `06_docs/gate-runs.md`; a lane that refuses before any leg runs says why and leaves none. The gate also needs `perl`
 (present on macOS and most Linux systems) for the fuzz legs' time limit, and it writes a throw-away
 `go.work` so the nested modules (`cmd/tuimaps`, `examples`, `tools/*`) resolve the library from this
 tree; outside the gate, build those from their own directory with a workspace of your own.

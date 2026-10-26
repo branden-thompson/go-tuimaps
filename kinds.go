@@ -61,8 +61,8 @@ const (
 	RenderFailed          = fault.RenderFailed
 	CacheUnderNeed        = fault.CacheUnderNeed
 	TableFallback         = fault.TableFallback     // valued by the provider's legend gradient, off its table (v0.2.0)
-	CacheRootReadable     = fault.CacheRootReadable // other users can read the disk cache's root (v0.2.0 L-9.6)
-	NearImageColours      = fault.NearImageColours  // matched a published or host table only within the tolerance (v0.2.0 L-2.2)
+	CacheRootReadable     = fault.CacheRootReadable // other users can read the disk cache's root
+	NearImageColours      = fault.NearImageColours  // matched a published or host table only within the tolerance
 )
 
 // KindOf is the kind of an error the library raised, and false for an error
@@ -96,7 +96,7 @@ func WarningKinds() []WarningKind {
 	return out
 }
 
-// Rule is one of the rules a colour ramp is held to (FR-16).
+// Rule is one of the rules a colour ramp is held to.
 type Rule = colour.Rule
 
 // The rules. A host that themes a ramp can hold its own to the same ones.
@@ -115,7 +115,7 @@ type Finding = colour.Finding
 type RampCheck = colour.RampCheck
 
 // CheckRamp holds a ramp of colours to the library's own rules and answers
-// with what it found, empty for a ramp that passes (FR-16). It is the check
+// with what it found, empty for a ramp that passes. It is the check
 // the library runs on its own presets, exported so that a host can run it on
 // a palette of its own, in its own tests, before anyone sees it.
 func CheckRamp(ramp []RGB, how RampCheck) []Finding {

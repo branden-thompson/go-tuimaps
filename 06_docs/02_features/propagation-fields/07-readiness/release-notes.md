@@ -18,6 +18,8 @@ Ruled before each landed (the brief's C-6), and listed with what a host does in 
 - **The edge mark is asked for** (watchpost D-216, C-18): a host type of two classes is drawn as its edge alone only with `Type.Edge`; before, every two-class host type was.
 - **A wrong colour count is a malformed ramp** (watchpost D-216, C-17): refused as `MalformedRamp`, where it was `UnsortedBreaks`.
 - **One ramp warning an overlay** (C-26): a host type set again with the same broken colours is one warning, replaced on each `Set` and gone once a `Set` passes.
+- **A tile reply's headers are capped at 64 KiB** (watchpost R2I-3): a reply whose headers run past it is refused, where Go's own bound was about ten megabytes.
+- **Every look setter checks a host ramp again** (watchpost RC-15, R2C-6): `ColourDepth`, `SetPalette`, `SafeRamps`, `Ground` and `PaintGround` each warn of, or clear, a host type's broken ramp at the look they set.
 
 ## What it adds
 
@@ -29,7 +31,7 @@ Ruled before each landed (the brief's C-6), and listed with what a host does in 
 - **`CheckedDialerFor`** (L-7.4): the checked dialer for a host behind a proxy at a private address, with the proxy function to set beside it.
 - **The error kind `BadEdge`** (watchpost D-229): an edge mark asked for on a preset, or on a host type of other than two classes, is refused as it, its words saying how to ask for one.
 - **`NightOverlay(id, at)`** (watchpost D-216): the night side and its terminator, each in its role, as one overlay in one call.
-- **`DaylightAt(place, moment)`** (watchpost D-263): a place's day or night and its next turn at any moment, the night `NightOverlay` draws for it, so a host showing an hour ahead says what its picture shows; `PlaceReport.Daylight` is the same at the map's clock.
+- **`DaylightAt(place, moment)`** (watchpost D-263): a place's day or night and its next turn at any moment, the night `NightOverlay` draws for it, so a host showing an hour ahead says what its picture shows; `PlaceReport.Daylight` is the same at the map's clock. A place off the globe, or no number, is not known (watchpost R2I-5).
 - **`Type.Edge`** (watchpost D-216, L-2.6): a host type of two classes drawn as the edge between them alone, a broken line at every depth.
 - **`socks5h` proxies** take port 1080 when none is given, as `socks5` does (I-7).
 - **`TerminalDepth`** (watchpost D-207, D-216): `ColourDepth(TerminalDepth)` takes a depth hint back, so a host offering "follow the terminal" beside the depths can return to it; the terminal's settings choose again (L-7.2).

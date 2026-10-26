@@ -30,7 +30,7 @@ const defaultNearby = 10.0
 // Report is what the map says beside the picture, as data: the
 // alerts shown, and for each place asked about, each alert on its own and
 // every other overlay's answer. Every section is present, empty rather than
-// nil; every string is cleaned (FR-34); distances are in the units Units
+// nil; every string is cleaned; distances are in the units Units
 // set. The library words nothing: a host words it, and never says "you" of a
 // place.
 type Report struct {
@@ -49,7 +49,7 @@ const (
 	Away   = describe.Away
 )
 
-// MotionReport is observed motion (L-1.12) for one loop and
+// MotionReport is observed motion for one loop and
 // one named place - or, with Place empty, the view's centre: the way the
 // heavier rain near it moves (Heading, towards, not from) and how fast,
 // measured over the pairs of frames that could be measured; where the
@@ -98,7 +98,7 @@ type Sighting struct {
 	Compass  string
 }
 
-// AlertShown is one alert in view (L-13.5): the overlay and feature it is,
+// AlertShown is one alert in view: the overlay and feature it is,
 // its label, its severity, its times, and whether it is stale by the map's
 // own rule.
 type AlertShown struct {
@@ -115,12 +115,12 @@ type PlaceReport struct {
 	Place    string
 	Alerts   []PlaceAlert
 	Answers  []Answer
-	Daylight Daylight // day or night there, and when that turns (L-4.4)
+	Daylight Daylight // day or night there, and when that turns
 }
 
 // Daylight is whether a place is in day or night at the map's clock - the
-// time the last frame was drawn at - and when the terminator next passes it
-// (L-4.4). Known is false until a frame gives the map a clock, as the map
+// time the last frame was drawn at - and when the terminator next passes it.
+// Known is false until a frame gives the map a clock, as the map
 // says nothing of time before; Turns is the zero time in a polar day
 // or night, the sun not crossing the horizon there within two days.
 // DaylightAt is the same at any other moment.
@@ -129,7 +129,7 @@ type Daylight struct {
 	Turns      time.Time
 }
 
-// PlaceAlert is one alert against one place (L-13.6): inside, nearby or
+// PlaceAlert is one alert against one place: inside, nearby or
 // outside, how far its edge is and which way, with its label and severity;
 // when its data was valid and whether it is stale, by the map's own rule;
 // and whether the distance is under one cell, where the picture cannot
@@ -147,7 +147,7 @@ type PlaceAlert struct {
 }
 
 // SetNearby sets how close to an alert's edge a place outside it is said to
-// be nearby, in kilometres; zero puts the default of 10 km back (L-13.6).
+// be nearby, in kilometres; zero puts the default of 10 km back.
 func (m *Map) SetNearby(km float64) (err error) {
 	defer guard("SetNearby", &err)
 	m.plant("SetNearby")
@@ -174,7 +174,7 @@ func (m *Map) SetNearby(km float64) (err error) {
 // overlay's answer. It is computed from the host's geometry, unsimplified,
 // never from the drawn cells, which cannot show a distance smaller than one
 // cell, and it needs no Work to have run. Asked again with nothing changed,
-// it costs nothing, so a host may ask on every frame (FR-29); the slices it
+// it costs nothing, so a host may ask on every frame; the slices it
 // returns are the map's until the answer changes.
 func (m *Map) Report(places []Place) (out Report, err error) {
 	defer guard("Report", &err)

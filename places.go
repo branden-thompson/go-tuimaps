@@ -33,7 +33,7 @@ const (
 const placeLimit = 4096
 
 // Place is one of the host's own places: a name, a position, how it is
-// drawn, and an id to remove it by (FR-26). A place is not an overlay: it is
+// drawn, and an id to remove it by. A place is not an overlay: it is
 // the host's "my places", not data. The least that has to be written is a
 // name and a position.
 type Place struct {

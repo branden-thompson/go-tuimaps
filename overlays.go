@@ -14,13 +14,13 @@ import (
 
 // Overlay is what a host hands in: an id, when its data was valid and how
 // long it stays current, a credit, and its shapes - features, or a grid, or
-// an image, and one only (FR-6).
+// an image, and one only.
 type Overlay = overlay.Overlay
 
 // Feature is ONE AREA of a feature overlay: an outline first, then any holes
 // in it. Ground that is separate is a separate feature, because every ring
 // after the first is read as a hole. Its rings are read where they are and not
-// copied again (FR-11); a host holding its own point type converts once with
+// copied again; a host holding its own point type converts once with
 // Rings.
 type Feature = overlay.Feature
 
@@ -49,8 +49,8 @@ type Grid = overlay.Grid
 // breaks of its own. Its fields, which go doc does not show through
 // the alias: Preset, a preset's name or empty for the
 // host's own; Unit; Breaks; Colours, a host type's own, one a class, empty
-// for the spread (L-2.2); Edge, a two-class host type drawn as the edge
-// between its classes alone (L-2.6).
+// for the spread; Edge, a two-class host type drawn as the edge
+// between its classes alone.
 type Type = overlay.Type
 
 // Image is a georeferenced image and the table that says what its colours
@@ -67,7 +67,7 @@ type LoopFrame = overlay.LoopFrame
 
 // Span is when an overlay is drawn: while the map's moment meets it - the
 // loop's frame, or the host's moment (ShowMoment), or the frame's clock. A
-// zero end is open (L-15.1).
+// zero end is open.
 type Span = overlay.Span
 
 // MaxFrames is the most frames a loop may have, gaps included.
@@ -121,16 +121,16 @@ const (
 	AlertMinor     = colour.AlertMinorOutline
 	AlertUnknown   = colour.AlertUnknownOutline
 	Track          = colour.Track
-	Fire           = colour.Fire       // a fire's perimeter, its incident, a strong hotspot (L-18)
+	Fire           = colour.Fire       // a fire's perimeter, its incident, a strong hotspot
 	FireFaint      = colour.FireFaint  // a weaker hotspot
-	QuakeHour      = colour.QuakeHour  // a quake of the past hour (L-19)
+	QuakeHour      = colour.QuakeHour  // a quake of the past hour
 	QuakeDay       = colour.QuakeDay   // of the past day
 	QuakeOlder     = colour.QuakeOlder // older
-	Buoy           = colour.Buoy       // a buoy's marker and words (L-21)
+	Buoy           = colour.Buoy       // a buoy's marker and words
 	Tide           = colour.Tide       // a tide station's
-	TerminatorLine = colour.Terminator // the line between day and night, dotted at every depth (L-4.1, L-4.4): a Line feature along Terminator(at)
-	NightTint      = colour.Night      // the night side's shade (L-4.3): a Polygon feature over NightSide(at), no words, no digits, no legend entry
-	Zone           = colour.Zone       // a host's zone (L-8): a Polygon or Circle outlined in red, its inside tinted - or stippled over a field its tint cannot blend with - beneath any alert's, no severity, no legend entry
+	TerminatorLine = colour.Terminator // the line between day and night, dotted at every depth: a Line feature along Terminator(at)
+	NightTint      = colour.Night      // the night side's shade: a Polygon feature over NightSide(at), no words, no digits, no legend entry
+	Zone           = colour.Zone       // a host's zone: a Polygon or Circle outlined in red, its inside tinted - or stippled over a field its tint cannot blend with - beneath any alert's, no severity, no legend entry
 	Low            = colour.Low
 	Middle         = colour.Middle
 	High           = colour.High
@@ -153,7 +153,7 @@ func TemperatureGrid(id string, grid Grid, unit Unit, validAt time.Time) Overlay
 	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &grid}
 }
 
-// SpeedUnit is a unit of wind speed (FR-8).
+// SpeedUnit is a unit of wind speed.
 type SpeedUnit = colour.SpeedUnit
 
 // The units of wind speed.
@@ -164,7 +164,7 @@ const (
 	Knots             = colour.Knots
 )
 
-// WindGrid is a wind field in one call (FR-8, L-16): the speeds in a unit,
+// WindGrid is a wind field in one call: the speeds in a unit,
 // and the direction each blows FROM, meteorological degrees clockwise from
 // north, one a speed, NaN where there is none. It is drawn as arrows, never
 // bands, and the preset supplies the classes and their colours.
@@ -187,7 +187,7 @@ func speedUnitName(u SpeedUnit) string {
 	return "mph"
 }
 
-// WaveUnit is a unit of wave height (L-20).
+// WaveUnit is a unit of wave height.
 type WaveUnit = colour.WaveUnit
 
 // The units of wave height.
@@ -196,7 +196,7 @@ const (
 	Metres = colour.Metres
 )
 
-// WaveGrid is a wave-height field in one call (L-20): the preset supplies
+// WaveGrid is a wave-height field in one call: the preset supplies
 // the classes and their colours, and the field is drawn over the sea alone.
 func WaveGrid(id string, grid Grid, unit WaveUnit, validAt time.Time) Overlay {
 	name := "ft"
@@ -207,27 +207,27 @@ func WaveGrid(id string, grid Grid, unit WaveUnit, validAt time.Time) Overlay {
 	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &grid}
 }
 
-// UVGrid is a UV index field in one call (L-25): the preset supplies its
+// UVGrid is a UV index field in one call: the preset supplies its
 // five categories and their colours.
 func UVGrid(id string, grid Grid, validAt time.Time) Overlay {
 	return presetGrid(id, grid, Type{Preset: "uv", Unit: "index"}, validAt)
 }
 
-// AirQualityGrid is a US AQI field in one call (L-25): the preset supplies
+// AirQualityGrid is a US AQI field in one call: the preset supplies
 // its six categories and their colours.
 func AirQualityGrid(id string, grid Grid, validAt time.Time) Overlay {
 	return presetGrid(id, grid, Type{Preset: "aqi", Unit: "AQI"}, validAt)
 }
 
-// MUFGrid is a field of the maximum usable frequency, in MHz, in one call
-// (v0.3.0 L-2.1): the preset supplies its ten classes, broken at the amateur
+// MUFGrid is a field of the maximum usable frequency, in MHz, in one call:
+// the preset supplies its ten classes, broken at the amateur
 // band edges, and their colours.
 func MUFGrid(id string, grid Grid, validAt time.Time) Overlay {
 	return presetGrid(id, grid, Type{Preset: "muf", Unit: "MHz"}, validAt)
 }
 
 // FoF2Grid is a field of the F2 layer's critical frequency, in MHz, in one
-// call (v0.3.0 L-2.1): the preset supplies its classes, floored at the band
+// call: the preset supplies its classes, floored at the band
 // edges below 15 MHz - nothing is drawn below 1.8 MHz - in the MUF colours of
 // the same frequencies.
 func FoF2Grid(id string, grid Grid, validAt time.Time) Overlay {
@@ -235,7 +235,7 @@ func FoF2Grid(id string, grid Grid, validAt time.Time) Overlay {
 }
 
 // QPFGrid is a field of rain and snow totals, liquid-equivalent, in mm, in
-// one call (L-26): the preset supplies WPC's seven classes and their
+// one call: the preset supplies WPC's seven classes and their
 // colours, and draws nothing under a trace.
 func QPFGrid(id string, grid Grid, validAt time.Time) Overlay {
 	return presetGrid(id, grid, Type{Preset: "qpf", Unit: "mm"}, validAt)
@@ -249,8 +249,8 @@ func presetGrid(id string, grid Grid, t Type, validAt time.Time) Overlay {
 }
 
 // AirQualityRole is the role a feature is drawn in to show an AQI - a
-// monitor's reading - in its category's colour, as the AQI preset draws it
-// (L-25). Its words are drawn in the markers' ink, which reads on the ground.
+// monitor's reading - in its category's colour, as the AQI preset draws it.
+// Its words are drawn in the markers' ink, which reads on the ground.
 func AirQualityRole(aqi float64) Token {
 	c := 0
 	for _, b := range colour.AirQualityBreaks() {
@@ -388,7 +388,7 @@ func (m *Map) Remove(id string) (res RemoveResult, err error) {
 }
 
 // InUse reports whether anything is still reading an overlay's old geometry.
-// While it is true the host must leave that memory alone (FR-11).
+// While it is true the host must leave that memory alone.
 func (m *Map) InUse(id string) bool {
 	defer m.guardQuiet("InUse")
 	m.plant("InUse")
@@ -418,7 +418,7 @@ func (m *Map) Overlays() []string {
 }
 
 // Warnings are what the library noticed and did not refuse, taken once: a
-// host that never asks is never blocked by them (NFR-20).
+// host that never asks is never blocked by them.
 func (m *Map) Warnings() []Warning {
 	defer m.guardQuiet("Warnings")
 	m.plant("Warnings")
@@ -602,7 +602,7 @@ func shapeKind(k FeatureKind) scene.ShapeKind {
 
 // Provider names a source of radar images whose colour table the library
 // carries: an image that names one, with no table of its own, is read with
-// the provider's (L-2.5).
+// the provider's.
 type Provider = overlay.Provider
 
 // The providers the library carries tables for.

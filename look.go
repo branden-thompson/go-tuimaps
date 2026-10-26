@@ -20,7 +20,7 @@ type Depth = colour.Depth
 // The colour depths. A map is drawn at the depth the host hints at; with no
 // hint from the host, a non-empty NO_COLOR in the environment chooses no
 // colour at all, and otherwise the terminal's COLORTERM and TERM choose the
-// depth (NFR-15, L-7.2). TerminalDepth is no depth of its own: hinted, it
+// depth. TerminalDepth is no depth of its own: hinted, it
 // takes a hint back, and the environment chooses again.
 const (
 	Truecolor     = colour.Truecolor
@@ -30,7 +30,7 @@ const (
 	TerminalDepth = colour.TerminalDepth
 )
 
-// Layer is a basemap layer a host can switch off and on (FR-36).
+// Layer is a basemap layer a host can switch off and on.
 type Layer = style.Layer
 
 // The layers that can be switched.
@@ -47,8 +47,9 @@ const (
 	MinorRoadLayer = style.MinorRoadLayer
 )
 
-// Detail is how much of the basemap is drawn, by purpose (L-14): each level draws what the one below does and more. Only the
-// library's own style is ranked; a host's own style (SetStyle) draws whole.
+// Detail is how much of the basemap is drawn, by purpose: each level draws
+// what the one below does and more. Only the library's own style is ranked;
+// a host's own style (SetStyle) draws whole.
 type Detail = style.Detail
 
 // The levels. DetailFull is the picture a host that never asks gets.
@@ -114,7 +115,7 @@ func TokenNames() []string {
 // SetPalette gives tokens colours of the host's own. It answers with the
 // names that are no token of the library's, sorted, which are ignored; the
 // rest take effect at the next Render, and nothing is decoded again for
-// them (FR-15). Passing no names puts the library's own colours back.
+// them. Passing no names puts the library's own colours back.
 func (m *Map) SetPalette(tokens map[string]RGB) (names []string, err error) {
 	defer guard("SetPalette", &err)
 	m.plant("SetPalette")
@@ -245,7 +246,7 @@ func (m *Map) depthInEffect() Depth {
 	return colour.ChooseDepth(m.look.depth, m.look.depthHinted, os.Getenv)
 }
 
-// ReduceMotion stops the library animating (NFR-21): markers are drawn
+// ReduceMotion stops the library animating: markers are drawn
 // steadily, and a loop playing stops where it is and cannot be played until
 // it is turned off again. The clock still has work that is not motion: a
 // stale overlay's moment and a failed tile's retry stay due.
@@ -269,7 +270,7 @@ func (m *Map) ReduceMotion(on bool) {
 	m.changed++
 }
 
-// Layers switches a basemap layer off or on (FR-36). A layer switched off is
+// Layers switches a basemap layer off or on. A layer switched off is
 // never drawn, whatever else the frame would have drawn.
 func (m *Map) Layers(layer Layer, on bool) {
 	defer m.guardQuiet("Layers")
@@ -386,7 +387,7 @@ var presetNames = map[colour.Preset]string{colour.Temperature: "temperature", co
 // alertNames are the alert severities, extreme first, as the tints are ordered.
 var alertNames = [5]string{"extreme", "severe", "moderate", "minor", "unknown"}
 
-// SetDetail sets how much of the basemap is drawn (L-14): a
+// SetDetail sets how much of the basemap is drawn: a
 // level and a switched-off layer both apply. A value outside the four levels
 // is refused and the map keeps the level it had.
 func (m *Map) SetDetail(d Detail) (err error) {

@@ -19,29 +19,29 @@ type Class struct {
 	Colour RGB
 	Drawn  bool   // false where the depth in use draws no colour at all
 	Mark   string // for an alert, the digit its outline repeats; empty otherwise
-	Shade  string // at sixteen colours and none, the block shade an image's or rain's class is drawn in (L-7.1); empty otherwise
+	Shade  string // at sixteen colours and none, the block shade an image's or rain's class is drawn in; empty otherwise
 }
 
-// LegendEntry is what one overlay puts on the map, as data (FR-18).
+// LegendEntry is what one overlay puts on the map, as data.
 type LegendEntry struct {
 	ID      string
 	Unit    string
 	Preset  string // "temperature", "radar", "alert", or empty for a host's own type
 	Classes []Class
 	// Blended is, for an image or a field, the severities whose alert tint
-	// blends over it (L-11.1); under the others it is drawn over the tint,
-	// the warning carried by the outline, label and digit (L-11.4).
+	// blends over it; under the others it is drawn over the tint,
+	// the warning carried by the outline, label and digit.
 	Blended []Severity
 	// Approximate says an image's table was read from a provider's legend
-	// rather than published (L-13.10); Unverified says part of its
+	// rather than published; Unverified says part of its
 	// range has not yet been seen in data, so its values there are the
-	// library's best reading (L-2.3). Both come from the provider's table the
+	// library's best reading. Both come from the provider's table the
 	// image is read with; a table of the host's own carries neither.
 	Approximate, Unverified bool
 }
 
 // Scaled is the scale of the map as data, in the terms the mark on the frame
-// draws it (FR-33).
+// draws it.
 type Scaled struct {
 	KmPerCell float64 // how far one cell spans, across the middle of the map
 	Km        float64 // the round distance the bar stands for
@@ -49,7 +49,7 @@ type Scaled struct {
 }
 
 // Legend is what is drawn on the map now, overlay by overlay and class by
-// class, in the colours actually in use at the depth in effect (FR-18). It
+// class, in the colours actually in use at the depth in effect. It
 // is the same facts the picture carries, for a host that cannot show them.
 func (m *Map) Legend() []LegendEntry {
 	defer m.guardQuiet("Legend")
@@ -252,7 +252,7 @@ func mustFloat(s string) float64 {
 }
 
 // Credits are every credit the map owes: the basemap's, then each overlay's
-// in the order they were set, once each (FR-14).
+// in the order they were set, once each.
 func (m *Map) Credits() []string {
 	defer m.guardQuiet("Credits")
 	m.plant("Credits")
@@ -283,7 +283,7 @@ func (m *Map) Credits() []string {
 // basemapCredit is what the tiles are owed, drawn on every frame (FR-14).
 const basemapCredit = "OpenFreeMap (c) OpenMapTiles Data from OpenStreetMap"
 
-// Scale is how far the map spans, as data (FR-33): how far one cell is, and
+// Scale is how far the map spans, as data: how far one cell is, and
 // the round distance the bar on the frame stands for.
 func (m *Map) Scale() (Scaled, bool) {
 	defer m.guardQuiet("Scale")
@@ -347,7 +347,7 @@ func cut(v float64, places int) string {
 
 // ShowStamp draws the top row's stamp - the loop's moment and the stale word
 // - or, off, leaves them to the host, which must then show both itself: a
-// frame's age is never hidden (L-1.9). It is on by default.
+// frame's age is never hidden. It is on by default.
 func (m *Map) ShowStamp(on bool) {
 	defer m.guardQuiet("ShowStamp")
 	m.plant("ShowStamp")

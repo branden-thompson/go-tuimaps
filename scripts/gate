@@ -231,7 +231,6 @@ FLOOR_TOOLCHAIN="go$floor"
 
 # --- every run leaves a line -------------------------------------------------
 started_at=$SECONDS
-made_work=0
 # THE LINE NAMES THE TREE THAT WAS TESTED (D-40), not only the commit below
 # it: the git tree of what was checked, leaving this log out - the staged
 # change for the docs lane, the whole working tree otherwise. A commit made
@@ -661,7 +660,6 @@ if [ -z "${tracked:-}" ]; then
   work_use=""
   for dir in $modules; do work_use="$work_use $root/${dir#./}"; done
   if GOFLAGS= go work init $work_use >/dev/null 2>&1; then
-    made_work=1
     # A workspace alone does not resolve a version that was never published:
     # the gate's own tests plant modules that require the library at v0.0.0,
     # and because the library imports third-party code the toolchain goes

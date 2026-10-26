@@ -57,7 +57,7 @@ func (s Status) String() string {
 // cells. It is valid until the next Render.
 //
 // Changed and FrameTicks are the map's counters as this frame was drawn at
-// them (L-1.16), so a host can tell which frame is which without calling
+// them, so a host can tell which frame is which without calling
 // again. Dropped is what the frame could not show and left out, each named:
 // nil when nothing was dropped.
 type Frame struct {
@@ -525,7 +525,7 @@ func (m *Map) Close() int {
 
 // SetImageBudget sets what the map's images and grids may hold in all: each
 // picture's file and its pixels at a byte each, each grid's field, and the
-// shared classified set (L-12.1). Zero or less is the library's own, 6 MiB.
+// shared classified set. Zero or less is the library's own, 6 MiB.
 // A Set that would go over it is refused, saying by how much; lowering it
 // below what is held drops nothing. A host that raises it owns the memory it
 // asks for.

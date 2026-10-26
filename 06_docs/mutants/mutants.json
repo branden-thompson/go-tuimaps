@@ -888,5 +888,25 @@
     "new": "  export GOWORK=\"$root/go.work\"\n",
     "package": ".",
     "test": "TestTheGatesWorkspaceIsItsOwn"
+  },
+  {
+    "id": "m091",
+    "row": "watchpost D-288",
+    "what": "an exported doc comment carries an ID",
+    "file": "daynight.go",
+    "old": "// a host shows - an hour ahead as well as now.",
+    "new": "// a host shows - an hour ahead as well as now (L-4.4).",
+    "package": ".",
+    "test": "TestNoExportedDocCarriesAnID"
+  },
+  {
+    "id": "m092",
+    "row": "watchpost R2C (round 2's alias Minor)",
+    "what": "an alias's comment leaves a field of its struct unnamed",
+    "file": "overlays.go",
+    "old": "Lines, drawn as its labelled contours over faint bands;",
+    "new": "drawn as its labelled contours over faint bands;",
+    "package": ".",
+    "test": "TestEveryAliasNamesItsFields"
   }
 ]

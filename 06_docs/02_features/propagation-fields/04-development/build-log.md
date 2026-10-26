@@ -136,3 +136,9 @@ Mutants m055 to m063.
 - **Records:** the rc.5 tip's green row, uncommitted since 2026-10-24 (R2H-2), is committed here; the rulings' phase header says REVIEW (R2H-4).
 - **Mutants:** m082 to m090, each killed by its test; m087 first survived, the warnings-taken-once flaw above.
 
+## REVIEW's red team, round 3: the library's remediation (watchpost D-288; D-45, A-20)
+
+- **No IDs in public docs** (D-45): every exported doc comment's requirement IDs (L-, FR-, NFR-, C-) and plan and ruling IDs stripped, the comments re-wrapped where a stripped parenthesis had broken a line; `TestNoExportedDocCarriesAnID` scans `go doc -all` (m091).
+- **The aliases' fields** (A-20 (2)): `TestEveryAliasNamesItsFields` (m092).
+- **Smaller:** the README says a refusal leaves no run line (R3D-6); the release notes carry rc.6's header cap, every look setter's ramp re-check and `DaylightAt`'s place off the globe (R3D-7); `made_work` deleted (R3C-10); two ragged comments re-wrapped.
+
