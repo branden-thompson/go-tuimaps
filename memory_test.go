@@ -159,8 +159,11 @@ func TestFixtureMemory(t *testing.T) {
 		t.Errorf("live is %.2f MB; NFR-3's line is 4 MB", asMB(live))
 	}
 	// The maps of a shared set read a picture once between them (D-116);
-	// each decoding its own copy puts the peak about 7% over the line.
-	if peak > peakLine {
+	// each decoding its own copy puts the peak about 7% over the line. The
+	// peak is judged with the race detector off; with it on, the detector's
+	// own work and the host's load move it, and it is logged alone (watchpost
+	// D-299).
+	if peak > peakLine && !raceDetector {
 		t.Errorf("peak is %.2f MB; NFR-3's line is 8 MB. Set %s to see what the images cost", asMB(peak), withoutRadar)
 	}
 
@@ -168,7 +171,7 @@ func TestFixtureMemory(t *testing.T) {
 	// single map must not pay for the arrangement that serves three.
 	oneLive, onePeak, _ := sampled(t, "one map over the fixture region", fixtureViews()[:1])
 	t.Logf("one map over the fixture region: median live %.2f MB, peak %.2f MB", asMB(oneLive), asMB(onePeak))
-	if oneLive > liveLine || onePeak > peakLine {
+	if oneLive > liveLine || (onePeak > peakLine && !raceDetector) {
 		t.Errorf("one map: live %.2f MB, peak %.2f MB", asMB(oneLive), asMB(onePeak))
 	}
 

@@ -148,3 +148,10 @@ Mutants m055 to m063.
 - **Every alias's fields** (R4C-9): `TestEveryAliasNamesItsFields` type-checks the package and finds seventeen struct aliases, not four; `Overlay`, `Feature`, `LoopFrame`, `Span`, `TableEntry`, `SetResult`, `RemoveResult`, `Warning`, `Finding` and `RampCheck` now name their fields (m093).
 - **The gate:** the first full run failed on `TestFixtureMemory`, a peak of 8.76 MB against NFR-3's 8 MB, while the agent built watchpost beside it; run alone three times its median peaks were 7.09 to 7.25 MB, and the second full run, with nothing beside it, is green (the failed row kept in `gate-runs.md`).
 
+## REVIEW's red team, round 5: the library's remediation (watchpost D-299; D-46, A-22)
+
+- **The memory peak** (D-46): `TestFixtureMemory` judges NFR-3's 8 MB peak with the race detector off and logs it with it on; the race-on leg had failed twice with other work beside the gate, 8.76 and 8.42 MB against 7.09 to 7.25 MB alone.
+- **The aliases** (R5D-7): `TestEveryAliasNamesItsFields` fails below the seventeen struct aliases it finds.
+- **The doc scan** (R5D-7): the pattern is go-ionomaps', taking every ID family this release's documents use, published work allowed by name.
+- **"Upstream"** (R5D nit): the package doc says it means TerminalMap.
+

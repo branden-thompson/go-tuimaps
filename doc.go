@@ -25,4 +25,10 @@
 // Render is the exception worth naming twice, because it does not look like
 // one: it is how a frame is drawn, and it is also what tells the map how big
 // it is. A host that draws the same map at two sizes has resized it twice.
+//
+// # Upstream
+//
+// Where these docs say upstream, they mean TerminalMap, the JavaScript map
+// this package is a port of: a behaviour said to be upstream's is one the
+// port keeps as TerminalMap has it.
 package tuimaps

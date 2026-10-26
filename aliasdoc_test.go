@@ -60,7 +60,7 @@ func TestEveryAliasNamesItsFields(t *testing.T) {
 			}
 		}
 	}
-	if aliases < 4 {
-		t.Errorf("%d aliases of a struct found; the package has more, so the search is broken", aliases)
+	if aliases < 17 {
+		t.Errorf("%d aliases of a struct found; the package has 17, so the search is broken or an alias was dropped", aliases)
 	}
 }

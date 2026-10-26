@@ -248,3 +248,5 @@ A commit made from exactly that has the same tree less this file, so the two can
 | 2026-10-26T04:15:17Z | 6dbfdf9 | bfb64064066f | quick | green | 473 | - |
 | 2026-10-26T05:37:12Z | 6dbfdf9 | bf230df7d7c3 | full | FAILED: tests, race detector on | 2201 | - |
 | 2026-10-26T06:15:06Z | 6dbfdf9 | bf230df7d7c3 | full | green | 2191 | - |
+| 2026-10-26T13:33:37Z | 17ae3de | 153c740ec7a8 | quick | green | 525 | - |
+| 2026-10-26T15:09:59Z | 17ae3de | ad53cd6dae30 | full | green | 2247 | - |
