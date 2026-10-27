@@ -918,5 +918,15 @@
     "new": "// alias: ID; Valid; Keeps, how long after Valid it stays current; its span,\n",
     "package": ".",
     "test": "TestEveryAliasNamesItsFields"
+  },
+  {
+    "id": "m094",
+    "row": "watchpost D-299 (R6C-7, R6L-8)",
+    "what": "the race-off leg believes it runs the race detector, and judges NFR-3's peak nowhere",
+    "file": "race_off_test.go",
+    "old": "const raceDetector = false\n",
+    "new": "const raceDetector = true\n",
+    "package": ".",
+    "test": "TestRaceDetectorIsToldTruly"
   }
 ]

@@ -155,3 +155,8 @@ Mutants m055 to m063.
 - **The doc scan** (R5D-7): the pattern is go-ionomaps', taking every ID family this release's documents use, published work allowed by name.
 - **"Upstream"** (R5D nit): the package doc says it means TerminalMap.
 
+## REVIEW's red team, round 6: the library's remediation (watchpost D-299; A-23)
+
+- **The race flag told truly** (R6C-7, R6L-8): `TestRaceDetectorIsToldTruly` reads the `-race` setting the build records and fails when `raceDetector` disagrees (m094).
+- **Labels** (R6D nits): the gate's race-off leg and NFR-3's row say that leg judges the peak.
+
