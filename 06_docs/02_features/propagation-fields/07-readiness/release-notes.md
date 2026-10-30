@@ -19,6 +19,7 @@ Ruled before each landed (the brief's C-6), and listed with what a host does in 
 - **A wrong colour count is a malformed ramp** (watchpost D-216, C-17): refused as `MalformedRamp`, where it was `UnsortedBreaks`.
 - **One ramp warning an overlay** (C-26): a host type set again with the same broken colours is one warning, replaced on each `Set` and gone once a `Set` passes.
 - **A tile reply's headers are capped at 64 KiB** (watchpost R2I-3): a reply whose headers run past it is refused, where Go's own bound was about ten megabytes.
+- **A cell on the antimeridian is drawn with the antimeridian's value** (watchpost D-343): a field's cell whose dots lie either side of 180° was sampled at the mean of their longitudes, about 0°, so a world field drew one column with Greenwich's value, and a region's field one column of nothing; an image's dot beside it covered half the world. Both are now taken the short way round. The globe and host-type specimens are redrawn: in each, the two cells on 180° alone change, from Greenwich's class to their row's.
 - **Every look setter checks a host ramp again** (watchpost RC-15, R2C-6): `ColourDepth`, `SetPalette`, `SafeRamps`, `Ground` and `PaintGround` each warn of, or clear, a host type's broken ramp at the look they set.
 
 ## What it adds

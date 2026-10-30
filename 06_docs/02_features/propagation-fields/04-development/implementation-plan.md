@@ -90,6 +90,7 @@ func NightSide(at time.Time) [][]LonLat
 | P9.1 | `zone` and `zone.tint` tokens after `night` (no token moves), defaults on both grounds at every depth; the `Zone` role; a zone area on its own canvas, read beneath an alert's tint; outline alone at sixteen colours and none | `TestTheZoneTokensHaveDefaults`, `TestAZoneIsOutlinedAndFilledWithoutAlertWords`, `TestAnAlertsTintIsOverAZones` |
 | P9.2 | The blend search gains the zone's tint over every preset; alerts' strengths untouched; a zone over a field it cannot tint stippled in its ink (watchpost D-196) | `TestTheZoneTintBlendsWhereTheSearchAllows`, `TestAZoneOverAFieldItCannotTintIsStippled`, `TestAlertBlendsAreUnchanged` |
 | P9.3 | `Report` reads a kilometre circle's ring as the frame does | `TestReportAnswersAKilometreCircle` |
+| P9.4 | A cell on the antimeridian is sampled there and a dot's footprint across it is a dot wide, both the short way round (watchpost D-343, D-47) | `TestACellOnTheAntimeridianIsSampledThere`, `TestAFootprintAcrossTheAntimeridianIsADotWide` |
 
 ## Release
 

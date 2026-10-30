@@ -298,3 +298,35 @@ func TestTheWaterAskedOnceAFrameIsThePaintersAnswer(t *testing.T) {
 		}
 	}
 }
+
+// TestACellOnTheAntimeridianIsSampledThere (watchpost D-343): a cell whose
+// two dot columns lie either side of the antimeridian is sampled on it, the
+// short way round, never at Greenwich - the mean of +179.9 and -179.9. A
+// world field differing only near Greenwich, drawn over the Pacific from
+// centres that put the antimeridian inside a cell, shows none of Greenwich.
+func TestACellOnTheAntimeridianIsSampledThere(t *testing.T) {
+	cols, rows := 180, 90
+	f := scene.Field{West: -180, South: -90, East: 180, North: 90, Cols: cols, Rows: rows, Classes: make([]int8, cols*rows), Preset: uint8(colour.Temperature), ClassCount: 17, OverWater: true}
+	for row := range rows {
+		for col := range cols {
+			f.Classes[row*cols+col] = 3
+			if col >= 85 && col < 95 { // within 10° of Greenwich
+				f.Classes[row*cols+col] = 12
+			}
+		}
+	}
+	greenwich, pacific := classInk(f.Preset, 12), classInk(f.Preset, 3)
+	for k := range 20 {
+		lon := 178 + 0.2*float64(k)
+		v := project.View{Centre: project.LonLat{Lon: lon, Lat: 20}, Zoom: 2.5, Cols: 120, Rows: 40}
+		r, _ := drawn(t, Input{View: v, Tiles: embedded(t, v), Style: style.BuiltIn(), Fields: []scene.Field{f}, OverlaysVersion: uint64(k + 1)})
+		for i, c := range r.grid.cells {
+			if c.under == greenwich {
+				t.Fatalf("centre %.1f°: cell %d,%d carries Greenwich's class over the Pacific", lon, i%120, i/120)
+			}
+		}
+		if mid := r.grid.cells[20*120+60].under; mid != pacific {
+			t.Fatalf("centre %.1f°: the view's centre carries ink %d, not the Pacific's %d", lon, mid, pacific)
+		}
+	}
+}

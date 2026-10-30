@@ -928,5 +928,35 @@
     "new": "const raceDetector = true\n",
     "package": ".",
     "test": "TestRaceDetectorIsToldTruly"
+  },
+  {
+    "id": "m095",
+    "row": "watchpost D-343 (D-47)",
+    "what": "a cell on the antimeridian is sampled at the mean of its dots' longitudes, Greenwich",
+    "file": "internal/render/field.go",
+    "old": "lon, lat := onWorld(west+eastOf(west, r.lons[2*col+1])/2), ",
+    "new": "lon, lat := (west+r.lons[2*col+1])/2, ",
+    "package": "./internal/render",
+    "test": "TestACellOnTheAntimeridianIsSampledThere"
+  },
+  {
+    "id": "m096",
+    "row": "watchpost D-343 (D-47)",
+    "what": "a dot's footprint across the antimeridian spans the half of the world between its neighbours",
+    "file": "internal/render/field.go",
+    "old": "halfLon := eastOf(r.lons[max(x-1, 0)], r.lons[min(x+1, w-1)]) / 4",
+    "new": "halfLon := (r.lons[min(x+1, w-1)] - r.lons[max(x-1, 0)]) / 4",
+    "package": "./internal/render",
+    "test": "TestAFootprintAcrossTheAntimeridianIsADotWide"
+  },
+  {
+    "id": "m097",
+    "row": "watchpost D-343 (D-47)",
+    "what": "a footprint's samples past 180\u00b0 are not put back on the world",
+    "file": "internal/render/field.go",
+    "old": "lon := onWorld(r.lons[x] - halfLon + 2*halfLon*(float64(i)+0.5)/maxSpan)",
+    "new": "lon := r.lons[x] - halfLon + 2*halfLon*(float64(i)+0.5)/maxSpan",
+    "package": "./internal/render",
+    "test": "TestAFootprintAcrossTheAntimeridianIsADotWide"
   }
 ]

@@ -164,3 +164,10 @@ Mutants m055 to m063.
 ## VALIDATE: the README audited for content (watchpost's VALIDATE exit gate)
 
 - A fresh reviewer read it against the code: the quick start compiles and draws, and every name it uses exists. Fixed: the opening line now names v0.3.0's additions - the `MUFGrid` and `FoF2Grid` presets, `Terminator`, and fields a host may continue over water; the full gate's time is 35 to 40 minutes (`06_docs/gate-runs.md`: 2073 to 2319 s), not fifty.
+
+## VALIDATE: the antimeridian's column (watchpost D-343, D-47; v0.3.0-rc.11)
+
+- **Found** in the HUM LEAD's README screenshots on watchpost's 0.19.0 build: foF2 over the Pacific drew one column in a warmer band than its neighbours, on 180°. `fill` sampled a cell at the mean of its two dot columns' longitudes; a cell whose dots lie either side of the antimeridian, at about +179.9 and -179.9, was sampled at about 0°, Greenwich's value. A probe over the Pacific, a world field differing only near Greenwich, drew Greenwich's class in a full-height column from 8 of 20 centres between 178° and 182°.
+- **The footprint**: `under` spanned a dot's neighbours by their difference, so across the antimeridian a dot covered the half of the world between them, and its samples past 180° fell off the world.
+- **Fixed** (P9.4): `eastOf` is the difference the short way round and `onWorld` puts a longitude back in [-180, 180); a cell's place and a dot's footprint use both. `TestACellOnTheAntimeridianIsSampledThere` and `TestAFootprintAcrossTheAntimeridianIsADotWide`, each watched failing on rc.10 (m095 to m097).
+- **The specimens** held the defect: the first full gate failed `TestTheSpecimensAreWhatTheLibraryDraws` in its three test legs, and nothing else. In each of the twenty globe and host-type frames the two cells on 180° alone changed (row 11, columns 5 and 114), from Greenwich's class to their row's; written again with `-update-specimens`.

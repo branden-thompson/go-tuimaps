@@ -65,3 +65,23 @@ func TestAFootprintIsSampledAsEachPointAlone(t *testing.T) {
 		}
 	}
 }
+
+// TestAFootprintAcrossTheAntimeridianIsADotWide (watchpost D-343): a dot
+// whose neighbours lie either side of the antimeridian covers its own
+// width, the short way round, never the half of the world between them.
+func TestAFootprintAcrossTheAntimeridianIsADotWide(t *testing.T) {
+	ra := &scene.Raster{West: 150, South: 0, East: 180, North: 40, Projection: 1, Width: 30, Height: 40}
+	ra.Classes = make([]int8, ra.Width*ra.Height)
+	for i := range ra.Classes {
+		ra.Classes[i] = 1
+		if col := i % ra.Width; col >= 5 && col < 10 { // 155° to 160°E alone is heavy
+			ra.Classes[i] = 6
+		}
+	}
+	r := &Renderer{lons: []float64{178.5, 179, 179.5, -180, -179.5, -179}, lats: []float64{21, 20, 19}}
+	for x, want := range []int8{1, 1, 1, 1, -1, -1} {
+		if got := r.under(ra, x, 1); got != want {
+			t.Errorf("dot at %.1f°: class %d, want %d - its footprint is its own width", r.lons[x], got, want)
+		}
+	}
+}

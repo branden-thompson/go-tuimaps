@@ -43,6 +43,18 @@ func (r *Renderer) axes(v project.View) bool {
 	return true
 }
 
+// eastOf is how far east b lies of a, the short way round: negative to the
+// west and never more than half a turn, so two dots either side of the
+// antimeridian are a dot apart, not the world's width.
+func eastOf(a, b float64) float64 {
+	return math.Mod(b-a+540, 360) - 180
+}
+
+// onWorld is a longitude put back in [-180, 180).
+func onWorld(lon float64) float64 {
+	return math.Mod(math.Mod(lon+180, 360)+360, 360) - 180
+}
+
 // fieldClass is a field's class at a position: the cell of the host's grid it
 // falls in, rows from the north. Outside the grid there is no data.
 func fieldClass(f *scene.Field, lon, lat float64) int8 {
@@ -209,7 +221,8 @@ func (r *Renderer) fill(in Input, f *scene.Field, lined bool) {
 			if matters && offItsGround(f, r.waterAt(col, row)) {
 				continue
 			}
-			lon, lat := (r.lons[2*col]+r.lons[2*col+1])/2, (r.lats[4*row+1]+r.lats[4*row+2])/2
+			west := r.lons[2*col] // a cell on the antimeridian is sampled there, not halfway round the world
+			lon, lat := onWorld(west+eastOf(west, r.lons[2*col+1])/2), (r.lats[4*row+1]+r.lats[4*row+2])/2
 			if class := fieldClass(f, lon, lat); class >= 0 && int(class) < len(inks) && inks[class] != 0 {
 				g.cells[row*g.cols+col].under, g.cells[row*g.cols+col].faint = inks[class], lined
 			}
@@ -379,7 +392,7 @@ func (r *Renderer) under(ra *scene.Raster, x, y int) int8 {
 		return -1
 	}
 	w, h := len(r.lons), len(r.lats)
-	halfLon := (r.lons[min(x+1, w-1)] - r.lons[max(x-1, 0)]) / 4
+	halfLon := eastOf(r.lons[max(x-1, 0)], r.lons[min(x+1, w-1)]) / 4
 	halfLat := (r.lats[max(y-1, 0)] - r.lats[min(y+1, h-1)]) / 4
 	// Each of the footprint's rows and columns is placed in the image once,
 	// and a web map image's projected bounds once a dot: the same arithmetic
@@ -400,7 +413,7 @@ func (r *Renderer) under(ra *scene.Raster, x, y int) int8 {
 			}
 			rows[i] = min(max(int(down*float64(ra.Height)), 0), ra.Height-1)
 		}
-		lon := r.lons[x] - halfLon + 2*halfLon*(float64(i)+0.5)/maxSpan
+		lon := onWorld(r.lons[x] - halfLon + 2*halfLon*(float64(i)+0.5)/maxSpan)
 		cols[i] = -1
 		if lon >= ra.West && lon < ra.East {
 			cols[i] = min(int((lon-ra.West)/(ra.East-ra.West)*float64(ra.Width)), ra.Width-1)
