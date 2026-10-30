@@ -614,8 +614,8 @@
     "row": "the release checklist",
     "what": "v0.3.0 is held to v0.2.0's checklist",
     "file": "scripts/gate",
-    "old": "    0.3.*) feature=\"propagation-fields\" ;;\n",
-    "new": "    0.3.*) feature=\"radar-loops\" ;;\n",
+    "old": "    0.3.*) feature=\"propagation-fields\"; m5_held=1 ;;\n",
+    "new": "    0.3.*) feature=\"radar-loops\"; m5_held=1 ;;\n",
     "package": ".",
     "test": "TestEachReleaseIsHeldToItsOwnChecklist"
   },
@@ -978,5 +978,65 @@
     "new": "const lastRelease = \"v0.1.0\"",
     "package": ".",
     "test": "TestTheContractIsHeldToTheLastRelease"
+  },
+  {
+    "id": "m100",
+    "row": "P7.1 (watchpost D-350)",
+    "what": "a final v0.3 tag passes without M5's record",
+    "file": "scripts/gate",
+    "old": "  if [ \"$m5_held\" = 1 ] && [[ \"$release_tag\" != *-rc.* ]]; then\n",
+    "new": "  if [ \"$m5_held\" = 2 ] && [[ \"$release_tag\" != *-rc.* ]]; then\n",
+    "package": ".",
+    "test": "TestAFinalV03TagWaitsForM5sRecord"
+  },
+  {
+    "id": "m101",
+    "row": "P7.1 (watchpost D-350)",
+    "what": "a release candidate is held to M5's record",
+    "file": "scripts/gate",
+    "old": "  if [ \"$m5_held\" = 1 ] && [[ \"$release_tag\" != *-rc.* ]]; then\n",
+    "new": "  if [ \"$m5_held\" = 1 ]; then\n",
+    "package": ".",
+    "test": "TestAFinalV03TagWaitsForM5sRecord"
+  },
+  {
+    "id": "m102",
+    "row": "P7.1 (watchpost D-350)",
+    "what": "M5's record passes a frame at twice its target",
+    "file": "m5_record_test.go",
+    "old": "\t\tif v > s.target {\n",
+    "new": "\t\tif v > 2*s.target {\n",
+    "package": ".",
+    "test": "TestAnM5RecordIsRefused"
+  },
+  {
+    "id": "m103",
+    "row": "P7.1 (watchpost D-350)",
+    "what": "M5's record of other code passes",
+    "file": "m5_record_test.go",
+    "old": "got != tree {\n",
+    "new": "got == \"-\"+tree {\n",
+    "package": ".",
+    "test": "TestAnM5RecordIsRefused"
+  },
+  {
+    "id": "m104",
+    "row": "P7.1 (watchpost D-350)",
+    "what": "M5's record from another machine passes",
+    "file": "m5_record_test.go",
+    "old": "\tif !strings.Contains(fields[rowMachine], referenceMachine) {\n",
+    "new": "\tif strings.Contains(fields[rowMachine], \"-\"+referenceMachine) {\n",
+    "package": ".",
+    "test": "TestAnM5RecordIsRefused"
+  },
+  {
+    "id": "m105",
+    "row": "P7.1 (watchpost D-350)",
+    "what": "800 by 220, a known limit, is held to a target",
+    "file": "m5_record_test.go",
+    "old": "\t\tif s.target == 0 {\n\t\t\tcontinue\n\t\t}\n",
+    "new": "",
+    "package": ".",
+    "test": "TestAnM5RecordIsRefused"
   }
 ]

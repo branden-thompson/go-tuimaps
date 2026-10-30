@@ -21,6 +21,12 @@
 #                           loop played for an hour while the heap is watched;
 #                           run once before SHIP and recorded. The full gate
 #                           runs the same test for five minutes
+#   scripts/gate --cost     M5's frame measured on this machine, at rest
+#                           (plan task P7.1, watchpost D-350): on the
+#                           reference machine its record is written for the
+#                           code as it stands - run it before the release and
+#                           commit the record; on any other machine the
+#                           figures are printed and nothing is written
 #   scripts/gate --release TAG
 #                           the release check (v0.2.0 L-5.3, L-5.5): it judges
 #                           the committed tree - a tree with uncommitted
@@ -33,7 +39,9 @@
 #                           pinned version and find nothing reachable, in any
 #                           module, at this machine's toolchain or the floor,
 #                           that the checklist does not carry as a ruled
-#                           exception
+#                           exception. A final v0.3 tag is refused, too,
+#                           unless M5's record names this code, the reference
+#                           machine and every target met (watchpost D-350)
 #
 # Settings, each written on the run's log line when given:
 #   GATE_FUZZ_LIMIT=N       seconds of wall-clock time a fuzz leg may take
@@ -183,6 +191,7 @@ docs=0
 fuzzonly=0
 release=0
 soak=0
+cost=0
 release_tag=""
 want_tag=0
 mode="full"
@@ -199,6 +208,7 @@ for arg in "$@"; do
     --fuzz) fuzzonly=1; mode="fuzz"; modes=$((modes + 1)) ;;
     --release) release=1; mode="release"; modes=$((modes + 1)); want_tag=1 ;;
     --soak) soak=1; mode="soak"; modes=$((modes + 1)) ;;
+    --cost) cost=1; mode="cost"; modes=$((modes + 1)) ;;
     *) echo "gate: unknown argument: $arg" >&2; exit 2 ;;
   esac
 done
@@ -209,7 +219,7 @@ fi
 # ONE MODE A RUN (D-40): each mode turns legs off, so two together would
 # leave no leg on and print green with nothing checked.
 if [ "$modes" -gt 1 ]; then
-  echo "gate: give one mode at most (--quick, --docs, --fuzz, --soak or --release), not $modes" >&2
+  echo "gate: give one mode at most (--quick, --docs, --fuzz, --soak, --cost or --release), not $modes" >&2
   exit 2
 fi
 
@@ -246,6 +256,19 @@ tested_tree() {
     GIT_INDEX_FILE="$index" git -C "$root" add -A 2>/dev/null || return 1
   fi
   GIT_INDEX_FILE="$index" git -C "$root" rm -q --cached --ignore-unmatch 06_docs/gate-runs.md >/dev/null 2>&1
+  tree="$(GIT_INDEX_FILE="$index" git -C "$root" write-tree 2>/dev/null)" || return 1
+  rm -rf "$(dirname "$index")"
+  printf '%s' "${tree:0:12}"
+}
+# code_tree is the git tree of the code as it stands: the working tree with
+# 06_docs and every Markdown file left out, so M5's record, taken before the
+# checklist's ticks and the release notes, still names the code released.
+code_tree() {
+  local index tree
+  index="$(mktemp -d)/index" || return 1
+  GIT_INDEX_FILE="$index" git -C "$root" read-tree HEAD 2>/dev/null || return 1
+  GIT_INDEX_FILE="$index" git -C "$root" add -A 2>/dev/null || return 1
+  GIT_INDEX_FILE="$index" git -C "$root" rm -r -q --cached --ignore-unmatch 06_docs '*.md' >/dev/null 2>&1
   tree="$(GIT_INDEX_FILE="$index" git -C "$root" write-tree 2>/dev/null)" || return 1
   rm -rf "$(dirname "$index")"
   printf '%s' "${tree:0:12}"
@@ -381,9 +404,12 @@ if [ "$release" = 1 ]; then
   # EACH RELEASE IS HELD TO ITS OWN CHECKLIST, in its feature folder: v0.2's
   # radar-loops, v0.3's propagation-fields. A release this table does not
   # name is refused, never read against another release's rows.
+  # A RELEASE THAT HOLDS A FRAME TO M5 HOLDS ITS RECORD: v0.3's globe frame
+  # (watchpost D-350).
+  m5_held=0
   case "${release_tag#v}" in
     0.2.*) feature="radar-loops" ;;
-    0.3.*) feature="propagation-fields" ;;
+    0.3.*) feature="propagation-fields"; m5_held=1 ;;
     *) feature=""; refuse "no release checklist is named for $release_tag; add its feature folder to the release check in scripts/gate" ;;
   esac
   checklist="$root/06_docs/02_features/${feature:-unnamed}/07-readiness/release-checklist.md"
@@ -452,6 +478,21 @@ if [ "$release" = 1 ]; then
     echo "gate: release check for $release_tag, a release candidate: the checklist does not hold it ($(printf '%s' "$open_rows" | grep -c . || true) row(s) open)"
   elif [ -n "$open_rows" ]; then
     refuse "$release_tag is a final tag and the checklist has unticked rows:"$'\n'"$(printf '%s\n' "$open_rows" | cut -c1-120 | sed 's/^/          /')"
+  fi
+  # M5'S RECORD (plan task P7.1, watchpost D-350): a final tag is refused
+  # unless the record names this code, the reference machine and every target
+  # met (m5_record_test.go). A run that selects no test is refused: a record
+  # nobody read would pass as quietly as one that holds.
+  if [ "$m5_held" = 1 ] && [[ "$release_tag" != *-rc.* ]]; then
+    if ! m5_tree="$(code_tree)"; then
+      refuse "the code's tree could not be read, so M5's record cannot be checked"
+    elif ! m5_out="$(env TUIMAPS_RELEASE=1 TUIMAPS_TREE="$m5_tree" go test -run '^TestTheM5RecordHoldsForThisCode$' -count=1 -v . 2>&1)"; then
+      refuse "M5's record does not hold for this code (plan task P7.1):"$'\n'"$(printf '%s\n' "$m5_out" | grep -E '_test\.go:[0-9]+|FAIL|flag' | head -10 | sed 's/^ */          /')"
+    elif ! printf '%s\n' "$m5_out" | grep -q -- '--- PASS: TestTheM5RecordHoldsForThisCode '; then
+      refuse "M5's record was not checked: TestTheM5RecordHoldsForThisCode was skipped or not selected"
+    else
+      echo "  ok      M5's record holds for this code, on the reference machine (plan task P7.1)"
+    fi
   fi
   if ! command -v govulncheck >/dev/null 2>&1; then
     refuse "govulncheck is not installed: go install golang.org/x/vuln/cmd/govulncheck@$GOVULNCHECK_PIN"
@@ -647,6 +688,26 @@ if [ "$soak" = 1 ]; then
     exit 1
   fi
   echo "gate: soak green"
+  exit 0
+fi
+
+# --- M5's measure (plan task P7.1, watchpost D-350) ---------------------------
+# The library alone: M5's frame timed on this machine. Its own mode, because
+# a measure wants the machine at rest, which no leg of the gate leaves it.
+if [ "$cost" = 1 ]; then
+  echo "gate: cost - M5's frame measured on this machine; on the reference machine its record is written"
+  if ! m5_tree="$(code_tree)"; then
+    echo "gate: cost FAILED (the code's tree could not be read)"
+    exit 1
+  fi
+  cost_out="$(env TUIMAPS_TREE="$m5_tree" go test -run '^TestTheM5CostIsRecorded$' -count=1 -v -timeout 30m . -args -record-m5 2>&1)"
+  cost_rc=$?
+  printf '%s\n' "$cost_out" | grep -E '^ *\| |reference machine|past its target|FAIL|panic|flag' | sed 's/^ *//; s/^/  /'
+  if [ "$cost_rc" != 0 ] || ! printf '%s\n' "$cost_out" | grep -q -- '--- PASS: TestTheM5CostIsRecorded '; then
+    echo "gate: cost FAILED (the measure did not run whole, or a target was missed)"
+    exit 1
+  fi
+  echo "gate: cost green"
   exit 0
 fi
 

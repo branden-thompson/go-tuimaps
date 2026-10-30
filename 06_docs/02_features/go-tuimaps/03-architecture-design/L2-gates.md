@@ -12,11 +12,12 @@ flowchart TB
       direction LR
       M0["library"] --- M1["cmd/tuimaps"] --- M2["examples"] --- M3["tools/gen-assets"] --- M4["tools/answer-key"] --- M5["tools/oracle"] --- M6["tools/atlas"]
     end
-    GATE["The gate script<br/>writes a throw-away workspace file so the nested modules resolve the library from this tree —<br/>with a replace for the library at exactly v0.0.0 inside that throw-away file —<br/>the tracked module files carry no replace line · one mode a run: full, --quick, --docs, --fuzz, --soak or --release TAG<br/>every leg on the floor toolchain, read from the root module's go directive (go 1.26.10, watchpost D-244)"] --> MODS
+    GATE["The gate script<br/>writes a throw-away workspace file so the nested modules resolve the library from this tree —<br/>with a replace for the library at exactly v0.0.0 inside that throw-away file —<br/>the tracked module files carry no replace line · one mode a run: full, --quick, --docs, --fuzz, --soak, --cost or --release TAG<br/>every leg on the floor toolchain, read from the root module's go directive (go 1.26.10, watchpost D-244)"] --> MODS
     GATE --> LOG["Every run logged to 06_docs/gate-runs.md: time · commit · tree checked · mode · result · duration · any override (GATE_FUZZ_SCALE, GATE_ARCH_LEG)"]
     GATE -- "--docs" --> DOCS["The docs lane: a STAGED change of Markdown alone (and the generated atlas page) —<br/>every module's tests run, and no other leg; anything else staged is refused (v0.2.0 D-15, D-41, D-53)"]
     GATE -- "--soak" --> SOAK["M4's hour: a 12-frame loop played for an hour while the heap is watched (L10.8);<br/>run by hand before SHIP and recorded — the full gate runs the same test for five minutes"]
-    GATE -- "--release TAG" --> REL["The release check (L-5.3, L-5.5): the committed tree only · a final tag refused while a checklist row is open ·<br/>the pinned govulncheck at the floor AND the local toolchain finds nothing reachable, or a ruled exception names it"]
+    GATE -- "--cost" --> COST["M5's frame timed, the machine at rest (v0.3.0 P7.1, watchpost D-350): on the reference machine,<br/>an Apple M5 Pro, its record written for the code's tree (06_docs and Markdown left out) and every target held;<br/>on any other machine the figures printed and nothing written"]
+    GATE -- "--release TAG" --> REL["The release check (L-5.3, L-5.5): the committed tree only · a final tag refused while a checklist row is open ·<br/>the pinned govulncheck at the floor AND the local toolchain finds nothing reachable, or a ruled exception names it ·<br/>a final v0.3 tag refused unless M5's record names this code, the reference machine and every target met (D-350)"]
     MODS --> T0["A module with no packages yet is named and called EMPTY — not failed, not hidden;<br/>a module go cannot list FAILS (v0.2.0 D-31);<br/>tests or a module graph that cannot be listed FAIL (D-40)"]
     MODS --> T1["Tests under the race detector, on the floor toolchain"]
     MODS --> T2["A second leg WITHOUT the race detector: the zero-allocation and allocation-count tests live here"]
@@ -29,7 +30,7 @@ flowchart TB
     M0 --> A4["Reference frames byte-identical on both architectures: arm64 native and amd64 emulated on a Mac;<br/>in hosted CI each job runs its own natively (GATE_ARCH_LEG=sibling)<br/>FAILS — never skips — if the second architecture cannot be run"]
     M0 --> A5["Loopback only: the dial hook is installed for every test binary by default, not opted into<br/>a static check fails any test package that does not link it"]
     M0 --> A6["Sub-process test: a program that reuses borrowed memory too early must be caught by the race detector (D-86)"]
-    M0 --> A7["The public contract against the last tag: a root test reads v0.1.0's surface from git and fails<br/>on any removal or change contract section 12 does not list (NFR-22, D-137)"]
+    M0 --> A7["The public contract against the last release: a root test reads its surface from git (v0.2.2's for v0.3.0, held by a test<br/>to the newest final tag below the library's version) and fails on any removal or change contract section 12 does not list (NFR-22, D-137)"]
     M0 --> A8["P10: a2dh p10 check where the harness is installed and the tree carries it;<br/>NOT RUN, said so, where it is not (D-136)"]
     T1 & T2 & T3 & T4 & T5 & A1 & A2 & A3 & A4 & A5 & A6 & A7 & A8 --> OK{"All green?"}
     DOCS --> OK
@@ -41,6 +42,7 @@ flowchart TB
       FULL["On dispatch: the full gate, GATE_FUZZ_SCALE 8 —<br/>the release commit is dispatched (checklist row 0.5)"]
       NIGHT["Nightly: the same full gate — fires only from the default branch,<br/>so it does not run until the workflow is on main"]
       BOTH["The last job fails the workflow unless both architectures ran green"]
+      M5RUN["On dispatch with m5 set: scripts/gate --cost alone on linux/amd64 —<br/>M5 recorded in the run's log, not held (D-350)"]
       PUSH --> BOTH
       FULL --> BOTH
       NIGHT -.-> BOTH

@@ -50,55 +50,74 @@ func reachField() tuimaps.Grid {
 	return g
 }
 
-// BenchmarkGlobeFieldPan is NFR-1's shape (M5, watchpost D-209): a one-cell
-// pan over the whole world under a 2° field filled in its colours and drawn
-// with its contour lines, over the sea and stopping at the shore, with the night shading the ground and its
-// terminator, and a reach's edge over it - the frame a host's Propagation
-// map changes, at the two sizes M5 is held at, and at 800 by 220, recorded
-// as a known limit, not M5's (watchpost D-261).
+// globePan is M5's frame (NFR-1, watchpost D-209): a map of size over the
+// whole world under a 2° field filled in its colours and drawn with its
+// contour lines, over the sea or stopping at the shore, with the night
+// shading the ground and its terminator, and a reach's edge over it, settled.
+// step is the i-th frame of a one-cell pan back and forth, drawn.
+func globePan(tb testing.TB, size tuimaps.Size, overWater bool) (step func(i int)) {
+	tb.Helper()
+	m, err := tuimaps.New(tuimaps.WithSize(size.Cols, size.Rows))
+	if err != nil {
+		tb.Fatal(err)
+	}
+	tb.Cleanup(func() { m.Close() })
+	if err := m.Recentre(tuimaps.LonLat{Lon: 0, Lat: 20}); err != nil {
+		tb.Fatal(err)
+	}
+	if err := m.Zoom(1); err != nil {
+		tb.Fatal(err)
+	}
+	field := globeField(overWater)
+	reach := reachField()
+	night := tuimaps.Overlay{ID: "night", Valid: noon, Keeps: 3600e9, Features: []tuimaps.Feature{
+		{Kind: tuimaps.Polygon, Rings: tuimaps.NightSide(noon), Role: tuimaps.NightTint},
+		{Kind: tuimaps.Line, Rings: [][]tuimaps.LonLat{tuimaps.Terminator(noon)}, Role: tuimaps.TerminatorLine},
+	}}
+	for _, o := range []tuimaps.Overlay{tuimaps.MUFGrid("muf", field, noon), night, {ID: "reach", Valid: noon, Keeps: 3600e9, Grid: &reach}} {
+		if _, err := m.Set(o); err != nil {
+			tb.Fatal(err)
+		}
+	}
+	if _, err := m.Settle(context.Background()); err != nil {
+		tb.Fatal(err)
+	}
+	return func(i int) {
+		step := 1
+		if i%2 == 1 {
+			step = -1
+		}
+		if err := m.PanCells(step, 0); err != nil {
+			tb.Fatal(err)
+		}
+		if _, err := m.Render(size, noon); err != nil {
+			tb.Fatal(err)
+		}
+	}
+}
+
+// m5Sizes are the sizes M5 is held at, each with its target in milliseconds a
+// frame, and 800 by 220, recorded as a known limit, not M5's (watchpost D-261).
+var m5Sizes = []struct {
+	size   tuimaps.Size
+	target float64
+}{{tuimaps.Size{Cols: 400, Rows: 110}, 16}, {tuimaps.Size{Cols: 200, Rows: 56}, 8}, {tuimaps.Size{Cols: 800, Rows: 220}, 0}}
+
+// waterName names a field's choice over water.
+var waterName = map[bool]string{true: "over water", false: "stopping at the shore"}
+
+// BenchmarkGlobeFieldPan is NFR-1's shape (M5, watchpost D-209): globePan's
+// frame at each of m5Sizes, over the sea and stopping at the shore - the frame
+// a host's Propagation map changes.
 func BenchmarkGlobeFieldPan(b *testing.B) {
-	for _, size := range []tuimaps.Size{{Cols: 400, Rows: 110}, {Cols: 200, Rows: 56}, {Cols: 800, Rows: 220}} {
+	for _, s := range m5Sizes {
 		for _, overWater := range []bool{true, false} {
-			name := fmt.Sprintf("%dx%d %s", size.Cols, size.Rows, map[bool]string{true: "over water", false: "stopping at the shore"}[overWater])
-			b.Run(name, func(b *testing.B) {
-				m, err := tuimaps.New(tuimaps.WithSize(size.Cols, size.Rows))
-				if err != nil {
-					b.Fatal(err)
-				}
-				defer m.Close()
-				if err := m.Recentre(tuimaps.LonLat{Lon: 0, Lat: 20}); err != nil {
-					b.Fatal(err)
-				}
-				if err := m.Zoom(1); err != nil {
-					b.Fatal(err)
-				}
-				field := globeField(overWater)
-				reach := reachField()
-				night := tuimaps.Overlay{ID: "night", Valid: noon, Keeps: 3600e9, Features: []tuimaps.Feature{
-					{Kind: tuimaps.Polygon, Rings: tuimaps.NightSide(noon), Role: tuimaps.NightTint},
-					{Kind: tuimaps.Line, Rings: [][]tuimaps.LonLat{tuimaps.Terminator(noon)}, Role: tuimaps.TerminatorLine},
-				}}
-				for _, o := range []tuimaps.Overlay{tuimaps.MUFGrid("muf", field, noon), night, {ID: "reach", Valid: noon, Keeps: 3600e9, Grid: &reach}} {
-					if _, err := m.Set(o); err != nil {
-						b.Fatal(err)
-					}
-				}
-				if _, err := m.Settle(context.Background()); err != nil {
-					b.Fatal(err)
-				}
+			b.Run(fmt.Sprintf("%dx%d %s", s.size.Cols, s.size.Rows, waterName[overWater]), func(b *testing.B) {
+				step := globePan(b, s.size, overWater)
 				b.ReportAllocs()
 				b.ResetTimer()
 				for i := 0; b.Loop(); i++ {
-					step := 1
-					if i%2 == 1 {
-						step = -1
-					}
-					if err := m.PanCells(step, 0); err != nil {
-						b.Fatal(err)
-					}
-					if _, err := m.Render(size, noon); err != nil {
-						b.Fatal(err)
-					}
+					step(i)
 				}
 			})
 		}

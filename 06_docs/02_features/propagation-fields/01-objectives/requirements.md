@@ -105,7 +105,7 @@ area and blend with a field today (`internal/render/basemap.go:219`, `internal/c
 
 | # | Requirement | Instrument |
 |---|---|---|
-| NFR-1 | M5: after a pan, a 2° whole-globe field with fill, labelled contours, terminator and night renders, with the reach overlay and its non-colour edge (watchpost D-137), in at most 16 ms at 400 × 110 and 8 ms at 200 × 56 (watchpost D-96; v0.2.0 measured 22.2 and 5.7 ms without terminator or night); its memory is recorded | the gate asserts allocations and work per cell; the timing is a release step on the reference machine, failing when its record is missing (watchpost D-119) |
+| NFR-1 | M5: after a pan, a 2° whole-globe field with fill, labelled contours, terminator and night renders, with the reach overlay and its non-colour edge (watchpost D-137), in at most 16 ms at 400 × 110 and 8 ms at 200 × 56 (watchpost D-96; v0.2.0 measured 22.2 and 5.7 ms without terminator or night); its memory is recorded | `TestAGlobeFieldPanAllocates` holds a frame's allocations at 400 × 110 on every machine; `scripts/gate --cost` writes M5's record on the reference machine, and `scripts/gate --release` refuses a final v0.3 tag whose record is missing, names other code or another machine, or misses a target (watchpost D-119, D-350); linux/amd64 recorded from a hosted runner, not held |
 | NFR-2 | M4: every row above has a test that would fail without it (this release's rows, D-7): each row is anchored to a mutant the gate kills, so a test that exists but cannot fail is caught (CQ-V1) | the mutant anchors, checked in the gate |
 | NFR-3 | Gates green: `scripts/gate` full lane, P10 clean, mutants anchored | the gate |
 

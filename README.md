@@ -145,13 +145,17 @@ Every change is checked by `scripts/gate`, which is what stands before a merge:
 - `scripts/gate --soak` runs the loop-memory check for an hour: a 12-frame loop played while the heap
   is watched. It is run once before a release and recorded; the full gate runs the same test for
   five minutes.
+- `scripts/gate --cost` times M5's whole-globe frame with the machine at rest. On the reference
+  machine, an Apple M5 Pro, it writes the record a release is held to, for the code as it stands; on
+  any other machine it prints the figures and writes nothing.
 - `scripts/gate --release TAG` is the release check. It judges the committed tree: uncommitted
   changes are refused, and a tag that exists must be `HEAD`. A final tag (`vX.Y.Z`) is refused while
   a row of the release checklist is unticked (a section headed "after the release check", the tags
   themselves, is listed and not held) or the checklist cannot be read whole; a release
   candidate (`vX.Y.Z-rc.N`) is not. Either way the library's version must be the tag's, and the
   pinned `govulncheck` must find nothing reachable in any module, on the floor toolchain or the
-  machine's own, that the checklist does not carry as a ruled exception.
+  machine's own, that the checklist does not carry as a ruled exception. A final v0.3 tag is refused,
+  too, unless M5's record names this code, the reference machine and every target met.
 
 Give one mode at most. Every run that reaches a leg leaves a line in `06_docs/gate-runs.md`; a lane that refuses before any leg runs says why and leaves none. The gate also needs `perl`
 (present on macOS and most Linux systems) for the fuzz legs' time limit, and it writes a throw-away

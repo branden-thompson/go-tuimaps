@@ -8,6 +8,12 @@
 # the other (GATE_ARCH_LEG=sibling, written on the run's log line). The last
 # job fails the workflow unless both ran green.
 #
+# Dispatched with m5 set, the M5 job runs alone instead (go-tuiMaps v0.3.0
+# plan task P7.1, watchpost D-350): scripts/gate --cost times M5's frame on
+# linux/amd64 and prints the figures. A hosted runner is not the reference
+# machine, so nothing is written and no target is held; the run's log is the
+# record, named in the release notes.
+#
 # The nightly schedule fires only from the repository's default branch: while
 # this workflow lives on another branch alone, it never runs on a schedule,
 # and the full gate is run by dispatch.
@@ -19,13 +25,19 @@ on:
   schedule:
     - cron: "0 9 * * *"
   workflow_dispatch:
+    inputs:
+      m5:
+        description: "M5 on linux/amd64 alone (scripts/gate --cost), not the full gate"
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
-  group: gate-${{ github.head_ref || github.ref }}-${{ github.event_name }}
+  group: gate-${{ github.head_ref || github.ref }}-${{ github.event_name }}-${{ inputs.m5 }}
   cancel-in-progress: true
 jobs:
   gate:
+    if: ${{ !inputs.m5 }}
     strategy:
       fail-fast: false # one architecture's red must not hide the other's result
       matrix:
@@ -64,7 +76,7 @@ jobs:
 
   both-architectures:
     needs: gate
-    if: always()
+    if: ${{ always() && !inputs.m5 }}
     runs-on: ubuntu-24.04
     steps:
       - name: both architectures ran green
@@ -73,3 +85,15 @@ jobs:
             echo "the gate did not run green on both linux/amd64 and linux/arm64: ${{ needs.gate.result }}"
             exit 1
           fi
+
+  m5:
+    if: ${{ inputs.m5 }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, built for Node.js 24 (watchpost F-216)
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0, built for Node.js 24
+        with:
+          go-version: "1.27.3"
+      - name: M5, recorded, not held
+        run: scripts/gate --cost
