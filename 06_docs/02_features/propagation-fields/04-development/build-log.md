@@ -171,3 +171,9 @@ Mutants m055 to m063.
 - **The footprint**: `under` spanned a dot's neighbours by their difference, so across the antimeridian a dot covered the half of the world between them, and its samples past 180° fell off the world.
 - **Fixed** (P9.4): `eastOf` is the difference the short way round and `onWorld` puts a longitude back in [-180, 180); a cell's place and a dot's footprint use both. `TestACellOnTheAntimeridianIsSampledThere` and `TestAFootprintAcrossTheAntimeridianIsADotWide`, each watched failing on rc.10 (m095 to m097).
 - **The specimens** held the defect: the first full gate failed `TestTheSpecimensAreWhatTheLibraryDraws` in its three test legs, and nothing else. In each of the twenty globe and host-type frames the two cells on 180° alone changed (row 11, columns 5 and 114), from Greenwich's class to their row's; written again with `-update-specimens`.
+
+## SHIP: the plan's last tasks (watchpost D-344, D-348; D-48)
+
+- **P7.0, built at SHIP:** `TestEveryGlobeCellKeepsItsContrast` draws every whole-globe specimen with the night and its terminator over it, at truecolor and 256 colours on both grounds, and holds every cell's foreground to FR-16's rule on its own background - 3:1 for line work and glyphs, 4.5:1 for text - about 1,400 cells a frame. The plan asked for it before P7's optimisation, to be watched passing on both sides of it; it was not built then, so it holds the optimised renderer only. It passed first time; with the foreground rule given half its contrast (m098) 148 cells of the first frame fail.
+- **P7.2 as built:** M5's figure is recorded in the release checklist's row 2.8, which `scripts/gate --release` holds (A-16 (2)), not in a record file of its own; the plan's row now says so.
+- **P8.1, M1's sitting, ruled out for v0.3.0** (watchpost D-348, D-48), as watchpost's sittings were (D-326).

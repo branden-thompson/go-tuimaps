@@ -958,5 +958,15 @@
     "new": "lon := r.lons[x] - halfLon + 2*halfLon*(float64(i)+0.5)/maxSpan",
     "package": "./internal/render",
     "test": "TestAFootprintAcrossTheAntimeridianIsADotWide"
+  },
+  {
+    "id": "m098",
+    "row": "P7.0 (FR-16)",
+    "what": "a line's or a label's own colour kept at half the contrast it must reach",
+    "file": "internal/colour/contrast.go",
+    "old": "\tif Contrast(own, background) >= atLeast {\n\t\treturn own\n\t}",
+    "new": "\tif Contrast(own, background) >= atLeast/2 {\n\t\treturn own\n\t}",
+    "package": ".",
+    "test": "TestEveryGlobeCellKeepsItsContrast"
   }
 ]
