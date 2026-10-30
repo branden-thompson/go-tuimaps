@@ -160,3 +160,7 @@ Mutants m055 to m063.
 - **The race flag told truly** (R6C-7, R6L-8): `TestRaceDetectorIsToldTruly` reads the `-race` setting the build records and fails when `raceDetector` disagrees (m094).
 - **Labels** (R6D nits): the gate's race-off leg and NFR-3's row say that leg judges the peak.
 
+
+## VALIDATE: the README audited for content (watchpost's VALIDATE exit gate)
+
+- A fresh reviewer read it against the code: the quick start compiles and draws, and every name it uses exists. Fixed: the opening line now names v0.3.0's additions - the `MUFGrid` and `FoF2Grid` presets, `Terminator`, and fields a host may continue over water; the full gate's time is 35 to 40 minutes (`06_docs/gate-runs.md`: 2073 to 2319 s), not fifty.
