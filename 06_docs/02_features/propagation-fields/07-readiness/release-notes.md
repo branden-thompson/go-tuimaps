@@ -37,3 +37,22 @@ Ruled before each landed (the brief's C-6), and listed with what a host does in 
 - **`socks5h` proxies** take port 1080 when none is given, as `socks5` does (I-7).
 - **`TerminalDepth`** (watchpost D-207, D-216): `ColourDepth(TerminalDepth)` takes a depth hint back, so a host offering "follow the terminal" beside the depths can return to it; the terminal's settings choose again (L-7.2).
 - **A host's zone** (L-8, watchpost D-195, D-196): a `Zone` Polygon or Circle is outlined in red and its inside tinted, beneath any alert's tint, with no severity or legend entry; over a field its tint cannot blend with (the MUF and foF2 among them) the field is drawn exact and the zone stippled; at sixteen colours and none, the outline alone. `Report` now answers a circle given in kilometres.
+
+## What was measured
+
+| Metric | Target | Measured |
+|---|---|---|
+| M1, field read | 10 places on a recorded MUF field, 8 of 10 from the picture and 8 of 10 from `Report`'s words, graded by the HUM LEAD | **Not measured by a sitting** (watchpost D-348). Its ground is held by tests: every field answer carries its unit, every contour its label and unit |
+| M2, no silent blank | no grid that draws nothing without a refusal or a warning, at any depth × ground × lines | `TestNoGridDrawsNothingSilently`, the whole matrix |
+| M3, units everywhere | every field label and answer carries its unit, every preset and a host type | `TestEveryFieldAnswerCarriesItsUnit`, `TestContourLabelsCarryTheirUnit` |
+| M4, promise truth | each of this release's requirements held by a test a mutant proves can fail | every mutant in `06_docs/mutants/mutants.json` killed by its test in every full gate |
+| M5, globe cost | a whole-globe 2° field after a pan, filled, with labelled contours, the night and its terminator and a reach's edge: at most 16 ms at 400 × 110 and 8 ms at 200 × 56 (Apple M5 Pro) | 7.4 to 8.0 ms and 2.0 to 2.2 ms, five runs each, on an Apple M5 Pro, go1.27.3 (2026-10-30) |
+| M6, gate trust | five consecutive clean full runs of the gate | counted from `06_docs/gate-runs.md` by `m6_test.go` before the tag |
+
+The contract breaks nothing of v0.2.2's public surface that section 12 does not list
+(`TestNothingOfTheLastReleaseBreaksUnlisted`, held to the last release by `TestTheContractIsHeldToTheLastRelease`).
+
+## Known limits
+
+- **A whole-globe frame at 800 × 220** takes 27 to 29 ms after a pan on the reference machine, past the 16 ms
+  M5 holds at 400 × 110 (watchpost D-261, D-40): recorded, not a target.

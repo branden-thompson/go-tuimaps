@@ -968,5 +968,15 @@
     "new": "\tif Contrast(own, background) >= atLeast/2 {\n\t\treturn own\n\t}",
     "package": ".",
     "test": "TestEveryGlobeCellKeepsItsContrast"
+  },
+  {
+    "id": "m099",
+    "row": "row 2.2 (D-137)",
+    "what": "the contract check held to a release two before this one",
+    "file": "contract_breaks_test.go",
+    "old": "const lastRelease = \"v0.2.2\"",
+    "new": "const lastRelease = \"v0.1.0\"",
+    "package": ".",
+    "test": "TestTheContractIsHeldToTheLastRelease"
   }
 ]

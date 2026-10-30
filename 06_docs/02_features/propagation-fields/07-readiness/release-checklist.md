@@ -33,7 +33,7 @@ Up: [plan](../04-development/implementation-plan.md) · [release notes](release-
 | # | Check | Evidence | Done |
 |---|---|---|---|
 | 2.1 | Every gate is green on a fresh clone, run outside the working tree | | [ ] |
-| 2.2 | The public surface is the one written down, and the contract check against v0.2.0 finds only additions plus the breaks contract section 12 lists | | [ ] |
+| 2.2 | The public surface is the one written down, and the contract check against the last release - v0.2.2, its surface v0.2.0's - finds only additions plus the breaks contract section 12 lists | | [ ] |
 | 2.3 | The fixture and the embedded tiles are unchanged or re-pinned by ruling | | [ ] |
 | 2.4 | Licence files cover every module and the map data | | [ ] |
 | 2.5 | No workspace file is tracked; no address or name that should not leave the tree | | [ ] |
