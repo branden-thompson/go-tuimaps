@@ -46,7 +46,7 @@ Ruled before each landed (the brief's C-6), and listed with what a host does in 
 | M2, no silent blank | no grid that draws nothing without a refusal or a warning, at any depth × ground × lines | `TestNoGridDrawsNothingSilently`, the whole matrix |
 | M3, units everywhere | every field label and answer carries its unit, every preset and a host type | `TestEveryFieldAnswerCarriesItsUnit`, `TestContourLabelsCarryTheirUnit` |
 | M4, promise truth | each of this release's requirements held by a test a mutant proves can fail | every mutant in `06_docs/mutants/mutants.json` killed by its test in every full gate |
-| M5, globe cost | a whole-globe 2° field after a pan, filled, with labelled contours, the night and its terminator and a reach's edge: at most 16 ms at 400 × 110 and 8 ms at 200 × 56 (Apple M5 Pro) | [M5's record](m5-record.md), written by `scripts/gate --cost` and held by `scripts/gate --release`: 8.0 ms and 2.1 ms, the slower of a field over the sea and stopping at the shore, each the median of five runs, on an Apple M5 Pro, go1.26.10 (2026-10-30); 4,201 allocations a frame at 400 × 110, which the gate holds to 4,600 on every machine |
+| M5, globe cost | a whole-globe 2° field after a pan, filled, with labelled contours, the night and its terminator and a reach's edge: at most 16 ms at 400 × 110 and 8 ms at 200 × 56 (Apple M5 Pro) | [M5's record](m5-record.md), written by `scripts/gate --cost` and held by `scripts/gate --release`: 8.0 ms and 2.1 ms, the slower of a field over the sea and stopping at the shore, each the median of five runs, on an Apple M5 Pro, go1.26.10 (2026-10-30); 4,201 allocations a frame at 400 × 110, which the gate holds to 4,600 on every machine. On a hosted linux/amd64 runner (4 CPUs, Intel Xeon Platinum 8573C; run 41144474835, the same code), recorded, not held: 17.8 ms and 4.8 ms |
 | M6, gate trust | five consecutive clean full runs of the gate | counted from `06_docs/gate-runs.md` by `m6_test.go` before the tag |
 
 The contract breaks nothing of v0.2.2's public surface that section 12 does not list
@@ -56,3 +56,6 @@ The contract breaks nothing of v0.2.2's public surface that section 12 does not 
 
 - **A whole-globe frame at 800 × 220** takes 29 ms after a pan on the reference machine ([M5's record](m5-record.md)), past the 16 ms
   M5 holds at 400 × 110 (watchpost D-261, D-40): recorded, not a target.
+- **M5's targets are the reference machine's** (watchpost D-350). On a hosted 4-CPU linux/amd64 runner the
+  frame at 400 × 110 took 17.8 ms, past 16 ms, and 4.8 ms at 200 × 56; on a machine like it, a pan
+  across the whole globe at 400 × 110 takes longer than one frame at 60 Hz (16.7 ms).
