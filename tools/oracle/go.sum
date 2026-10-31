@@ -1,5 +1,5 @@
-github.com/branden-thompson/go-tuimaps v0.2.2 h1:fKkWAzeP/KXb3XGGvhaOWIwK+RRNEmcPfm+F1MIbIgI=
-github.com/branden-thompson/go-tuimaps v0.2.2/go.mod h1:gzxi+V2ZOcZNfKzx98FIhTzeFwwPX8cd7htKeKwBz1M=
+github.com/branden-thompson/go-tuimaps v0.3.0 h1:m9akdTdSX53+RdTLc3ZuTetYxL7jEQ8qP++Fgx57Oo0=
+github.com/branden-thompson/go-tuimaps v0.3.0/go.mod h1:gzxi+V2ZOcZNfKzx98FIhTzeFwwPX8cd7htKeKwBz1M=
 github.com/clipperhouse/uax29/v2 v2.7.0 h1:+gs4oBZ2gPfVrKPthwbMzWZDaAFPGYK72F0NJv2v7Vk=
 github.com/clipperhouse/uax29/v2 v2.7.0/go.mod h1:EFJ2TJMRUaplDxHKj1qAEhCtQPW2tJSwu5BF98AuoVM=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
