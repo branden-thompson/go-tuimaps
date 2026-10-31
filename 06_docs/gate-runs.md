@@ -237,12 +237,14 @@ A commit made from exactly that has the same tree less this file, so the two can
 | 2026-10-24T20:40:31Z | c23fd89 | fc474f1497a4 | full | green | 2179 | - |
 | 2026-10-24T21:16:16Z | c5c50e7 | fc474f1497a4 | docs | FAILED: docs lane: nothing staged | 0 | tests saw 1 unstaged file(s) |
 | 2026-10-24T21:19:58Z | c5c50e7 | bafce83237ce | docs | green | 155 | - |
+| 2026-10-24T22:44:32Z | 043922e | c528c5696299 | full | green | 2016 | - |
 | 2026-10-25T16:19:12Z | 73c602d | bafce83237ce | quick | FAILED: P10, a2dh p10 check | 571 | - |
 | 2026-10-25T16:20:16Z | 73c602d | bafce83237ce | quick | FAILED: P10, a2dh p10 check | 515 | - |
 | 2026-10-25T16:23:15Z | 73c602d | bafce83237ce | quick | FAILED: tools/oracle: tests, race detector on; tools/oracle: tests, race detector off (allocation counts live here); P10, a2dh p10 check | 474 | - |
 | 2026-10-25T17:49:02Z | 73c602d | bafce83237ce | quick | green | 376 | - |
 | 2026-10-25T22:28:22Z | 73c602d | e9846a65eaa3 | full | green | 2315 | - |
 | 2026-10-25T22:32:03Z | f66c9ea | 6a72a1e26e84 | docs | green | 172 | - |
+| 2026-10-26T01:15:49Z | 50350d1 | 8b1957ba57c6 | full | green | 2189 | - |
 | 2026-10-26T01:34:55Z | 474797a | 6a72a1e26e84 | quick | green | 457 | - |
 | 2026-10-26T03:05:02Z | 474797a | bfb64064066f | full | green | 2231 | - |
 | 2026-10-26T04:15:17Z | 6dbfdf9 | bfb64064066f | quick | green | 473 | - |
@@ -267,3 +269,4 @@ A commit made from exactly that has the same tree less this file, so the two can
 | 2026-10-31T00:13:44Z | e336158 | 1cecb440409c | release v0.3.0 | green | 18 | - |
 | 2026-10-31T00:44:39Z | 1d46e74 | ffba438fc243 | docs | green | 172 | - |
 | 2026-10-31T00:45:05Z | 26a2fee | ffba438fc243 | release v0.3.0 | green | 18 | - |
+| 2026-10-31T01:57:52Z | 3e56a8b | b4680b697d12 | full | green | 2093 | - |
