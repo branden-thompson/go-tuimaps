@@ -1,7 +1,9 @@
 # go-tuimaps
 
 A map in a terminal, drawn as braille cells, with your own data over it:
-alert areas, radar images, scalar fields such as temperature.
+alert areas, radar images, scalar fields such as temperature - which a host
+may continue over water - and, since v0.3.0, the HF propagation fields (the
+`MUFGrid` and `FoF2Grid` presets) and the day-night terminator (`Terminator`).
 
 It is a library first. It starts no goroutine, opens no connection it was
 not told to, reads no keys and owns no clock.
@@ -58,8 +60,8 @@ changed.
 | **Nothing is fetched until you say so** | `Source(address)` is the only call that reaches anything. Until then the map draws from the tiles the `assets` package carries, which are the world down to zoom 3 |
 | **You run the work** | `Work(ctx)` does one unit on your goroutine. `Settle(ctx)` runs it until there is none left, for one-shot renders and tests. Nothing happens on its own |
 | **You own the clock** | `Render(size, now)` takes the wall clock. Markers move on it; data going out of date is judged by it. `Animate(at)` takes animation over if you want to drive it yourself |
-| **Colour is yours to set** | `SetPalette` takes your own colours, `SafeRamps(true)` keeps the library's where a scale must stay readable, `ColourDepth` hints at the terminal. With no hint, a non-empty `NO_COLOR` means no colour at all |
-| **Alerts are never told by colour alone** | An alert's label carries its severity word and its outline a severity digit, at every depth; with no colour, alert areas are hatched, overlay lines are dashed, and a scalar field becomes contour lines carrying their values. Quake age, fire strength and buoy against tide are still told by colour alone: carry them in the label (contract, "Limits a host should know") |
+| **Colour is yours to set** | `SetPalette` takes your own colours, `SafeRamps(true)` keeps the library's where a scale must stay readable, `ColourDepth` hints at the terminal, and `ColourDepth(TerminalDepth)` takes the hint back. With no hint, a non-empty `NO_COLOR` means no colour at all, and otherwise the terminal's `COLORTERM` and `TERM` choose the depth |
+| **Alerts are never told by colour alone** | An alert's label carries its severity word and its outline a severity digit, at every depth; with no colour, alert areas are hatched, overlay lines are dashed, and a scalar field becomes contour lines carrying their values. Quake age, fire strength and buoy against tide each draw a dot shape of their own as well as their colour; say them in the label for a reader of words (contract, "What a host needs to know") |
 | **The map in words** | `Report(places)` answers beside the picture: each alert in view, each place against each overlay, and a radar loop's observed motion, as data a host words or speaks. `Frame.Lines` is braille; `Report` is its text alternative |
 | **A style is bytes, never a path** | `SetStyle(body)` draws the basemap by a style of your own, in the same JSON format as the library's. The library never opens a style file: you read it, and pass what you read |
 | **Loops do not play until you say so** | An image overlay can carry a loop of frames, and its playback is off by default: the map shows the newest observed frame and holds it. Turn playback on with `SetPlayback(PlaybackOn)`, then call `Play` |
@@ -71,7 +73,7 @@ Nothing, until you name a source. With one named:
 
 - tiles are fetched from that source and from nowhere else, over HTTPS;
 - what is sent is the tile address and a user-agent naming this library and
-  its version, `go-tuimaps/0.2.0` - nothing about your machine. The version
+  its version, `go-tuimaps/0.3.0` - nothing about your machine. The version
   is the release's: `scripts/gate --release` refuses a tag it does not
   match. `SetFetchOptions` adds a name of your own to it, and takes a
   transport of your own for your proxy or trust roots;
@@ -100,6 +102,12 @@ instead, is listed in section 12 of
 `06_docs/02_features/go-tuimaps/03-architecture-design/contract.md`, which is
 the migration note from v0.1.0. Compare kinds by name, never by number.
 
+v0.3.0 changes some behaviour a host may have relied on - contour labels with
+their units, the default colour depth read from the terminal, marks that do
+not rest on colour, the edge mark only where a host type asks for it, and a
+wrong colour count refused as `MalformedRamp`. Each is in the same section 12,
+under "What v0.3.0 changes in behaviour", with what a host does instead.
+
 ## Not built yet
 
 Flash and pulse markers (blinking markers are built), camera tours, the block
@@ -112,7 +120,7 @@ designed and none is promised for a date.
 
 Every change is checked by `scripts/gate`, which is what stands before a merge:
 
-- `scripts/gate` runs every leg, about thirty minutes on an 18-core Apple M-series Mac; every run's
+- `scripts/gate` runs every leg, about 35 to 40 minutes on an 18-core Apple M-series Mac; every run's
   seconds are in `06_docs/gate-runs.md`. It runs every leg on the floor toolchain named by
   `go.mod`'s `go` line (go1.26.10, downloaded on first use), and scans for vulnerabilities on that
   toolchain and on the machine's own. It needs the pinned `govulncheck` on `PATH`
@@ -120,29 +128,36 @@ Every change is checked by `scripts/gate`, which is what stands before a merge:
   architecture's tests (an Apple silicon Mac runs amd64 under emulation). On a machine that cannot,
   `GATE_ARCH_LEG=sibling scripts/gate` leaves that leg to a machine that can, which then runs it.
   Where the a2dh harness is set up (`a2dh` on `PATH` and a `.a2dh.yml` in the tree) the gate also
-  runs `a2dh p10 check`; elsewhere it lists that check as not run.
+  runs `a2dh p10 check`; elsewhere it lists that check as not run. The check reads its ratified
+  exemptions from `.a2dh-p10-exemptions.yml`, which stays local to the harness; `06_docs/p10-ledger.md`
+  is its tracked mirror, row for row.
 - `GATE_FUZZ_SCALE=N scripts/gate` divides every fuzz leg's run count by `N`, for a machine slower
   than the one the counts were set on; the hosted full gate runs with `GATE_FUZZ_SCALE=8`.
   `GATE_ARCH_LEG` and `GATE_FUZZ_SCALE` are written on the run's line in `06_docs/gate-runs.md`, and
   a run with either does not count towards the five clean full runs a release needs.
 - `scripts/gate --quick` skips fuzzing, the benchmarks, the vulnerability scans, the cross-compiles,
-  the five-minute loop-memory leg and the second architecture. Formatting, vet, the tests, the
-  licence check and the P10 check still run.
+  the five-minute loop-memory leg and the second architecture. Formatting, vet, the tests and the
+  licence check still run, and the P10 check where the harness is set up; elsewhere the run lists it
+  as not run.
 - `scripts/gate --docs` is for a staged change of Markdown and nothing else: stage, run it, commit.
   It refuses any other staged file.
 - `scripts/gate --fuzz` runs the fuzz legs alone.
 - `scripts/gate --soak` runs the loop-memory check for an hour: a 12-frame loop played while the heap
   is watched. It is run once before a release and recorded; the full gate runs the same test for
   five minutes.
+- `scripts/gate --cost` times M5's whole-globe frame with the machine at rest. On the reference
+  machine, an Apple M5 Pro, it writes the record a release is held to, for the code as it stands; on
+  any other machine it prints the figures and writes nothing.
 - `scripts/gate --release TAG` is the release check. It judges the committed tree: uncommitted
   changes are refused, and a tag that exists must be `HEAD`. A final tag (`vX.Y.Z`) is refused while
   a row of the release checklist is unticked (a section headed "after the release check", the tags
   themselves, is listed and not held) or the checklist cannot be read whole; a release
   candidate (`vX.Y.Z-rc.N`) is not. Either way the library's version must be the tag's, and the
   pinned `govulncheck` must find nothing reachable in any module, on the floor toolchain or the
-  machine's own, that the checklist does not carry as a ruled exception.
+  machine's own, that the checklist does not carry as a ruled exception. A final v0.3 tag is refused,
+  too, unless M5's record names this code, the reference machine and every target met.
 
-Give one mode at most. Every run leaves a line in `06_docs/gate-runs.md`. The gate also needs `perl`
+Give one mode at most. Every run that reaches a leg leaves a line in `06_docs/gate-runs.md`; a lane that refuses before any leg runs says why and leaves none. The gate also needs `perl`
 (present on macOS and most Linux systems) for the fuzz legs' time limit, and it writes a throw-away
 `go.work` so the nested modules (`cmd/tuimaps`, `examples`, `tools/*`) resolve the library from this
 tree; outside the gate, build those from their own directory with a workspace of your own.

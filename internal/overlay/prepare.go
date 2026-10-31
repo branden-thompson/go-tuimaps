@@ -16,6 +16,16 @@ const (
 	earthRadiusKm = 6371.0088
 )
 
+// AreaRings are a feature's rings as an area: a circle given in kilometres
+// its ring along the ground, as it is drawn; any other its own (v0.3.0
+// L-8.3).
+func AreaRings(f Feature) [][]project.LonLat {
+	if f.Kind == Circle && f.RadiusDots == 0 && f.RadiusKm > 0 {
+		return [][]project.LonLat{ringOf(f.Centre, f.RadiusKm)}
+	}
+	return f.Rings
+}
+
 // ringOf is a circle as a ring of positions, each the radius from the centre
 // along the ground.
 func ringOf(centre project.LonLat, radiusKm float64) []project.LonLat {
@@ -95,7 +105,7 @@ func Prepare(o Overlay, bucket int) ([]scene.Shape, error) {
 		case f.Kind == Circle && f.RadiusDots > 0: // a ring on the screen: its centre, drawn at its size at every zoom (L-19)
 			kind, rings, dots = scene.ShapePoint, [][]project.LonLat{{f.Centre}}, f.RadiusDots
 		case f.Kind == Circle:
-			rings = [][]project.LonLat{ringOf(f.Centre, f.RadiusKm)}
+			rings = AreaRings(f)
 		}
 		shape := scene.Shape{Kind: kind, Role: uint8(f.Role), Label: LabelOf(f), Dots: dots}
 		if kind == scene.ShapeArea {

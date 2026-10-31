@@ -19,15 +19,18 @@ type Depth = colour.Depth
 
 // The colour depths. A map is drawn at the depth the host hints at; with no
 // hint from the host, a non-empty NO_COLOR in the environment chooses no
-// colour at all, and otherwise the map draws in truecolor (NFR-15).
+// colour at all, and otherwise the terminal's COLORTERM and TERM choose the
+// depth. TerminalDepth is no depth of its own: hinted, it
+// takes a hint back, and the environment chooses again.
 const (
-	Truecolor  = colour.Truecolor
-	Colours256 = colour.Colours256
-	Colours16  = colour.Colours16
-	NoColour   = colour.NoColour
+	Truecolor     = colour.Truecolor
+	Colours256    = colour.Colours256
+	Colours16     = colour.Colours16
+	NoColour      = colour.NoColour
+	TerminalDepth = colour.TerminalDepth
 )
 
-// Layer is a basemap layer a host can switch off and on (FR-36).
+// Layer is a basemap layer a host can switch off and on.
 type Layer = style.Layer
 
 // The layers that can be switched.
@@ -40,13 +43,13 @@ const (
 	WaterLayer  = style.WaterLayer // lakes and inland water: the sea and its coast are never switched
 	LabelLayer  = style.LabelLayer
 	// MinorRoadLayer is the minor roads, switched apart from RoadLayer's
-	// motorways, trunks and primaries (v0.2.0 D-82).
+	// motorways, trunks and primaries.
 	MinorRoadLayer = style.MinorRoadLayer
 )
 
-// Detail is how much of the basemap is drawn, by purpose (v0.2.0 D-82,
-// L-14): each level draws what the one below does and more. Only the
-// library's own style is ranked; a host's own style (SetStyle) draws whole.
+// Detail is how much of the basemap is drawn, by purpose: each level draws
+// what the one below does and more. Only the library's own style is ranked;
+// a host's own style (SetStyle) draws whole.
 type Detail = style.Detail
 
 // The levels. DetailFull is the picture a host that never asks gets.
@@ -97,7 +100,7 @@ func badLanguage() error {
 // TokenNames are the names SetPalette accepts, in the order the constants
 // document lists them. **A host theming the map to its own design system needs
 // to know what there is to theme**, and this list tells it without a guess
-// read back from SetPalette's refusals (task 14.19).
+// read back from SetPalette's refusals.
 func TokenNames() []string {
 	all := colour.Tokens()
 	out := make([]string, 0, len(all))
@@ -112,7 +115,7 @@ func TokenNames() []string {
 // SetPalette gives tokens colours of the host's own. It answers with the
 // names that are no token of the library's, sorted, which are ignored; the
 // rest take effect at the next Render, and nothing is decoded again for
-// them (FR-15). Passing no names puts the library's own colours back.
+// them. Passing no names puts the library's own colours back.
 func (m *Map) SetPalette(tokens map[string]RGB) (names []string, err error) {
 	defer guard("SetPalette", &err)
 	m.plant("SetPalette")
@@ -128,6 +131,7 @@ func (m *Map) SetPalette(tokens map[string]RGB) (names []string, err error) {
 	palette, unknown := colour.NewPalette(maps.Clone(tokens))
 	m.look.palette = palette.KeepRamps(m.look.safeRamps)
 	m.look.version++
+	m.recheckHostRampsLocked()
 	m.changed++
 	// The names come back cleaned, since everything the library hands back is
 	// (FR-34). They are matched as they were written: a name with an escape in
@@ -141,7 +145,7 @@ func (m *Map) SetPalette(tokens map[string]RGB) (names []string, err error) {
 
 // SafeRamps says whether a ramp's colours are the library's own whatever the
 // host set, which is the setting to reach for when a palette has not been
-// checked (D-63).
+// checked.
 func (m *Map) SafeRamps(on bool) {
 	defer m.guardQuiet("SafeRamps")
 	m.plant("SafeRamps")
@@ -157,11 +161,12 @@ func (m *Map) SafeRamps(on bool) {
 	m.look.safeRamps = on
 	m.look.palette = m.look.palette.KeepRamps(on)
 	m.look.version++
+	m.recheckHostRampsLocked()
 	m.changed++
 }
 
 // Ground says what colour is behind the map, and that the library is not to
-// paint it (D-64). By default the library paints every cell's background
+// paint it. By default the library paints every cell's background
 // from the ground token, so that the map reads the same on any terminal.
 func (m *Map) Ground(behind RGB) (err error) {
 	defer guard("Ground", &err)
@@ -180,6 +185,7 @@ func (m *Map) Ground(behind RGB) (err error) {
 		return closed()
 	}
 	m.look.ground = choice
+	m.recheckHostRampsLocked()
 	m.changed++
 	return nil
 }
@@ -198,11 +204,14 @@ func (m *Map) PaintGround() {
 		return
 	}
 	m.look.ground = colour.GroundChoice{}
+	m.recheckHostRampsLocked()
 	m.changed++
 }
 
 // ColourDepth hints at how much colour the terminal has. With no hint the
-// library chooses from the usual settings of the environment.
+// library chooses from the usual settings of the environment; TerminalDepth
+// takes a hint back, so a host offering "follow the terminal" beside the
+// depths can return to it.
 func (m *Map) ColourDepth(depth Depth) {
 	defer m.guardQuiet("ColourDepth")
 	m.plant("ColourDepth")
@@ -210,15 +219,24 @@ func (m *Map) ColourDepth(depth Depth) {
 	if m == nil {
 		return
 	}
-	if depth > NoColour {
-		return // a depth that is none of the four is no hint at all
+	if depth > TerminalDepth {
+		return // a depth that is none of the five is no hint at all
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if m.shut || (m.look.depthHinted && m.look.depth == depth) {
+	switch {
+	case m.shut:
 		return
+	case depth == TerminalDepth && !m.look.depthHinted:
+		return // no hint to take back
+	case depth == TerminalDepth:
+		m.look.depthHinted = false
+	case m.look.depthHinted && m.look.depth == depth:
+		return
+	default:
+		m.look.depth, m.look.depthHinted = depth, true
 	}
-	m.look.depth, m.look.depthHinted = depth, true
+	m.recheckHostRampsLocked()
 	m.changed++
 }
 
@@ -228,7 +246,7 @@ func (m *Map) depthInEffect() Depth {
 	return colour.ChooseDepth(m.look.depth, m.look.depthHinted, os.Getenv)
 }
 
-// ReduceMotion stops the library animating (NFR-21): markers are drawn
+// ReduceMotion stops the library animating: markers are drawn
 // steadily, and a loop playing stops where it is and cannot be played until
 // it is turned off again. The clock still has work that is not motion: a
 // stale overlay's moment and a failed tile's retry stay due.
@@ -252,7 +270,7 @@ func (m *Map) ReduceMotion(on bool) {
 	m.changed++
 }
 
-// Layers switches a basemap layer off or on (FR-36). A layer switched off is
+// Layers switches a basemap layer off or on. A layer switched off is
 // never drawn, whatever else the frame would have drawn.
 func (m *Map) Layers(layer Layer, on bool) {
 	defer m.guardQuiet("Layers")
@@ -282,7 +300,7 @@ func (m *Map) Layers(layer Layer, on bool) {
 
 // LabelLanguage sets which language names are kept in. It is the one look
 // setting that reaches the tiles: a language is part of a tile's cache key,
-// so a change of language wants the tiles again (D-82).
+// so a change of language wants the tiles again.
 func (m *Map) LabelLanguage(code string) (err error) {
 	defer guard("LabelLanguage", &err)
 	m.plant("LabelLanguage")
@@ -358,20 +376,18 @@ func (m *Map) searchBlendsLocked(depth Depth) {
 		return // the library's own colours: where they fall back is documented, not a warning
 	}
 	for _, f := range m.look.blends.Fallbacks() {
-		if len(m.own) < 64 {
-			m.own = append(m.own, fault.Warning{Kind: fault.RampRuleBroken, Count: 1,
-				Subject: textsafe.Clean(presetNames[colour.Preset(f[0])] + " under the " + alertNames[f[1]] + " tint: drawn over it, not blended")})
-		}
+		m.noteLocked(fault.Warning{Kind: fault.RampRuleBroken, Count: 1,
+			Subject: textsafe.Clean(presetNames[colour.Preset(f[0])] + " under the " + alertNames[f[1]] + " tint: drawn over it, not blended")})
 	}
 }
 
 // presetNames are the image presets by name.
-var presetNames = map[colour.Preset]string{colour.Temperature: "temperature", colour.Radar: "radar", colour.Wind: "wind", colour.Waves: "waves", colour.UV: "uv", colour.AirQuality: "aqi", colour.QPF: "qpf"}
+var presetNames = map[colour.Preset]string{colour.Temperature: "temperature", colour.Radar: "radar", colour.Wind: "wind", colour.Waves: "waves", colour.UV: "uv", colour.AirQuality: "aqi", colour.QPF: "qpf", colour.MUF: "muf", colour.FoF2: "fof2"}
 
 // alertNames are the alert severities, extreme first, as the tints are ordered.
 var alertNames = [5]string{"extreme", "severe", "moderate", "minor", "unknown"}
 
-// SetDetail sets how much of the basemap is drawn (v0.2.0 D-82, L-14): a
+// SetDetail sets how much of the basemap is drawn: a
 // level and a switched-off layer both apply. A value outside the four levels
 // is refused and the map keeps the level it had.
 func (m *Map) SetDetail(d Detail) (err error) {

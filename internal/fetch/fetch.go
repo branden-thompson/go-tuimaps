@@ -23,7 +23,7 @@ import (
 const (
 	// Version names the library in the User-Agent: the release this tree is
 	// (L-13.1). The release check refuses a tag it does not equal.
-	Version = "0.2.2"
+	Version = "0.3.0"
 	// DefaultTimeout bounds a whole request (constants, section 5).
 	DefaultTimeout = 20 * time.Second
 	// firstByteTimeout bounds the wait for a connection and for the first
@@ -132,13 +132,14 @@ func ForSource(source string, opts Options) (*Fetcher, error) {
 	}
 	f := &Fetcher{scheme: u.Scheme, host: u.Host, private: ip != nil && !isPublic(ip), agent: agent, proxyOf: http.ProxyFromEnvironment}
 	f.transport = &http.Transport{
-		Proxy:                 f.proxy,
-		DialContext:           f.dial,
-		TLSClientConfig:       &tls.Config{RootCAs: opts.RootCAs, MinVersion: tls.VersionTLS12},
-		TLSHandshakeTimeout:   firstByteTimeout,
-		ResponseHeaderTimeout: firstByteTimeout,
-		IdleConnTimeout:       idleTimeout,
-		ForceAttemptHTTP2:     true,
+		Proxy:                  f.proxy,
+		DialContext:            f.dial,
+		TLSClientConfig:        &tls.Config{RootCAs: opts.RootCAs, MinVersion: tls.VersionTLS12},
+		TLSHandshakeTimeout:    firstByteTimeout,
+		ResponseHeaderTimeout:  firstByteTimeout,
+		IdleConnTimeout:        idleTimeout,
+		MaxResponseHeaderBytes: maxHeaderBytes,
+		ForceAttemptHTTP2:      true,
 	}
 	timeout := opts.Timeout
 	if timeout <= 0 {
@@ -156,6 +157,11 @@ func ForSource(source string, opts Options) (*Fetcher, error) {
 // idleTimeout is how long a connection is kept open between requests
 // before it is closed.
 const idleTimeout = 90 * time.Second
+
+// maxHeaderBytes bounds a reply's headers: a tile server's run to a
+// kilobyte or two, and Go's own bound is about ten megabytes a reply
+// (watchpost R2I-3, as watchpost's own clients bound theirs).
+const maxHeaderBytes = 64 << 10
 
 // CloseIdle closes the connections the fetcher keeps open between requests:
 // what the map calls when it is done with a fetcher, so no socket outlives
@@ -282,6 +288,9 @@ func (f *Fetcher) proxy(r *http.Request) (*url.URL, error) {
 	if err != nil || u == nil {
 		return u, err
 	}
+	if u.Host == "" {
+		return nil, errPolicy // a proxy with no address exempts nothing: refused
+	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if f.proxies == nil {
@@ -300,7 +309,7 @@ func proxyAddress(u *url.URL) string {
 	if u.Port() != "" {
 		return u.Host
 	}
-	port := map[string]string{"http": "80", "https": "443", "socks5": "1080"}[u.Scheme]
+	port := map[string]string{"http": "80", "https": "443", "socks5": "1080", "socks5h": "1080"}[u.Scheme]
 	return net.JoinHostPort(u.Hostname(), port)
 }
 
@@ -350,6 +359,23 @@ type Dialer = func(ctx context.Context, network, address string) (net.Conn, erro
 // wants to keep that refusal (L-10.3, D-55).
 func NewCheckedDialer() Dialer {
 	return (&Fetcher{}).dial
+}
+
+// ProxyFunc is how a transport chooses a proxy: the shape of
+// http.Transport's Proxy.
+type ProxyFunc = func(*http.Request) (*url.URL, error)
+
+// NewCheckedDialerFor is the checked dialer for a host transport behind a
+// proxy (L-7.4, D-117): it refuses a private or reserved address as
+// NewCheckedDialer does, except the proxy the returned proxy function has
+// named - it asks the host's own and remembers what it said - so a proxy at
+// a private address is reached and nothing else private is.
+func NewCheckedDialerFor(proxyOf ProxyFunc) (Dialer, ProxyFunc) {
+	if proxyOf == nil {
+		return NewCheckedDialer(), nil // no proxy: the plain checked dialer, and the transport dials direct
+	}
+	f := &Fetcher{proxyOf: proxyOf}
+	return f.dial, f.proxy
 }
 
 // checkRedirect is the redirect policy: at most three, never from secure to

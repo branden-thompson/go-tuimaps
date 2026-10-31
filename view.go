@@ -8,10 +8,10 @@ import (
 	"github.com/branden-thompson/go-tuimaps/internal/textsafe"
 )
 
-// The zooms a map may be at. The closest is upstream's (P-55). The furthest
+// The zooms a map may be at. The closest is upstream's. The furthest
 // out is past the world in one tile: a rectangle taller than the world
 // needs a zoom below zero to hold it, which is what fitting the world to a
-// wide, short map gives (P-54, P-56).
+// wide, short map gives.
 const (
 	MinZoom = project.MinViewZoom
 	MaxZoom = project.MaxViewZoom
@@ -34,7 +34,7 @@ func (m *Map) Centre() (LonLat, float64) {
 	return m.view.Centre, m.view.Zoom
 }
 
-// Recentre puts a place at the middle of the map (FR-24).
+// Recentre puts a place at the middle of the map.
 func (m *Map) Recentre(at LonLat) (err error) {
 	defer guard("Recentre", &err)
 	m.plant("Recentre")
@@ -52,7 +52,7 @@ func (m *Map) Recentre(at LonLat) (err error) {
 // ancestors standing in - which is a picture, but not a sharper one.
 //
 // **A host cannot work this out for itself.** It is a property of the tiles
-// the map was given, not of the assets package a host imported (task 14.19).
+// the map was given, not of the assets package a host imported.
 func (m *Map) DeepestZoom() float64 {
 	defer m.guardQuiet("DeepestZoom")
 	m.plant("DeepestZoom")
@@ -114,7 +114,7 @@ func (m *Map) PanCells(cols, rows int) (err error) {
 	return m.moveLocked(func(v *project.View) { v.Centre = at })
 }
 
-// FitWorld puts the whole world in the map (P-56).
+// FitWorld puts the whole world in the map.
 func (m *Map) FitWorld() (err error) {
 	defer guard("FitWorld", &err)
 	m.plant("FitWorld")
@@ -138,10 +138,10 @@ func (m *Map) FitWorld() (err error) {
 }
 
 // FitTo frames the places and overlays named, with a margin in cells on
-// every side, at the largest zoom that holds them all (FR-24). The places
+// every side, at the largest zoom that holds them all. The places
 // are the host's own and any given here; the overlays are named by id, and
 // **it needs no Work to have run**, because where each overlay is was
-// recorded when it was handed in (D-76).
+// recorded when it was handed in.
 func (m *Map) FitTo(places []LonLat, overlays []string, margin int) (err error) {
 	defer guard("FitTo", &err)
 	m.plant("FitTo")
@@ -221,7 +221,7 @@ func (m *Map) moveLocked(change func(*project.View)) error {
 	return nil
 }
 
-// Bound is where a host keeps its map (L-3.1): a least zoom, and a box it
+// Bound is where a host keeps its map: a least zoom, and a box it
 // never looks outside of. West may be east of East: the box then crosses the
 // antimeridian, as Alaska's and the Pacific's do. The zero Bound is none.
 type Bound struct {

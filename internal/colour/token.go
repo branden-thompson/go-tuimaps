@@ -90,8 +90,24 @@ const (
 	// watchpost D-184).
 	QPF1 = AQI6 + 1
 	QPF7 = QPF1 + 6
+	// MUF1 to MUF10 are the MUF preset's classes, FoF21 to FoF26 the foF2
+	// preset's drawn ones, lowest frequency first (v0.3.0 L-2.1, watchpost
+	// D-144, D-145, D-149).
+	MUF1  = QPF7 + 1
+	MUF10 = MUF1 + 9
+	FoF21 = MUF10 + 1
+	FoF26 = FoF21 + 5
+	// Terminator is the line between day and night, Night the night side's
+	// tint (v0.3.0 L-4.1, watchpost D-35): neither an alert nor a class.
+	Terminator = FoF26 + 1
+	Night      = Terminator + 1
+	// Zone is a host's zone's outline, ZoneTint its inside (v0.3.0 L-8.1,
+	// watchpost D-195): a host's area such as a station's service radius,
+	// drawn as an alert's area is and never read as one.
+	Zone     = Night + 1
+	ZoneTint = Zone + 1
 	// lastToken is the last token there is.
-	lastToken = QPF7
+	lastToken = ZoneTint
 )
 
 // fixedNames are the names of the tokens before the numbered ramps.
@@ -148,14 +164,28 @@ func (t Token) Name() string {
 		return "aqi." + strconv.Itoa(int(t-AQI1)+1)
 	case t >= QPF1 && t <= QPF7:
 		return "qpf." + strconv.Itoa(int(t-QPF1)+1)
+	case t >= MUF1 && t <= MUF10:
+		return "muf." + strconv.Itoa(int(t-MUF1)+1)
+	case t >= FoF21 && t <= FoF26:
+		return "fof2." + strconv.Itoa(int(t-FoF21)+1)
+	case t >= Wind1 && t <= Wind6:
+		return "wind." + strconv.Itoa(int(t-Wind1)+1)
+	case t == Terminator:
+		return "terminator"
+	case t == Night:
+		return "night"
+	case t == Zone:
+		return "zone"
+	case t == ZoneTint:
+		return "zone.tint"
 	}
-	return "wind." + strconv.Itoa(int(t-Wind1)+1)
+	return "" // a token no case names: TestTokensMatchTheDocumentedList fails on it
 }
 
 // ScaleClass reports whether a token is one of a preset's classes: drawn in
 // the scale's colour, never a word's (L-25).
 func ScaleClass(t Token) bool {
-	return (t >= Radar1 && t <= High) || (t >= Wind1 && t <= Wind6) || (t >= Wave1 && t <= Wave6) || (t >= UV1 && t <= QPF7)
+	return (t >= Radar1 && t <= High) || (t >= Wind1 && t <= Wind6) || (t >= Wave1 && t <= Wave6) || (t >= UV1 && t <= FoF26)
 }
 
 // Tokens lists every token, in the documented order.

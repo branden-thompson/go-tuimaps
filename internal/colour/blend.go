@@ -74,8 +74,20 @@ var blendStrengths = []float64{0.50, 0.45, 0.40, 0.35, 0.30, 0.25, 0.20, 0.15, 0
 // the search found it for one palette, ground and depth (L-11.3). A tint that
 // does not blend over a ramp has the image drawn over it instead: the
 // warning is carried by the outline, label and severity digit (L-11.4, D-27).
+// A host's zone's tint is searched over every preset (v0.3.0 L-8.2); where it
+// does not blend, the zone is stippled over the field.
 type Blends struct {
-	strength [2][5]float64 // by preset (temperature, radar), then tint (extreme to unknown); zero: not blended
+	strength [2][5]float64           // by preset (temperature, radar), then tint (extreme to unknown); zero: not blended
+	zone     [lastPreset + 1]float64 // the zone's tint, by preset; zero: not blended
+}
+
+// ZoneStrength is how strongly a zone's tint blends over a preset's colours,
+// and whether it blends at all (L-8.2).
+func (b Blends) ZoneStrength(p Preset) (float64, bool) {
+	if p < Temperature || p > lastPreset {
+		return 0, false
+	}
+	return b.zone[p], b.zone[p] > 0
 }
 
 // Strength is how strongly a tint blends over a preset's image, and whether
@@ -110,30 +122,41 @@ func (b Blends) Fallbacks() (out [][2]int) {
 func SearchBlends(p Palette, ground GroundKind, groundColour RGB, depth Depth) Blends {
 	var b Blends
 	under := seenAs(shownAt(groundColour, depth))
-	for _, preset := range []Preset{Temperature, Radar} {
+	zone, _ := p.ResolveAt(ZoneTint, ground, depth)
+	for preset := Temperature; preset <= lastPreset; preset++ {
 		ramp := rampOf(p, preset, ground, depth)
 		var plain [17]seen // the largest ramp, temperature's
 		for i := range min(len(ramp), len(plain)) {
 			plain[i] = seenAs(shownAt(ramp[i], depth))
 		}
+		b.zone[preset] = strongest(ramp, plain[:len(ramp)], under, zone, depth)
+		if preset > Radar {
+			continue // an alert's tint blends over the images' ramps alone (L-11.1)
+		}
 		for tint := range 5 {
-			colour := tintOf(p, tint, ground, depth)
-			for _, s := range blendStrengths {
-				if !separates(ramp, plain[:len(ramp)], under, colour, s, depth) {
-					continue
-				}
-				// A BLEND NO CLASS SHOWS IS DRAWN OVER (D-114): where every class
-				// stays within the visible floor of itself, the tint cannot be
-				// seen inside the area, and drawing over gives the same picture
-				// without the blend's work.
-				if shows(ramp, plain[:len(ramp)], colour, s, depth) {
-					b.strength[preset-Temperature][tint] = s
-				}
-				break
-			}
+			b.strength[preset-Temperature][tint] = strongest(ramp, plain[:len(ramp)], under, tintOf(p, tint, ground, depth), depth)
 		}
 	}
 	return b
+}
+
+// strongest is the strongest of the search's strengths that keeps a ramp's
+// classes separated with a tint blended in and shows the tint; zero for none.
+func strongest(ramp []RGB, plain []seen, under seen, tint RGB, depth Depth) float64 {
+	for _, s := range blendStrengths {
+		if !separates(ramp, plain, under, tint, s, depth) {
+			continue
+		}
+		// A BLEND NO CLASS SHOWS IS DRAWN OVER (D-114): where every class
+		// stays within the visible floor of itself, the tint cannot be seen
+		// inside the area, and drawing over gives the same picture without
+		// the blend's work.
+		if shows(ramp, plain, tint, s, depth) {
+			return s
+		}
+		return 0
+	}
+	return 0
 }
 
 // separates is CheckBlend's BlendSeparate rule alone, stopping at the first
@@ -206,16 +229,39 @@ func apart(a, b seen) float64 {
 
 // rampOf is a preset's class colours as the palette resolves them.
 func rampOf(p Palette, preset Preset, ground GroundKind, depth Depth) []RGB {
-	first, n := Radar1, 6
-	if preset == Temperature {
-		first, n = Temperature1, 17
-	}
+	first, n := classTokens(preset)
 	out := make([]RGB, 0, n)
 	for i := range n {
 		c, _ := p.ResolveAt(first+Token(i), ground, depth)
 		out = append(out, c)
 	}
 	return out
+}
+
+// classTokens are a preset's class tokens: the first, and how many; none
+// for a preset with no case here, never another preset's (watchpost RC-17).
+func classTokens(p Preset) (Token, int) {
+	switch p {
+	case Radar:
+		return Radar1, 6
+	case Temperature:
+		return Temperature1, 17
+	case Wind:
+		return Wind1, 6
+	case Waves:
+		return Wave1, 6
+	case UV:
+		return UV1, 5
+	case AirQuality:
+		return AQI1, 6
+	case QPF:
+		return QPF1, 7
+	case MUF:
+		return MUF1, 10
+	case FoF2:
+		return FoF21, 6
+	}
+	return 0, 0
 }
 
 // tintOf is an alert's tint, extreme (0) to unknown (4), as the palette

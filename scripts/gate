@@ -21,6 +21,12 @@
 #                           loop played for an hour while the heap is watched;
 #                           run once before SHIP and recorded. The full gate
 #                           runs the same test for five minutes
+#   scripts/gate --cost     M5's frame measured on this machine, at rest
+#                           (plan task P7.1, watchpost D-350): on the
+#                           reference machine its record is written for the
+#                           code as it stands - run it before the release and
+#                           commit the record; on any other machine the
+#                           figures are printed and nothing is written
 #   scripts/gate --release TAG
 #                           the release check (v0.2.0 L-5.3, L-5.5): it judges
 #                           the committed tree - a tree with uncommitted
@@ -33,7 +39,9 @@
 #                           pinned version and find nothing reachable, in any
 #                           module, at this machine's toolchain or the floor,
 #                           that the checklist does not carry as a ruled
-#                           exception
+#                           exception. A final v0.3 tag is refused, too,
+#                           unless M5's record names this code, the reference
+#                           machine and every target met (watchpost D-350)
 #
 # Settings, each written on the run's log line when given:
 #   GATE_FUZZ_LIMIT=N       seconds of wall-clock time a fuzz leg may take
@@ -44,12 +52,16 @@
 #                           by the sibling job in hosted CI, or on a machine
 #                           that can run them when this one cannot
 #
-# One mode at most a run. EVERY RUN IS LOGGED to 06_docs/gate-runs.md when
+# One mode at most a run. EVERY RUN THAT REACHES A LEG IS LOGGED to
+# 06_docs/gate-runs.md when
 # that file exists - HEAD, the git tree that was tested, the mode (and the tag
 # a release check judged), the result (and on a failure the legs that
 # failed), the seconds it took and any override of the gate's settings
 # (v0.2.0 D-31, D-40) - so "the gate was green" is a line anyone can check and
-# M6's count of consecutive clean runs has something to count.
+# M6's count of consecutive clean runs has something to count. A lane that
+# refuses before any leg runs - the docs lane with nothing staged, or with a
+# file that is not Markdown - says why and logs nothing: a refusal is no run
+# (watchpost D-280).
 #
 # GATE_ROOT names the tree to check; by default, the repository this script
 # is in. Every module in the tree is checked, one by one - not only the
@@ -179,6 +191,7 @@ docs=0
 fuzzonly=0
 release=0
 soak=0
+cost=0
 release_tag=""
 want_tag=0
 mode="full"
@@ -195,6 +208,7 @@ for arg in "$@"; do
     --fuzz) fuzzonly=1; mode="fuzz"; modes=$((modes + 1)) ;;
     --release) release=1; mode="release"; modes=$((modes + 1)); want_tag=1 ;;
     --soak) soak=1; mode="soak"; modes=$((modes + 1)) ;;
+    --cost) cost=1; mode="cost"; modes=$((modes + 1)) ;;
     *) echo "gate: unknown argument: $arg" >&2; exit 2 ;;
   esac
 done
@@ -205,7 +219,7 @@ fi
 # ONE MODE A RUN (D-40): each mode turns legs off, so two together would
 # leave no leg on and print green with nothing checked.
 if [ "$modes" -gt 1 ]; then
-  echo "gate: give one mode at most (--quick, --docs, --fuzz, --soak or --release), not $modes" >&2
+  echo "gate: give one mode at most (--quick, --docs, --fuzz, --soak, --cost or --release), not $modes" >&2
   exit 2
 fi
 
@@ -227,7 +241,6 @@ FLOOR_TOOLCHAIN="go$floor"
 
 # --- every run leaves a line -------------------------------------------------
 started_at=$SECONDS
-made_work=0
 # THE LINE NAMES THE TREE THAT WAS TESTED (D-40), not only the commit below
 # it: the git tree of what was checked, leaving this log out - the staged
 # change for the docs lane, the whole working tree otherwise. A commit made
@@ -247,8 +260,22 @@ tested_tree() {
   rm -rf "$(dirname "$index")"
   printf '%s' "${tree:0:12}"
 }
+# code_tree is the git tree of the code as it stands: the working tree with
+# 06_docs and every Markdown file left out, so M5's record, taken before the
+# checklist's ticks and the release notes, still names the code released.
+code_tree() {
+  local index tree
+  index="$(mktemp -d)/index" || return 1
+  GIT_INDEX_FILE="$index" git -C "$root" read-tree HEAD 2>/dev/null || return 1
+  GIT_INDEX_FILE="$index" git -C "$root" add -A 2>/dev/null || return 1
+  GIT_INDEX_FILE="$index" git -C "$root" rm -r -q --cached --ignore-unmatch 06_docs '*.md' >/dev/null 2>&1
+  tree="$(GIT_INDEX_FILE="$index" git -C "$root" write-tree 2>/dev/null)" || return 1
+  rm -rf "$(dirname "$index")"
+  printf '%s' "${tree:0:12}"
+}
 log_run() {
   local rc="$1" result="FAILED" head tree overrides="" why
+  [ "$logging" = 1 ] || return 0
   [ -f "$root/06_docs/gate-runs.md" ] || return 0
   # A FAILURE STATES ITS CAUSE: the legs that failed, each with its module
   # when it is not the root's, are written beside FAILED.
@@ -267,11 +294,13 @@ log_run() {
   [ "$docs" = 1 ] && [ "${unstaged:-0}" -gt 0 ] && overrides="${overrides:+$overrides }tests saw $unstaged unstaged file(s)"
   printf '| %s | %s | %s | %s | %s | %s | %s |\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$head" "$tree" "$mode" "$result" "$((SECONDS - started_at))" "${overrides:--}" >> "$root/06_docs/gate-runs.md"
 }
+logging=0 # set once the refusals are past: a refusal is no run (D-280)
 fuzz_legs="$(mktemp)" || exit 2
 failed_legs="$(mktemp)" || exit 2
 release_work=""
+work_dir=""
 cleanup() {
-  [ "$made_work" = 1 ] && rm -f "$root/go.work" "$root/go.work.sum"
+  [ -n "$work_dir" ] && rm -rf "$work_dir"
   rm -f "$fuzz_legs"
   [ -n "$release_work" ] && rm -rf "$release_work"
   return 0
@@ -280,8 +309,8 @@ cleanup() {
 # a file, so a module's subshell can record too.
 where=""
 note_failure() { printf '%s%s\n' "${where:+$where: }" "$1" | sed 's/ \[[0-9]*s\]$//' >> "$failed_legs"; }
-# The workspace file is removed before the line is written, so the tested
-# tree never holds it; the failed legs are read by the line, then removed.
+# The workspace is outside the tree, so the tested tree never holds it; the
+# failed legs are read by the line, then removed.
 trap 'rc=$?; cleanup; log_run "$rc"; rm -f "$failed_legs"; exit "$rc"' EXIT
 # A RUN STOPPED BY A SIGNAL IS INTERRUPTED, NEVER GREEN. Stopped with TERM, the
 # shell can reach the EXIT trap with a status of 0, which would log the run
@@ -321,12 +350,10 @@ if [ "$docs" = 1 ]; then
     echo "gate: the docs lane is for a change of Markdown and nothing else. Not Markdown:"
     printf '%s\n' "$others" | sed 's/^/          /'
     echo "What to do: run scripts/gate, every leg (v0.2.0 D-15)."
-    note_failure "docs lane: a staged file is not Markdown"
     exit 1
   fi
   if [ -z "$changed" ]; then
     echo "gate: docs lane - nothing to check: nothing is staged. Stage the change, run the lane, then commit."
-    note_failure "docs lane: nothing staged"
     exit 1
   fi
   echo "gate: docs lane - $(printf '%s\n' "$changed" | wc -l | tr -d ' ') Markdown file(s) staged; every module's tests run, and no other leg (v0.2.0 D-15, D-41)"
@@ -334,6 +361,8 @@ if [ "$docs" = 1 ]; then
     echo "gate: docs lane - $unstaged file(s) not staged were left out of the judgement; the tests still run on the working tree"
   fi
 fi
+
+logging=1
 
 # --- every module, found by its module file ----------------------------------
 modules="$(find . -name go.mod -not -path '*/testdata/*' -not -path '*/.*' -not -path './_*' -not -path './dist/*' | sed 's|/go.mod$||' | sort)"
@@ -370,9 +399,20 @@ if [ "$release" = 1 ]; then
     exit 2
   fi
   mode="release $release_tag"
-  checklist="$root/06_docs/02_features/radar-loops/07-readiness/release-checklist.md"
   refused=""
   refuse() { refused="${refused}  REFUSED $1"$'\n'; note_failure "$(printf '%s' "$1" | head -1 | cut -c1-100)"; }
+  # EACH RELEASE IS HELD TO ITS OWN CHECKLIST, in its feature folder: v0.2's
+  # radar-loops, v0.3's propagation-fields. A release this table does not
+  # name is refused, never read against another release's rows.
+  # A RELEASE THAT HOLDS A FRAME TO M5 HOLDS ITS RECORD: v0.3's globe frame
+  # (watchpost D-350).
+  m5_held=0
+  case "${release_tag#v}" in
+    0.2.*) feature="radar-loops" ;;
+    0.3.*) feature="propagation-fields"; m5_held=1 ;;
+    *) feature=""; refuse "no release checklist is named for $release_tag; add its feature folder to the release check in scripts/gate" ;;
+  esac
+  checklist="$root/06_docs/02_features/${feature:-unnamed}/07-readiness/release-checklist.md"
   # THE LIBRARY SAYS WHICH RELEASE IT IS (L-13.1): the User-Agent's version
   # must be the tag's, a release candidate's being the release it leads to.
   version_file="$root/internal/fetch/fetch.go"
@@ -439,6 +479,21 @@ if [ "$release" = 1 ]; then
   elif [ -n "$open_rows" ]; then
     refuse "$release_tag is a final tag and the checklist has unticked rows:"$'\n'"$(printf '%s\n' "$open_rows" | cut -c1-120 | sed 's/^/          /')"
   fi
+  # M5'S RECORD (plan task P7.1, watchpost D-350): a final tag is refused
+  # unless the record names this code, the reference machine and every target
+  # met (m5_record_test.go). A run that selects no test is refused: a record
+  # nobody read would pass as quietly as one that holds.
+  if [ "$m5_held" = 1 ] && [[ "$release_tag" != *-rc.* ]]; then
+    if ! m5_tree="$(code_tree)"; then
+      refuse "the code's tree could not be read, so M5's record cannot be checked"
+    elif ! m5_out="$(env TUIMAPS_RELEASE=1 TUIMAPS_TREE="$m5_tree" go test -run '^TestTheM5RecordHoldsForThisCode$' -count=1 -v . 2>&1)"; then
+      refuse "M5's record does not hold for this code (plan task P7.1):"$'\n'"$(printf '%s\n' "$m5_out" | grep -E '_test\.go:[0-9]+|FAIL|flag' | head -10 | sed 's/^ */          /')"
+    elif ! printf '%s\n' "$m5_out" | grep -q -- '--- PASS: TestTheM5RecordHoldsForThisCode '; then
+      refuse "M5's record was not checked: TestTheM5RecordHoldsForThisCode was skipped or not selected"
+    else
+      echo "  ok      M5's record holds for this code, on the reference machine (plan task P7.1)"
+    fi
+  fi
   if ! command -v govulncheck >/dev/null 2>&1; then
     refuse "govulncheck is not installed: go install golang.org/x/vuln/cmd/govulncheck@$GOVULNCHECK_PIN"
   elif ! scanner_is_pinned; then
@@ -446,8 +501,9 @@ if [ "$release" = 1 ]; then
   elif ! release_work="$(mktemp -d)"; then
     refuse "could not make a directory for the workspace file"
   else
-    # The workspace resolves the separate modules' v0.0.0 requirement of the
-    # library to this tree, as the gate's own workspace does.
+    # The workspace resolves the separate modules' requirement of the library
+    # to this tree; the replace serves the planted trees of the gate's own
+    # tests, which require a v0.0.0 that was never published.
     root_module="$(GOWORK=off GOFLAGS= GOTOOLCHAIN="$FLOOR_TOOLCHAIN" go list -m 2>/dev/null)"
     {
       echo "go $floor"
@@ -558,6 +614,19 @@ limited() {
   return "$rc"
 }
 
+# mutants_killed runs NFR-2's check (v0.3.0 M4, D-7): every mutant in
+# 06_docs/mutants/mutants.json, applied to a copy of the tree, is caught by
+# its test (mutants_kill_test.go). A run that selects no test fails: a table
+# nobody checked would pass as quietly as one that holds.
+mutants_killed() {
+  local out
+  if ! out="$(go test -tags mutants -run '^TestEveryMutantIsKilled$' -count=1 -v -timeout 30m . 2>&1)"; then
+    printf '%s\n' "$out" | grep -E 'SURVIVED|INVALID|FAIL|panic' | head -40
+    return 1
+  fi
+  printf '%s\n' "$out" | grep -q -- '--- PASS: TestEveryMutantIsKilled ' || { echo "no mutant was run: TestEveryMutantIsKilled was not selected"; return 1; }
+}
+
 # gofmt_clean fails, naming the files, when gofmt would change any Go file in
 # this module outside testdata.
 gofmt_clean() {
@@ -622,19 +691,46 @@ if [ "$soak" = 1 ]; then
   exit 0
 fi
 
+# --- M5's measure (plan task P7.1, watchpost D-350) ---------------------------
+# The library alone: M5's frame timed on this machine. Its own mode, because
+# a measure wants the machine at rest, which no leg of the gate leaves it.
+if [ "$cost" = 1 ]; then
+  echo "gate: cost - M5's frame measured on this machine; on the reference machine its record is written"
+  if ! m5_tree="$(code_tree)"; then
+    echo "gate: cost FAILED (the code's tree could not be read)"
+    exit 1
+  fi
+  cost_out="$(env TUIMAPS_TREE="$m5_tree" go test -run '^TestTheM5CostIsRecorded$' -count=1 -v -timeout 30m . -args -record-m5 2>&1)"
+  cost_rc=$?
+  printf '%s\n' "$cost_out" | grep -E '^ *\| |reference machine|past its target|FAIL|panic|flag' | sed 's/^ *//; s/^/  /'
+  if [ "$cost_rc" != 0 ] || ! printf '%s\n' "$cost_out" | grep -q -- '--- PASS: TestTheM5CostIsRecorded '; then
+    echo "gate: cost FAILED (the measure did not run whole, or a target was missed)"
+    exit 1
+  fi
+  echo "gate: cost green"
+  exit 0
+fi
+
 # --- the throw-away workspace file ------------------------------------------
+# THE WORKSPACE IS THE RUN'S OWN, in a directory of its own outside the tree:
+# one at the root was shared with any other gate run on the same checkout at
+# once, and one run's removal broke the other's legs (watchpost R2D's note).
 if [ -z "${tracked:-}" ]; then
-  rm -f go.work go.work.sum
-  if GOFLAGS= go work init $modules >/dev/null 2>&1; then
-    made_work=1
+  work_dir="$(mktemp -d)" || exit 2
+  export GOWORK="$work_dir/go.work"
+  work_use=""
+  for dir in $modules; do work_use="$work_use $root/${dir#./}"; done
+  if GOFLAGS= go work init $work_use >/dev/null 2>&1; then
     # A workspace alone does not resolve a version that was never published:
-    # because the library imports third-party code, a separate module that
-    # requires the library at v0.0.0 sends the toolchain looking for that
-    # version. A replace for exactly that version, in this throw-away file,
-    # points it at the tree. Tracked module files still carry no replace.
+    # the gate's own tests plant modules that require the library at v0.0.0,
+    # and because the library imports third-party code the toolchain goes
+    # looking for that version. A replace for exactly it, in this throw-away
+    # file, points it at the tree; the separate modules, which require the
+    # released version, resolve through the workspace. Tracked module files
+    # still carry no replace.
     if [ -f go.mod ]; then
       root_module="$(GOWORK=off GOFLAGS= go list -m 2>/dev/null)"
-      [ -n "$root_module" ] && GOFLAGS= go work edit -replace="${root_module}@v0.0.0=./" >/dev/null 2>&1
+      [ -n "$root_module" ] && GOFLAGS= go work edit -replace="${root_module}@v0.0.0=$root" >/dev/null 2>&1
     fi
   else
     fail "could not write the workspace file"
@@ -683,7 +779,7 @@ for dir in $modules; do
       leg "gofmt" gofmt_clean
       leg "vet" go vet ./...
       leg "tests, race detector on" go test -race ./...
-      leg "tests, race detector off (allocation counts live here)" go test ./...
+      leg "tests, race detector off (allocation counts and NFR-3's peak live here)" go test ./...
       # A licence file for every module this module's packages and their tests
       # are built from: the modules that provide a package of `go list -deps
       # -test`, each with its directory. A module of this repository is covered
@@ -792,6 +888,7 @@ if [ "$quick" = 0 ] && [ "$fuzzonly" = 0 ]; then
   # M4 (D-61): the loop's heap held while it plays, five minutes of the
   # soak's hour (scripts/gate --soak).
   leg "M4, a loop's heap held over five minutes" env TUIMAPS_M4_SOAK=5m go test -run '^TestALoopsHeapCostAndHold$' -count=1 -timeout 20m .
+  leg "NFR-2, every mutant killed by its test" mutants_killed
   # Reference frames must be byte-identical on a second architecture. This
   # leg FAILS - never skips - when the second architecture cannot be run.
   host_arch="$(go env GOARCH)"

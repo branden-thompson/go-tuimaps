@@ -18,29 +18,30 @@ type Class struct {
 	Label  string // the range in words, in the overlay's own unit; for an alert, its severity
 	Colour RGB
 	Drawn  bool   // false where the depth in use draws no colour at all
-	Mark   string // for an alert, the digit its outline repeats (D-65); empty otherwise
+	Mark   string // for an alert, the digit its outline repeats; empty otherwise
+	Shade  string // at sixteen colours and none, the block shade an image's or rain's class is drawn in; empty otherwise
 }
 
-// LegendEntry is what one overlay puts on the map, as data (FR-18).
+// LegendEntry is what one overlay puts on the map, as data.
 type LegendEntry struct {
 	ID      string
 	Unit    string
 	Preset  string // "temperature", "radar", "alert", or empty for a host's own type
 	Classes []Class
 	// Blended is, for an image or a field, the severities whose alert tint
-	// blends over it (L-11.1); under the others it is drawn over the tint,
-	// the warning carried by the outline, label and digit (L-11.4, D-27).
+	// blends over it; under the others it is drawn over the tint,
+	// the warning carried by the outline, label and digit.
 	Blended []Severity
 	// Approximate says an image's table was read from a provider's legend
-	// rather than published (L-13.10, D-19); Unverified says part of its
+	// rather than published; Unverified says part of its
 	// range has not yet been seen in data, so its values there are the
-	// library's best reading (L-2.3). Both come from the provider's table the
+	// library's best reading. Both come from the provider's table the
 	// image is read with; a table of the host's own carries neither.
 	Approximate, Unverified bool
 }
 
 // Scaled is the scale of the map as data, in the terms the mark on the frame
-// draws it (FR-33).
+// draws it.
 type Scaled struct {
 	KmPerCell float64 // how far one cell spans, across the middle of the map
 	Km        float64 // the round distance the bar stands for
@@ -48,7 +49,7 @@ type Scaled struct {
 }
 
 // Legend is what is drawn on the map now, overlay by overlay and class by
-// class, in the colours actually in use at the depth in effect (FR-18). It
+// class, in the colours actually in use at the depth in effect. It
 // is the same facts the picture carries, for a host that cannot show them.
 func (m *Map) Legend() []LegendEntry {
 	defer m.guardQuiet("Legend")
@@ -95,7 +96,7 @@ func (m *Map) legendOf(id string) (LegendEntry, bool) {
 		return LegendEntry{}, false
 	}
 	entry := LegendEntry{ID: id, Unit: kind.Unit, Preset: kind.Preset,
-		Classes: m.classesOf(resolved), Blended: m.blendedUnder(resolved.Preset)}
+		Classes: m.classesOf(resolved, o.Image != nil || resolved.Preset == colour.Radar), Blended: m.blendedUnder(resolved.Preset)}
 	if o.Grid != nil && o.Grid.Lines && resolved.Preset != colour.Radar { // keyed as drawn: faint on the ground (L-15.4); rain never is (L-17.1)
 		ground, _ := m.look.ground.InEffect(m.look.palette)
 		for i, c := range entry.Classes {
@@ -164,14 +165,22 @@ func (m *Map) blendedUnder(preset colour.Preset) []Severity {
 // in the overlay's own unit and coloured as the frame draws it. The colour
 // is asked for the way the renderer asks for it, so the legend and the
 // picture can never disagree - at sixteen colours it is the sixteen-colour
-// approximation, and with no colour there is none.
-func (m *Map) classesOf(kind overlay.Kind) []Class {
+// approximation, and with no colour there is none. A shaded kind - an image,
+// or rain - keys each class's shade as the frame draws it (L-7.1).
+func (m *Map) classesOf(kind overlay.Kind, shaded bool) []Class {
 	depth := m.depthInEffect()
 	ground := m.look.ground.Kind(m.look.palette)
 	first, ramped := rampToken(kind.Preset)
+	host := colour.HostRamp(kind.Colours, len(kind.Breaks)+1, m.look.palette, ground, depth) // nil at a depth with no ramp; read for a host type alone (a preset keys its own tokens)
 	out := make([]Class, 0, len(kind.Breaks)+1)
 	for i := range len(kind.Breaks) + 1 {
 		one := Class{Label: classLabel(kind.Breaks, i)}
+		if shaded {
+			one.Shade = render.ShadeFor(uint8(kind.Preset), int8(i), len(kind.Breaks)+1, depth)
+		}
+		if kind.Preset == 0 && i < len(host) { // a host type keyed in its spread or its own colours (L-2.5)
+			one.Colour, one.Drawn = host[i], true
+		}
 		tok := first + Token(i)
 		if colour.FloorsFirst(kind.Preset) { // below radar's first floor is no rain, below a total's a trace, and nothing is drawn (L-17.1, L-26)
 			tok--
@@ -185,7 +194,7 @@ func (m *Map) classesOf(kind overlay.Kind) []Class {
 }
 
 // rampToken is the token of a preset's first class; the classes after it
-// follow in order. A host's own type has no ramp of its own yet.
+// follow in order. A host's own type has none: HostRamp colours it.
 func rampToken(preset colour.Preset) (Token, bool) {
 	switch preset {
 	case colour.Temperature:
@@ -202,6 +211,10 @@ func rampToken(preset colour.Preset) (Token, bool) {
 		return colour.AQI1, true
 	case colour.QPF:
 		return colour.QPF1, true
+	case colour.MUF:
+		return colour.MUF1, true
+	case colour.FoF2:
+		return colour.FoF21, true
 	}
 	return 0, false
 }
@@ -239,7 +252,7 @@ func mustFloat(s string) float64 {
 }
 
 // Credits are every credit the map owes: the basemap's, then each overlay's
-// in the order they were set, once each (FR-14).
+// in the order they were set, once each.
 func (m *Map) Credits() []string {
 	defer m.guardQuiet("Credits")
 	m.plant("Credits")
@@ -270,7 +283,7 @@ func (m *Map) Credits() []string {
 // basemapCredit is what the tiles are owed, drawn on every frame (FR-14).
 const basemapCredit = "OpenFreeMap (c) OpenMapTiles Data from OpenStreetMap"
 
-// Scale is how far the map spans, as data (FR-33): how far one cell is, and
+// Scale is how far the map spans, as data: how far one cell is, and
 // the round distance the bar on the frame stands for.
 func (m *Map) Scale() (Scaled, bool) {
 	defer m.guardQuiet("Scale")
@@ -295,7 +308,7 @@ func (m *Map) Scale() (Scaled, bool) {
 }
 
 // Footer is the centre and the zoom in upstream's own wording, cut with
-// floor as upstream cuts them (P-57). It is drawn inside the map only when
+// floor as upstream cuts them. It is drawn inside the map only when
 // the host turns it on, and it is off by default.
 func (m *Map) Footer() string {
 	defer m.guardQuiet("Footer")
@@ -325,7 +338,7 @@ func footerOf(lat, lon, zoom float64) string {
 }
 
 // cut writes a number to a number of decimal places, cutting what is left
-// rather than rounding it, as upstream does (P-57).
+// rather than rounding it, as upstream does.
 func cut(v float64, places int) string {
 	scale := math.Pow(10, float64(places))
 	whole := math.Trunc(v*scale) / scale
@@ -334,7 +347,7 @@ func cut(v float64, places int) string {
 
 // ShowStamp draws the top row's stamp - the loop's moment and the stale word
 // - or, off, leaves them to the host, which must then show both itself: a
-// frame's age is never hidden (L-1.9, D-87). It is on by default.
+// frame's age is never hidden. It is on by default.
 func (m *Map) ShowStamp(on bool) {
 	defer m.guardQuiet("ShowStamp")
 	m.plant("ShowStamp")
@@ -352,7 +365,7 @@ func (m *Map) ShowStamp(on bool) {
 }
 
 // ShowFooter draws the footer inside the map, or takes it off again. It is
-// off by default (P-57).
+// off by default.
 func (m *Map) ShowFooter(on bool) {
 	defer m.guardQuiet("ShowFooter")
 	m.plant("ShowFooter")

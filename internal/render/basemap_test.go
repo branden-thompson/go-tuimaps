@@ -189,10 +189,10 @@ func TestPainterRefusals(t *testing.T) {
 	}
 }
 
-// TestEveryTokenIsAnInkBelowTheLiterals: every token's number is an ink below
-// the first literal one, so each is drawn in its own colour. v0.2.0 numbered
-// the rain totals' two heaviest classes 96 and 97, past the literals' start
-// at 96, and drew them in no colour (v0.2.1).
+// TestEveryTokenIsAnInkBelowTheLiterals is A-5: every token's number is an
+// ink below the first literal one, so each is drawn in its own colour. v0.2.0
+// numbered the rain totals' two heaviest classes 96 and 97, past the literals'
+// start at 96, and drew them in no colour.
 func TestEveryTokenIsAnInkBelowTheLiterals(t *testing.T) {
 	for _, tok := range colour.Tokens() {
 		if int(tok) >= firstLiteral {

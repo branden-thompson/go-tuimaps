@@ -1,0 +1,124 @@
+---
+title: "go-tuiMaps v0.3.0 — Propagation fields — REQUIREMENTS"
+date: 2026-10-06
+phase: BUILD
+sev: SEV-0
+authority: HUM LEAD
+status: "APPROVED at the DISCOVER gate (watchpost D-84), normative; once approved it wins over the brief on any conflict, and every change is a row in 02-analysis/rulings.md."
+---
+
+# Requirements
+
+## What this gives the host (watchpost D-82)
+
+- **Fields that read:** a host's own field (MUF, foF2, or anything else) can continue over the sea, has colours and a legend, carries units on its labels and in its words, and is labelled where its lines run either way.
+- **Day and night:** a terminator and a night tint, said in words too.
+- **Fixes owed:** `SafeRamps` honoured for every scale, a shade key at 16 colours and below, a non-colour mark for colour-only roles, the default depth from the terminal, and a checked dialer.
+
+watchpost uses L-2.2's generic ramp for one more thing: "your frequency"'s reach area, a two-class field
+(reached or not) that go-ionomaps returns (its R-2.9). Its edge gets a row of its own, L-2.6 (watchpost D-127).
+
+Each row traces to the brief's L-n and to the ruling that makes it necessary. **What, never how.** PLAN
+carries signatures only (watchpost 0.18.0 D-13).
+
+Each row's **Instrument** names what will hold it at BUILD exit: a test by its planned name, a contract
+row, a specimen or a metric. A planned name is a commitment PLAN may rename, never drop. Every new public
+name gets a row in `contract.md` §10, which `contract_test.go` holds both ways.
+
+**Before any change (C-5):** a specimen of a whole-globe grid and one of a host-type grid, rendered at
+every depth on both grounds, so each change below is seen against what v0.2.0 draws.
+
+## L-1 — A field over the sea, per overlay (watchpost D-32; D-1)
+
+| # | Requirement | Instrument |
+|---|---|---|
+| L-1.1 | A host chooses, per field overlay, whether it continues over water; the default is unchanged (a field stops at the shore, D-32 of v0.1.0) | `TestHostCanFlipEither` (written at last, v0.1.0 plan task 09.7), `TestAFieldStopsAtTheShoreByDefault` |
+| L-1.2 | A host chooses, per image, whether water masks it; the default is unchanged (an image is never masked, D-87) | `TestHostCanFlipEither`, `TestWaterNeverMasksImage` (kept) |
+| L-1.3 | Contour lines follow the same choice as their field | `TestContoursFollowTheirFieldOverWater` |
+| L-1.4 | Frame reuse sees the choice (a changed choice redraws) | `TestAChangedWaterChoiceRedraws` |
+
+## L-2 — Colour for a host's own field (watchpost D-33; D-2)
+
+| # | Requirement | Instrument |
+|---|---|---|
+| L-2.1 | `muf` and `fof2` presets, in MHz, with their breaks, tokens, ramps on both grounds at truecolor, 256 and 16 colours, legend words and `Describe` names | `TestTheMUFAndFoF2RampsPassCheckOnBothGrounds`, `TestEveryPresetHasLegendWordsAndAUnit`, specimens |
+| L-2.2 | A host's own type gets a fill across its classes from the `low`, `middle` and `high` tokens, with library defaults, as FR-15 promised; a host may set its own colours, one per class (C-S) | `TestAHostTypeIsFilledFromLowMiddleHigh`, `TestTheHostRampDefaultsWhenUnset`, `TestAHostRampIsHeldToCheckRamp` |
+| L-2.3 | A host's ramp that fails `CheckRamp` is reported through `Warnings()`, never silently drawn - checked when it is set and again whenever the colour depth, the palette or the ground changes (watchpost RC-15) | `TestABadHostRampIsWarned`, `TestAHostRampIsCheckedAgainWhenTheLookChanges` |
+| L-2.4 | A grid that would draw nothing (any depth × ground × lines on or off) is refused at hand-in or warned; never a silent blank | `TestNoGridDrawsNothingSilently` (M2's matrix) |
+| L-2.5 | The legend of a host type carries colours and its unit | `TestAHostTypesLegendHasColoursAndUnit` |
+| L-2.6 | **The reach area without colour (watchpost D-127):** the edge of a two-class host field such as watchpost's reach area, the host asking for it (`Type.Edge`, watchpost D-216), carries a mark that does not depend on colour, is never drawn as a contour (as L-4.4 requires of the terminator), and how it combines with a filled field beneath it is stated | `TestTheReachIsMarkedWithoutColour` (every depth, both grounds), `TestOnlyAnEdgeAskedForIsMarked`, `TestAnEdgeIsAskedForOnATwoClassType`, a P0 specimen |
+
+## L-3 — Units and labels (watchpost D-34; D-3)
+
+| # | Requirement | Instrument |
+|---|---|---|
+| L-3.1 | Contour labels carry the type's unit | `TestContourLabelsCarryTheirUnit` |
+| L-3.2 | Labels are placed where a line crosses north-south as well as east-west, for every field; **behaviour change**, named in the changelog | `TestAFieldBandedEitherWayIsLabelled` (replacing contourlabel_test.go's "never labelled at all" case), specimens redrawn |
+| L-3.3 | `Answer.ValueUnit` is filled for every field from its unit | `TestEveryFieldAnswerCarriesItsUnit` (M3) |
+
+## L-4 — Day and night (watchpost D-35; D-4)
+
+| # | Requirement | Instrument |
+|---|---|---|
+| L-4.1 | A `terminator` line token and a `night` area-tint token, with defaults on both grounds and in sixteen colours, passing the palette checks | `TestTheTerminatorAndNightTokensHaveDefaults`, `TestNightTintKeepsTheFieldReadable` |
+| L-4.2 | Helpers that return the terminator line and the night side for a time, within 0.5° of latitude of the terminator computed from NOAA's published solar-position algorithm, at every longitude, across a year of test times | `TestTheTerminatorMatchesTheEphemeris`, `TestNightSideIsTheComplement` |
+| L-4.3 | Only alert roles filled an area at PLAN (`internal/render/basemap.go`); the night tint fills without severity words, digits or a legend entry | `TestTheNightTintCarriesNoAlertWords` |
+| L-4.4 | **Day and night without colour or a picture (AX-E):** `Report` answers whether a place is in day or night and when the terminator next passes it, a kept report worked out again once a turn it holds has passed (watchpost RC-14); the terminator line carries a mark that does not depend on colour, so it never reads as one more contour; the night tint keeps every field ramp readable, checked by `CheckRamp`'s luminance-order and colour-vision rules against the tinted ground, with `SafeRamps` on | watchpost D-9; AX-E | `TestReportSaysDayOrNight`, `TestTheTerminatorIsMarkedWithoutColour`, `TestNightTintKeepsTheFieldReadable` (with the colour-vision rules) |
+
+## L-5 — Station points by value (watchpost D-35; D-4) — **OUT of v0.3.0 (watchpost D-50, this log's D-10)**; kept for the follow-up
+
+| # | Requirement | Instrument |
+|---|---|---|
+| L-5.1 | A role for a value of a type, on L-2's ramp or preset | `TestRoleForFollowsTheRamp` |
+| L-5.2 | The value is always in the point's label (OW-17: never colour alone) | `TestAValuedPointCarriesItsValue` |
+
+## L-6 — `SafeRamps` for every scale (watchpost D-36; D-5)
+
+| # | Requirement | Instrument |
+|---|---|---|
+| L-6.1 | Every scale token (by `ScaleClass`) honours `SafeRamps` and is reported by `Warnings()`; **behaviour change**, named in the changelog | `TestSafeRampsKeepEveryScaleTheLibrarysOwn`, `TestWarningsReportEveryScaleToken` |
+
+## L-7 — Owed by v0.2.0, carried into v0.3.0 (watchpost D-65; D-11)
+
+| # | Requirement | Instrument |
+|---|---|---|
+| L-7.1 | OW-24: a shade key on `Class`, so a reader at `NoColour` or 16 colours can map ░▒▓ to a range: the glyph drawn for the class, empty for a field drawn as contours (D-35) | `TestEveryClassHasAShadeKey` |
+| L-7.2 | OW-25: the default depth from `COLORTERM` and `TERM` when the host hints none and `NO_COLOR` is unset | `TestTheDefaultDepthFollowsTheTerminal` |
+| L-7.3 | OW-17: a library mark (glyph or suffix) for quake age, fire strength and buoy against tide, so those roles do not rest on colour alone | `TestNoRoleRestsOnColourAlone` |
+| L-7.4 | OW-19: `CheckedDialerFor`, a checked dialer that exempts the proxy a host's proxy function names | `TestTheCheckedDialerExemptsOnlyTheNamedProxy` |
+
+OW-14, OW-15, OW-16, OW-18, OW-20 and OW-26 are re-targeted to v0.4.0 (watchpost D-65).
+
+## L-8 — A host's zone (watchpost D-195; D-32)
+
+watchpost's Broadcaster draws its service area on the map: a red outline of the service radius, always shown, and the area
+inside it tinted as an alert's area is, in every mode, over the propagation fields as well. Only alert roles fill an
+area and blend with a field today (`internal/render/basemap.go:219`, `internal/colour/blend.go:75`).
+
+| # | Requirement | Instrument |
+|---|---|---|
+| L-8.1 | **A `Zone` role:** a Polygon or a Circle feature in it is outlined in the `zone` token and filled with the `zone.tint` token, beneath any alert's tint where they meet, with no severity words, digits or legend entry; its label as any feature's. Defaults on both grounds at truecolor and 256 colours: the outline reads at 3:1 on its ground and on its own tint, and the outline and the tint are each at least 10 apart from every alert outline and tint under every kind of vision (D-88's rule). At sixteen colours and none the outline alone is drawn, never a hatch, which is an alert's | `TestTheZoneTokensHaveDefaults`, `TestAZoneIsOutlinedAndFilledWithoutAlertWords`, `TestAnAlertsTintIsOverAZones` |
+| L-8.2 | **The zone over a field (watchpost D-196):** its tint is blended over a preset's colours at the strongest of the blend search's strengths that keeps every class separated and shows the tint (L-11.2), every preset searched; where none does, the field is drawn exact and the zone's inside is stippled in the zone's ink - sparse dots in the cells' free space - so the area is still seen and the field's legend still holds. Measured: no tint passes over the MUF or foF2 ramp at any strength. Alerts' blends are unchanged | `TestAZoneOverAFieldItCannotTintIsStippled`, `TestTheZoneTintBlendsWhereTheSearchAllows`, `TestAlertBlendsAreUnchanged` |
+| L-8.3 | **`Report` answers a circle given in kilometres** as it answers a polygon: whether the place is inside. Found while writing L-8: a circle's ring was made only when drawn, so `Report` read it as an empty area | `TestReportAnswersAKilometreCircle` |
+
+## Non-functional requirements
+
+| # | Requirement | Instrument |
+|---|---|---|
+| NFR-1 | M5: after a pan, a 2° whole-globe field with fill, labelled contours, terminator and night renders, with the reach overlay and its non-colour edge (watchpost D-137), in at most 16 ms at 400 × 110 and 8 ms at 200 × 56 (watchpost D-96; v0.2.0 measured 22.2 and 5.7 ms without terminator or night); its memory is recorded | `TestAGlobeFieldPanAllocates` holds a frame's allocations at 400 × 110 on every machine; `scripts/gate --cost` writes M5's record on the reference machine, and `scripts/gate --release` refuses a final v0.3 tag whose record is missing, names other code or another machine, or misses a target (watchpost D-119, D-350); linux/amd64 recorded from a hosted runner, not held |
+| NFR-2 | M4: every row above has a test that would fail without it (this release's rows, D-7): each row is anchored to a mutant the gate kills, so a test that exists but cannot fail is caught (CQ-V1) | the mutant anchors, checked in the gate |
+| NFR-3 | Gates green: `scripts/gate` full lane, P10 clean, mutants anchored | the gate |
+
+## Risk register
+
+| # | Risk | Likelihood | Impact | Mitigation |
+|---|---|---|---|---|
+| RL-1 | L-2.2's interpolated colours need inks a cell cannot hold today (C-2) | medium | medium | reserved ramp tokens or literal inks, chosen in PLAN from specimens |
+| RL-2 | L-3.2 moves every host's labels at once | high | low | changelog; watchpost redraws its specimens in the same batch |
+| RL-3 | L-6.1 changes the colours of shipped layers under `SafeRamps` | medium | low | changelog; watchpost's themes checked |
+| RL-4 | No whole-globe test exists (C-5); hidden defects surface late | medium | medium | specimens first |
+| RL-5 | The terminator's accuracy is claimed without a reference | low | medium | L-4.2 tested against a published ephemeris |
+
+## Metrics
+
+M1 to M6 as adopted (D-7) in `project-brief.md`. Targets, set in PLAN: M1 10 places, 8 of 10 from the picture and 8 of 10 from `Report`'s words alone, graded by the HUM LEAD (watchpost D-117); M5 at most 16 ms at 400 × 110 and 8 ms at 200 × 56 (watchpost D-96); M6 5 consecutive full runs with no unattributable failure (watchpost D-117); M2 to M4 as their definitions (zero, every, every).

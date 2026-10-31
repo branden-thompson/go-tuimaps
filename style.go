@@ -5,13 +5,13 @@ import (
 )
 
 // SetStyle draws the basemap by a style of the host's own: the same JSON
-// format as the library's, with the legacy filter form (FR-20). It takes
+// format as the library's, with the legacy filter form. It takes
 // effect at the next Render and reads no tile again - a style says what is
 // drawn and in what colour, and the tiles on hand already carry every layer
 // the library reads.
 //
 // **The library is handed the bytes and never reads a file.** A host that
-// keeps its style on disk reads it itself, as the app's --style does (D-94).
+// keeps its style on disk reads it itself, as the app's --style does.
 // Passing no bytes at all puts the library's own style back, as passing no
 // names does to the palette.
 //

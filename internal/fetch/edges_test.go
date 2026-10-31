@@ -136,3 +136,24 @@ func TestTheLesserReservedRangesAreRefused(t *testing.T) {
 		}
 	}
 }
+
+// TestAProxyTakesItsSchemesPort is the BUILD red team's I-7: a proxy named
+// with no port takes its scheme's own - socks5h, the remote-resolving form,
+// as socks5 does - and one written with a port keeps it.
+func TestAProxyTakesItsSchemesPort(t *testing.T) {
+	for raw, want := range map[string]string{
+		"http://proxy":         "proxy:80",
+		"https://proxy":        "proxy:443",
+		"socks5://proxy":       "proxy:1080",
+		"socks5h://proxy":      "proxy:1080",
+		"socks5h://proxy:9050": "proxy:9050",
+	} {
+		u, err := url.Parse(raw)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := proxyAddress(u); got != want {
+			t.Errorf("%s: %q; want %q", raw, got, want)
+		}
+	}
+}

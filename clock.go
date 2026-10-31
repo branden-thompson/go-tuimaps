@@ -7,7 +7,7 @@ import (
 )
 
 // Animate takes the animation clock over: from then on markers move on the
-// time given here, and not on the wall clock given to Render (D-114). It is
+// time given here, and not on the wall clock given to Render. It is
 // for a host that drives animation itself, or freezes it. A frozen animation
 // clock cannot hide data that is out of date: staleness is the wall clock's.
 func (m *Map) Animate(at time.Time) {
@@ -77,8 +77,9 @@ func (m *Map) stale(wall time.Time) (some bool, which uint64) {
 
 // NextCall is the wall-clock moment by which the map wants another Render:
 // the earliest of the next marker phase, a playing loop's next frame advance,
-// a failed tile's retry time and an overlay going stale (FR-25, L-1.8). It is false when nothing at all is due, and
-// then a host may sleep until something happens to it instead.
+// a failed tile's retry time and an overlay going stale. It is false when
+// nothing at all is due, and then a host may sleep until something happens
+// to it instead.
 func (m *Map) NextCall(wall time.Time) (time.Time, bool) {
 	defer m.guardQuiet("NextCall")
 	m.plant("NextCall")

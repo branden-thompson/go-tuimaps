@@ -131,17 +131,24 @@ func (c *Canvas) Lit(x, y int) bool {
 // Cell is a cell's braille character and its one ink: the majority among its
 // lit dots (P-08). An empty cell is the blank braille character and no ink.
 func (c *Canvas) Cell(col, row int) (rune, uint8) {
-	if c == nil || col < 0 || row < 0 {
+	glyph := c.Glyph(col, row)
+	if glyph == blank {
 		return blank, 0
+	}
+	return glyph, c.vote(col, row)
+}
+
+// Glyph is a cell's braille glyph alone, blank off the canvas: what asks
+// only how much of a cell is lit - a night or a zone owning it - without
+// the vote for its ink (watchpost RP-4: the vote was 27 % of a frame).
+func (c *Canvas) Glyph(col, row int) rune {
+	if c == nil || col < 0 || row < 0 {
+		return blank
 	}
 	if col >= c.cols || row >= c.rows {
-		return blank, 0
+		return blank
 	}
-	cell := col + c.cols*row
-	if c.mask[cell] == 0 {
-		return blank, 0
-	}
-	return blank + rune(c.mask[cell]), c.vote(col, row)
+	return blank + rune(c.mask[col+c.cols*row])
 }
 
 // tally counts a cell's lit dots by ink, in the order the inks are first met

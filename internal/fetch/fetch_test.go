@@ -61,6 +61,32 @@ func TestGetOverSecureTransport(t *testing.T) {
 	}
 }
 
+// TestARepliesHeadersAreBounded is watchpost R2I-3: a reply whose headers
+// run past maxHeaderBytes is refused, never read into memory whole; one with
+// ordinary headers, the control, comes back.
+func TestARepliesHeadersAreBounded(t *testing.T) {
+	big := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Padding", strings.Repeat("x", 2*maxHeaderBytes))
+		fmt.Fprint(w, "tile bytes")
+	})
+	srv, opts := secure(t, big)
+	f, err := ForSource(srv.URL, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, err := get(t, f, srv.URL+"/6/16/26.pbf"); err == nil {
+		t.Errorf("a reply with %d bytes of headers was read: %q", 2*maxHeaderBytes, got)
+	}
+	plain, popts := secure(t, body("tile bytes"))
+	g, err := ForSource(plain.URL, popts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, err := get(t, g, plain.URL+"/6/16/26.pbf"); err != nil || string(got) != "tile bytes" {
+		t.Errorf("the control, ordinary headers: %q, %v", got, err)
+	}
+}
+
 // TestPlainHTTPRefused is plan task 05.1.
 func TestPlainHTTPRefused(t *testing.T) {
 	if _, err := ForSource("http://tiles.example/planet", Options{}); !isKind(err, fault.FetchRefused) {

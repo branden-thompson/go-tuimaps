@@ -9,13 +9,17 @@ import (
 // closed list of characters the renderer may emit (constants, section 3).
 const hatchStrokes = "╱╲╳"
 
-// The dash a line overlay is drawn with when there is no colour to tell it
-// from the basemap's own lines: five dots on, four off, two dots thick, set
-// from specimen 19c (D-77).
-const (
-	dashOn    = 5
-	dashOff   = 4
-	dashThick = 2
+// stroke is a broken line's pattern: dots on, dots off, and how thick.
+type stroke struct{ on, off, thick int }
+
+// dashStroke is the dash a line overlay is drawn with when there is no colour to
+// tell it from the basemap's own lines: five dots on, four off, two dots
+// thick, set from specimen 19c (D-77). dotStroke is the terminator's, at every
+// depth: a dot on, two off, one thick, so it never reads as a contour, which
+// is unbroken (L-4.4).
+var (
+	dashStroke = stroke{on: 5, off: 4, thick: 2}
+	dotStroke  = stroke{on: 1, off: 2, thick: 1}
 )
 
 // hatchOf is the stroke an alert's tint is hatched with, and how far apart:
@@ -58,27 +62,27 @@ func (r *Renderer) hatch() {
 
 // dash draws a line as a dashed one, the dash carrying on from one part of
 // the line to the next so that a bend does not restart it.
-func (p *Painter) dash(ring []Point, ink uint8) {
+func (p *Painter) dash(ring []Point, ink uint8, with stroke) {
 	run := 0
 	for i := 0; i+1 < len(ring); i++ {
-		run = p.dashSegment(ring[i], ring[i+1], run, ink)
+		run = p.dashSegment(ring[i], ring[i+1], run, ink, with)
 	}
 }
 
 // dashSegment dashes one straight part, from where the dash had got to, and
 // answers with where it has got to now.
-func (p *Painter) dashSegment(a, b Point, run int, ink uint8) int {
+func (p *Painter) dashSegment(a, b Point, run int, ink uint8, with stroke) int {
 	steps := max(abs(b.X-a.X), abs(b.Y-a.Y))
 	if steps == 0 {
 		return run
 	}
 	for from := 0; from < steps; {
-		phase := run % (dashOn + dashOff)
-		length := min(dashOn+dashOff-phase, steps-from)
-		if phase < dashOn {
-			length = min(dashOn-phase, steps-from)
+		phase := run % (with.on + with.off)
+		length := min(with.on+with.off-phase, steps-from)
+		if phase < with.on {
+			length = min(with.on-phase, steps-from)
 			one, two := along(a, b, from, steps), along(a, b, from+length, steps)
-			p.lines.Line(one.X, one.Y, two.X, two.Y, dashThick, ink)
+			p.lines.Line(one.X, one.Y, two.X, two.Y, with.thick, ink)
 		}
 		from += length
 		run += length

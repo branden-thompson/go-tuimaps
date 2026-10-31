@@ -9,10 +9,16 @@ import (
 	"github.com/branden-thompson/go-tuimaps/internal/describe"
 	"github.com/branden-thompson/go-tuimaps/internal/overlay"
 	"github.com/branden-thompson/go-tuimaps/internal/project"
+	"github.com/branden-thompson/go-tuimaps/internal/sun"
 )
 
 // Answer is what the map says about one place and one overlay: data to
-// render or speak, never a sentence of the library's own (D-52).
+// render or speak, never a sentence of the library's own. Its
+// fields, which go doc does not show through the alias:
+// Place, Overlay, Form; for an area, Relation, Distance, Km, Unit, Bearing,
+// Compass and Label; for a field or an image, Value, ValueUnit, Band,
+// Rises, Class, Heavier, HeavierAt, From and NoData; and Valid, Stale and
+// UnderOneCell.
 type Answer = describe.Answer
 
 // Units sets the units the descriptions come back in: miles rather than
@@ -58,12 +64,32 @@ type describeKey struct {
 	nearby     float64      // what "nearby" means (L-13.6)
 	view       project.View // which alerts are in view, and the view's centre, for motion with no place
 	landed     uint64       // what work has landed: a picture decoded is a frame motion can read
+	daylight   uint64       // which asked places are in day: the clock's other part in an answer (L-4.4)
 }
 
 // describeKey is the key for this call.
 func (m *Map) describeKey(asked []Place) describeKey {
 	return describeKey{overlays: m.overlays, places: m.placesVersion, units: m.units, stale: m.staleNow, staleWhich: m.staleWhich, asked: askedFingerprint(asked),
-		nearby: m.nearby, view: m.view, landed: m.store.Landed()}
+		nearby: m.nearby, view: m.view, landed: m.store.Landed(), daylight: m.daylightKey(asked)}
+}
+
+// daylightKey is which asked places are in day at the map's clock, as a
+// fingerprint: the day-or-night answer changes only when one turns, its
+// time of turning fixed until then, so the clock alone leaves the report
+// kept (FR-29) until a place's day ends or begins.
+func (m *Map) daylightKey(asked []Place) uint64 {
+	if m.wallClock.IsZero() {
+		return 0
+	}
+	h := fnv.New64a()
+	for _, p := range asked {
+		day := byte('n')
+		if sun.Elevation(p.At.Lat, p.At.Lon, m.wallClock) > 0 {
+			day = 'd'
+		}
+		_, _ = h.Write([]byte{day})
+	}
+	return h.Sum64() | 1 // never 0, the key of no clock
 }
 
 // askedFingerprint is what was asked about, not how much of it.
@@ -94,12 +120,28 @@ func askedFingerprint(asked []Place) uint64 {
 
 // rememberedReport is the report already worked out, when nothing it was
 // worked out from has changed. Repeating a call then costs nothing, which is
-// what lets a host ask on every frame (FR-29).
+// what lets a host ask on every frame (FR-29). A turn of the sun it holds
+// that the clock has reached ends it: a night or a day can pass between two
+// asks with each place's day-or-night the same either side, and the report
+// would say a turn already gone (L-4.4, watchpost RC-14).
 func (m *Map) rememberedReport(asked []Place) (Report, bool) {
 	if m.reported == nil || m.reportedKey != m.describeKey(asked) {
 		return Report{}, false
 	}
+	if m.turnPassed(m.reported.Places) {
+		return Report{}, false
+	}
 	return *m.reported, true
+}
+
+// turnPassed is whether the clock has reached any of the places' next turns.
+func (m *Map) turnPassed(places []PlaceReport) bool {
+	for _, p := range places {
+		if !p.Daylight.Turns.IsZero() && !m.wallClock.Before(p.Daylight.Turns) {
+			return true
+		}
+	}
+	return false
 }
 
 // answerFor is one overlay's answer for a place, with its valid time, its
@@ -146,7 +188,7 @@ func (m *Map) featureAnswer(place Place, id string, o Overlay) Answer {
 	for _, f := range o.Features {
 		switch f.Kind {
 		case Polygon, Circle:
-			areas = append(areas, f.Rings)
+			areas = append(areas, overlay.AreaRings(f)) // a circle in kilometres is its ring, as drawn (L-8.3)
 		case Point:
 			for _, run := range f.Rings {
 				points = append(points, describe.Labelled{Run: run, Label: f.Label})
@@ -182,7 +224,7 @@ func (m *Map) fieldAnswer(place Place, id string, o Overlay) Answer {
 		dir := describe.Grid{West: grid.West, South: grid.South, East: grid.East, North: grid.North, Cols: grid.Cols, Rows: grid.Rows, Values: o.Grid.From}
 		return describe.OfWind(nameOf(place), id, reading, dir.At(place.At, nil).Value, o.Grid.Type.Unit)
 	}
-	return describe.OfField(nameOf(place), id, reading, o.Grid.Type.Preset == "temperature", m.units)
+	return describe.OfField(nameOf(place), id, reading, o.Grid.Type.Preset == "temperature", o.Grid.Type.Unit, m.units)
 }
 
 // imageAnswer is the answer for an image: the class here, and where the

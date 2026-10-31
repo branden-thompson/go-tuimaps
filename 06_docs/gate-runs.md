@@ -173,8 +173,104 @@ A commit made from exactly that has the same tree less this file, so the two can
 | 2026-10-05T03:17:55Z | 2b6f480 | af6f063ab0d9 | release v0.2.0 | green | 24 | - |
 | 2026-10-05T04:09:06Z | 3cacdfc | af6f063ab0d9 | release v0.2.0 | green | 24 | - |
 | 2026-10-05T04:58:27Z | 3cacdfc | 6ea6f2eabe88 | full | green | 2782 | - |
+| 2026-10-06T00:30:53Z | ed78e54 | 9bd37072f860 | docs | green | 343 | - |
+| 2026-10-06T00:50:44Z | 5fc822a | 188b5eff8d62 | docs | green | 328 | - |
+| 2026-10-06T03:28:06Z | d1c4d5e | f5f39c8eddb0 | docs | green | 337 | - |
+| 2026-10-06T03:54:57Z | 0862f09 | b994acc0ebcc | docs | green | 320 | - |
+| 2026-10-06T04:03:27Z | 0862f09 | 421aaeb41e38 | docs | green | 327 | - |
+| 2026-10-06T04:14:07Z | a52c8f1 | c40f48c3c88c | docs | green | 324 | - |
+| 2026-10-06T18:30:56Z | e5cd730 | a16d4b823e74 | docs | green | 359 | - |
+| 2026-10-06T18:48:11Z | badfb0f | 18459db444af | docs | green | 360 | - |
+| 2026-10-06T19:23:03Z | 5687075 | 60a037d93fa4 | docs | green | 347 | - |
+| 2026-10-06T19:54:12Z | 9d02fb4 | 85a68b77fea4 | docs | green | 349 | - |
+| 2026-10-06T20:13:37Z | 0ac931e | d1cc1950d417 | docs | green | 349 | - |
+| 2026-10-06T21:54:05Z | 03b3c42 | e48259a7d817 | docs | green | 349 | - |
+| 2026-10-06T22:12:48Z | 23c6909 | e3fd9a435bca | docs | green | 352 | - |
+| 2026-10-06T23:33:23Z | 1852835 | 7ad95b621d1c | docs | green | 389 | - |
+| 2026-10-07T03:29:09Z | 89cfe38 | bdc559dd2c58 | docs | green | 348 | - |
+| 2026-10-07T04:01:13Z | a1a5509 | f6f2ce44a8ad | docs | green | 361 | - |
+| 2026-10-07T19:39:50Z | 2a6452b | a2ce55adfc5a | docs | green | 387 | - |
+| 2026-10-08T01:01:45Z | 03db13f | d115ffc3fbd3 | docs | green | 362 | - |
+| 2026-10-08T01:26:43Z | 9e8b85a | 0eadfcd427ba | docs | green | 381 | - |
+| 2026-10-08T03:16:51Z | 0784649 | e123620504ec | docs | green | 381 | - |
+| 2026-10-08T04:39:02Z | 2ed608e | 99bf822fb623 | docs | green | 389 | - |
+| 2026-10-08T17:37:38Z | 56b087d | ee2261a09c74 | full | green | 2979 | - |
+| 2026-10-08T18:44:53Z | 788fcce | 533676ae655d | full | FAILED: tools/oracle: fuzz FuzzAgree, 5700000x | 2817 | - |
+| 2026-10-08T19:44:26Z | 788fcce | 0268540ee8b9 | full | FAILED: tools/oracle: fuzz FuzzAgree, 5700000x | 3157 | - |
+| 2026-10-08T20:49:27Z | 788fcce | 2c2b59a3f1af | full | green | 2958 | - |
+| 2026-10-08T20:50:11Z | 6a94d57 | 2c2b59a3f1af | release v0.3.0-rc.1 | FAILED: the library says it is 0.2.0 (internal/fetch/fetch.go) and the tag is v0.3.0-rc.1;  set Version to 0. | 26 | - |
+| 2026-10-09T00:06:07Z | 6a94d57 | 51140c5323ff | full | FAILED: vulnerability scan, govulncheck v1.8.0, module and standard library at go1.27.1; vulnerability scan, govulncheck v1.8.0, module and standard library at the floor, go1.25.13; cmd/tuimaps: vulnerability scan, govulncheck v1.8.0, module and standard library at go1.27.1; cmd/tuimaps: vulnerability scan, govulncheck v1.8.0, module and standard library at the floor, go1.25.13; tools/gen-assets: vulnerability scan, govulncheck v1.8.0, module and standard library at go1.27.1; tools/gen-assets: vulnerability scan, govulncheck v1.8.0, module and standard library at the floor, go1.25.13 | 2957 | - |
+| 2026-10-09T01:09:46Z | 6a94d57 | 3d9d00620fec | full | green | 3107 | - |
+| 2026-10-09T01:10:24Z | 1c1b963 | 3d9d00620fec | release v0.3.0-rc.1 | green | 23 | - |
 | 2026-10-09T02:06:49Z | d1c4d5e | a33d8ab10e40 | full | green | 2928 | - |
 | 2026-10-09T16:51:59Z | cabbed3 | a33d8ab10e40 | release v0.2.1 | green | 23 | - |
 | 2026-10-10T00:21:03Z | 2313ed7 | eea64cc56e08 | full | green | 3028 | - |
+| 2026-10-11T19:09:14Z | 1c1b963 | 8e7c47f912cb | full | green | 2964 | - |
+| 2026-10-11T21:20:47Z | 69132c8 | eed08aa559d6 | full | green | 2999 | - |
+| 2026-10-12T00:17:51Z | 13270b9 | 911dfe81e0b7 | full | FAILED: tests, race detector on; tests, race detector off (allocation counts live here); tests on amd64 (emulated here;  real hardware is NOT RUN) | 2940 | - |
+| 2026-10-12T01:07:01Z | 13270b9 | 062bfbd01cd4 | full | green | 2919 | - |
+| 2026-10-12T02:08:09Z | 05030f8 | f5ae5f9c4d27 | full | FAILED: P10, a2dh p10 check | 2921 | - |
+| 2026-10-12T02:58:23Z | 05030f8 | 877061ee4afd | full | green | 2733 | - |
+| 2026-10-12T04:08:15Z | 3762b99 | a538d3281589 | full | FAILED: tests, race detector on; tests, race detector off (allocation counts live here); tests on amd64 (emulated here;  real hardware is NOT RUN) | 2862 | - |
+| 2026-10-12T04:58:10Z | 3762b99 | b74ac0001f29 | full | green | 2970 | - |
+| 2026-10-12T07:43:22Z | d034821 | dbd452281bcb | full | FAILED: tests, race detector on; tests, race detector off (allocation counts live here); tests on amd64 (emulated here;  real hardware is NOT RUN) | 2877 | - |
+| 2026-10-12T13:27:15Z | d034821 | fda1593f4709 | full | green | 2777 | - |
+| 2026-10-15T20:06:12Z | e97d5ab | c4ee0374c19f | full | FAILED: tests, race detector on | 3771 | - |
+| 2026-10-15T20:55:25Z | e97d5ab | c4ee0374c19f | full | FAILED: tests, race detector on | 2917 | - |
+| 2026-10-15T21:49:40Z | e97d5ab | 572c836396da | full | green | 2952 | - |
+| 2026-10-16T16:45:09Z | 9dc4ff3 | a7ace29de087 | docs | green | 454 | - |
+| 2026-10-17T02:44:34Z | 5899c60 | 24a8ceecb891 | full | FAILED: tests, race detector on; tests, race detector off (allocation counts live here); P10, a2dh p10 check; tests on amd64 (emulated here;  real hardware is NOT RUN) | 3215 | - |
+| 2026-10-17T03:36:40Z | 5899c60 | 0d3cead14655 | full | green | 2925 | - |
+| 2026-10-17T15:45:10Z | b50fc86 | 868d76723f3e | full | INTERRUPTED | 659 | - |
+| 2026-10-17T16:37:51Z | b50fc86 | 868d76723f3e | full | green | 3128 | - |
+| 2026-10-17T19:00:36Z | cd19676 | e76a6487f444 | full | green | 3471 | - |
+| 2026-10-17T19:26:10Z | 718d4c9 | 5ed569787149 | quick | green | 957 | - |
+| 2026-10-17T21:22:22Z | 002eb70 | c6b9604754a4 | full | green | 3138 | - |
+| 2026-10-17T22:10:43Z | dd67d22 | c6b9604754a4 | release v0.3.0-rc.2 | green | 26 | - |
+| 2026-10-18T03:28:56Z | dd67d22 | 15ab786c36c6 | docs | green | 457 | - |
+| 2026-10-18T15:21:48Z | 228d6f7 | 43b856a655c5 | full | green | 3147 | - |
+| 2026-10-18T15:22:16Z | 7b7c7de | 43b856a655c5 | release v0.3.0-rc.3 | green | 27 | - |
+| 2026-10-22T19:21:09Z | d93fac5 | a0887af75883 | full | FAILED: vulnerability scan, govulncheck v1.8.0, module and standard library at the floor, go1.26.9; cmd/tuimaps: vulnerability scan, govulncheck v1.8.0, module and standard library at the floor, go1.26.9; tools/gen-assets: vulnerability scan, govulncheck v1.8.0, module and standard library at the floor, go1.26.9 | 3466 | - |
+| 2026-10-22T20:48:53Z | d93fac5 | 9fad1d9e6ba1 | full | green | 3719 | - |
+| 2026-10-24T18:08:38Z | 544b889 | 7d4568d32be2 | full | FAILED: gofmt; NFR-2, every mutant killed by its test | 2216 | - |
+| 2026-10-24T18:46:42Z | 544b889 | 403f2117a7a4 | full | green | 2073 | - |
+| 2026-10-24T20:40:31Z | c23fd89 | fc474f1497a4 | full | green | 2179 | - |
+| 2026-10-24T21:16:16Z | c5c50e7 | fc474f1497a4 | docs | FAILED: docs lane: nothing staged | 0 | tests saw 1 unstaged file(s) |
+| 2026-10-24T21:19:58Z | c5c50e7 | bafce83237ce | docs | green | 155 | - |
 | 2026-10-24T22:44:32Z | 043922e | c528c5696299 | full | green | 2016 | - |
+| 2026-10-25T16:19:12Z | 73c602d | bafce83237ce | quick | FAILED: P10, a2dh p10 check | 571 | - |
+| 2026-10-25T16:20:16Z | 73c602d | bafce83237ce | quick | FAILED: P10, a2dh p10 check | 515 | - |
+| 2026-10-25T16:23:15Z | 73c602d | bafce83237ce | quick | FAILED: tools/oracle: tests, race detector on; tools/oracle: tests, race detector off (allocation counts live here); P10, a2dh p10 check | 474 | - |
+| 2026-10-25T17:49:02Z | 73c602d | bafce83237ce | quick | green | 376 | - |
+| 2026-10-25T22:28:22Z | 73c602d | e9846a65eaa3 | full | green | 2315 | - |
+| 2026-10-25T22:32:03Z | f66c9ea | 6a72a1e26e84 | docs | green | 172 | - |
 | 2026-10-26T01:15:49Z | 50350d1 | 8b1957ba57c6 | full | green | 2189 | - |
+| 2026-10-26T01:34:55Z | 474797a | 6a72a1e26e84 | quick | green | 457 | - |
+| 2026-10-26T03:05:02Z | 474797a | bfb64064066f | full | green | 2231 | - |
+| 2026-10-26T04:15:17Z | 6dbfdf9 | bfb64064066f | quick | green | 473 | - |
+| 2026-10-26T05:37:12Z | 6dbfdf9 | bf230df7d7c3 | full | FAILED: tests, race detector on | 2201 | - |
+| 2026-10-26T06:15:06Z | 6dbfdf9 | bf230df7d7c3 | full | green | 2191 | - |
+| 2026-10-26T13:33:37Z | 17ae3de | 153c740ec7a8 | quick | green | 525 | - |
+| 2026-10-26T15:09:59Z | 17ae3de | ad53cd6dae30 | full | green | 2247 | - |
+| 2026-10-26T16:46:20Z | 813b7b0 | ad53cd6dae30 | quick | green | 510 | - |
+| 2026-10-27T01:27:53Z | 813b7b0 | 66bde058d4a9 | full | green | 2319 | - |
+| 2026-10-27T04:10:14Z | 5f6bf07 | 66bde058d4a9 | quick | green | 592 | - |
+| 2026-10-27T16:18:41Z | 0c27321 | 66bde058d4a9 | quick | green | 509 | - |
+| 2026-10-30T01:17:40Z | 91c3630 | e59e28577909 | docs | green | 176 | - |
+| 2026-10-30T15:27:51Z | 57a9c29 | b8aac246b2b9 | full | FAILED: tests, race detector on; tests, race detector off (allocation counts and NFR-3's peak live here); tests on amd64 (emulated here;  real hardware is NOT RUN) | 2120 | - |
+| 2026-10-30T16:01:34Z | 57a9c29 | 5340b4d11644 | full | green | 1950 | - |
+| 2026-10-30T19:59:56Z | d01ca8e | aedeaee1572d | full | green | 2142 | - |
+| 2026-10-30T21:11:55Z | c26ba1d | ab1b01de4eed | full | green | 2058 | - |
+| 2026-10-30T21:51:37Z | 523fb4c | ab1b01de4eed | full | green | 2141 | - |
+| 2026-10-30T22:26:06Z | 523fb4c | ab1b01de4eed | full | green | 2069 | - |
+| 2026-10-30T22:47:14Z | afa8896 | aee6a7e9e245 | cost | green | 37 | - |
+| 2026-10-30T23:22:40Z | afa8896 | 8db343770f2e | full | green | 2030 | - |
+| 2026-10-31T00:13:17Z | 2185bee | 1cecb440409c | docs | green | 177 | - |
+| 2026-10-31T00:13:44Z | e336158 | 1cecb440409c | release v0.3.0 | green | 18 | - |
+| 2026-10-31T00:44:39Z | 1d46e74 | ffba438fc243 | docs | green | 172 | - |
+| 2026-10-31T00:45:05Z | 26a2fee | ffba438fc243 | release v0.3.0 | green | 18 | - |
+| 2026-10-31T01:57:52Z | 3e56a8b | b4680b697d12 | full | green | 2093 | - |
+| 2026-10-31T01:58:55Z | 5c09bdc | 4cb2159e5bbf | cost | green | 37 | - |
+| 2026-10-31T01:59:41Z | 5c09bdc | 23fe7da2ec0a | cost | green | 37 | - |
+| 2026-10-31T02:03:08Z | 5c09bdc | f8327b0850e4 | docs | green | 172 | - |
+| 2026-10-31T02:03:27Z | aa84b7a | f8327b0850e4 | release v0.3.0 | green | 18 | - |

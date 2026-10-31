@@ -1,0 +1,1042 @@
+[
+  {
+    "id": "m001",
+    "row": "L-1.1",
+    "what": "a field is drawn over the sea whatever its host says",
+    "file": "internal/render/field.go",
+    "old": "\treturn colour.Preset(f.Preset) == colour.Waves || !f.OverWater\n",
+    "new": "\treturn colour.Preset(f.Preset) == colour.Waves\n",
+    "package": ".",
+    "test": "TestAFieldStopsAtTheShoreByDefault"
+  },
+  {
+    "id": "m002",
+    "row": "L-1.1",
+    "what": "the host's water choice is not carried to the prepared field",
+    "file": "internal/overlay/field.go",
+    "old": "Lines: g.Lines, OverWater: g.OverWater}",
+    "new": "Lines: g.Lines}",
+    "package": ".",
+    "test": "TestAFieldStopsAtTheShoreByDefault"
+  },
+  {
+    "id": "m003",
+    "row": "L-1.2",
+    "what": "an image's mask by water is not carried to the picture drawn",
+    "file": "internal/overlay/timeline.go",
+    "old": "\traster.MaskedByWater = h.overlay.Image.MaskedByWater // the overlay's own choice, never a shared picture's\n",
+    "new": "",
+    "package": ".",
+    "test": "TestHostCanFlipEither"
+  },
+  {
+    "id": "m004",
+    "row": "L-1.2",
+    "what": "an image masked by water is drawn over the sea",
+    "file": "internal/render/field.go",
+    "old": "\t\t\tif masked && r.waterAt(col, row) {\n",
+    "new": "\t\t\tif masked && r.waterAt(col, row) && false {\n",
+    "package": "./internal/render",
+    "test": "TestAMaskedImageStaysOffTheSea"
+  },
+  {
+    "id": "m005",
+    "row": "L-1.3",
+    "what": "a field's lines are drawn over the sea whatever its host says",
+    "file": "internal/render/field.go",
+    "old": "\tif here < 0 || (matters && offItsGround(f, r.waterAt(x/2, y/4))) {\n\t\treturn here, -1, -1, false\n",
+    "new": "\tif here < 0 || (matters && false) {\n\t\treturn here, -1, -1, false\n",
+    "package": ".",
+    "test": "TestContoursFollowTheirFieldOverWater"
+  },
+  {
+    "id": "m006",
+    "row": "L-1.4",
+    "what": "frame reuse ignores the overlays' version, so a changed water choice keeps the old frame",
+    "file": "internal/render/frame.go",
+    "old": "\treturn in.OverlaysVersion == l.OverlaysVersion && len(in.Shapes) == len(l.Shapes)",
+    "new": "\treturn len(in.Shapes) == len(l.Shapes)",
+    "package": ".",
+    "test": "TestAChangedWaterChoiceRedraws"
+  },
+  {
+    "id": "m007",
+    "row": "A-3 (D-75)",
+    "what": "a polygon ring left open by the next ring's MoveTo is read as it is",
+    "file": "internal/mvt/geometry.go",
+    "old": "\t\tcase id == cmdMoveTo && kind == scene.GeomPolygon && c.partStart >= 0:\n",
+    "new": "\t\tcase id == cmdMoveTo && kind == scene.GeomPolygon && c.partStart >= 0 && false:\n",
+    "package": "./internal/mvt",
+    "test": "TestAPolygonRingIsClosedByClosePath"
+  },
+  {
+    "id": "m008",
+    "row": "A-3 (D-75)",
+    "what": "a polygon's last ring left open at the end of the geometry is read as it is",
+    "file": "internal/mvt/geometry.go",
+    "old": "\tif kind == scene.GeomPolygon && c.partStart >= 0 {\n\t\treturn malformed() // the last ring left open",
+    "new": "\tif kind == scene.GeomPolygon && c.partStart >= 0 && false {\n\t\treturn malformed() // the last ring left open",
+    "package": "./internal/mvt",
+    "test": "TestAPolygonRingIsClosedByClosePath"
+  },
+  {
+    "id": "m009",
+    "row": "A-3 (D-75)",
+    "what": "a polygon ring run by a second LineTo is read as it is",
+    "file": "internal/mvt/geometry.go",
+    "old": "\t\tcase id == cmdLineTo && kind == scene.GeomPolygon && c.lined:\n",
+    "new": "\t\tcase id == cmdLineTo && kind == scene.GeomPolygon && c.lined && false:\n",
+    "package": "./internal/mvt",
+    "test": "TestAPolygonRingIsClosedByClosePath"
+  },
+  {
+    "id": "m010",
+    "row": "A-4 (D-75)",
+    "what": "a negative zig-zag rank is kept",
+    "file": "internal/mvt/feature.go",
+    "old": "\treturn max(intOf(value), 0) // a rank is a whole number from zero",
+    "new": "\treturn intOf(value) // a rank is a whole number from zero",
+    "package": "./internal/mvt",
+    "test": "TestANegativeRankIsNoRank"
+  },
+  {
+    "id": "m011",
+    "row": "L-2.1",
+    "what": "the muf preset is not defined in MHz",
+    "file": "internal/overlay/grid.go",
+    "old": "\tcase preset == \"muf\" && unit == \"MHz\":\n",
+    "new": "\tcase preset == \"muf\" && unit == \"kHz\":\n",
+    "package": ".",
+    "test": "TestEveryPresetHasLegendWordsAndAUnit"
+  },
+  {
+    "id": "m012",
+    "row": "L-2.1",
+    "what": "two MUF classes share a colour",
+    "file": "internal/colour/preset.go",
+    "old": "return []RGB{{38, 1, 95}, {83, 15, 94},",
+    "new": "return []RGB{{83, 15, 94}, {83, 15, 94},",
+    "package": "./internal/colour",
+    "test": "TestTheMUFAndFoF2RampsPassCheckOnBothGrounds"
+  },
+  {
+    "id": "m013",
+    "row": "L-2.1",
+    "what": "a foF2 field is drawn in one colour whatever its class",
+    "file": "internal/render/field.go",
+    "old": "\t\treturn uint8(colour.FoF21) + uint8(min(int(class), 6)) - 1\n",
+    "new": "\t\treturn uint8(colour.FoF21)\n",
+    "package": ".",
+    "test": "TestTheSpecimensAreWhatTheLibraryDraws"
+  },
+  {
+    "id": "m014",
+    "row": "L-2.1",
+    "what": "the MUF breaks are not the band edges D-144 rules",
+    "file": "internal/colour/preset.go",
+    "old": "func MUFBreaks() []float64 { return []float64{3.5, 5.3, 7, 10.1, 14, 18.068, 21, 24.89, 28} }",
+    "new": "func MUFBreaks() []float64 { return []float64{3.5, 5.3, 7, 10, 14, 18, 21, 24.89, 28} }",
+    "package": "./internal/colour",
+    "test": "TestTheMUFAndFoF2RampsPassCheckOnBothGrounds"
+  },
+  {
+    "id": "m015",
+    "row": "A-5",
+    "what": "the literal inks start where the tokens still run, so the last tokens draw in no colour",
+    "file": "internal/render/basemap.go",
+    "old": "\tfirstLiteral = 160\n",
+    "new": "\tfirstLiteral = 96\n",
+    "package": ".",
+    "test": "TestEveryClassOfEveryPresetIsDrawn"
+  },
+  {
+    "id": "m016",
+    "row": "L-2.1 (D-149)",
+    "what": "foF2 below 1.8 MHz is drawn",
+    "file": "internal/colour/preset.go",
+    "old": "func FloorsFirst(p Preset) bool { return p == Radar || p == QPF || p == FoF2 }",
+    "new": "func FloorsFirst(p Preset) bool { return p == Radar || p == QPF }",
+    "package": "./internal/colour",
+    "test": "TestTheMUFAndFoF2RampsPassCheckOnBothGrounds"
+  },
+  {
+    "id": "m017",
+    "row": "L-2.1",
+    "what": "a caller's ramp is the library's own, so its changes reach every frame",
+    "file": "internal/colour/preset.go",
+    "old": "\treturn slices.Clone(r), ok\n",
+    "new": "\treturn slices.Clip(r), ok\n",
+    "package": "./internal/colour",
+    "test": "TestTheKeptRampsAreTheBuiltOnes"
+  },
+  {
+    "id": "m018",
+    "row": "L-2.1",
+    "what": "a light ground's ramp is kept as the dark one's",
+    "file": "internal/colour/preset.go",
+    "old": "\tif ground == Light {\n\t\tg = Light\n\t}\n",
+    "new": "",
+    "package": "./internal/colour",
+    "test": "TestTheKeptRampsAreTheBuiltOnes"
+  },
+  {
+    "id": "m020",
+    "row": "NFR-1",
+    "what": "a frame reads the last frame's water: its answers are kept past the frame",
+    "file": "internal/render/field.go",
+    "old": "\tclear(r.water) // the areas are whole: what water owns is asked again this frame\n",
+    "new": "",
+    "package": "./internal/render",
+    "test": "TestTheWaterAskedOnceAFrameIsThePaintersAnswer"
+  },
+  {
+    "id": "m021",
+    "row": "L-2.1 (D-29)",
+    "what": "safe ramps keep only the alert, radar and temperature ramps: a host's MUF colour is drawn",
+    "file": "internal/colour/palette.go",
+    "old": "\tramp := (t >= AlertExtremeOutline && t <= AlertUnknownTint) || ScaleClass(t) // an alert's colours, or any preset's class (D-5, D-29)\n",
+    "new": "\tramp := t >= AlertExtremeOutline && t <= High\n",
+    "package": "./internal/colour",
+    "test": "TestSafeRampsKeepEveryScaleTheLibrarysOwn"
+  },
+  {
+    "id": "m022",
+    "row": "L-3.1",
+    "what": "a contour's label carries no unit",
+    "file": "internal/overlay/field.go",
+    "old": "\t\tout[i+1] = strconv.FormatFloat(b, 'f', -1, 64) + suffix\n",
+    "new": "\t\tout[i+1] = strconv.FormatFloat(b, 'f', -1, 64) + suffix[:0]\n",
+    "package": ".",
+    "test": "TestContourLabelsCarryTheirUnit"
+  },
+  {
+    "id": "m023",
+    "row": "L-3.2",
+    "what": "a line running east-west is never labelled",
+    "file": "internal/render/field.go",
+    "old": "\t\t\tif x%labelEvery == labelEvery/2 && south >= 0 && south != here { // a line running east-west is labelled too (L-3.2)\n",
+    "new": "\t\t\tif false && x%labelEvery == labelEvery/2 && south >= 0 && south != here { // a line running east-west is labelled too (L-3.2)\n",
+    "package": ".",
+    "test": "TestAFieldBandedEitherWayIsLabelled"
+  },
+  {
+    "id": "m024",
+    "row": "L-3.3",
+    "what": "a field's answer drops the unit the host declared",
+    "file": "internal/describe/answer.go",
+    "old": "\tout.Value, out.ValueUnit = reading.Value, unit\n",
+    "new": "\tout.Value, out.ValueUnit = reading.Value, unit[:0]\n",
+    "package": ".",
+    "test": "TestEveryFieldAnswerCarriesItsUnit"
+  },
+  {
+    "id": "m025",
+    "row": "L-4.2",
+    "what": "the night side is closed through the sunlit pole",
+    "file": "internal/sun/sun.go",
+    "old": "\tpole := -90.0 // the sun north of the equator: the south pole is in night\n",
+    "new": "\tpole := 90.0 // the sun north of the equator: the south pole is in night\n",
+    "package": "./internal/sun",
+    "test": "TestNightSideIsTheComplement"
+  },
+  {
+    "id": "m026",
+    "row": "L-4.2",
+    "what": "the terminator is drawn on the wrong side of the subsolar point's meridian",
+    "file": "internal/sun/sun.go",
+    "old": "lat := math.Atan(-math.Cos((float64(lon)-slon)*r)/math.Tan(slat*r)) / r",
+    "new": "lat := math.Atan(math.Cos((float64(lon)-slon)*r)/math.Tan(slat*r)) / r",
+    "package": "./internal/sun",
+    "test": "TestTheTerminatorMatchesTheEphemeris"
+  },
+  {
+    "id": "m027",
+    "row": "L-4.1",
+    "what": "the terminator's line does not read on a dark ground",
+    "file": "internal/colour/defaults.go",
+    "old": "\t\treturn RGB{255, 200, 60}, true // amber: no ramp's, no alert's\n",
+    "new": "\t\treturn RGB{25, 20, 6}, true // amber: no ramp's, no alert's\n",
+    "package": "./internal/colour",
+    "test": "TestTheTerminatorAndNightTokensHaveDefaults"
+  },
+  {
+    "id": "m028",
+    "row": "L-4.3",
+    "what": "the night side's ground is not shaded",
+    "file": "internal/render/frame.go",
+    "old": "\t\tbg = colour.Blend(bg, night, colour.NightShade(kind)) // the ground and the sea, never a field's own colours (L-4.4)\n",
+    "new": "\t\tbg = colour.Blend(bg, night, 0) // the ground and the sea, never a field's own colours (L-4.4)\n",
+    "package": ".",
+    "test": "TestTheNightIsShadedAndUnlisted"
+  },
+  {
+    "id": "m029",
+    "row": "L-4.3",
+    "what": "the night fills the areas the water test reads, and keeps an alert's words",
+    "file": "internal/render/basemap.go",
+    "old": "\t\tp.night.Fill(p.rings, s.Role) // its own canvas: the areas' water is left as it is\n\t\treturn nil                    // no outline, no words, no digits: the night is no alert (L-4.3)\n",
+    "new": "\t\tp.areas.Fill(p.rings, s.Role) // its own canvas: the areas' water is left as it is\n",
+    "package": "./internal/render",
+    "test": "TestTheNightTintCarriesNoAlertWords"
+  },
+  {
+    "id": "m030",
+    "row": "L-4.4",
+    "what": "the terminator is drawn unbroken, as a contour is",
+    "file": "internal/render/basemap.go",
+    "old": "\tif s.Kind == scene.ShapeLine && colour.Token(s.Role) == colour.Terminator {\n",
+    "new": "\tif false && s.Kind == scene.ShapeLine && colour.Token(s.Role) == colour.Terminator {\n",
+    "package": "./internal/render",
+    "test": "TestTheTerminatorIsMarkedWithoutColour"
+  },
+  {
+    "id": "m031",
+    "row": "L-4.4",
+    "what": "a place's report says nothing of day or night",
+    "file": "report.go",
+    "old": "Answers: []Answer{}, Daylight: m.daylight(place.At)}",
+    "new": "Answers: []Answer{}}",
+    "package": ".",
+    "test": "TestReportSaysDayOrNight"
+  },
+  {
+    "id": "m032",
+    "row": "L-4.4",
+    "what": "the kept report is not worked out again when a place's day turns",
+    "file": "describe.go",
+    "old": "landed: m.store.Landed(), daylight: m.daylightKey(asked)}",
+    "new": "landed: m.store.Landed(), daylight: m.daylightKey(asked) & 0}",
+    "package": ".",
+    "test": "TestReportSaysDayOrNight"
+  },
+  {
+    "id": "m033",
+    "row": "L-4.4",
+    "what": "the night shades a ramp past its checks",
+    "file": "internal/colour/night.go",
+    "old": "\treturn 0.8\n",
+    "new": "\treturn 0.0\n",
+    "package": "./internal/colour",
+    "test": "TestNightTintKeepsTheFieldReadable"
+  },
+  {
+    "id": "m034",
+    "row": "L-2.2",
+    "what": "a host type's own colours are passed over for the spread",
+    "file": "internal/colour/hostramp.go",
+    "old": "\tif len(own) == n {\n",
+    "new": "\tif false {\n",
+    "package": ".",
+    "test": "TestAHostTypeIsFilledFromLowMiddleHigh"
+  },
+  {
+    "id": "m035",
+    "row": "L-2.2",
+    "what": "the spread runs low to middle the whole way, never reaching high",
+    "file": "internal/colour/hostramp.go",
+    "old": "\t\tif t > 0.5 {\n",
+    "new": "\t\tif false {\n",
+    "package": ".",
+    "test": "TestAHostTypeIsFilledFromLowMiddleHigh"
+  },
+  {
+    "id": "m036",
+    "row": "L-2.3",
+    "what": "a host type's broken ramp is drawn silently",
+    "file": "overlays.go",
+    "old": "\tif breaches > 0 {\n",
+    "new": "\tif false {\n",
+    "package": ".",
+    "test": "TestABadHostRampIsWarned"
+  },
+  {
+    "id": "m037",
+    "row": "L-2.5",
+    "what": "a host type's legend keys no colour",
+    "file": "facts.go",
+    "old": "\t\t\tone.Colour, one.Drawn = host[i], true\n",
+    "new": "\t\t\tone.Drawn = false\n",
+    "package": ".",
+    "test": "TestAHostTypesLegendHasColoursAndUnit"
+  },
+  {
+    "id": "m038",
+    "row": "L-2.6",
+    "what": "the reach's edge is an unbroken line, as a contour is",
+    "file": "internal/render/field.go",
+    "old": "\t\t\tif edge && brokenAt(x, y) {\n",
+    "new": "\t\t\tif edge {\n",
+    "package": "./internal/render",
+    "test": "TestTheReachIsMarkedWithoutColour"
+  },
+  {
+    "id": "m039",
+    "row": "L-2.6",
+    "what": "a reach over a filled field fills over it",
+    "file": "internal/render/field.go",
+    "old": "\t\tfilled = true\n",
+    "new": "\t\tfilled = false\n",
+    "package": "./internal/render",
+    "test": "TestTheReachIsMarkedWithoutColour"
+  },
+  {
+    "id": "m040",
+    "row": "L-2.2",
+    "what": "a host type's colours are taken whatever their number",
+    "file": "internal/overlay/grid.go",
+    "old": "\t\tif len(t.Colours) != 0 && len(t.Colours) != len(t.Breaks)+1 {\n",
+    "new": "\t\tif false {\n",
+    "package": "./internal/overlay",
+    "test": "TestAHostTypesColoursAreOneAClass"
+  },
+  {
+    "id": "m041",
+    "row": "L-2.4",
+    "what": "a host type's bands are never filled",
+    "file": "internal/render/field.go",
+    "old": "\t\tr.fill(in, f, lined)\n",
+    "new": "\t\t_ = lined\n",
+    "package": ".",
+    "test": "TestNoGridDrawsNothingSilently"
+  },
+  {
+    "id": "m042",
+    "row": "L-8.1",
+    "what": "a zone's inside is never filled",
+    "file": "internal/render/basemap.go",
+    "old": "\t\tp.zone.Fill(p.rings, uint8(colour.ZoneTint)) // its own canvas, so an alert's tint is over it whatever the order (L-8.1)\n",
+    "new": "\t\t_ = p.rings\n",
+    "package": ".",
+    "test": "TestAZoneIsOutlinedAndFilledWithoutAlertWords"
+  },
+  {
+    "id": "m043",
+    "row": "L-8.1",
+    "what": "a zone fills the alerts' canvas, so the later of the two covers the other",
+    "file": "internal/render/basemap.go",
+    "old": "\t\tp.zone.Fill(p.rings, uint8(colour.ZoneTint)) // its own canvas",
+    "new": "\t\tp.areas.Fill(p.rings, uint8(colour.ZoneTint)) // its own canvas",
+    "package": ".",
+    "test": "TestAnAlertsTintIsOverAZones"
+  },
+  {
+    "id": "m044",
+    "row": "L-8.1",
+    "what": "a zone's tint is laid over an alert's",
+    "file": "internal/render/frame.go",
+    "old": "ok && c.zone && !tinted && !rampless(in.Depth) {",
+    "new": "ok && c.zone && !rampless(in.Depth) {",
+    "package": ".",
+    "test": "TestAnAlertsTintIsOverAZones"
+  },
+  {
+    "id": "m045",
+    "row": "L-8.1",
+    "what": "a zone's tint is painted at sixteen colours",
+    "file": "internal/render/frame.go",
+    "old": "ok && c.zone && !tinted && !rampless(in.Depth) {",
+    "new": "ok && c.zone && !tinted {",
+    "package": ".",
+    "test": "TestAZoneAtSixteenColoursIsItsOutlineAlone"
+  },
+  {
+    "id": "m046",
+    "row": "L-8.1",
+    "what": "the zone's outline does not read on the dark ground",
+    "file": "internal/colour/defaults.go",
+    "old": "\t\treturn RGB{255, 70, 45}, true // a host's zone's red",
+    "new": "\t\treturn RGB{40, 10, 8}, true // a host's zone's red",
+    "package": "./internal/colour",
+    "test": "TestTheZoneTokensHaveDefaults"
+  },
+  {
+    "id": "m047",
+    "row": "L-8.1",
+    "what": "a zone is read from the night's canvas",
+    "file": "internal/render/basemap.go",
+    "old": "\treturn owns(p.zone, col, row)\n",
+    "new": "\treturn owns(p.night, col, row)\n",
+    "package": ".",
+    "test": "TestAZoneIsOutlinedAndFilledWithoutAlertWords"
+  },
+  {
+    "id": "m048",
+    "row": "L-8.1",
+    "what": "a row whose cells gained a zone is kept from the frame before",
+    "file": "internal/render/frame.go",
+    "old": "\t\tif c.zone {\n\t\t\tflags |= 16\n\t\t}\n",
+    "new": "",
+    "package": ".",
+    "test": "TestAZoneSetLaterIsDrawn"
+  },
+  {
+    "id": "m049",
+    "row": "L-8.2",
+    "what": "a zone's tint is laid over a field it cannot blend with, hiding it",
+    "file": "internal/render/frame.go",
+    "old": "\t\t\ts, blended = in.Blends.ZoneStrength(presetOf(c.under)) // where it does not blend, stipple marks the zone (L-8.2)\n",
+    "new": "\t\t\ts, blended = 1, true\n",
+    "package": ".",
+    "test": "TestAZoneOverAFieldItCannotTintIsStippled"
+  },
+  {
+    "id": "m050",
+    "row": "L-8.2",
+    "what": "a zone over a field it cannot tint is not stippled",
+    "file": "internal/render/frame.go",
+    "old": "\tr.stipple(in)   // before the cells are read too: the dots are line work\n",
+    "new": "",
+    "package": ".",
+    "test": "TestAZoneOverAFieldItCannotTintIsStippled"
+  },
+  {
+    "id": "m051",
+    "row": "L-8.2",
+    "what": "a zone is stippled where its tint blends",
+    "file": "internal/render/field.go",
+    "old": "\t\t\tif _, blends := in.Blends.ZoneStrength(presetOf(c.under)); blends {\n",
+    "new": "\t\t\tif false {\n",
+    "package": ".",
+    "test": "TestAZoneBlendsWhereItCanAndIsNotStippledThere"
+  },
+  {
+    "id": "m052",
+    "row": "L-8.2",
+    "what": "the zone's tint is never searched",
+    "file": "internal/colour/blend.go",
+    "old": "\t\tb.zone[preset] = strongest(ramp, plain[:len(ramp)], under, zone, depth)\n",
+    "new": "\t\tb.zone[preset] = strongest(ramp, plain[:len(ramp)], under, zone, depth) * 0\n",
+    "package": "./internal/colour",
+    "test": "TestTheZoneTintBlendsWhereTheSearchAllows"
+  },
+  {
+    "id": "m053",
+    "row": "L-8.2",
+    "what": "a blend no class shows is kept (D-114)",
+    "file": "internal/colour/blend.go",
+    "old": "\t\tif shows(ramp, plain, tint, s, depth) {\n",
+    "new": "\t\tif true {\n",
+    "package": "./internal/colour",
+    "test": "TestTheZoneTintBlendsWhereTheSearchAllows"
+  },
+  {
+    "id": "m054",
+    "row": "L-8.3",
+    "what": "Report reads a kilometre circle as an empty area",
+    "file": "describe.go",
+    "old": "\t\t\tareas = append(areas, overlay.AreaRings(f)) // a circle in kilometres is its ring, as drawn (L-8.3)\n",
+    "new": "\t\t\tareas = append(areas, f.Rings)\n",
+    "package": ".",
+    "test": "TestReportAnswersAKilometreCircle"
+  },
+  {
+    "id": "m055",
+    "row": "L-6.1",
+    "what": "a host's low, middle or high colour is never warned of",
+    "file": "internal/colour/palette.go",
+    "old": "\tif p.sets(Low, High) {\n",
+    "new": "\tif false && p.sets(Low, High) {\n",
+    "package": "./internal/colour",
+    "test": "TestWarningsReportEveryScaleToken"
+  },
+  {
+    "id": "m056",
+    "row": "L-7.1",
+    "what": "a class carries no shade",
+    "file": "facts.go",
+    "old": "\t\tif shaded {\n\t\t\tone.Shade =",
+    "new": "\t\tif false {\n\t\t\tone.Shade =",
+    "package": ".",
+    "test": "TestEveryClassHasAShadeKey"
+  },
+  {
+    "id": "m057",
+    "row": "L-7.1, D-35",
+    "what": "a class keys a shade where colour is drawn",
+    "file": "internal/render/field.go",
+    "old": "\tdrawn := rampless(depth) && classInk(preset, class) != 0\n",
+    "new": "\tdrawn := classInk(preset, class) != 0\n",
+    "package": ".",
+    "test": "TestEveryClassHasAShadeKey"
+  },
+  {
+    "id": "m058",
+    "row": "L-7.2",
+    "what": "a TERM naming 256 colours is read as sixteen",
+    "file": "internal/colour/sixteen.go",
+    "old": "\tcase strings.Contains(tm, \"256color\"):\n",
+    "new": "\tcase false:\n",
+    "package": "./internal/colour",
+    "test": "TestTheDefaultDepthFollowsTheTerminal"
+  },
+  {
+    "id": "m059",
+    "row": "L-7.2",
+    "what": "COLORTERM is not read",
+    "file": "internal/colour/sixteen.go",
+    "old": "direct := ct == \"truecolor\" || ct == \"24bit\" || ",
+    "new": "direct := ct == \"-\" || ",
+    "package": "./internal/colour",
+    "test": "TestTheDefaultDepthFollowsTheTerminal"
+  },
+  {
+    "id": "m060",
+    "row": "L-7.3",
+    "what": "a tide station is drawn as a buoy",
+    "file": "internal/render/basemap.go",
+    "old": "\tcase colour.FireFaint, colour.QuakeDay, colour.Tide:\n",
+    "new": "\tcase colour.FireFaint, colour.QuakeDay:\n",
+    "package": ".",
+    "test": "TestNoRoleRestsOnColourAlone"
+  },
+  {
+    "id": "m061",
+    "row": "L-7.3",
+    "what": "a quake's ring carries no age",
+    "file": "internal/render/basemap.go",
+    "old": "\t\tp.markAge(ring[0], s.Dots, colour.Token(s.Role))\n",
+    "new": "",
+    "package": ".",
+    "test": "TestNoRoleRestsOnColourAlone"
+  },
+  {
+    "id": "m062",
+    "row": "L-7.4",
+    "what": "the proxy the host names is never exempted",
+    "file": "internal/fetch/fetch.go",
+    "old": "\tf := &Fetcher{proxyOf: proxyOf}\n\treturn f.dial, f.proxy\n",
+    "new": "\tf := &Fetcher{proxyOf: proxyOf}\n\treturn f.dial, proxyOf\n",
+    "package": ".",
+    "test": "TestTheCheckedDialerExemptsOnlyTheNamedProxy"
+  },
+  {
+    "id": "m063",
+    "row": "the release checklist",
+    "what": "v0.3.0 is held to v0.2.0's checklist",
+    "file": "scripts/gate",
+    "old": "    0.3.*) feature=\"propagation-fields\"; m5_held=1 ;;\n",
+    "new": "    0.3.*) feature=\"radar-loops\"; m5_held=1 ;;\n",
+    "package": ".",
+    "test": "TestEachReleaseIsHeldToItsOwnChecklist"
+  },
+  {
+    "id": "m064",
+    "row": "L-2.6",
+    "what": "a two-class field is edge-marked whether or not its host asks",
+    "file": "internal/render/field.go",
+    "old": "\t\tif f.Edge {\n",
+    "new": "\t\tif f.ClassCount == 2 {\n",
+    "package": "./internal/render",
+    "test": "TestOnlyAnEdgeAskedForIsMarked"
+  },
+  {
+    "id": "m065",
+    "row": "L-2.6",
+    "what": "an edge mark is taken on three classes",
+    "file": "internal/overlay/grid.go",
+    "old": "\t\tif t.Edge && len(t.Breaks) != 1 {\n",
+    "new": "\t\tif t.Edge && len(t.Breaks) > 2 {\n",
+    "package": "./internal/overlay",
+    "test": "TestAnEdgeIsAskedForOnATwoClassType"
+  },
+  {
+    "id": "m066",
+    "row": "L-2.6",
+    "what": "the edge asked for never reaches the field",
+    "file": "internal/overlay/grid.go",
+    "old": ", Colours: append([]colour.RGB(nil), t.Colours...), Edge: t.Edge}, nil\n",
+    "new": ", Colours: append([]colour.RGB(nil), t.Colours...)}, nil\n",
+    "package": "./internal/overlay",
+    "test": "TestAnEdgeIsAskedForOnATwoClassType"
+  },
+  {
+    "id": "m067",
+    "row": "L-2.2",
+    "what": "a wrong colour count is refused as unsorted breaks",
+    "file": "internal/overlay/grid.go",
+    "old": "\treturn fault.Make(fault.MalformedRamp, textsafe.Const(\"the overlay's type was refused\"), why,\n\t\ttextsafe.Const(\"give a host type one colour a class",
+    "new": "\treturn fault.Make(fault.UnsortedBreaks, textsafe.Const(\"the overlay's type was refused\"), why,\n\t\ttextsafe.Const(\"give a host type one colour a class",
+    "package": "./internal/overlay",
+    "test": "TestAHostTypesColoursAreOneAClass"
+  },
+  {
+    "id": "m068",
+    "row": "L-2.3",
+    "what": "a host ramp's warning piles up a Set at a time",
+    "file": "overlays.go",
+    "old": "\tm.own = slices.DeleteFunc(m.own, func(w fault.Warning) bool { return w.Kind == fault.RampRuleBroken && w.Subject == subject })\n",
+    "new": "",
+    "package": ".",
+    "test": "TestAHostRampIsWarnedOnceAnOverlay"
+  },
+  {
+    "id": "m069",
+    "row": "D-209",
+    "what": "a cell's colours are kept across night and day",
+    "file": "internal/render/frame.go",
+    "old": "\tkey := colourKey{area: c.area, under: c.under, ink: c.ink, zone: c.zone, night: c.night, faint: c.faint, strict: c.strict}\n",
+    "new": "\tkey := colourKey{area: c.area, under: c.under, ink: c.ink, zone: c.zone, faint: c.faint, strict: c.strict}\n",
+    "package": "./internal/render",
+    "test": "TestEveryCellGetsItsOwnColoursThroughTheMemo"
+  },
+  {
+    "id": "m070",
+    "row": "L-2.6",
+    "what": "the edge reads its south neighbour from the same row",
+    "file": "internal/render/field.go",
+    "old": "\t\t\teast, south := row[x+1], next[x]\n",
+    "new": "\t\t\teast, south := row[x+1], row[x]\n",
+    "package": "./internal/render",
+    "test": "TestTheReachIsMarkedWithoutColour"
+  },
+  {
+    "id": "m071",
+    "row": "L-4.2",
+    "what": "the night overlay's terminator takes the night's role",
+    "file": "daynight.go",
+    "old": "\t\t{Kind: Line, Rings: [][]LonLat{Terminator(at)}, Role: TerminatorLine},\n",
+    "new": "\t\t{Kind: Line, Rings: [][]LonLat{Terminator(at)}, Role: NightTint},\n",
+    "package": ".",
+    "test": "TestTheNightIsOneOverlayInOneCall"
+  },
+  {
+    "id": "m072",
+    "row": "L-10.3",
+    "what": "a socks5h proxy with no port is dialled at no port",
+    "file": "internal/fetch/fetch.go",
+    "old": "\"socks5\": \"1080\", \"socks5h\": \"1080\"}[u.Scheme]",
+    "new": "\"socks5\": \"1080\"}[u.Scheme]",
+    "package": "./internal/fetch",
+    "test": "TestAProxyTakesItsSchemesPort"
+  },
+  {
+    "id": "m073",
+    "row": "watchpost D-207, D-216",
+    "what": "TerminalDepth takes a depth hint back",
+    "file": "look.go",
+    "old": "\tcase depth == TerminalDepth:\n\t\tm.look.depthHinted = false\n",
+    "new": "\tcase depth == TerminalDepth:\n\t\treturn\n",
+    "package": ".",
+    "test": "TestADepthHintIsTakenBack"
+  },
+  {
+    "id": "m074",
+    "row": "watchpost D-229",
+    "what": "a refused edge mark is the breaks' kind again",
+    "file": "internal/overlay/grid.go",
+    "old": "\treturn fault.Make(fault.BadEdge, textsafe.Const(\"the overlay's type was refused\"), why,",
+    "new": "\treturn fault.Make(fault.UnsortedBreaks, textsafe.Const(\"the overlay's type was refused\"), why,",
+    "package": "./internal/overlay",
+    "test": "TestAnEdgeIsAskedForOnATwoClassType"
+  },
+  {
+    "id": "m075",
+    "row": "watchpost D-229",
+    "what": "a refused edge mark's words tell the host to name a preset",
+    "file": "internal/overlay/grid.go",
+    "old": "\t\ttextsafe.Const(\"ask for the edge mark only on a type of your own with two classes - one break - or leave Edge unset\"))",
+    "new": "\t\ttextsafe.Const(\"give the class breaks as numbers in rising order, at most 20 of them, or name a preset\"))",
+    "package": "./internal/overlay",
+    "test": "TestAnEdgeIsAskedForOnATwoClassType"
+  },
+  {
+    "id": "m076",
+    "row": "L-4.4",
+    "what": "a kept report says a turn of the sun already past",
+    "file": "describe.go",
+    "old": "\tif m.turnPassed(m.reported.Places) {",
+    "new": "\tif false {",
+    "package": ".",
+    "test": "TestReportSaysDayOrNight"
+  },
+  {
+    "id": "m077",
+    "row": "L-2.3",
+    "what": "a host ramp is checked only when it is set, not when the depth changes",
+    "file": "look.go",
+    "old": "\t\tm.look.depth, m.look.depthHinted = depth, true\n\t}\n\tm.recheckHostRampsLocked()",
+    "new": "\t\tm.look.depth, m.look.depthHinted = depth, true\n\t}",
+    "package": ".",
+    "test": "TestAHostRampIsCheckedAgainWhenTheLookChanges"
+  },
+  {
+    "id": "m078",
+    "row": "L-2.1",
+    "what": "a preset with no case of its own is drawn in radar's colours",
+    "file": "internal/colour/blend.go",
+    "old": "\t}\n\treturn 0, 0\n}",
+    "new": "\t}\n\treturn Radar1, 6\n}",
+    "package": "./internal/colour",
+    "test": "TestEveryPresetHasItsClassTokens"
+  },
+  {
+    "id": "m079",
+    "row": "C-5",
+    "what": "a golden specimen no specimen draws is passed over",
+    "file": "specimen_test.go",
+    "old": "\t\tif !drawn[filepath.Base(f)] {\n\t\t\tout = append(out, filepath.Base(f))",
+    "new": "\t\tif false {\n\t\t\tout = append(out, filepath.Base(f))",
+    "package": ".",
+    "test": "TestAStaleSpecimenIsNamed"
+  },
+  {
+    "id": "m080",
+    "row": "D-42",
+    "what": "the day is said at another moment than the one asked",
+    "file": "daynight.go",
+    "old": "Day: sun.Elevation(at.Lat, at.Lon, moment) > 0",
+    "new": "Day: sun.Elevation(at.Lat, at.Lon, moment.Truncate(24*time.Hour)) > 0",
+    "package": ".",
+    "test": "TestDaylightAtIsTheNightDrawn"
+  },
+  {
+    "id": "m081",
+    "row": "D-42",
+    "what": "the zero time is said as known",
+    "file": "daynight.go",
+    "old": "\tif moment.IsZero() {\n\t\treturn Daylight{}",
+    "new": "\tif false {\n\t\treturn Daylight{}",
+    "package": ".",
+    "test": "TestDaylightAtIsTheNightDrawn"
+  },
+  {
+    "id": "m082",
+    "row": "watchpost R2I-3",
+    "what": "a tile reply's headers are read whatever their size",
+    "file": "internal/fetch/fetch.go",
+    "old": "\t\tMaxResponseHeaderBytes: maxHeaderBytes,\n",
+    "new": "",
+    "package": "./internal/fetch",
+    "test": "TestARepliesHeadersAreBounded"
+  },
+  {
+    "id": "m083",
+    "row": "watchpost R2I-5",
+    "what": "a place off the globe is said to be in day or night",
+    "file": "daynight.go",
+    "old": "\tif !onGlobe {\n\t\treturn Daylight{}",
+    "new": "\tif false && !onGlobe {\n\t\treturn Daylight{}",
+    "package": ".",
+    "test": "TestDaylightAtIsTheNightDrawn"
+  },
+  {
+    "id": "m084",
+    "row": "A-18 (watchpost R2C-6)",
+    "what": "SetPalette leaves a host ramp's warning as it was",
+    "file": "look.go",
+    "old": "\tm.look.palette = palette.KeepRamps(m.look.safeRamps)\n\tm.look.version++\n\tm.recheckHostRampsLocked()\n",
+    "new": "\tm.look.palette = palette.KeepRamps(m.look.safeRamps)\n\tm.look.version++\n",
+    "package": ".",
+    "test": "TestEveryLookSetterChecksTheRampAgain"
+  },
+  {
+    "id": "m085",
+    "row": "A-18 (watchpost R2C-6)",
+    "what": "SafeRamps leaves a host ramp's warning as it was",
+    "file": "look.go",
+    "old": "\tm.look.palette = m.look.palette.KeepRamps(on)\n\tm.look.version++\n\tm.recheckHostRampsLocked()\n",
+    "new": "\tm.look.palette = m.look.palette.KeepRamps(on)\n\tm.look.version++\n",
+    "package": ".",
+    "test": "TestEveryLookSetterChecksTheRampAgain"
+  },
+  {
+    "id": "m086",
+    "row": "A-18 (watchpost R2C-6)",
+    "what": "Ground leaves a host ramp's warning as it was",
+    "file": "look.go",
+    "old": "\tm.look.ground = choice\n\tm.recheckHostRampsLocked()\n",
+    "new": "\tm.look.ground = choice\n",
+    "package": ".",
+    "test": "TestEveryLookSetterChecksTheRampAgain"
+  },
+  {
+    "id": "m087",
+    "row": "A-18 (watchpost R2C-6)",
+    "what": "PaintGround leaves a host ramp's warning as it was",
+    "file": "look.go",
+    "old": "\tm.look.ground = colour.GroundChoice{}\n\tm.recheckHostRampsLocked()\n",
+    "new": "\tm.look.ground = colour.GroundChoice{}\n",
+    "package": ".",
+    "test": "TestEveryLookSetterChecksTheRampAgain"
+  },
+  {
+    "id": "m088",
+    "row": "A-18 (watchpost R2C-6)",
+    "what": "ColourDepth leaves a host ramp's warning as it was",
+    "file": "look.go",
+    "old": "\tm.recheckHostRampsLocked()\n\tm.changed++\n}\n\n// depthInEffect",
+    "new": "\tm.changed++\n}\n\n// depthInEffect",
+    "package": ".",
+    "test": "TestEveryLookSetterChecksTheRampAgain"
+  },
+  {
+    "id": "m089",
+    "row": "watchpost D-280",
+    "what": "a refusal before any leg is logged as a run",
+    "file": "scripts/gate",
+    "old": "  [ \"$logging\" = 1 ] || return 0\n",
+    "new": "",
+    "package": ".",
+    "test": "TestEveryRunIsLogged"
+  },
+  {
+    "id": "m090",
+    "row": "watchpost R2D's note",
+    "what": "the gate's workspace is written into the tree",
+    "file": "scripts/gate",
+    "old": "  export GOWORK=\"$work_dir/go.work\"\n",
+    "new": "  export GOWORK=\"$root/go.work\"\n",
+    "package": ".",
+    "test": "TestTheGatesWorkspaceIsItsOwn"
+  },
+  {
+    "id": "m091",
+    "row": "watchpost D-288",
+    "what": "an exported doc comment carries an ID",
+    "file": "daynight.go",
+    "old": "// a host shows - an hour ahead as well as now.",
+    "new": "// a host shows - an hour ahead as well as now (L-4.4).",
+    "package": ".",
+    "test": "TestNoExportedDocCarriesAnID"
+  },
+  {
+    "id": "m092",
+    "row": "watchpost R2C (round 2's alias Minor)",
+    "what": "an alias's comment leaves a field of its struct unnamed",
+    "file": "overlays.go",
+    "old": "Lines, drawn as its labelled contours over faint bands;",
+    "new": "drawn as its labelled contours over faint bands;",
+    "package": ".",
+    "test": "TestEveryAliasNamesItsFields"
+  },
+  {
+    "id": "m093",
+    "row": "watchpost R4C-9",
+    "what": "an alias the hand list left out names no longer all its fields",
+    "file": "overlays.go",
+    "old": "// alias: ID; Valid; Keeps, how long after Valid it stays current; During,\n",
+    "new": "// alias: ID; Valid; Keeps, how long after Valid it stays current; its span,\n",
+    "package": ".",
+    "test": "TestEveryAliasNamesItsFields"
+  },
+  {
+    "id": "m094",
+    "row": "watchpost D-299 (R6C-7, R6L-8)",
+    "what": "the race-off leg believes it runs the race detector, and judges NFR-3's peak nowhere",
+    "file": "race_off_test.go",
+    "old": "const raceDetector = false\n",
+    "new": "const raceDetector = true\n",
+    "package": ".",
+    "test": "TestRaceDetectorIsToldTruly"
+  },
+  {
+    "id": "m095",
+    "row": "watchpost D-343 (D-47)",
+    "what": "a cell on the antimeridian is sampled at the mean of its dots' longitudes, Greenwich",
+    "file": "internal/render/field.go",
+    "old": "lon, lat := onWorld(west+eastOf(west, r.lons[2*col+1])/2), ",
+    "new": "lon, lat := (west+r.lons[2*col+1])/2, ",
+    "package": "./internal/render",
+    "test": "TestACellOnTheAntimeridianIsSampledThere"
+  },
+  {
+    "id": "m096",
+    "row": "watchpost D-343 (D-47)",
+    "what": "a dot's footprint across the antimeridian spans the half of the world between its neighbours",
+    "file": "internal/render/field.go",
+    "old": "halfLon := eastOf(r.lons[max(x-1, 0)], r.lons[min(x+1, w-1)]) / 4",
+    "new": "halfLon := (r.lons[min(x+1, w-1)] - r.lons[max(x-1, 0)]) / 4",
+    "package": "./internal/render",
+    "test": "TestAFootprintAcrossTheAntimeridianIsADotWide"
+  },
+  {
+    "id": "m097",
+    "row": "watchpost D-343 (D-47)",
+    "what": "a footprint's samples past 180\u00b0 are not put back on the world",
+    "file": "internal/render/field.go",
+    "old": "lon := onWorld(r.lons[x] - halfLon + 2*halfLon*(float64(i)+0.5)/maxSpan)",
+    "new": "lon := r.lons[x] - halfLon + 2*halfLon*(float64(i)+0.5)/maxSpan",
+    "package": "./internal/render",
+    "test": "TestAFootprintAcrossTheAntimeridianIsADotWide"
+  },
+  {
+    "id": "m098",
+    "row": "P7.0 (FR-16)",
+    "what": "a line's or a label's own colour kept at half the contrast it must reach",
+    "file": "internal/colour/contrast.go",
+    "old": "\tif Contrast(own, background) >= atLeast {\n\t\treturn own\n\t}",
+    "new": "\tif Contrast(own, background) >= atLeast/2 {\n\t\treturn own\n\t}",
+    "package": ".",
+    "test": "TestEveryGlobeCellKeepsItsContrast"
+  },
+  {
+    "id": "m099",
+    "row": "row 2.2 (D-137)",
+    "what": "the contract check held to a release two before this one",
+    "file": "contract_breaks_test.go",
+    "old": "const lastRelease = \"v0.2.2\"",
+    "new": "const lastRelease = \"v0.1.0\"",
+    "package": ".",
+    "test": "TestTheContractIsHeldToTheLastRelease"
+  },
+  {
+    "id": "m100",
+    "row": "P7.1 (watchpost D-350)",
+    "what": "a final v0.3 tag passes without M5's record",
+    "file": "scripts/gate",
+    "old": "  if [ \"$m5_held\" = 1 ] && [[ \"$release_tag\" != *-rc.* ]]; then\n",
+    "new": "  if [ \"$m5_held\" = 2 ] && [[ \"$release_tag\" != *-rc.* ]]; then\n",
+    "package": ".",
+    "test": "TestAFinalV03TagWaitsForM5sRecord"
+  },
+  {
+    "id": "m101",
+    "row": "P7.1 (watchpost D-350)",
+    "what": "a release candidate is held to M5's record",
+    "file": "scripts/gate",
+    "old": "  if [ \"$m5_held\" = 1 ] && [[ \"$release_tag\" != *-rc.* ]]; then\n",
+    "new": "  if [ \"$m5_held\" = 1 ]; then\n",
+    "package": ".",
+    "test": "TestAFinalV03TagWaitsForM5sRecord"
+  },
+  {
+    "id": "m102",
+    "row": "P7.1 (watchpost D-350)",
+    "what": "M5's record passes a frame at twice its target",
+    "file": "m5_record_test.go",
+    "old": "\t\tif v > s.target {\n",
+    "new": "\t\tif v > 2*s.target {\n",
+    "package": ".",
+    "test": "TestAnM5RecordIsRefused"
+  },
+  {
+    "id": "m103",
+    "row": "P7.1 (watchpost D-350)",
+    "what": "M5's record of other code passes",
+    "file": "m5_record_test.go",
+    "old": "got != tree {\n",
+    "new": "got == \"-\"+tree {\n",
+    "package": ".",
+    "test": "TestAnM5RecordIsRefused"
+  },
+  {
+    "id": "m104",
+    "row": "P7.1 (watchpost D-350)",
+    "what": "M5's record from another machine passes",
+    "file": "m5_record_test.go",
+    "old": "\tif !strings.Contains(fields[rowMachine], referenceMachine) {\n",
+    "new": "\tif strings.Contains(fields[rowMachine], \"-\"+referenceMachine) {\n",
+    "package": ".",
+    "test": "TestAnM5RecordIsRefused"
+  },
+  {
+    "id": "m105",
+    "row": "P7.1 (watchpost D-350)",
+    "what": "800 by 220, a known limit, is held to a target",
+    "file": "m5_record_test.go",
+    "old": "\t\tif s.target == 0 {\n\t\t\tcontinue\n\t\t}\n",
+    "new": "",
+    "package": ".",
+    "test": "TestAnM5RecordIsRefused"
+  }
+]

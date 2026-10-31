@@ -233,7 +233,8 @@ func (a attrs) label() string {
 }
 
 // rank is upstream's sort key: the local rank, else the scale rank, else -
-// what OpenMapTiles really carries - the rank, else 0; integers only. As upstream, a local rank that is present and not an
+// what OpenMapTiles really carries - the rank, else 0; whole numbers from
+// zero only. As upstream, a local rank that is present and not an
 // integer gives 0: the scale rank is not read in its place.
 func (a attrs) rank() int32 {
 	value := a.localRank
@@ -246,7 +247,7 @@ func (a attrs) rank() int32 {
 	if value == nil {
 		return 0
 	}
-	return intOf(value)
+	return max(intOf(value), 0) // a rank is a whole number from zero: a negative one is none (A-4)
 }
 
 // stringOf returns the string a Value message holds, aliasing its bytes; a

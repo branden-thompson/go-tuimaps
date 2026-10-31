@@ -73,8 +73,8 @@ func testField(t *testing.T) {
 	if west < uint8(colour.Temperature1) || east > uint8(colour.Temperature17) {
 		t.Errorf("inks %d and %d are not temperature tokens", west, east)
 	}
-	// A host can flip it: the field over water as well.
-	in.FieldsOverWater = true
+	// A host can flip it: the field over water as well (L-1.1).
+	in.Fields[0].OverWater = true
 	in.OverlaysVersion = 2
 	flipped, _ := drawn(t, in)
 	over := 0
@@ -109,6 +109,28 @@ func rain() scene.Raster {
 // heaviest class wins, so a storm's core one pixel wide is not averaged away.
 func TestWaterNeverMasksImage(t *testing.T) { testImage(t) }
 func TestHeaviestInCell(t *testing.T)       { testImage(t) }
+
+// TestAMaskedImageStaysOffTheSea is L-1.2's flip: rain(), which falls on the
+// sea, colours the sea's cells unmasked and none once its host masks it by
+// water.
+func TestAMaskedImageStaysOffTheSea(t *testing.T) {
+	v := gulfView()
+	sea := func(masked bool) int {
+		ra := rain()
+		ra.MaskedByWater = masked
+		r, _ := drawn(t, Input{View: v, Tiles: embedded(t, v), Style: style.BuiltIn(), Rasters: []scene.Raster{ra}, OverlaysVersion: 1})
+		n := 0
+		for i, c := range r.grid.cells {
+			if c.under != 0 && r.painter.Water(i%120, i/120) {
+				n++
+			}
+		}
+		return n
+	}
+	if unmasked, masked := sea(false), sea(true); unmasked == 0 || masked != 0 {
+		t.Errorf("the image coloured %d cells of sea unmasked and %d masked; want some, then none", unmasked, masked)
+	}
+}
 
 func testImage(t *testing.T) {
 	v := gulfView()
@@ -237,6 +259,74 @@ func TestImageBlockShadesNoColour(t *testing.T) {
 	for i, l := range f.Lines {
 		if got := len([]rune(plain(l))); got != 120 {
 			t.Fatalf("line %d is %d characters", i, got)
+		}
+	}
+}
+
+// TestTheWaterAskedOnceAFrameIsThePaintersAnswer: every cell's water a frame
+// reads is the painter's answer for that frame - after the view moves too,
+// where the last frame's answers would be wrong.
+func TestTheWaterAskedOnceAFrameIsThePaintersAnswer(t *testing.T) {
+	f := bands(40, 30)
+	f.Lines = true
+	in := Input{View: gulfView(), Style: style.BuiltIn(), Fields: []scene.Field{f}, OverlaysVersion: 1}
+	in.Tiles = embedded(t, in.View)
+	r, _ := drawn(t, in)
+	moved := in
+	moved.View.Centre = project.LonLat{Lon: -80, Lat: 25}
+	moved.Tiles, moved.OverlaysVersion = embedded(t, moved.View), 2
+	for _, next := range []Input{in, moved} {
+		if _, err := r.Draw(next); err != nil {
+			t.Fatal(err)
+		}
+		asked, sea := 0, 0
+		for i, known := range r.water {
+			if known == waterUnknown {
+				continue
+			}
+			asked++
+			owns := r.painter.Water(i%r.grid.cols, i/r.grid.cols)
+			if owns != (known == waterOwns) {
+				t.Fatalf("centre %v: cell %d held as water %v; the painter says %v", next.View.Centre, i, known == waterOwns, owns)
+			}
+			if owns {
+				sea++
+			}
+		}
+		if asked == 0 || sea == 0 {
+			t.Errorf("centre %v: %d cells asked, %d of sea: this measures nothing", next.View.Centre, asked, sea)
+		}
+	}
+}
+
+// TestACellOnTheAntimeridianIsSampledThere (watchpost D-343): a cell whose
+// two dot columns lie either side of the antimeridian is sampled on it, the
+// short way round, never at Greenwich - the mean of +179.9 and -179.9. A
+// world field differing only near Greenwich, drawn over the Pacific from
+// centres that put the antimeridian inside a cell, shows none of Greenwich.
+func TestACellOnTheAntimeridianIsSampledThere(t *testing.T) {
+	cols, rows := 180, 90
+	f := scene.Field{West: -180, South: -90, East: 180, North: 90, Cols: cols, Rows: rows, Classes: make([]int8, cols*rows), Preset: uint8(colour.Temperature), ClassCount: 17, OverWater: true}
+	for row := range rows {
+		for col := range cols {
+			f.Classes[row*cols+col] = 3
+			if col >= 85 && col < 95 { // within 10° of Greenwich
+				f.Classes[row*cols+col] = 12
+			}
+		}
+	}
+	greenwich, pacific := classInk(f.Preset, 12), classInk(f.Preset, 3)
+	for k := range 20 {
+		lon := 178 + 0.2*float64(k)
+		v := project.View{Centre: project.LonLat{Lon: lon, Lat: 20}, Zoom: 2.5, Cols: 120, Rows: 40}
+		r, _ := drawn(t, Input{View: v, Tiles: embedded(t, v), Style: style.BuiltIn(), Fields: []scene.Field{f}, OverlaysVersion: uint64(k + 1)})
+		for i, c := range r.grid.cells {
+			if c.under == greenwich {
+				t.Fatalf("centre %.1f°: cell %d,%d carries Greenwich's class over the Pacific", lon, i%120, i/120)
+			}
+		}
+		if mid := r.grid.cells[20*120+60].under; mid != pacific {
+			t.Fatalf("centre %.1f°: the view's centre carries ink %d, not the Pacific's %d", lon, mid, pacific)
 		}
 	}
 }

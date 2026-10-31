@@ -1,5 +1,10 @@
 package colour
 
+import (
+	"slices"
+	"sync"
+)
+
 // Preset is one of the library's own types of overlay colouring (D-69).
 type Preset uint8
 
@@ -12,7 +17,38 @@ const (
 	UV         // L-25: the UV index (watchpost D-137)
 	AirQuality // L-25: the US AQI (watchpost D-139)
 	QPF        // L-26: a period's rain and snow totals, liquid-equivalent (watchpost D-184)
+	MUF        // v0.3.0 L-2.1: the maximum usable frequency, in MHz (watchpost D-144)
+	FoF2       // v0.3.0 L-2.1: the F2 layer's critical frequency, in MHz (watchpost D-145)
+
+	// lastPreset is the last of them: the arrays by preset and the loops
+	// over every preset read it. A preset added after it also takes its own
+	// case in each switch over presets - its class tokens among them, which
+	// TestEveryPresetHasItsClassTokens holds.
+	lastPreset = FoF2
 )
+
+// MUFBreaks are the MUF preset's breaks, in MHz: the amateur band edges -
+// 80, 60, 40, 30, 20, 17, 15, 12 and 10 metres - so each class says the MUF
+// reaches that band (v0.3.0 L-2.1; from watchpost D-144).
+func MUFBreaks() []float64 { return []float64{3.5, 5.3, 7, 10.1, 14, 18.068, 21, 24.89, 28} }
+
+// FoF2Breaks are the foF2 preset's floors, in MHz: the band edges below 15
+// MHz - 160, 80, 60, 40, 30 and 20 metres - so each class says foF2, near-
+// vertical skywave's limit, reaches that band. Below the first it reaches
+// none, and nothing is drawn (v0.3.0 L-2.1; from watchpost D-145, D-149).
+func FoF2Breaks() []float64 { return []float64{1.8, 3.5, 5.3, 7, 10.1, 14} }
+
+// mufRamp runs dark violet to pale - plum, rust, amber, khaki - higher
+// frequencies lighter, one ramp on both grounds at truecolor and 256
+// colours, colour-vision safe: one smooth curve in OKLCh, its lightness in
+// even steps, searched for against the checker; no colour is set on its own
+// (v0.3.0 L-2.1; watchpost D-147, D-148). fof2Ramp is its first six colours,
+// each foF2 class in the MUF colour of the same frequencies (D-149).
+func mufRamp() []RGB {
+	return []RGB{{38, 1, 95}, {83, 15, 94}, {124, 32, 80}, {155, 59, 60}, {174, 93, 45}, {183, 129, 52}, {187, 164, 84}, {191, 196, 126}, {201, 226, 170}, {217, 253, 213}}
+}
+
+func fof2Ramp() []RGB { return mufRamp()[:6] }
 
 // UVBreaks are the UV index's categories' floors: Low under 3, Moderate 3
 // to 6, High 6 to 8, Very High 8 to 11, Extreme 11 and over (L-25.1;
@@ -31,9 +67,9 @@ func AirQualityBreaks() []float64 { return []float64{51, 101, 151, 201, 301} }
 func QPFFloors() []float64 { return []float64{0.25, 2.5, 6.35, 12.7, 25.4, 50.8, 101.6} }
 
 // FloorsFirst reports whether a preset's first break is a floor: below it
-// there is nothing to draw - no rain on radar, a trace of a total (L-17.1,
-// L-26).
-func FloorsFirst(p Preset) bool { return p == Radar || p == QPF }
+// there is nothing to draw - no rain on radar, a trace of a total, a foF2
+// that reaches no band (L-17.1, L-26, v0.3.0 L-2.1).
+func FloorsFirst(p Preset) bool { return p == Radar || p == QPF || p == FoF2 }
 
 // qpfRamp is WPC's hues in their order - lime, greens, blues, purple and
 // plum - their lightness searched to run pale to dark and pass the checker,
@@ -162,10 +198,47 @@ func Midpoint(p Preset, ground GroundKind, depth Depth) int {
 // has the library's own ramp: the 256-colour one is chosen from that palette
 // and checked there, never a conversion of the truecolor one (S10-1). With
 // no colour, or sixteen, there is none: the no-colour form is drawn (D-59).
+//
+// Each call hands back a ramp of its own: a caller's changes never reach the
+// library's.
 func Ramp(p Preset, ground GroundKind, depth Depth) ([]RGB, bool) {
+	r, ok := builtRamp(p, ground, depth)
+	return slices.Clone(r), ok
+}
+
+// builtRamp is a preset's ramp as the library keeps it, built once and read
+// in place, never handed to a caller: a frame reads a ramp for every cell
+// it colours.
+func builtRamp(p Preset, ground GroundKind, depth Depth) ([]RGB, bool) {
 	if depth != Truecolor && depth != Colours256 {
 		return nil, false
 	}
+	if p < Temperature || p > lastPreset {
+		return nil, false
+	}
+	g := Dark
+	if ground == Light {
+		g = Light
+	}
+	return builtRamps()[p][g][depth], true
+}
+
+// builtRamps are every preset's ramps for each ground and each depth with a
+// ramp (Truecolor, Colours256), built the first time one is asked.
+var builtRamps = sync.OnceValue(func() *[lastPreset + 1][Light + 1][Colours256 + 1][]RGB {
+	var t [lastPreset + 1][Light + 1][Colours256 + 1][]RGB
+	for p := Temperature; p <= lastPreset; p++ {
+		for _, g := range []GroundKind{Dark, Light} {
+			for _, d := range []Depth{Truecolor, Colours256} {
+				t[p][g][d], _ = buildRamp(p, g, d)
+			}
+		}
+	}
+	return &t
+})
+
+// buildRamp makes a preset's ramp for a ground and a depth with a ramp.
+func buildRamp(p Preset, ground GroundKind, depth Depth) ([]RGB, bool) {
 	switch p {
 	case Temperature:
 		return temperatureRamp(ground, depth), true
@@ -181,6 +254,10 @@ func Ramp(p Preset, ground GroundKind, depth Depth) ([]RGB, bool) {
 		return airQualityRamp(), true
 	case QPF:
 		return qpfRamp(), true
+	case MUF:
+		return mufRamp(), true
+	case FoF2:
+		return fof2Ramp(), true
 	}
 	return nil, false
 }
@@ -265,28 +342,45 @@ func rampDefault(t Token, ground GroundKind, depth Depth) (RGB, bool) {
 		}
 		return tints[i/2], true
 	case t >= Radar1 && t <= Radar6:
-		ramp, ok := Ramp(Radar, ground, depth)
+		ramp, ok := builtRamp(Radar, ground, depth)
 		return pick(ramp, int(t-Radar1), ok)
 	case t >= Temperature1 && t <= Temperature17:
-		ramp, ok := Ramp(Temperature, ground, depth)
+		ramp, ok := builtRamp(Temperature, ground, depth)
 		return pick(ramp, int(t-Temperature1), ok)
 	case t >= Wind1 && t <= Wind6:
-		ramp, ok := Ramp(Wind, ground, depth)
+		ramp, ok := builtRamp(Wind, ground, depth)
 		return pick(ramp, int(t-Wind1), ok)
 	case t >= Wave1 && t <= Wave6:
-		ramp, ok := Ramp(Waves, ground, depth)
+		ramp, ok := builtRamp(Waves, ground, depth)
 		return pick(ramp, int(t-Wave1), ok)
 	case t >= UV1 && t <= UV5:
-		ramp, ok := Ramp(UV, ground, depth)
+		ramp, ok := builtRamp(UV, ground, depth)
 		return pick(ramp, int(t-UV1), ok)
 	case t >= AQI1 && t <= AQI6:
-		ramp, ok := Ramp(AirQuality, ground, depth)
+		ramp, ok := builtRamp(AirQuality, ground, depth)
 		return pick(ramp, int(t-AQI1), ok)
 	case t >= QPF1 && t <= QPF7:
-		ramp, ok := Ramp(QPF, ground, depth)
+		ramp, ok := builtRamp(QPF, ground, depth)
 		return pick(ramp, int(t-QPF1), ok)
+	case t >= MUF1 && t <= MUF10:
+		ramp, ok := builtRamp(MUF, ground, depth)
+		return pick(ramp, int(t-MUF1), ok)
+	case t >= FoF21 && t <= FoF26:
+		ramp, ok := builtRamp(FoF2, ground, depth)
+		return pick(ramp, int(t-FoF21), ok)
+	case t >= Low && t <= High:
+		return hostDefaults()[t-Low], true
 	}
 	return RGB{}, false
+}
+
+// hostDefaults are the low, middle and high tokens' colours on either
+// ground (L-2.2, A-9): the MUF preset's first, sixth and last classes. Spread
+// by HostRamp they pass the checker to 9 classes at truecolor and to 7 at
+// 256 colours on both grounds; a host type with more is reported (L-2.3).
+func hostDefaults() [3]RGB {
+	m := mufRamp()
+	return [3]RGB{m[0], m[5], m[9]}
 }
 
 func pick(ramp []RGB, i int, ok bool) (RGB, bool) {

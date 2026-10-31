@@ -57,7 +57,7 @@ func (s Status) String() string {
 // cells. It is valid until the next Render.
 //
 // Changed and FrameTicks are the map's counters as this frame was drawn at
-// them (L-1.16), so a host can tell which frame is which without calling
+// them, so a host can tell which frame is which without calling
 // again. Dropped is what the frame could not show and left out, each named:
 // nil when nothing was dropped.
 type Frame struct {
@@ -70,7 +70,7 @@ type Frame struct {
 // DropKind is what a frame left out.
 type DropKind uint8
 
-// The things a frame may leave out (v0.2.0 L3.11, L3.13).
+// The things a frame may leave out.
 const (
 	DropAlertLabel DropKind = iota + 1 // an alert's label did not fit; Shown is its severity word if that fitted, else empty
 	DropPlaceName                      // a place's name did not fit; Shown is what stood in for it, if anything
@@ -425,8 +425,8 @@ func (m *Map) Render(size Size, now time.Time) (frame Frame, err error) {
 	if err != nil {
 		return Frame{}, err
 	}
-	if m.member.NoteRender() && len(m.own) < 64 { // renders keep finding work no Work call has run (D-131)
-		m.own = append(m.own, fault.Warning{Kind: fault.NoWorkCalled, Count: 1, Subject: textsafe.Const("work is pending and no Work call has run; call Work from a goroutine of the host's own")})
+	if m.member.NoteRender() { // renders keep finding work no Work call has run (D-131)
+		m.noteLocked(fault.Warning{Kind: fault.NoWorkCalled, Count: 1, Subject: textsafe.Const("work is pending and no Work call has run; call Work from a goroutine of the host's own")})
 	}
 	in := render.Input{View: m.view, Style: m.style, Labels: true, Scale: true,
 		Credit: textsafe.Const(basemapCredit), Supplied: m.pipe != nil && m.pipe.Deepest() > 0}
@@ -525,7 +525,7 @@ func (m *Map) Close() int {
 
 // SetImageBudget sets what the map's images and grids may hold in all: each
 // picture's file and its pixels at a byte each, each grid's field, and the
-// shared classified set (L-12.1). Zero or less is the library's own, 6 MiB.
+// shared classified set. Zero or less is the library's own, 6 MiB.
 // A Set that would go over it is refused, saying by how much; lowering it
 // below what is held drops nothing. A host that raises it owns the memory it
 // asks for.

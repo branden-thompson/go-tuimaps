@@ -5,6 +5,7 @@ const AlertSevere
 const AlertUnknown
 const Away
 const BadCurrency
+const BadEdge
 const BorderLayer
 const Buoy
 const CacheRefused
@@ -70,6 +71,7 @@ const MotionTooFewFrames
 const NearDuplicateID
 const NearImageColours
 const Nearby
+const NightTint
 const NoColour
 const NoSize
 const NoTiles
@@ -111,6 +113,8 @@ const Sharpening
 const SizeMismatch
 const StaleOverlay
 const TableFallback
+const TerminalDepth
+const TerminatorLine
 const Tide
 const TileFailed
 const Track
@@ -124,21 +128,29 @@ const UnsupportedTile
 const VisionSafe
 const WaterLayer
 const WebMercator
+const Zone
 func AirQualityGrid(string, Grid, time.Time) Overlay
 func AirQualityRole(float64) Token
 func CheckRamp([]RGB, RampCheck) []Finding
 func CheckedDialer() Dialer
+func CheckedDialerFor(ProxyFunc) (Dialer, ProxyFunc)
+func DaylightAt(LonLat, time.Time) Daylight
 func Embed(func(z uint8, x, y uint32) ([]byte, bool), uint8) Option
+func FoF2Grid(string, Grid, time.Time) Overlay
 func KindOf(error) (Kind, bool)
 func Kinds() []Kind
+func MUFGrid(string, Grid, time.Time) Overlay
 func New(...Option) (*Map, error)
 func NewShared(int64) (*Shared, error)
+func NightOverlay(string, time.Time) Overlay
+func NightSide(time.Time) [][]LonLat
 func QPFGrid(string, Grid, time.Time) Overlay
 func RadarImage(string, Image, time.Time) Overlay
 func Ring(R) []LonLat
 func Rings([]R) [][]LonLat
 func SharedCaches(*Shared) Option
 func TemperatureGrid(string, Grid, Unit, time.Time) Overlay
+func Terminator(time.Time) []LonLat
 func TokenNames() []string
 func UVGrid(string, Grid, time.Time) Overlay
 func UVRole(float64) Token
@@ -219,7 +231,8 @@ type Answer = describe.Answer
 type Bound struct{ MinZoom float64; W float64; S float64; E float64; N float64 }
 type CacheUse struct{ Need int64; Held int64; Limit int64 }
 type Caches struct{ Tiles CacheUse; Shapes CacheUse; Disk CacheUse }
-type Class struct{ Label string; Colour RGB; Drawn bool; Mark string }
+type Class struct{ Label string; Colour RGB; Drawn bool; Mark string; Shade string }
+type Daylight struct{ Known bool; Day bool; Turns time.Time }
 type Depth = colour.Depth
 type Detail = style.Detail
 type Dialer = fetch.Dialer
@@ -247,11 +260,12 @@ type Option func(*config) error
 type Overlay = overlay.Overlay
 type Place struct{ ID string; Name string; At LonLat; Marker MarkerStyle; Radius int; Glyph string; Blink bool }
 type PlaceAlert struct{ Overlay string; Feature string; Label string; Severity Severity; Where Where; Distance float64; Unit string; Bearing float64; Compass string; Valid time.Time; Stale bool; UnderOneCell bool }
-type PlaceReport struct{ Place string; Alerts []PlaceAlert; Answers []Answer }
+type PlaceReport struct{ Place string; Alerts []PlaceAlert; Answers []Answer; Daylight Daylight }
 type Playback uint8
 type Positioned interface{ LonLat() (float64, float64) }
 type Projection = overlay.Projection
 type Provider = overlay.Provider
+type ProxyFunc = fetch.ProxyFunc
 type PurgeReport struct{ Removed int; Failed int }
 type RGB = colour.RGB
 type RampCheck = colour.RampCheck

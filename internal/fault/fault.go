@@ -43,8 +43,9 @@ const (
 	Cancelled
 	Closed
 	Internal
+	BadEdge // an edge mark asked for on other than a host type of two classes (watchpost D-229)
 
-	lastKind = Internal
+	lastKind = BadEdge
 )
 
 // String returns the kind's name as the contract writes it.
@@ -57,7 +58,7 @@ func (k Kind) String() string {
 		"malformed-table", "unknown-preset", "malformed-style", "invalid-id", "over-vertex-cap", "over-image-cap",
 		"image-refused", "ring-too-short", "bad-currency", "unsupported-schema", "unsupported-tile",
 		"over-limit", "fetch-refused", "fetch-failed", "cache-refused", "no-size", "reentrant-call",
-		"cancelled", "closed", "internal",
+		"cancelled", "closed", "internal", "bad-edge",
 	}[k-1]
 }
 

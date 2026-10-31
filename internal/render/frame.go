@@ -87,13 +87,9 @@ type Input struct {
 	Fields          []scene.Field  // prepared scalar grids, sampled into cells here, at draw time
 	Rasters         []scene.Raster // prepared images, resampled here, at draw time
 	OverlaysVersion uint64
-	// FieldsOverWater and ImagesMaskedByWater flip the two defaults: a field
-	// stops at the shore (D-32), and an image never does (D-87).
-	FieldsOverWater bool
 	// ImageHeld is an image on the map, drawn in this frame or on a gap of
 	// its loop: a field sharing the map with one is drawn as its lines (L-15.3).
-	ImageHeld           bool
-	ImagesMaskedByWater bool
+	ImageHeld bool
 	// Markers are the host's places, drawn over everything beneath them
 	// (FR-26); MarkerPhase is which half of the blink this frame draws, and
 	// Motion works it out from the host's clock.
@@ -163,6 +159,8 @@ type cell struct {
 	strict bool   // the cell holds text, held to the text contrast
 	shade  string // with no ramp, an image's shade: laid last, only where nothing else claimed the cell (L-8.3)
 	faint  bool   // under is a field's band drawn faintly, where an image shares the map and has no echo (L-15.3)
+	night  bool   // the night side owns the cell: its ground and sea are shaded (L-4.3)
+	zone   bool   // a host's zone owns the cell: tinted, or stippled over a field its tint cannot blend with (L-8)
 }
 
 type box struct{ left, right, top, bottom int }
@@ -333,6 +331,7 @@ type Renderer struct {
 	drops   []Drop    // this frame's dropped alert labels, the backing kept from frame to frame
 	lons    []float64 // the longitude of each dot column's centre, for this frame
 	lats    []float64 // the latitude of each dot row's
+	water   []uint8   // each cell's water, asked once a frame (waterAt); the backing kept from frame to frame
 	line    strings.Builder
 
 	drawn     bool  // a frame has been drawn, and last describes it
@@ -342,6 +341,15 @@ type Renderer struct {
 	rowSums   []uint64 // what each held row was built from
 	redraws   int
 	rowsBuilt int
+	memo      map[colourKey][2]colour.RGB // this frame's colours by what they are worked out from (watchpost D-209)
+}
+
+// colourKey is what a cell's colours are worked out from beyond the frame's
+// own input and ground, which do not change within a frame: two cells with
+// one key have one foreground and one background, worked out once.
+type colourKey struct {
+	area, under, ink           uint8
+	zone, night, faint, strict bool
 }
 
 // Redraws is how many frames were drawn and not reused.
@@ -367,7 +375,7 @@ func (r *Renderer) sameOverlays(in Input) bool {
 		return false
 	}
 	l := r.last
-	if in.FieldsOverWater != l.FieldsOverWater || in.ImagesMaskedByWater != l.ImagesMaskedByWater || in.ImageHeld != l.ImageHeld {
+	if in.ImageHeld != l.ImageHeld {
 		return false
 	}
 	if len(in.Markers) != len(l.Markers) {
@@ -598,6 +606,7 @@ func (r *Renderer) canvas() {
 			if ink, owned := r.painter.Area(col, row); owned {
 				c.area = ink
 			}
+			c.night, c.zone = r.painter.InNight(col, row), r.painter.InZone(col, row)
 		}
 	}
 }
@@ -606,6 +615,7 @@ func (r *Renderer) canvas() {
 func (r *Renderer) compose(in Input, status Status) {
 	g := r.grid
 	r.underlays(in) // before the cells are read: a field with no colour is lines, drawn on the canvas
+	r.stipple(in)   // before the cells are read too: the dots are line work
 	r.canvas()
 	// The text of a cell is a contest, not a painting: the first to claim a
 	// cell keeps it, so the order below is the order of precedence. The
@@ -908,11 +918,25 @@ func (r *Renderer) colours(c cell, in Input, groundColour colour.RGB, kind colou
 	if area, ok := r.painter.Colour(c.area, in.Palette, kind, in.Depth); ok {
 		bg = area
 	}
+	zoned := false
+	if zone, ok := r.painter.Colour(uint8(colour.ZoneTint), in.Palette, kind, in.Depth); ok && c.zone && !tinted && !rampless(in.Depth) {
+		bg, zoned = zone, true // a host's zone, over the ground and the sea, beneath an alert's tint (L-8.1)
+	}
+	if night, ok := r.painter.Colour(uint8(colour.Night), in.Palette, kind, in.Depth); ok && c.night {
+		bg = colour.Blend(bg, night, colour.NightShade(kind)) // the ground and the sea, never a field's own colours (L-4.4)
+	}
 	if under, ok := r.painter.Colour(c.under, in.Palette, kind, in.Depth); ok {
-		switch s, blended := in.Blends.Strength(presetOf(c.under), int(colour.Token(c.area)-colour.AlertExtremeOutline)/2); {
+		s, blended := 0.0, false
+		switch {
+		case tinted:
+			s, blended = in.Blends.Strength(presetOf(c.under), int(colour.Token(c.area)-colour.AlertExtremeOutline)/2)
+		case zoned:
+			s, blended = in.Blends.ZoneStrength(presetOf(c.under)) // where it does not blend, stipple marks the zone (L-8.2)
+		}
+		switch {
 		case c.faint:
 			bg = colour.Blend(bg, under, colour.FaintField) // the band a hint on the ground, or on the alert's tint (L-15.3)
-		case tinted && blended:
+		case blended:
 			bg = colour.Blend(under, bg, s)
 		default:
 			bg = under
@@ -1027,6 +1051,12 @@ func (g *grid) rowSum(row int, sum uint64) uint64 {
 		if c.faint {
 			flags |= 4
 		}
+		if c.night {
+			flags |= 8
+		}
+		if c.zone {
+			flags |= 16
+		}
 		sum = mix(sum, uint64(c.glyph)<<32|uint64(c.under)<<24|uint64(c.ink)<<16|uint64(c.area)<<8|flags)
 		for i := range len(c.text) {
 			sum = (sum ^ uint64(c.text[i])) * sumPrime
@@ -1044,6 +1074,10 @@ func (r *Renderer) emit(in Input) []string {
 	under := ground{kind: in.Ground.Kind(in.Palette)}
 	under.colour, under.painted = in.Ground.InEffect(in.Palette)
 	salt := r.salt(in, under)
+	if r.memo == nil {
+		r.memo = map[colourKey][2]colour.RGB{}
+	}
+	clear(r.memo) // a new frame: its input and ground may differ from the last's
 	if len(r.held.Lines) != g.rows {
 		r.held.Lines, r.rowSums = make([]string, g.rows), make([]uint64, g.rows)
 	}
@@ -1055,7 +1089,8 @@ func (r *Renderer) emit(in Input) []string {
 		}
 		r.rowSums[row] = sum
 		r.rowsBuilt++
-		r.line.Reset()
+		r.line.Reset()                              // the row's last string is kept in lines; a new buffer is built
+		r.line.Grow(max(len(lines[row]), 8*g.cols)) // once, at about the row's size, not by doubling (watchpost RP-4)
 		p := pen{fresh: true}
 		for col := range g.cols {
 			c := g.cells[row*g.cols+col]
@@ -1084,7 +1119,15 @@ func (r *Renderer) colourCell(c cell, in Input, under ground, p *pen) {
 	if p == nil {
 		return
 	}
-	fg, bg := r.colours(c, in, under.colour, under.kind)
+	key := colourKey{area: c.area, under: c.under, ink: c.ink, zone: c.zone, night: c.night, faint: c.faint, strict: c.strict}
+	pair, held := r.memo[key]
+	if !held {
+		pair[0], pair[1] = r.colours(c, in, under.colour, under.kind)
+		if r.memo != nil {
+			r.memo[key] = pair
+		}
+	}
+	fg, bg := pair[0], pair[1]
 	if c.ink == 0 && !p.fresh {
 		fg = p.fg // an empty cell shows no foreground: nothing to change
 	}

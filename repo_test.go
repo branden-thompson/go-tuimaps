@@ -89,10 +89,10 @@ func TestModuleHasNoReplace(t *testing.T) {
 	}
 }
 
-// moduleFloor is the go directive every module carries (v0.2.1, after
+// moduleFloor is the go directive every module carries (D-28, after v0.2.0
 // D-133): the first release whose standard library has none of the
-// vulnerabilities the code reaches, GO-2026-6809 the latest (v0.2.2). The
-// gate reads its floor toolchain from the root module's directive.
+// vulnerabilities the code reaches, GO-2026-6809 the latest (watchpost D-244).
+// The gate reads its floor toolchain from the root module's directive.
 const moduleFloor = "1.26.10"
 
 // TestEveryModuleIsAtTheFloor (D-133): every module file's go directive is

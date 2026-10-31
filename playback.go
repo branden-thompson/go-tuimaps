@@ -10,7 +10,7 @@ import (
 )
 
 // Playback is whether a map's loops may play. It is one setting for the map,
-// not one a loop, and a refresh Set leaves it as it was (D-67). It is off
+// not one a loop, and a refresh Set leaves it as it was. It is off
 // until the host chooses.
 type Playback uint8
 
@@ -24,7 +24,7 @@ const (
 type OffReason uint8
 
 // The reasons playback is off, in the order the state read names them when
-// there is more than one (L-1.10d).
+// there is more than one.
 const (
 	OffReduceMotion OffReason = iota + 1 // the host asked for reduced motion
 	OffByHost                            // the host set playback off
@@ -44,8 +44,8 @@ const (
 	lastHold = 2 * time.Second
 )
 
-// LoopState is what a host reads to show the listener where the loops are
-// (L-1.10d). At is the moment shown and Now is "right now", the newest
+// LoopState is what a host reads to show the listener where the loops are.
+// At is the moment shown and Now is "right now", the newest
 // observed frame. Index counts from zero along every loop's frame times,
 // merged; Oldest and Newest are its span.
 type LoopState struct {
@@ -56,7 +56,7 @@ type LoopState struct {
 	// is false while the host holds the animation clock still.
 	Playing, Advancing bool
 	Gap, Forecast      bool // the moment shown is a gap, or a forecast
-	CeilingLifted      bool // the step is faster than the 2.5-a-second ceiling allows (D-76)
+	CeilingLifted      bool // the step is faster than the 2.5-a-second ceiling allows
 	Playback           Playback
 	Step               time.Duration
 	Off                OffReason
@@ -86,8 +86,8 @@ type playback struct {
 }
 
 // FrameTicks counts frame advances as of the last time the map was given an
-// animation time, by Render or Animate (D-66). An advance is not an input:
-// it leaves Changed and the report's cache alone (L-1.10e). A control the
+// animation time, by Render or Animate. An advance is not an input:
+// it leaves Changed and the report's cache alone. A control the
 // listener uses is an input, and moves Changed instead.
 func (m *Map) FrameTicks() uint64 {
 	defer m.guardQuiet("FrameTicks")
@@ -128,7 +128,7 @@ func (m *Map) SetPlayback(p Playback) (err error) {
 }
 
 // SetPlaybackStep sets how long each frame shows while a loop plays: from
-// 200 ms to 1000 ms, zero meaning the default, 500 ms (D-76). A step below
+// 200 ms to 1000 ms, zero meaning the default, 500 ms. A step below
 // 400 ms lifts the ceiling of 2.5 changes a second, which is there for people
 // that flashing harms; the state read says so, and a host that offers such a
 // step should say so beside it.
@@ -155,7 +155,7 @@ func (m *Map) SetPlaybackStep(step time.Duration) (err error) {
 }
 
 // Play runs the loops from the oldest frame through "right now" and on
-// through any forecast frames, holds the last frame and repeats (D-67). It
+// through any forecast frames, holds the last frame and repeats. It
 // does nothing while playback is off.
 func (m *Map) Play() (err error) {
 	return m.control("Play", func() {
@@ -359,8 +359,8 @@ func (m *Map) shownLocked() time.Time {
 }
 
 // ShowMoment sets the moment the map shows while it holds no loop, from one
-// time to another (L-15.2): an overlay is drawn while its span meets it
-// (L-15.1). A host that steps through days of a forecast says each day this
+// time to another: an overlay is drawn while its span meets it.
+// A host that steps through days of a forecast says each day this
 // way. Zero for both is the frame's own clock again; while a loop is held,
 // the loop's frame is the moment and this one waits.
 func (m *Map) ShowMoment(from, to time.Time) (err error) {

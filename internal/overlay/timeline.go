@@ -119,11 +119,17 @@ func (s *Store) RasterAt(id string, at time.Time) (scene.Raster, Report, bool) {
 	if !ok || h.overlay.Image == nil {
 		return scene.Raster{}, Report{}, false
 	}
+	var raster scene.Raster
+	var report Report
 	pictures, i := s.pictures[id], frameShownAt(h.overlay.Image, at)
-	if i < 0 || i >= len(pictures) || !pictures[i].ready {
-		return s.standRasterLocked(id, func(img *Image) int { return frameShownAt(img, at) }) // the loop it replaced, until its own land (L11.32)
+	ok = i >= 0 && i < len(pictures) && pictures[i].ready
+	if ok {
+		raster, report = pictures[i].raster, pictures[i].report
+	} else {
+		raster, report, ok = s.standRasterLocked(id, func(img *Image) int { return frameShownAt(img, at) }) // the loop it replaced, until its own land (L11.32)
 	}
-	return pictures[i].raster, pictures[i].report, true
+	raster.MaskedByWater = h.overlay.Image.MaskedByWater // the overlay's own choice, never a shared picture's
+	return raster, report, ok
 }
 
 // Valid is the time an overlay's freshness is judged by: for a loop, its

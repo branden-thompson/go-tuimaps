@@ -39,6 +39,7 @@ const (
 	Cancelled          = fault.Cancelled
 	Closed             = fault.Closed
 	Internal           = fault.Internal
+	BadEdge            = fault.BadEdge
 )
 
 // WarningKind says what a warning is about. This list is closed too.
@@ -60,8 +61,8 @@ const (
 	RenderFailed          = fault.RenderFailed
 	CacheUnderNeed        = fault.CacheUnderNeed
 	TableFallback         = fault.TableFallback     // valued by the provider's legend gradient, off its table (v0.2.0)
-	CacheRootReadable     = fault.CacheRootReadable // other users can read the disk cache's root (v0.2.0 L-9.6)
-	NearImageColours      = fault.NearImageColours  // matched a published or host table only within the tolerance (v0.2.0 L-2.2)
+	CacheRootReadable     = fault.CacheRootReadable // other users can read the disk cache's root
+	NearImageColours      = fault.NearImageColours  // matched a published or host table only within the tolerance
 )
 
 // KindOf is the kind of an error the library raised, and false for an error
@@ -79,8 +80,8 @@ func KindOf(err error) (Kind, bool) {
 // Kinds are every error kind there is, in the contract's order: what a host
 // can switch on, and what a test can walk.
 func Kinds() []Kind {
-	out := make([]Kind, 0, int(Internal))
-	for k := InvalidCoordinates; k <= Internal; k++ {
+	out := make([]Kind, 0, int(BadEdge))
+	for k := InvalidCoordinates; k <= BadEdge; k++ {
 		out = append(out, k)
 	}
 	return out
@@ -95,7 +96,7 @@ func WarningKinds() []WarningKind {
 	return out
 }
 
-// Rule is one of the rules a colour ramp is held to (FR-16, D-88).
+// Rule is one of the rules a colour ramp is held to.
 type Rule = colour.Rule
 
 // The rules. A host that themes a ramp can hold its own to the same ones.
@@ -106,15 +107,19 @@ const (
 	VisionSafe = colour.VisionSafe // every pair, and every class against the ground, far enough apart
 )
 
-// Finding is one way a ramp breaks a rule: which rule, which classes, and
-// by how much.
+// Finding is one way a ramp breaks a rule: which rule (Rule), which classes
+// (A and B), and by how much (Value).
 type Finding = colour.Finding
 
-// RampCheck says how a ramp is used, which decides what is asked of it.
+// RampCheck says how a ramp is used, which decides what is asked of it: the
+// Ground it is drawn on; the Depth in use; Midpoint, the class a diverging
+// ramp is lightest or darkest at, -1 for one that runs one way; and Lines,
+// whether it colours line work on the ground rather than areas text is
+// drawn over.
 type RampCheck = colour.RampCheck
 
 // CheckRamp holds a ramp of colours to the library's own rules and answers
-// with what it found, empty for a ramp that passes (FR-16). It is the check
+// with what it found, empty for a ramp that passes. It is the check
 // the library runs on its own presets, exported so that a host can run it on
 // a palette of its own, in its own tests, before anyone sees it.
 func CheckRamp(ramp []RGB, how RampCheck) []Finding {

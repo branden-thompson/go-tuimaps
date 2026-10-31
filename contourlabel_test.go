@@ -74,3 +74,77 @@ func TestAFieldsContoursCarryTheirValues(t *testing.T) {
 
 // escapes are the colour sequences, which carry numbers of their own.
 var escapes = regexp.MustCompile("\x1b\\[[0-9;]*[a-zA-Z]")
+
+// coolNorth is a temperature field that cools from south to north, so its
+// bands run east-west and its lines cross every column, never a row.
+func coolNorth() Grid {
+	const cols, rows = 24, 24
+	g := Grid{West: -125, South: 24, East: -66, North: 50, Cols: cols, Rows: rows}
+	g.Values = make([]float64, 0, cols*rows)
+	for r := range rows {
+		for range cols {
+			g.Values = append(g.Values, 30.0-float64(r)*2.5)
+		}
+	}
+	return g
+}
+
+// noColourBody is the body of a no-colour frame of the field centred over
+// the United States: the map's furniture row and the colour escapes left out.
+func noColourBody(t *testing.T, o Overlay) string {
+	t.Helper()
+	m, err := New(WithSize(120, 40), Embed(assets.Tile, assets.MaxZoom))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer m.Close()
+	m.ColourDepth(NoColour)
+	if err := m.Recentre(LonLat{Lon: -96, Lat: 37}); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Zoom(3); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Set(o); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Settle(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	frame, err := m.Render(Size{Cols: 120, Rows: 40}, drawnAt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return escapes.ReplaceAllString(strings.Join(frame.Lines[:len(frame.Lines)-1], "\n"), "")
+}
+
+// TestAFieldBandedEitherWayIsLabelled is L-3.2: a field whose lines run
+// north-south and one whose lines run east-west both carry their values.
+func TestAFieldBandedEitherWayIsLabelled(t *testing.T) {
+	for name, g := range map[string]Grid{"banded west to east": warmEast(), "banded south to north": coolNorth()} {
+		if body := noColourBody(t, TemperatureGrid("temp", g, Celsius, drawnAt)); !regexp.MustCompile(`-?\d+°C`).MatchString(body) {
+			t.Errorf("%s: no contour carries its value:\n%s", name, body)
+		}
+	}
+}
+
+// TestContourLabelsCarryTheirUnit is L-3.1: a contour's value is written with
+// its type's unit - degrees for a temperature, MHz for a frequency.
+func TestContourLabelsCarryTheirUnit(t *testing.T) {
+	muf := coolNorth()
+	for i := range muf.Values {
+		muf.Values[i] = 40 - muf.Values[i] // 10 to 67 MHz, rising to the north
+	}
+	for _, c := range []struct {
+		name string
+		o    Overlay
+		want string
+	}{
+		{"temperature", TemperatureGrid("temp", coolNorth(), Celsius, drawnAt), `-?\d+°C`},
+		{"MUF", MUFGrid("muf", muf, drawnAt), `\d+(\.\d+)?MHz`},
+	} {
+		if body := noColourBody(t, c.o); !regexp.MustCompile(c.want).MatchString(body) {
+			t.Errorf("%s: no contour label matches %s:\n%s", c.name, c.want, body)
+		}
+	}
+}

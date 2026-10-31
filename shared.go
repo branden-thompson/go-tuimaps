@@ -7,7 +7,7 @@ import (
 	"github.com/branden-thompson/go-tuimaps/internal/tiles"
 )
 
-// Shared is a set of caches more than one map may draw from (FR-27). Two
+// Shared is a set of caches more than one map may draw from. Two
 // maps of the same data - a small one beside a large one, say - then hold
 // one copy of each tile between them rather than one each.
 //
@@ -38,7 +38,7 @@ func NewShared(tileBytes int64) (*Shared, error) {
 
 // Use is what the shared caches need, hold and may hold. Need over cap is
 // worth watching: it means the views together want more than they can keep,
-// so tiles are fetched again as the views take turns (D-90).
+// so tiles are fetched again as the views take turns.
 func (s *Shared) Use() CacheUse {
 	if s == nil || s.tiles == nil {
 		return CacheUse{}
@@ -48,7 +48,7 @@ func (s *Shared) Use() CacheUse {
 }
 
 // SharedCaches makes a map draw from a shared set rather than caches of its
-// own (FR-27). Every map that shares a set must be created with it.
+// own. Every map that shares a set must be created with it.
 func SharedCaches(set *Shared) Option {
 	return func(c *config) error {
 		if c == nil || set == nil || set.tiles == nil {

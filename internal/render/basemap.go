@@ -15,8 +15,8 @@ const (
 	// firstLiteral is the first ink that stands for a user's style's literal
 	// colour. The inks below it are the tokens' own numbers, which must all
 	// lie below it: a token at or past it is read as a literal and drawn in
-	// no colour (TestEveryTokenIsAnInkBelowTheLiterals). It leaves room for
-	// tokens to come, and 96 literal colours.
+	// no colour (A-5; TestEveryTokenIsAnInkBelowTheLiterals). It leaves room
+	// for tokens to come, and 96 literal colours.
 	firstLiteral = 160
 	// maxLabels bounds the label candidates kept for one frame.
 	maxLabels = 4096
@@ -43,6 +43,8 @@ type Label struct {
 type Painter struct {
 	lines         *Canvas
 	areas         *Canvas
+	night         *Canvas // the night side (L-4.3), apart from the areas the water test reads; made at the first night shape (NFR-3)
+	zone          *Canvas // a host's zone (v0.3.0 L-8.1), apart from the areas: an alert's tint is over it; made at the first zone, most maps having none (NFR-3)
 	literals      []colour.RGB
 	labels        []Label
 	overlayLabels []Label
@@ -90,6 +92,8 @@ func (p *Painter) Reset() {
 	}
 	p.lines.Wipe()
 	p.areas.Wipe()
+	p.night.Wipe()
+	p.zone.Wipe()
 	p.literals, p.labels, p.labelPts = p.literals[:0], p.labels[:0], p.labelPts[:0]
 	p.overlayLabels = p.overlayLabels[:0]
 	p.outlines, p.outlineCells = p.outlines[:0], p.outlineCells[:0]
@@ -206,8 +210,25 @@ func (p *Painter) Shape(v project.View, s scene.Shape) error {
 		p.culled++
 		return nil
 	}
+	if s.Kind == scene.ShapeArea && colour.Token(s.Role) == colour.Night {
+		night, err := p.ownCanvas(p.night)
+		if err != nil {
+			return err
+		}
+		p.night = night
+		p.night.Fill(p.rings, s.Role) // its own canvas: the areas' water is left as it is
+		return nil                    // no outline, no words, no digits: the night is no alert (L-4.3)
+	}
 	if s.Kind == scene.ShapeArea && alertRole(s.Role) {
 		p.areas.Fill(p.rings, s.Role+1) // an alert's tint is the token after its outline's
+	}
+	if s.Kind == scene.ShapeArea && colour.Token(s.Role) == colour.Zone {
+		zone, err := p.ownCanvas(p.zone)
+		if err != nil {
+			return err
+		}
+		p.zone = zone
+		p.zone.Fill(p.rings, uint8(colour.ZoneTint)) // its own canvas, so an alert's tint is over it whatever the order (L-8.1)
 	}
 	p.keepOutline(s, false)
 	p.lines.Forcing(true)
@@ -311,22 +332,62 @@ func (p *Painter) mark(ring []Point, s scene.Shape) {
 	}
 	if s.Kind == scene.ShapePoint && s.Dots > 0 {
 		p.markCircle(ring[0], s.Dots, false, s.Role) // a ring fixed on the screen (L-19)
+		p.markAge(ring[0], s.Dots, colour.Token(s.Role))
 		return
 	}
 	if s.Kind == scene.ShapePoint {
-		for dy := -1; dy <= 1; dy++ {
-			for dx := -1; dx <= 1; dx++ {
-				p.lines.Set(ring[0].X+dx, ring[0].Y+dy, s.Role)
-			}
+		for _, d := range pointDots(colour.Token(s.Role)) {
+			p.lines.Set(ring[0].X+d[0], ring[0].Y+d[1], s.Role)
 		}
 		return
 	}
+	if s.Kind == scene.ShapeLine && colour.Token(s.Role) == colour.Terminator {
+		p.dash(ring, s.Role, dotStroke) // at every depth: never one more contour (L-4.4)
+		return
+	}
 	if s.Kind == scene.ShapeLine && colourless(p.depth) {
-		p.dash(ring, s.Role) // five dots on, four off, two thick (D-77)
+		p.dash(ring, s.Role, dashStroke) // five dots on, four off, two thick (D-77)
 		return
 	}
 	for i := 0; i+1 < len(ring); i++ {
 		p.lines.Line(ring[i].X, ring[i].Y, ring[i+1].X, ring[i+1].Y, 1, s.Role)
+	}
+}
+
+// The dots a point is drawn in: a block of three by three, or for a role
+// told from another by more than its colour, a shape of its own (L-7.3): a
+// weaker hotspot a plus against a strong one's block, a quake of the past
+// day a plus and an older one a cross, a tide station a plus against a
+// buoy's block.
+var (
+	blockDots = [][2]int{{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {0, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}}
+	plusDots  = [][2]int{{0, -1}, {-1, 0}, {0, 0}, {1, 0}, {0, 1}}
+	crossDots = [][2]int{{-1, -1}, {1, -1}, {0, 0}, {-1, 1}, {1, 1}}
+)
+
+// pointDots are the dots a point of a role is drawn in.
+func pointDots(role colour.Token) [][2]int {
+	switch role {
+	case colour.FireFaint, colour.QuakeDay, colour.Tide:
+		return plusDots
+	case colour.QuakeOlder:
+		return crossDots
+	}
+	return blockDots
+}
+
+// markAge marks a quake's ring with its age (L-7.3): the past hour's a
+// second ring inside the first, the past day's a plus at its centre, an
+// older one's the ring alone.
+func (p *Painter) markAge(at Point, radius int, role colour.Token) {
+	inner := role == colour.QuakeHour && radius > 3
+	switch {
+	case inner:
+		p.markCircle(at, radius-2, false, uint8(role))
+	case role == colour.QuakeHour, role == colour.QuakeDay:
+		for _, d := range plusDots {
+			p.lines.SetForced(at.X+d[0], at.Y+d[1], uint8(role))
+		}
 	}
 }
 
@@ -463,6 +524,43 @@ func (p *Painter) Area(col, row int) (uint8, bool) {
 	return ink, lit >= 4
 }
 
+// ownCanvas is a canvas of the painter's own, made the first time a shape
+// needs it: every map would pay for one made with the painter, and most draw
+// no night and no zone (NFR-3).
+func (p *Painter) ownCanvas(c *Canvas) (*Canvas, error) {
+	if c != nil {
+		return c, nil
+	}
+	return NewCanvas(p.lines.cols, p.lines.rows) // the lines' size, accepted when they were made
+}
+
+// InNight reports whether the night side owns a cell: half its dots or more.
+func (p *Painter) InNight(col, row int) bool {
+	if p == nil {
+		return false
+	}
+	return owns(p.night, col, row)
+}
+
+// InZone reports whether a host's zone owns a cell: half its dots or more
+// (L-8.1).
+func (p *Painter) InZone(col, row int) bool {
+	if p == nil {
+		return false
+	}
+	return owns(p.zone, col, row)
+}
+
+// owns reports whether a canvas's fill covers half a cell's dots or more.
+func owns(c *Canvas, col, row int) bool {
+	glyph := c.Glyph(col, row)
+	lit := 0
+	for mask := uint8(glyph - blank); mask != 0; mask &= mask - 1 {
+		lit++
+	}
+	return lit >= 4
+}
+
 // Water reports whether water owns a cell.
 func (p *Painter) Water(col, row int) bool {
 	ink, owned := p.Area(col, row)
@@ -490,6 +588,13 @@ func (p *Painter) inkFor(r *style.Rule, zoom float64) uint8 {
 	if !isLiteral {
 		return uint8(r.Token)
 	}
+	return p.literalInk(literal)
+}
+
+// literalInk is the ink a colour of its own is drawn in this frame: one
+// already given it, or the next; a frame with more colours than inks
+// shares the first.
+func (p *Painter) literalInk(literal colour.RGB) uint8 {
 	for i, c := range p.literals {
 		if c == literal {
 			return uint8(firstLiteral + i)

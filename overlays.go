@@ -9,18 +9,25 @@ import (
 	"github.com/branden-thompson/go-tuimaps/internal/overlay"
 	"github.com/branden-thompson/go-tuimaps/internal/render"
 	"github.com/branden-thompson/go-tuimaps/internal/scene"
+	"github.com/branden-thompson/go-tuimaps/internal/textsafe"
 )
 
 // Overlay is what a host hands in: an id, when its data was valid and how
 // long it stays current, a credit, and its shapes - features, or a grid, or
-// an image, and one only (FR-6).
+// an image, and one only. Its fields, which go doc does not show through the
+// alias: ID; Valid; Keeps, how long after Valid it stays current; During,
+// the Span it is drawn in, always when zero; Credit; and one of Features,
+// Grid or Image.
 type Overlay = overlay.Overlay
 
 // Feature is ONE AREA of a feature overlay: an outline first, then any holes
 // in it. Ground that is separate is a separate feature, because every ring
 // after the first is read as a hole. Its rings are read where they are and not
-// copied again (FR-11); a host holding its own point type converts once with
-// Rings.
+// copied again; a host holding its own point type converts once with
+// Rings. Its fields, which go doc does not show through the alias: Kind;
+// Rings; Centre with RadiusKm, or RadiusDots for a ring fixed on the screen,
+// for a circle; Role, the token it is drawn in; Label; and an alert's
+// Severity, Valid and Expires, with ID, the host's name for it.
 type Feature = overlay.Feature
 
 // FeatureKind is what a feature is.
@@ -35,25 +42,40 @@ const (
 )
 
 // Grid is a scalar field on the host's own regular grid of longitude and
-// latitude, its values rows from the north, each row west to east.
+// latitude, its values rows from the north, each row west to east. Its
+// fields, which go doc does not show through the alias:
+// West, South, East, North, the box in degrees; Cols, Rows; Values; Type;
+// Lines, drawn as its labelled contours over faint bands; OverWater,
+// continued over the sea, which by default it stops at; From, a vector
+// grid's directions, meteorological degrees, the values its speeds; Gusts,
+// a vector grid's gusts; Marks, the host's text, one a value.
 type Grid = overlay.Grid
 
 // Type is how a host says what a grid's values are: a preset by name, or
-// breaks of its own (D-69).
+// breaks of its own. Its fields, which go doc does not show through
+// the alias: Preset, a preset's name or empty for the
+// host's own; Unit; Breaks; Colours, a host type's own, one a class, empty
+// for the spread; Edge, a two-class host type drawn as the edge
+// between its classes alone.
 type Type = overlay.Type
 
 // Image is a georeferenced image and the table that says what its colours
-// mean (D-45).
+// mean. Its fields, which go doc does not show through the alias:
+// PNG, or Frames for a loop; Provider; West, South, East,
+// North; Projection; Table; Tolerance; Exact; Type; MaskedByWater, kept off
+// the sea, over which by default it is drawn.
 type Image = overlay.Image
 
 // LoopFrame is one frame of an image's loop: when its picture was valid, and
 // the picture. A gap is a missing frame, stated as missing, with no bytes; a
-// forecast frame is one the provider forecast rather than observed.
+// forecast frame is one the provider forecast rather than observed. Its
+// fields, which go doc does not show through the alias: Valid, PNG, Gap and
+// Forecast.
 type LoopFrame = overlay.LoopFrame
 
 // Span is when an overlay is drawn: while the map's moment meets it - the
-// loop's frame, or the host's moment (ShowMoment), or the frame's clock. A
-// zero end is open (L-15.1).
+// loop's frame, or the host's moment (ShowMoment), or the frame's clock,
+// From to Until, both included. A zero end is open.
 type Span = overlay.Span
 
 // MaxFrames is the most frames a loop may have, gaps included.
@@ -72,8 +94,9 @@ const (
 	SeverityExtreme  = overlay.SeverityExtreme
 )
 
-// TableEntry is one row of that table: a colour of the provider's, the
-// value it stands for, and whether it means "no data".
+// TableEntry is one row of that table: a colour of the provider's (Colour),
+// the value it stands for (Value), and whether it means "no data"
+// (Missing).
 type TableEntry = overlay.TableEntry
 
 // Projection is how an image's pixels are laid on the world.
@@ -101,42 +124,49 @@ type Token = colour.Token
 // The roles a feature overlay may carry. An alert's area is filled with the
 // tint that belongs to its outline.
 const (
-	AlertExtreme  = colour.AlertExtremeOutline
-	AlertSevere   = colour.AlertSevereOutline
-	AlertModerate = colour.AlertModerateOutline
-	AlertMinor    = colour.AlertMinorOutline
-	AlertUnknown  = colour.AlertUnknownOutline
-	Track         = colour.Track
-	Fire          = colour.Fire       // a fire's perimeter, its incident, a strong hotspot (L-18)
-	FireFaint     = colour.FireFaint  // a weaker hotspot
-	QuakeHour     = colour.QuakeHour  // a quake of the past hour (L-19)
-	QuakeDay      = colour.QuakeDay   // of the past day
-	QuakeOlder    = colour.QuakeOlder // older
-	Buoy          = colour.Buoy       // a buoy's marker and words (L-21)
-	Tide          = colour.Tide       // a tide station's
-	Low           = colour.Low
-	Middle        = colour.Middle
-	High          = colour.High
+	AlertExtreme   = colour.AlertExtremeOutline
+	AlertSevere    = colour.AlertSevereOutline
+	AlertModerate  = colour.AlertModerateOutline
+	AlertMinor     = colour.AlertMinorOutline
+	AlertUnknown   = colour.AlertUnknownOutline
+	Track          = colour.Track
+	Fire           = colour.Fire       // a fire's perimeter, its incident, a strong hotspot
+	FireFaint      = colour.FireFaint  // a weaker hotspot
+	QuakeHour      = colour.QuakeHour  // a quake of the past hour
+	QuakeDay       = colour.QuakeDay   // of the past day
+	QuakeOlder     = colour.QuakeOlder // older
+	Buoy           = colour.Buoy       // a buoy's marker and words
+	Tide           = colour.Tide       // a tide station's
+	TerminatorLine = colour.Terminator // the line between day and night, dotted at every depth: a Line feature along Terminator(at)
+	NightTint      = colour.Night      // the night side's shade: a Polygon feature over NightSide(at), no words, no digits, no legend entry
+	Zone           = colour.Zone       // a host's zone: a Polygon or Circle outlined in red, its inside tinted - or stippled over a field its tint cannot blend with - beneath any alert's, no severity, no legend entry
+	Low            = colour.Low
+	Middle         = colour.Middle
+	High           = colour.High
 )
 
-// SetResult is what Set says at once (D-74, D-86).
+// SetResult is what Set says at once: Created, false when an overlay of that
+// id was replaced; and Released, the old geometry no longer read by
+// anything.
 type SetResult = overlay.SetResult
 
-// RemoveResult is what Remove says at once.
+// RemoveResult is what Remove says at once: Found, whether an overlay had
+// that id; and Released, its geometry no longer read by anything.
 type RemoveResult = overlay.RemoveResult
 
-// Warning is something the library noticed and did not refuse.
+// Warning is something the library noticed and did not refuse: its Kind,
+// its Subject - the overlay or tile it concerns - and Count, how often.
 type Warning = fault.Warning
 
 // TemperatureGrid is a temperature field in one call: the preset supplies
 // the breaks and the colours, and the host says only which unit its values
-// are in (D-69). Everything it sets can be set by hand instead.
+// are in. Everything it sets can be set by hand instead.
 func TemperatureGrid(id string, grid Grid, unit Unit, validAt time.Time) Overlay {
 	grid.Type = Type{Preset: "temperature", Unit: unitName(unit)}
 	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &grid}
 }
 
-// SpeedUnit is a unit of wind speed (FR-8).
+// SpeedUnit is a unit of wind speed.
 type SpeedUnit = colour.SpeedUnit
 
 // The units of wind speed.
@@ -147,7 +177,7 @@ const (
 	Knots             = colour.Knots
 )
 
-// WindGrid is a wind field in one call (FR-8, L-16): the speeds in a unit,
+// WindGrid is a wind field in one call: the speeds in a unit,
 // and the direction each blows FROM, meteorological degrees clockwise from
 // north, one a speed, NaN where there is none. It is drawn as arrows, never
 // bands, and the preset supplies the classes and their colours.
@@ -170,7 +200,7 @@ func speedUnitName(u SpeedUnit) string {
 	return "mph"
 }
 
-// WaveUnit is a unit of wave height (L-20).
+// WaveUnit is a unit of wave height.
 type WaveUnit = colour.WaveUnit
 
 // The units of wave height.
@@ -179,7 +209,7 @@ const (
 	Metres = colour.Metres
 )
 
-// WaveGrid is a wave-height field in one call (L-20): the preset supplies
+// WaveGrid is a wave-height field in one call: the preset supplies
 // the classes and their colours, and the field is drawn over the sea alone.
 func WaveGrid(id string, grid Grid, unit WaveUnit, validAt time.Time) Overlay {
 	name := "ft"
@@ -190,31 +220,50 @@ func WaveGrid(id string, grid Grid, unit WaveUnit, validAt time.Time) Overlay {
 	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &grid}
 }
 
-// UVGrid is a UV index field in one call (L-25): the preset supplies its
+// UVGrid is a UV index field in one call: the preset supplies its
 // five categories and their colours.
 func UVGrid(id string, grid Grid, validAt time.Time) Overlay {
-	grid.Type = Type{Preset: "uv", Unit: "index"}
-	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &grid}
+	return presetGrid(id, grid, Type{Preset: "uv", Unit: "index"}, validAt)
 }
 
-// AirQualityGrid is a US AQI field in one call (L-25): the preset supplies
+// AirQualityGrid is a US AQI field in one call: the preset supplies
 // its six categories and their colours.
 func AirQualityGrid(id string, grid Grid, validAt time.Time) Overlay {
-	grid.Type = Type{Preset: "aqi", Unit: "AQI"}
-	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &grid}
+	return presetGrid(id, grid, Type{Preset: "aqi", Unit: "AQI"}, validAt)
+}
+
+// MUFGrid is a field of the maximum usable frequency, in MHz, in one call:
+// the preset supplies its ten classes, broken at the amateur
+// band edges, and their colours.
+func MUFGrid(id string, grid Grid, validAt time.Time) Overlay {
+	return presetGrid(id, grid, Type{Preset: "muf", Unit: "MHz"}, validAt)
+}
+
+// FoF2Grid is a field of the F2 layer's critical frequency, in MHz, in one
+// call: the preset supplies its classes, floored at the band
+// edges below 15 MHz - nothing is drawn below 1.8 MHz - in the MUF colours of
+// the same frequencies.
+func FoF2Grid(id string, grid Grid, validAt time.Time) Overlay {
+	return presetGrid(id, grid, Type{Preset: "fof2", Unit: "MHz"}, validAt)
 }
 
 // QPFGrid is a field of rain and snow totals, liquid-equivalent, in mm, in
-// one call (L-26): the preset supplies WPC's seven classes and their
+// one call: the preset supplies WPC's seven classes and their
 // colours, and draws nothing under a trace.
 func QPFGrid(id string, grid Grid, validAt time.Time) Overlay {
-	grid.Type = Type{Preset: "qpf", Unit: "mm"}
+	return presetGrid(id, grid, Type{Preset: "qpf", Unit: "mm"}, validAt)
+}
+
+// presetGrid is a grid in one of the library's presets, kept an hour: the
+// preset supplies its classes and their colours.
+func presetGrid(id string, grid Grid, t Type, validAt time.Time) Overlay {
+	grid.Type = t
 	return Overlay{ID: id, Valid: validAt, Keeps: time.Hour, Grid: &grid}
 }
 
 // AirQualityRole is the role a feature is drawn in to show an AQI - a
-// monitor's reading - in its category's colour, as the AQI preset draws it
-// (L-25). Its words are drawn in the markers' ink, which reads on the ground.
+// monitor's reading - in its category's colour, as the AQI preset draws it.
+// Its words are drawn in the markers' ink, which reads on the ground.
 func AirQualityRole(aqi float64) Token {
 	c := 0
 	for _, b := range colour.AirQualityBreaks() {
@@ -226,9 +275,8 @@ func AirQualityRole(aqi float64) Token {
 }
 
 // UVRole is the role a feature is drawn in to show a UV index - a city's
-// reading - in its band's colour, as the UV preset draws it (watchpost W18.4,
-// its D-167: EPA's UV index as markers). Its words are drawn in the markers'
-// ink, as AirQualityRole's.
+// reading - in its band's colour, as the UV preset draws it: EPA's UV index
+// as markers. Its words are drawn in the markers' ink, as AirQualityRole's.
 func UVRole(index float64) Token {
 	c := 0
 	for _, b := range colour.UVBreaks() {
@@ -240,7 +288,7 @@ func UVRole(index float64) Token {
 }
 
 // RadarImage is a radar image in one call: the host gives the picture, the
-// table that says what its colours mean, and when it was valid (D-45, D-69).
+// table that says what its colours mean, and when it was valid.
 func RadarImage(id string, image Image, validAt time.Time) Overlay {
 	image.Type = Type{Preset: "radar", Unit: "dBZ"}
 	return Overlay{ID: id, Valid: validAt, Keeps: 15 * time.Minute, Image: &image}
@@ -256,7 +304,7 @@ func unitName(u Unit) string {
 
 // Set hands an overlay to the map, or replaces the one of that id. It never
 // waits: what it answers says whether the geometry the overlay replaced is
-// free for the host to write over again (D-86).
+// free for the host to write over again.
 func (m *Map) Set(o Overlay) (res SetResult, err error) {
 	defer guard("Set", &err)
 	m.plant("Set")
@@ -280,10 +328,50 @@ func (m *Map) Set(o Overlay) (res SetResult, err error) {
 	}
 	m.overlays++
 	m.reported = nil
+	m.checkHostRampLocked(o)
 	delete(m.tracked, o.ID)       // its old pictures are not held for motion
 	m.play.seen = m.shownLocked() // a refresh that moves the moment is an input, not an advance
 	m.changed++
 	return res, nil
+}
+
+// recheckHostRampsLocked checks every overlay's host ramp again after the
+// look changed - the depth, the palette or the ground - so a ramp that
+// breaks the checker at the new look is warned and one that no longer does
+// is cleared (L-2.3, watchpost RC-15).
+func (m *Map) recheckHostRampsLocked() {
+	for _, id := range m.store.IDs() {
+		reader, ok := m.store.Read(id)
+		if !ok {
+			continue
+		}
+		o := reader.Overlay()
+		reader.Done()
+		m.checkHostRampLocked(o)
+	}
+}
+
+// checkHostRampLocked reports a host type's colours that break the checker
+// on the ground and at the depth in effect (L-2.3): drawn all the same, and
+// never silently (D-53). One warning an overlay: a Set replaces the last
+// one's, and a Set that breaks nothing clears it (C-26).
+func (m *Map) checkHostRampLocked(o Overlay) {
+	subject := textsafe.Quote(o.ID)
+	m.own = slices.DeleteFunc(m.own, func(w fault.Warning) bool { return w.Kind == fault.RampRuleBroken && w.Subject == subject })
+	if o.Grid == nil || o.Grid.Type.Preset != "" {
+		return
+	}
+	kind, err := overlay.ResolveType(o.Grid.Type)
+	if err != nil {
+		return
+	}
+	depth := m.depthInEffect()
+	ground, _ := m.look.ground.InEffect(m.look.palette)
+	ramp := colour.HostRamp(kind.Colours, len(kind.Breaks)+1, m.look.palette, m.look.ground.Kind(m.look.palette), depth)
+	breaches := len(colour.Check(ramp, colour.RampCheck{Ground: ground, Depth: depth, Midpoint: -1}))
+	if breaches > 0 {
+		m.noteLocked(fault.Warning{Kind: fault.RampRuleBroken, Count: breaches, Subject: subject})
+	}
 }
 
 // Remove takes an overlay away, and says whether it was there and whether
@@ -313,7 +401,7 @@ func (m *Map) Remove(id string) (res RemoveResult, err error) {
 }
 
 // InUse reports whether anything is still reading an overlay's old geometry.
-// While it is true the host must leave that memory alone (FR-11, D-86).
+// While it is true the host must leave that memory alone.
 func (m *Map) InUse(id string) bool {
 	defer m.guardQuiet("InUse")
 	m.plant("InUse")
@@ -343,7 +431,7 @@ func (m *Map) Overlays() []string {
 }
 
 // Warnings are what the library noticed and did not refuse, taken once: a
-// host that never asks is never blocked by them (NFR-20).
+// host that never asks is never blocked by them.
 func (m *Map) Warnings() []Warning {
 	defer m.guardQuiet("Warnings")
 	m.plant("Warnings")
@@ -527,7 +615,7 @@ func shapeKind(k FeatureKind) scene.ShapeKind {
 
 // Provider names a source of radar images whose colour table the library
 // carries: an image that names one, with no table of its own, is read with
-// the provider's (L-2.5).
+// the provider's.
 type Provider = overlay.Provider
 
 // The providers the library carries tables for.

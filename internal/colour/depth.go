@@ -6,10 +6,11 @@ type Depth uint8
 
 // The depths. Truecolor is the zero value.
 const (
-	Truecolor  Depth = iota
-	Colours256       // indices 16 to 255 only: the ones every terminal agrees on
-	Colours16        // the terminal owns these colours; checks are indicative
-	NoColour         // no colour sequence at all (NFR-15)
+	Truecolor     Depth = iota
+	Colours256          // indices 16 to 255 only: the ones every terminal agrees on
+	Colours16           // the terminal owns these colours; checks are indicative
+	NoColour            // no colour sequence at all (NFR-15)
+	TerminalDepth       // no hint: the environment chooses (L-7.2); never a frame's depth
 )
 
 // String names the depth.
@@ -21,6 +22,8 @@ func (d Depth) String() string {
 		return "16 colours"
 	case NoColour:
 		return "no colour"
+	case TerminalDepth:
+		return "the terminal's depth"
 	}
 	return "truecolor"
 }

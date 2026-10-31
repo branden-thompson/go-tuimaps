@@ -25,6 +25,10 @@ type Grid struct {
 	// faint, whatever shares the map - the look it takes anyway with an image
 	// on the map (L-15.3, L-15.4).
 	Lines bool
+	// OverWater continues the field over the sea; by default it stops at the
+	// shore (L-1.1, D-32). Waves are the sea's alone and rain falls on the
+	// sea, whatever it says.
+	OverWater bool
 	// From makes the grid a vector grid (FR-8): the direction each value's
 	// wind blows FROM, meteorological degrees clockwise from north, one a
 	// value; NaN where there is none. The values are the speeds. It is drawn
@@ -130,8 +134,11 @@ func implausible(g *Grid) bool {
 // classify makes a grid's prepared form: each value's class, once.
 func classify(g *Grid, kind Kind) scene.Field {
 	field := scene.Field{West: g.West, South: g.South, East: g.East, North: g.North, Cols: g.Cols, Rows: g.Rows,
-		Classes: make([]int8, len(g.Values)), Preset: uint8(kind.Preset), ClassCount: len(kind.Breaks) + 1,
-		Labels: bandLabels(kind.Breaks), Lines: g.Lines}
+		Classes: make([]int8, len(g.Values)), Preset: uint8(kind.Preset), ClassCount: len(kind.Breaks) + 1, Edge: kind.Edge,
+		Labels: bandLabels(kind.Breaks, g.Type.Unit), Lines: g.Lines, OverWater: g.OverWater}
+	for _, c := range kind.Colours {
+		field.Colours = append(field.Colours, [3]uint8{c.R, c.G, c.B})
+	}
 	if g.From != nil { // a vector grid keeps its speeds and directions: its arrows are drawn from them (L-16)
 		field.From, field.Speeds = append([]float64(nil), g.From...), append([]float64(nil), g.Values...)
 		field.Gusts = append([]float64(nil), g.Gusts...) // L-24: said beside the speed
@@ -164,13 +171,30 @@ func (s *Store) Field(id string) (scene.Field, bool) {
 // **Without these a field drawn with no colour is bare lines**, which say where
 // a band changes but not to what - the defect the first acceptance sitting
 // found in scenario 4, and the reason D-35 asked for them.
-func bandLabels(breaks []float64) []string {
+func bandLabels(breaks []float64, unit string) []string {
 	if len(breaks) == 0 {
 		return nil
 	}
+	suffix := labelUnit(unit)
 	out := make([]string, len(breaks)+1) // class 0 lies below the first break and has no boundary of its own
 	for i, b := range breaks {
-		out[i+1] = strconv.FormatFloat(b, 'f', -1, 64)
+		out[i+1] = strconv.FormatFloat(b, 'f', -1, 64) + suffix
 	}
 	return out
+}
+
+// labelUnit is how a contour's label writes its type's unit (L-3.1): a
+// temperature in degrees, a short unit beside its number, a longer one a
+// space apart; an index, the UV's or the AQI, is a number with no unit.
+func labelUnit(unit string) string {
+	switch unit {
+	case "C", "F":
+		return "°" + unit
+	case "", "index", "AQI":
+		return ""
+	}
+	if len([]rune(unit)) <= 3 {
+		return unit
+	}
+	return " " + unit
 }

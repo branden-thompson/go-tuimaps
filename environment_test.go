@@ -29,7 +29,7 @@ var environmentReads = map[string]map[string]bool{
 func TestEveryEnvironmentReadIsListed(t *testing.T) {
 	want := []string{
 		"internal/fetch/fetch.go: http.ProxyFromEnvironment", // the library's own transport only
-		"look.go: os.Getenv", // NO_COLOR, through colour.ChooseDepth
+		"look.go: os.Getenv", // NO_COLOR, then COLORTERM and TERM, through colour.ChooseDepth (L-7.2)
 	}
 	var got []string
 	err := filepath.WalkDir(".", func(path string, entry fs.DirEntry, err error) error {

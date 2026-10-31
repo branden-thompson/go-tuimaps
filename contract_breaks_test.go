@@ -8,12 +8,54 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/branden-thompson/go-tuimaps/internal/fetch"
 )
 
-// lastRelease is the tag whose public surface this release is held to.
-const lastRelease = "v0.1.0"
+// lastRelease is the tag whose public surface this release is held to: the
+// newest final release before the one the library says it is.
+const lastRelease = "v0.2.2"
+
+// releaseNumber is a final release tag's version as one comparable number,
+// and false for any other tag - a candidate, a nested module's.
+func releaseNumber(tag string) (int, bool) {
+	m := regexp.MustCompile(`^v?(\d+)\.(\d+)\.(\d+)$`).FindStringSubmatch(tag)
+	if m == nil {
+		return 0, false
+	}
+	n := 0
+	for _, part := range m[1:] {
+		v, _ := strconv.Atoi(part)
+		n = n*1000 + v
+	}
+	return n, true
+}
+
+// TestTheContractIsHeldToTheLastRelease (watchpost D-344's SHIP close-out):
+// the release the contract check reads is the newest final tag before this
+// one, so a release cannot be checked against a surface two releases old.
+func TestTheContractIsHeldToTheLastRelease(t *testing.T) {
+	out, err := exec.Command("git", "tag", "--list", "v*").Output()
+	if err != nil {
+		t.Fatalf("the tags could not be read from git (%v); a clone without its tags cannot run this check", err)
+	}
+	this, ok := releaseNumber(fetch.Version)
+	if !ok {
+		t.Fatalf("the library says it is %q, no release version", fetch.Version)
+	}
+	newest, newestTag := -1, ""
+	for _, tag := range strings.Fields(string(out)) {
+		if n, final := releaseNumber(tag); final && n < this && n > newest {
+			newest, newestTag = n, tag
+		}
+	}
+	if newestTag != lastRelease {
+		t.Errorf("the contract check is held to %s; the last release before %s is %s", lastRelease, fetch.Version, newestTag)
+	}
+}
 
 // surfaceNames is each line of a surface snapshot by the name it declares,
 // "kind Name" - the snapshot of v0.1.0 names, today's adds the signature.

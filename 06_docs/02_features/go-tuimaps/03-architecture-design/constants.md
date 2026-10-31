@@ -106,7 +106,7 @@ Stable names; adding one is a minor version. A host sets any subset; the rest ke
 | Alert areas | `alert.extreme.outline` · `alert.extreme.tint` · and the same pair for `severe`, `moderate`, `minor`, `unknown` |
 | Radar and precipitation | `radar.1` to `radar.6` — numbered by position, lightest rain first; the floors are 10, 20, 30, 40, 50, 60 dBZ. One set of names: the library's defaults for them differ by ground, and a host that sets them has set them for its own ground |
 | Temperature | `temperature.1` to `temperature.17` — numbered by position, coldest first |
-| A host's own type | `low` · `middle` · `high` — interpolated across its classes |
+| A host's own type | `low` · `middle` · `high` — spread evenly in Lab across its classes, the first class low, the middle one middle, the last high; by default the MUF preset's first, sixth and last classes, (38, 1, 95), (183, 129, 52), (217, 253, 213), on either ground (A-9); or the type's own Colours, one a class |
 | Line features | `track` · `track.label` |
 | Wind (FR-8, v0.2.0) | `wind.1` to `wind.6` |
 | Fire (v0.2.0, L-18) | `fire` · `fire.faint` — a fire's perimeter, its incident and a strong hotspot; a weaker hotspot. Never an alert |
@@ -116,6 +116,10 @@ Stable names; adding one is a minor version. A host sets any subset; the rest ke
 | UV (v0.2.0, L-25) | `uv.1` to `uv.5` — Low to Extreme, broken at 3, 6, 8 and 11; the official scale's hues, lightness set to pass the checker (watchpost D-140) |
 | Air quality (v0.2.0, L-25) | `aqi.1` to `aqi.6` — the US AQI's Good to Hazardous, broken at 51, 101, 151, 201 and 301; the EPA's hues, lightness set to pass the checker; a monitor's marker in its category (`AirQualityRole`) |
 | Rain totals (v0.2.0, L-26) | `qpf.1` to `qpf.7` — a period's rain and snow, liquid-equivalent, in the NWS WPC's breaks at 0.01, 0.1, 0.25, 0.5, 1, 2 and 4 inches (0.25 to 101.6 mm); below a trace nothing is drawn; WPC's hues, lightness searched to pass the checker (watchpost D-184) |
+| MUF (v0.3.0, L-2.1) | `muf.1` to `muf.10` — the maximum usable frequency, lowest first, broken at the amateur band edges 3.5, 5.3, 7, 10.1, 14, 18.068, 21, 24.89 and 28 MHz; dark violet to pale, one smooth curve searched to pass the checker (watchpost D-144, D-148) |
+| foF2 (v0.3.0, L-2.1) | `fof2.1` to `fof2.6` — the F2 layer's critical frequency, lowest first, floored at 1.8, 3.5, 5.3, 7, 10.1 and 14 MHz; below 1.8 nothing is drawn; each class in the MUF colour of the same frequencies (watchpost D-145, D-149) |
+| Day and night (v0.3.0, L-4.1) | `terminator` · `night` — the line between day and night, marked without colour too; the night side's tint, shading what is drawn under it, never an alert's |
+| A host's zone (v0.3.0, L-8.1) | `zone` · `zone.tint` — a host's area's outline and inside, such as a station's service radius: red, drawn as an alert's area is and never read as one; beneath any alert's tint; stippled over a field its tint cannot blend with (watchpost D-195, D-196) |
 
 The sixteen-colour depth has its own small set of values for the basemap tokens, chosen from the sixteen by hand (specimen 23, D-79).
 

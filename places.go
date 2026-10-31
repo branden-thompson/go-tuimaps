@@ -15,7 +15,7 @@ import (
 // LonLat is a place on the world, in degrees.
 type LonLat = project.LonLat
 
-// MarkerStyle is how a place is drawn (P-58).
+// MarkerStyle is how a place is drawn.
 type MarkerStyle = render.MarkerShape
 
 // The marker styles. A place that names none is drawn as a dot.
@@ -33,7 +33,7 @@ const (
 const placeLimit = 4096
 
 // Place is one of the host's own places: a name, a position, how it is
-// drawn, and an id to remove it by (FR-26). A place is not an overlay: it is
+// drawn, and an id to remove it by. A place is not an overlay: it is
 // the host's "my places", not data. The least that has to be written is a
 // name and a position.
 type Place struct {
@@ -55,7 +55,7 @@ func badPlaceID(why, todo textsafe.Text) error {
 }
 
 // defaultID is the id a place with none of its own carries: its position
-// written to six decimal places, latitude first, as upstream has it (P-61).
+// written to six decimal places, latitude first, as upstream has it.
 func defaultID(at LonLat) string {
 	return strconv.FormatFloat(at.Lat, 'f', 6, 64) + "," + strconv.FormatFloat(at.Lon, 'f', 6, 64)
 }
@@ -88,7 +88,7 @@ func checkPlace(p Place) (Place, error) {
 
 // SetPlaces replaces the host's places with these, and answers with the id
 // of each in the order given. An id left empty is the position to six
-// decimal places (P-61).
+// decimal places.
 func (m *Map) SetPlaces(places []Place) (ids []string, err error) {
 	defer guard("SetPlaces", &err)
 	m.plant("SetPlaces")
@@ -159,7 +159,7 @@ func (m *Map) AddPlace(p Place) (id string, err error) {
 	return one.ID, nil
 }
 
-// RemovePlace removes every place carrying an id, as upstream does (P-61),
+// RemovePlace removes every place carrying an id, as upstream does,
 // and says how many went.
 func (m *Map) RemovePlace(id string) (gone int, err error) {
 	defer guard("RemovePlace", &err)
