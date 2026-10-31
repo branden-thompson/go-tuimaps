@@ -9,11 +9,11 @@ missing, names other code or another machine, or misses a target.
 
 | Field | Value |
 |---|---|
-| Code tree | `e5cb59079964` |
+| Code tree | `31c0b7685f3d` |
 | Machine | Apple M5 Pro |
 | Go | go1.26.10 darwin/arm64 |
-| Measured | 2026-10-30T22:46:38Z |
-| 400 × 110, ms a frame | 8.016 (target 16) |
-| 200 × 56, ms a frame | 2.147 (target 8) |
-| 800 × 220, ms a frame | 29.429 |
+| Measured | 2026-10-31T01:59:05Z |
+| 400 × 110, ms a frame | 8.238 (target 16) |
+| 200 × 56, ms a frame | 2.212 (target 8) |
+| 800 × 220, ms a frame | 29.726 |
 | Allocations a frame, 400 × 110 | 4201 |
