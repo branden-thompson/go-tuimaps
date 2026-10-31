@@ -48,9 +48,9 @@ as it is done, at SHIP.
 
 | # | Check | Evidence | Done |
 |---|---|---|---|
-| 3.1 | `release/v0.3.0` squash-merged to `main` from `feature/propagation-fields` | | [ ] |
-| 3.2 | `v0.3.0` at the root, then the nested modules' tags against it | | [ ] |
-| 3.3 | Every nested module is tidy against the tagged library | | [ ] |
+| 3.1 | `release/v0.3.0` squash-merged to `main` from `feature/propagation-fields` | PR #9 squash-merged to `main` as `0735ba8` on a fully green run - the hosted full gate on both architectures (run 41158250834) and the push and pull-request quick gates - the release check green on the release branch, `main` merged into it first (A-24) | [x] |
+| 3.2 | `v0.3.0` at the root, then the nested modules' tags against it | `v0.3.0` on `0735ba8`, the GitHub Release published from `release-notes.md`, marked Latest; the nested modules' tags follow this row's PR, on its merge commit | [ ] |
+| 3.3 | Every nested module is tidy against the tagged library | `cmd/tuimaps`, `examples`, `tools/gen-assets` and `tools/oracle` require the published `v0.3.0`; every nested module `GOWORK=off go mod tidy -diff` clean (2026-10-31) | [x] |
 | 3.4 | watchpost 0.19.0 pins `v0.3.0` and its gate is green on it | | [ ] |
 
 ## Ruled exceptions to the vulnerability scan
