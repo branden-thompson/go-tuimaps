@@ -277,3 +277,5 @@ A commit made from exactly that has the same tree less this file, so the two can
 | 2026-10-31T03:24:24Z | 0735ba8 | db913d6f7da2 | full | green | 2056 | - |
 | 2026-11-01T00:47:57Z | 304e116 | 7d2996472b20 | full | FAILED: tests, race detector on; tests, race detector off (allocation counts and NFR-3's peak live here); tests on amd64 (emulated here;  real hardware is NOT RUN) | 2206 | - |
 | 2026-11-01T01:25:02Z | 304e116 | 1e3d5acb58a1 | full | green | 2105 | - |
+| 2026-11-01T01:26:21Z | 517c430 | daa08f7dab6c | cost | green | 37 | - |
+| 2026-11-01T01:29:22Z | 517c430 | daa08f7dab6c | docs | green | 174 | - |
