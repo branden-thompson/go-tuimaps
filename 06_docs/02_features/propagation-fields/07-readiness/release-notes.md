@@ -4,6 +4,11 @@ Up: [requirements](../01-objectives/requirements.md) · [contract, section 12](.
 
 Written as v0.3.0 is built, and completed at its release step.
 
+## v0.3.2, a fix (watchpost D-358)
+
+- **M5's frame is met on a hosted 4-CPU linux/amd64 runner.** A whole-globe frame after a pan at 400 × 110 took 20.8 ms on a hosted AMD EPYC 7763 runner (run 41317857118), past M5's 16 ms; it takes 12.9 and 13.4 ms there now (runs 41321663184 and 41321788908), and 3.5 and 3.6 ms at 200 × 56. On the reference machine, 5.1 ms and 1.4 ms ([M5's record](m5-record.md)), from 7.9 and 2.1. What is drawn is unchanged: a field's grid is placed under the frame's dots once a frame and each dot read through it, the class `fieldClass` gives at the dot's centre (`TestAFieldsGridIsPlacedAsEachDotIsSampled`); each contour dot is classified once; each cell's centre is worked out once a frame; a run of cells alike asks for its colours once (`TestEachCellOfARowGetsItsOwnColoursThroughThePen`).
+- `fetch.Version` is 0.3.2, so the user-agent says `go-tuimaps/0.3.2`.
+
 ## v0.3.1, a fix (watchpost D-356)
 
 - **A named source's TileJSON is read once on a cold open, not once a work loop.** Each job that found the TileJSON unread fetched it, so a host working its map from four goroutines sent four requests for the document before the first tile; one job reads it now, and the jobs asking meanwhile wait for its answer. A job whose reader got none - it failed, or its job was given up - reads it itself, so another job's cancel is never its failure. `TestJobsAtOnceReadTheTileJSONOnce` holds the first, and fails with the old read; `TestAWaiterReadsTheTileJSONWhenItsReaderGivesUp` the second.
@@ -59,8 +64,8 @@ The contract breaks nothing of v0.2.2's public surface that section 12 does not 
 
 ## Known limits
 
-- **A whole-globe frame at 800 × 220** takes 30 ms after a pan on the reference machine ([M5's record](m5-record.md)), past the 16 ms
-  M5 holds at 400 × 110 (watchpost D-261, D-40): recorded, not a target.
-- **M5's targets are the reference machine's** (watchpost D-350). On a hosted 4-CPU linux/amd64 runner the
-  frame at 400 × 110 took 17.8 ms, past 16 ms, and 4.8 ms at 200 × 56; on a machine like it, a pan
-  across the whole globe at 400 × 110 takes longer than one frame at 60 Hz (16.7 ms).
+- **A whole-globe frame at 800 × 220** takes 18 ms after a pan on the reference machine ([M5's record](m5-record.md)), past the 16 ms
+  M5 holds at 400 × 110 (watchpost D-261, D-40): recorded, not a target. On a hosted 4-CPU linux/amd64 runner it takes 44 ms.
+- **M5's targets are the reference machine's** (watchpost D-350). In v0.3.0 and v0.3.1, on a hosted 4-CPU linux/amd64 runner the
+  frame at 400 × 110 took 17.8 to 20.8 ms, past 16 ms, so a pan across the whole globe on a machine like it took longer than one
+  frame at 60 Hz (16.7 ms); v0.3.2 meets the targets there (above).
