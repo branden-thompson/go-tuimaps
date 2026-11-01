@@ -214,6 +214,7 @@ type Remote struct {
 	ready   bool
 	info    TileJSON
 	refusal error
+	reading chan struct{} // closed when the read in flight ends; nil when none is
 }
 
 // NewRemote names a source. It reaches nothing.
@@ -282,27 +283,67 @@ func own(ctx context.Context, err error) error {
 	return sourceFailed()
 }
 
-// describe reads the TileJSON if it has not been read. Two jobs may both
-// read it the first time; the first answer is kept.
+// describe reads the TileJSON if it has not been read. One job reads it and
+// the jobs asking meanwhile wait for its answer (watchpost D-356); a job
+// whose reader got none - it failed, or its own job was given up - reads it
+// itself, so another job's cancel is never its failure.
 func (r *Remote) describe(ctx context.Context) (TileJSON, error) {
-	r.mu.Lock()
-	ready, info, refusal := r.ready, r.info, r.refusal
-	r.mu.Unlock()
-	if ready || refusal != nil {
-		return info, refusal
+	for range 2 { // wait for one reader and then for one more at most (P10-02)
+		info, refusal, done, wait := r.claim()
+		if done {
+			return info, refusal
+		}
+		if wait == nil {
+			return r.read(ctx, true)
+		}
+		select {
+		case <-wait:
+		case <-ctx.Done():
+			return TileJSON{}, cancelled()
+		}
 	}
-	body, err := r.get(ctx, fetch.Request{URL: r.source, MaxBytes: maxTileJSONBytes})
-	if err != nil {
-		return TileJSON{}, own(ctx, err) // not kept: the network may come back
-	}
-	info, err = ParseTileJSON(body, r.source)
+	return r.read(ctx, false) // two readers in turn got no answer: this job asks for itself
+}
+
+// claim is the TileJSON when it has been read or refused (done); else the
+// read in flight to wait for, or, when there is none, the read made this
+// caller's (wait is nil).
+func (r *Remote) claim() (info TileJSON, refusal error, done bool, wait chan struct{}) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.ready || r.refusal != nil {
+		return r.info, r.refusal, true, nil
+	}
+	if r.reading != nil {
+		return TileJSON{}, nil, false, r.reading
+	}
+	r.reading = make(chan struct{})
+	return TileJSON{}, nil, false, nil
+}
+
+// read fetches and parses the TileJSON, keeping the first answer; the
+// claimed reader ends the read the waiters wait on.
+func (r *Remote) read(ctx context.Context, claimed bool) (TileJSON, error) {
+	body, err := r.get(ctx, fetch.Request{URL: r.source, MaxBytes: maxTileJSONBytes})
+	var info TileJSON
+	var refusal error
+	if err == nil {
+		info, refusal = ParseTileJSON(body, r.source)
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if claimed {
+		close(r.reading)
+		r.reading = nil
+	}
+	if err != nil {
+		return TileJSON{}, own(ctx, err) // not kept: the network may come back
+	}
+	if r.ready || r.refusal != nil {
 		return r.info, r.refusal
 	}
-	r.ready, r.info, r.refusal = err == nil, info, err
-	return info, err
+	r.ready, r.info, r.refusal = refusal == nil, info, refusal
+	return info, refusal
 }
 
 // Get fetches one tile's bytes as the source stores them.

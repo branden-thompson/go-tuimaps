@@ -17,7 +17,7 @@ import (
 
 // lastRelease is the tag whose public surface this release is held to: the
 // newest final release before the one the library says it is.
-const lastRelease = "v0.2.2"
+const lastRelease = "v0.3.0"
 
 // releaseNumber is a final release tag's version as one comparable number,
 // and false for any other tag - a candidate, a nested module's.

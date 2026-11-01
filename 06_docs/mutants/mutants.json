@@ -974,7 +974,7 @@
     "row": "row 2.2 (D-137)",
     "what": "the contract check held to a release two before this one",
     "file": "contract_breaks_test.go",
-    "old": "const lastRelease = \"v0.2.2\"",
+    "old": "const lastRelease = \"v0.3.0\"",
     "new": "const lastRelease = \"v0.1.0\"",
     "package": ".",
     "test": "TestTheContractIsHeldToTheLastRelease"
@@ -1038,5 +1038,25 @@
     "new": "",
     "package": ".",
     "test": "TestAnM5RecordIsRefused"
+  },
+  {
+    "id": "m106",
+    "row": "D-51 (watchpost D-356)",
+    "what": "a job that should wait for the TileJSON reads it itself",
+    "file": "internal/tiles/remote.go",
+    "old": "\t\tif wait == nil {\n\t\t\treturn r.read(ctx, true)\n\t\t}\n",
+    "new": "\t\tif wait == nil {\n\t\t\treturn r.read(ctx, true)\n\t\t}\n\t\tif wait != nil {\n\t\t\treturn r.read(ctx, false)\n\t\t}\n",
+    "package": "./internal/tiles",
+    "test": "TestJobsAtOnceReadTheTileJSONOnce"
+  },
+  {
+    "id": "m107",
+    "row": "D-51 (watchpost D-356)",
+    "what": "a waiter takes its reader's cancel as its own failure",
+    "file": "internal/tiles/remote.go",
+    "old": "\t\tselect {\n\t\tcase <-wait:\n\t\tcase <-ctx.Done():\n",
+    "new": "\t\tselect {\n\t\tcase <-wait:\n\t\t\treturn TileJSON{}, cancelled()\n\t\tcase <-ctx.Done():\n",
+    "package": "./internal/tiles",
+    "test": "TestAWaiterReadsTheTileJSONWhenItsReaderGivesUp"
   }
 ]

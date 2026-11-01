@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/branden-thompson/go-tuimaps/assets"
 	"github.com/branden-thompson/go-tuimaps/internal/fault"
@@ -287,5 +289,122 @@ func TestAddressWrittenAsItParses(t *testing.T) {
 	}
 	if got := info.Template.URL(scene.TileID{Z: 1, X: 1, Y: 0}); !strings.HasPrefix(got, "https://tiles.example/") {
 		t.Errorf("the template built %q", got)
+	}
+}
+
+// heldFetcher answers as fetcher does, safely from many goroutines, holding
+// each TileJSON read until hold says to answer: hold is given the read's
+// context and how many reads have begun, and returns its error, if any.
+type heldFetcher struct {
+	mu    sync.Mutex
+	reads int
+	hold  func(ctx context.Context, reads int) error
+}
+
+func (f *heldFetcher) get(ctx context.Context, r fetch.Request) ([]byte, error) {
+	if strings.HasSuffix(r.URL, ".pbf") {
+		body, _ := assets.Tile(1, 1, 0)
+		return body, nil
+	}
+	f.mu.Lock()
+	f.reads++
+	n := f.reads
+	f.mu.Unlock()
+	if err := f.hold(ctx, n); err != nil {
+		return nil, err
+	}
+	return []byte(goodTileJSON), nil
+}
+
+func (f *heldFetcher) count() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.reads
+}
+
+// TestJobsAtOnceReadTheTileJSONOnce is watchpost D-356 (go-tuiMaps D-51): a
+// map's work loops each take a tile job on a cold open, and the source's
+// TileJSON is read by one of them while the others wait for its answer -
+// four reads of it went out on every cold open (measured against
+// OpenFreeMap). The first read is held until four have begun or 200 ms
+// have passed, so jobs that do not wait are caught reading it each.
+func TestJobsAtOnceReadTheTileJSONOnce(t *testing.T) {
+	f := &heldFetcher{}
+	f.hold = func(ctx context.Context, _ int) error {
+		for deadline := time.Now().Add(200 * time.Millisecond); time.Now().Before(deadline) && f.count() < 4; {
+			time.Sleep(time.Millisecond)
+		}
+		return nil
+	}
+	r, err := NewRemote(source, f.get)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var wg sync.WaitGroup
+	errs := make([]error, 4)
+	for i := range errs {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, errs[i] = r.Get(context.Background(), id(6, 16+uint32(i), 26))
+		}()
+	}
+	wg.Wait()
+	for i, err := range errs {
+		if err != nil {
+			t.Errorf("job %d: %v", i, err)
+		}
+	}
+	if n := f.count(); n != 1 {
+		t.Errorf("the TileJSON was read %d times by four jobs at once; want once", n)
+	}
+}
+
+// TestAWaiterReadsTheTileJSONWhenItsReaderGivesUp is D-51's other half: the
+// job reading the TileJSON is given up - the view moved on - and a job
+// waiting for its answer reads it itself and gets its tile, rather than
+// taking the first job's cancel as its own failure.
+func TestAWaiterReadsTheTileJSONWhenItsReaderGivesUp(t *testing.T) {
+	first := make(chan struct{})
+	f := &heldFetcher{}
+	f.hold = func(ctx context.Context, reads int) error {
+		if reads > 1 {
+			return nil
+		}
+		close(first)
+		<-ctx.Done() // the first read never answers; its job is given up
+		return ctx.Err()
+	}
+	r, err := NewRemote(source, f.get)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, giveUp := context.WithCancel(context.Background())
+	gaveUp := make(chan error, 1)
+	go func() {
+		_, err := r.Get(ctx, id(6, 16, 26))
+		gaveUp <- err
+	}()
+	<-first
+	waited := make(chan error, 1)
+	go func() {
+		_, err := r.Get(context.Background(), id(6, 17, 26))
+		waited <- err
+	}()
+	time.Sleep(20 * time.Millisecond) // the second job is waiting on the first's read
+	giveUp()
+	if err := <-gaveUp; !isKind(err, fault.Cancelled) {
+		t.Errorf("the job given up said %v; want it cancelled", err)
+	}
+	select {
+	case err := <-waited:
+		if err != nil {
+			t.Errorf("the waiting job said %v; want its tile", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("the waiting job never answered")
+	}
+	if n := f.count(); n != 2 {
+		t.Errorf("the TileJSON was read %d times; want the given-up read and the waiter's own", n)
 	}
 }
