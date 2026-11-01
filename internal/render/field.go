@@ -21,8 +21,9 @@ const (
 )
 
 // axes are the longitude of every dot column's centre and the latitude of
-// every dot row's. The projection keeps the two apart, so a frame needs one
-// of each a dot, not one a sample.
+// every dot row's, and every cell column's and cell row's. The projection
+// keeps the two apart, so a frame needs one of each a dot and a cell, not one
+// a sample.
 func (r *Renderer) axes(v project.View) bool {
 	w, h := r.painter.lines.Dots()
 	r.lons, r.lats = r.lons[:0], r.lats[:0]
@@ -39,6 +40,14 @@ func (r *Renderer) axes(v project.View) bool {
 			return false
 		}
 		r.lats = append(r.lats, p.Lat)
+	}
+	r.midLons, r.midLats = r.midLons[:0], r.midLats[:0]
+	for col := range w / 2 {
+		west := r.lons[2*col] // a cell on the antimeridian is sampled there, not halfway round the world
+		r.midLons = append(r.midLons, onWorld(west+eastOf(west, r.lons[2*col+1])/2))
+	}
+	for row := range h / 4 {
+		r.midLats = append(r.midLats, (r.lats[4*row+1]+r.lats[4*row+2])/2)
 	}
 	return true
 }
@@ -67,6 +76,38 @@ func fieldClass(f *scene.Field, lon, lat float64) int8 {
 	col := int((lon - f.West) / (f.East - f.West) * float64(f.Cols))
 	row := int((f.North - lat) / (f.North - f.South) * float64(f.Rows))
 	return f.Classes[min(row, f.Rows-1)*f.Cols+min(col, f.Cols-1)]
+}
+
+// fieldAxes places a field's grid under the frame's dots: cols[x] is its
+// column under dot column x and rows[y] its row under dot row y, -1 off the
+// grid. It is fieldClass's arithmetic, worked once a dot column and once a
+// dot row, not at every dot (go-tuiMaps D-53).
+func (r *Renderer) fieldAxes(f *scene.Field) (cols, rows []int) {
+	r.cols = slices.Grow(r.cols[:0], len(r.lons))[:len(r.lons)]
+	r.rows = slices.Grow(r.rows[:0], len(r.lats))[:len(r.lats)]
+	whole := f != nil && f.Cols > 0 && f.Rows > 0 && len(f.Classes) == f.Cols*f.Rows
+	for x, lon := range r.lons {
+		r.cols[x] = -1
+		if whole && lon >= f.West && lon < f.East {
+			r.cols[x] = min(int((lon-f.West)/(f.East-f.West)*float64(f.Cols)), f.Cols-1)
+		}
+	}
+	for y, lat := range r.lats {
+		r.rows[y] = -1
+		if whole && lat > f.South && lat <= f.North {
+			r.rows[y] = min(int((f.North-lat)/(f.North-f.South)*float64(f.Rows)), f.Rows-1)
+		}
+	}
+	return r.cols, r.rows
+}
+
+// classAt is a field's class at dot (x, y), its grid placed by fieldAxes:
+// fieldClass at the dot's centre.
+func classAt(f *scene.Field, cols, rows []int, x, y int) int8 {
+	if cols[x] < 0 || rows[y] < 0 {
+		return -1
+	}
+	return f.Classes[rows[y]*f.Cols+cols[x]]
 }
 
 // mercator is a latitude's height in the web map projection.
@@ -203,7 +244,8 @@ func (r *Renderer) underlays(in Input) {
 	}
 	for i := range in.Fields {
 		if f := &in.Fields[i]; isRain(f) {
-			r.rain(in, f.Preset, f.ClassCount, false, func(col, row int) int8 { return r.heaviestOf(f, col, row) }) // rain falls on the sea (D-87)
+			cols, rows := r.fieldAxes(f)
+			r.rain(in, f.Preset, f.ClassCount, false, func(col, row int) int8 { return heaviestOf(f, cols, rows, col, row) }) // rain falls on the sea (D-87)
 		}
 	}
 	for i := range in.Rasters {
@@ -221,9 +263,7 @@ func (r *Renderer) fill(in Input, f *scene.Field, lined bool) {
 			if matters && offItsGround(f, r.waterAt(col, row)) {
 				continue
 			}
-			west := r.lons[2*col] // a cell on the antimeridian is sampled there, not halfway round the world
-			lon, lat := onWorld(west+eastOf(west, r.lons[2*col+1])/2), (r.lats[4*row+1]+r.lats[4*row+2])/2
-			if class := fieldClass(f, lon, lat); class >= 0 && int(class) < len(inks) && inks[class] != 0 {
+			if class := fieldClass(f, r.midLons[col], r.midLats[row]); class >= 0 && int(class) < len(inks) && inks[class] != 0 {
 				g.cells[row*g.cols+col].under, g.cells[row*g.cols+col].faint = inks[class], lined
 			}
 		}
@@ -291,13 +331,14 @@ func (r *Renderer) edgeMark(in Input, f *scene.Field) {
 	}
 	ink := uint8(colour.LabelRegion)
 	matters := groundMatters(f)
+	cols, rows := r.fieldAxes(f)
 	row, next := make([]int8, w), make([]int8, w)
 	for x := range w {
-		row[x] = fieldClass(f, r.lons[x], r.lats[0])
+		row[x] = classAt(f, cols, rows, x, 0)
 	}
 	for y := range h - 1 {
 		for x := range w {
-			next[x] = fieldClass(f, r.lons[x], r.lats[y+1])
+			next[x] = classAt(f, cols, rows, x, y+1)
 		}
 		for x := range w - 1 {
 			here := row[x]
@@ -368,12 +409,12 @@ func isRain(f *scene.Field) bool {
 }
 
 // heaviestOf is the heaviest class of a field among a cell's eight dots, as
-// an image's is (D-78).
-func (r *Renderer) heaviestOf(f *scene.Field, col, row int) int8 {
+// an image's is (D-78), its grid placed by fieldAxes.
+func heaviestOf(f *scene.Field, cols, rows []int, col, row int) int8 {
 	best := int8(-1)
 	for dy := range 4 {
 		for dx := range 2 {
-			best = max(best, fieldClass(f, r.lons[2*col+dx], r.lats[4*row+dy]))
+			best = max(best, classAt(f, cols, rows, 2*col+dx, 4*row+dy))
 		}
 	}
 	return best
@@ -476,13 +517,26 @@ func (r *Renderer) rain(in Input, preset uint8, classCount int, masked bool, cla
 // one dot differs from the next, which bends smoothly at a terminal's
 // resolution and needs no special cases (S25-1); and each line's value, as a
 // label, every so often. A field all of one class has no line (D-68).
+//
+// Each dot is classified once, as edgeMark's are (go-tuiMaps D-53).
 func (r *Renderer) contours(in Input, f *scene.Field) {
 	w, h := r.painter.lines.Dots()
+	if w < 2 || h < 2 {
+		return
+	}
 	ink := uint8(colour.LabelRegion)
 	matters := groundMatters(f)
+	cols, rows := r.fieldAxes(f)
+	row, next := make([]int8, w), make([]int8, w)
+	for x := range w {
+		row[x] = classAt(f, cols, rows, x, 0)
+	}
 	for y := range h - 1 {
+		for x := range w {
+			next[x] = classAt(f, cols, rows, x, y+1)
+		}
 		for x := range w - 1 {
-			here, east, south, ok := r.edgeAt(f, matters, x, y)
+			here, east, south, ok := r.edgeAt(f, row, next, matters, x, y)
 			if !ok {
 				continue
 			}
@@ -496,18 +550,19 @@ func (r *Renderer) contours(in Input, f *scene.Field) {
 				r.painter.valueLabel(x, y, f.Labels, max(here, south), ink)
 			}
 		}
+		row, next = next, row
 	}
 }
 
 // edgeAt is a field's class at a dot and its neighbours' to the east and
-// the south, -1 where they have none; false for a dot with no class, or off
-// the field's ground.
-func (r *Renderer) edgeAt(f *scene.Field, matters bool, x, y int) (here, east, south int8, ok bool) {
-	here = fieldClass(f, r.lons[x], r.lats[y])
+// the south, -1 where they have none, from the classes of the dot's row and
+// the next; false for a dot with no class, or off the field's ground.
+func (r *Renderer) edgeAt(f *scene.Field, row, next []int8, matters bool, x, y int) (here, east, south int8, ok bool) {
+	here = row[x]
 	if here < 0 || (matters && offItsGround(f, r.waterAt(x/2, y/4))) {
 		return here, -1, -1, false
 	}
-	return here, fieldClass(f, r.lons[x+1], r.lats[y]), fieldClass(f, r.lons[x], r.lats[y+1]), true
+	return here, row[x+1], next[x], true
 }
 
 // valueLabel offers a contour's value as a label at a dot.

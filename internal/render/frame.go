@@ -331,7 +331,11 @@ type Renderer struct {
 	drops   []Drop    // this frame's dropped alert labels, the backing kept from frame to frame
 	lons    []float64 // the longitude of each dot column's centre, for this frame
 	lats    []float64 // the latitude of each dot row's
+	midLons []float64 // the longitude of each cell column's centre, for this frame (axes)
+	midLats []float64 // the latitude of each cell row's
 	water   []uint8   // each cell's water, asked once a frame (waterAt); the backing kept from frame to frame
+	cols    []int     // a field's grid column under each dot column (fieldAxes); the backing kept from field to field
+	rows    []int     // its grid row under each dot row
 	line    strings.Builder
 
 	drawn     bool  // a frame has been drawn, and last describes it
@@ -1002,6 +1006,9 @@ func sgrColour(b *strings.Builder, which string, c colour.RGB, depth Depth) {
 type pen struct {
 	fg, bg colour.RGB
 	fresh  bool // nothing has been sent on this row yet
+	keyed  bool // key and pair hold the last cell's colours, so a run of cells alike asks the memo once
+	key    colourKey
+	pair   [2]colour.RGB
 }
 
 // ground is the ground in effect for one frame.
@@ -1120,13 +1127,17 @@ func (r *Renderer) colourCell(c cell, in Input, under ground, p *pen) {
 		return
 	}
 	key := colourKey{area: c.area, under: c.under, ink: c.ink, zone: c.zone, night: c.night, faint: c.faint, strict: c.strict}
-	pair, held := r.memo[key]
+	pair, held := p.pair, p.keyed && p.key == key
+	if !held {
+		pair, held = r.memo[key]
+	}
 	if !held {
 		pair[0], pair[1] = r.colours(c, in, under.colour, under.kind)
 		if r.memo != nil {
 			r.memo[key] = pair
 		}
 	}
+	p.key, p.pair, p.keyed = key, pair, true
 	fg, bg := pair[0], pair[1]
 	if c.ink == 0 && !p.fresh {
 		fg = p.fg // an empty cell shows no foreground: nothing to change

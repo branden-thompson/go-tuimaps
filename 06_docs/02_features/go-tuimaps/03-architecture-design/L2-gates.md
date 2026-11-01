@@ -30,7 +30,7 @@ flowchart TB
     M0 --> A4["Reference frames byte-identical on both architectures: arm64 native and amd64 emulated on a Mac;<br/>in hosted CI each job runs its own natively (GATE_ARCH_LEG=sibling)<br/>FAILS — never skips — if the second architecture cannot be run"]
     M0 --> A5["Loopback only: the dial hook is installed for every test binary by default, not opted into<br/>a static check fails any test package that does not link it"]
     M0 --> A6["Sub-process test: a program that reuses borrowed memory too early must be caught by the race detector (D-86)"]
-    M0 --> A7["The public contract against the last release: a root test reads its surface from git (v0.3.0's for v0.3.1, held by a test<br/>to the newest final tag below the library's version) and fails on any removal or change contract section 12 does not list (NFR-22, D-137)"]
+    M0 --> A7["The public contract against the last release: a root test reads its surface from git (v0.3.1's for v0.3.2, held by a test<br/>to the newest final tag below the library's version) and fails on any removal or change contract section 12 does not list (NFR-22, D-137)"]
     M0 --> A8["P10: a2dh p10 check where the harness is installed and the tree carries it;<br/>NOT RUN, said so, where it is not (D-136)"]
     T1 & T2 & T3 & T4 & T5 & A1 & A2 & A3 & A4 & A5 & A6 & A7 & A8 --> OK{"All green?"}
     DOCS --> OK
