@@ -73,7 +73,7 @@ Nothing, until you name a source. With one named:
 
 - tiles are fetched from that source and from nowhere else, over HTTPS;
 - what is sent is the tile address and a user-agent naming this library and
-  its version, `go-tuimaps/0.3.0` - nothing about your machine. The version
+  its version, `go-tuimaps/0.3.1` - nothing about your machine. The version
   is the release's: `scripts/gate --release` refuses a tag it does not
   match. `SetFetchOptions` adds a name of your own to it, and takes a
   transport of your own for your proxy or trust roots;

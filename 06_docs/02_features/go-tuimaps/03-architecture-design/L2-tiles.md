@@ -92,7 +92,7 @@ flowchart TB
 | Rule | From |
 |---|---|
 | A source ending in `/` is a prefix: `{source}{z}/{x}/{y}.pbf`. Any other is a TileJSON document, whose first tile address is used | P-49 |
-| The TileJSON is read once, inside the first tile job that needs it — never when the source is named. Until then the source is taken to hold zoom 0 to 14; afterwards, the zooms it declares. A refusal is kept and not asked for again; a failure to fetch is not kept | D-65, NFR-5 |
+| The TileJSON is read once, inside the first tile job that needs it — never when the source is named; the jobs asking meanwhile wait for its answer, and a job whose reader got none - it failed, or its job was given up - reads it itself. Until then the source is taken to hold zoom 0 to 14; afterwards, the zooms it declares. A refusal is kept and not asked for again; a failure to fetch is not kept | D-65, NFR-5, D-51 |
 | At most 1 MiB, nested at most 64 deep, checked before it is parsed | NFR-10 |
 | Its tile address: a secure scheme, no user name, the source's own scheme, host and port - one allow-list, the source itself (v0.2.0 L8.5, `fetch.Confined`), only `{z}`, `{x}` and `{y}` filled and all three present, no token in the host, **no fragment** — a fragment is never sent, so every tile would be the same request *(found by the fuzz target in BUILD)* | FR-22b |
 | A source that declares layers of which the map knows none is refused as an unsupported schema | FR-35 |

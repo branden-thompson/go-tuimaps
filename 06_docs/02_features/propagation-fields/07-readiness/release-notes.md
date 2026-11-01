@@ -4,6 +4,11 @@ Up: [requirements](../01-objectives/requirements.md) · [contract, section 12](.
 
 Written as v0.3.0 is built, and completed at its release step.
 
+## v0.3.1, a fix (watchpost D-356)
+
+- **A named source's TileJSON is read once on a cold open, not once a work loop.** Each job that found the TileJSON unread fetched it, so a host working its map from four goroutines sent four requests for the document before the first tile; one job reads it now, and the jobs asking meanwhile wait for its answer. A job whose reader got none - it failed, or its job was given up - reads it itself, so another job's cancel is never its failure. `TestJobsAtOnceReadTheTileJSONOnce` holds the first, and fails with the old read; `TestAWaiterReadsTheTileJSONWhenItsReaderGivesUp` the second.
+- `fetch.Version` is 0.3.1, so the user-agent says `go-tuimaps/0.3.1`.
+
 ## What changes in behaviour
 
 Ruled before each landed (the brief's C-6), and listed with what a host does in the contract's section 12.
