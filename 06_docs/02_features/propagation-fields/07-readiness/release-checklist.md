@@ -4,7 +4,7 @@ Up: [plan](../04-development/implementation-plan.md) · [release notes](release-
 
 | Field | Value |
 |---|---|
-| Status | **Open.** v0.3.0 is paired with watchpost 0.19.0 and go-ionomaps (watchpost D-1, D-3); it ships when watchpost 0.19.0 does. Its newest release candidate is `v0.3.0-rc.11`, at `d01ca8e`, for the antimeridian's column (watchpost D-343). Sections 0 to 2 are ticked with their evidence; the tag waits for the HUM LEAD (watchpost D-344) |
+| Status | **Released.** v0.3.0 tagged on `0735ba8` (watchpost D-351), paired with watchpost 0.19.0 and go-ionomaps (watchpost D-1, D-3), every row ticked with its evidence. Its last release candidate was `v0.3.0-rc.11`, at `d01ca8e`. Two fixes followed it, each released as section 3 is: v0.3.1 (D-51) and v0.3.2 (D-53) |
 | Who runs it | The coordinator prepares each row and shows its evidence; the HUM LEAD approves the tag |
 | The machine check | `scripts/gate --release v0.3.0` refuses the final tag while any row of sections 0 to 2 ends in `[ ]` (section 3 follows the tag), and runs the pinned `govulncheck`. A release candidate, `v0.3.0-rc.N`, is not held to the rows |
 | How a row is ticked | Its last cell becomes `[x]`, in the commit that holds its evidence, with the evidence named in the row |
@@ -49,9 +49,9 @@ as it is done, at SHIP.
 | # | Check | Evidence | Done |
 |---|---|---|---|
 | 3.1 | `release/v0.3.0` squash-merged to `main` from `feature/propagation-fields` | PR #9 squash-merged to `main` as `0735ba8` on a fully green run - the hosted full gate on both architectures (run 41158250834) and the push and pull-request quick gates - the release check green on the release branch, `main` merged into it first (A-24) | [x] |
-| 3.2 | `v0.3.0` at the root, then the nested modules' tags against it | `v0.3.0` on `0735ba8`, the GitHub Release published from `release-notes.md`, marked Latest; the nested modules' tags follow this row's PR, on its merge commit | [ ] |
+| 3.2 | `v0.3.0` at the root, then the nested modules' tags against it | `v0.3.0` on `0735ba8`, the GitHub Release published from `release-notes.md`, marked Latest; the nested modules' six tags - `cmd/tuimaps`, `examples`, `tools/answer-key`, `tools/atlas`, `tools/gen-assets`, `tools/oracle` - on `304e116`, the merge of PR #10, and `go install .../cmd/tuimaps@v0.3.0` on a clean module cache | [x] |
 | 3.3 | Every nested module is tidy against the tagged library | `cmd/tuimaps`, `examples`, `tools/gen-assets` and `tools/oracle` require the published `v0.3.0`; every nested module `GOWORK=off go mod tidy -diff` clean (2026-10-31) | [x] |
-| 3.4 | watchpost 0.19.0 pins `v0.3.0` and its gate is green on it | | [ ] |
+| 3.4 | watchpost 0.19.0 pins `v0.3.0` and its gate is green on it | watchpost batch 83 (`2fd0e49d`) pins `v0.3.0`: `make verify` green and the hosted CI on Linux and macOS (run 41169528949); watchpost v0.19.0 released on it (PR #31, D-352) | [x] |
 
 ## Ruled exceptions to the vulnerability scan
 

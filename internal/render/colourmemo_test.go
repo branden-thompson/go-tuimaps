@@ -46,3 +46,38 @@ func TestEveryCellGetsItsOwnColoursThroughTheMemo(t *testing.T) {
 		t.Errorf("only %d of the pairs draw differently: the check measures little", differ)
 	}
 }
+
+// TestEachCellOfARowGetsItsOwnColoursThroughThePen (go-tuiMaps D-53): the
+// pen holds the last cell's colours so a run of cells alike asks the memo
+// once, and a cell that differs from the one before it in anything a colour
+// is worked out from still gets its own colours, on the same row.
+func TestEachCellOfARowGetsItsOwnColoursThroughThePen(t *testing.T) {
+	v := gulfView()
+	in := Input{View: v, Tiles: embedded(t, v), Style: style.BuiltIn(), OverlaysVersion: 1, Depth: colour.Truecolor}
+	r, _ := drawn(t, in)
+	g := ground{kind: in.Ground.Kind(in.Palette)}
+	g.colour, g.painted = in.Ground.InEffect(in.Palette)
+	field := cell{glyph: '-', ink: uint8(colour.LabelRegion), under: uint8(colour.Temperature1)}
+	row := []cell{field, field}
+	for _, change := range []func(*cell){
+		func(c *cell) { c.night = true },
+		func(c *cell) { c.zone = true },
+		func(c *cell) { c.area = uint8(colour.AlertSevereTint) },
+		func(c *cell) { c.under += 5 },
+		func(c *cell) { c.faint = true },
+		func(c *cell) { c.strict = true },
+		func(c *cell) { c.ink = uint8(colour.AlertSevereOutline) },
+	} {
+		c := field
+		change(&c)
+		row = append(row, c, c, field)
+	}
+	r.memo = map[colourKey][2]colour.RGB{}
+	p := &pen{fresh: true}
+	for i, c := range row {
+		r.colourCell(c, in, g, p)
+		if fg, bg := r.colours(c, in, g.colour, g.kind); p.fg != fg || p.bg != bg {
+			t.Errorf("cell %d of the row drew %v on %v; its own colours are %v on %v", i, p.fg, p.bg, fg, bg)
+		}
+	}
+}

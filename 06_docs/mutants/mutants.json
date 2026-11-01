@@ -934,8 +934,8 @@
     "row": "watchpost D-343 (D-47)",
     "what": "a cell on the antimeridian is sampled at the mean of its dots' longitudes, Greenwich",
     "file": "internal/render/field.go",
-    "old": "lon, lat := onWorld(west+eastOf(west, r.lons[2*col+1])/2), ",
-    "new": "lon, lat := (west+r.lons[2*col+1])/2, ",
+    "old": "r.midLons = append(r.midLons, onWorld(west+eastOf(west, r.lons[2*col+1])/2))",
+    "new": "r.midLons = append(r.midLons, (west+r.lons[2*col+1])/2)",
     "package": "./internal/render",
     "test": "TestACellOnTheAntimeridianIsSampledThere"
   },
@@ -974,7 +974,7 @@
     "row": "row 2.2 (D-137)",
     "what": "the contract check held to a release two before this one",
     "file": "contract_breaks_test.go",
-    "old": "const lastRelease = \"v0.3.0\"",
+    "old": "const lastRelease = \"v0.3.1\"",
     "new": "const lastRelease = \"v0.1.0\"",
     "package": ".",
     "test": "TestTheContractIsHeldToTheLastRelease"
@@ -1058,5 +1058,25 @@
     "new": "\t\tselect {\n\t\tcase <-wait:\n\t\t\treturn TileJSON{}, cancelled()\n\t\tcase <-ctx.Done():\n",
     "package": "./internal/tiles",
     "test": "TestAWaiterReadsTheTileJSONWhenItsReaderGivesUp"
+  },
+  {
+    "id": "m108",
+    "row": "D-53",
+    "what": "a field's rows are placed from the south",
+    "file": "internal/render/field.go",
+    "old": "r.rows[y] = min(int((f.North-lat)/(f.North-f.South)*float64(f.Rows)), f.Rows-1)",
+    "new": "r.rows[y] = min(int((lat-f.South)/(f.North-f.South)*float64(f.Rows)), f.Rows-1)",
+    "package": "./internal/render",
+    "test": "TestAFieldsGridIsPlacedAsEachDotIsSampled"
+  },
+  {
+    "id": "m109",
+    "row": "D-53",
+    "what": "the pen hands a cell the last cell's colours whatever its key",
+    "file": "internal/render/frame.go",
+    "old": "pair, held := p.pair, p.keyed && p.key == key",
+    "new": "pair, held := p.pair, p.keyed",
+    "package": "./internal/render",
+    "test": "TestEachCellOfARowGetsItsOwnColoursThroughThePen"
   }
 ]
