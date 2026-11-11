@@ -4,6 +4,13 @@ Up: [requirements](../01-objectives/requirements.md) · [contract, section 12](.
 
 Written as v0.3.0 is built, and completed at its release step.
 
+## Unreleased, the toolchain (watchpost 0.19.5 D-57; D-54)
+
+On `main`, for the next release; no tag carries it yet.
+
+- **The module floor is go 1.26.11.** GO-2026-6859, a crash from a race on request headers in `net/http`'s `MaxBytesReader`, is reachable from the fetcher and the test servers and is fixed in go1.26.11 and go1.27.4. Every module's `go` directive is 1.26.11; a host builds with Go 1.26.11 or newer. The gate runs on go1.27.4.
+- Nothing else changes: no public name, no drawing.
+
 ## v0.3.2, a fix (watchpost D-358)
 
 - **M5's frame is met on a hosted 4-CPU linux/amd64 runner.** A whole-globe frame after a pan at 400 × 110 took 20.8 ms on a hosted AMD EPYC 7763 runner (run 41317857118), past M5's 16 ms; it takes 12.9 and 13.4 ms there now (runs 41321663184 and 41321788908), and 3.5 and 3.6 ms at 200 × 56. On the reference machine, 5.1 ms and 1.4 ms ([M5's record](m5-record.md)), from 7.9 and 2.1. What is drawn is unchanged: a field's grid is placed under the frame's dots once a frame and each dot read through it, the class `fieldClass` gives at the dot's centre (`TestAFieldsGridIsPlacedAsEachDotIsSampled`); each contour dot is classified once; each cell's centre is worked out once a frame; a run of cells alike asks for its colours once (`TestEachCellOfARowGetsItsOwnColoursThroughThePen`).
