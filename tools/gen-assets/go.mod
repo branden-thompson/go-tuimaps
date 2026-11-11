@@ -1,6 +1,6 @@
 module github.com/branden-thompson/go-tuimaps/tools/gen-assets
 
-go 1.26.10
+go 1.26.11
 
 require github.com/branden-thompson/go-tuimaps v0.3.2
 
